@@ -7,9 +7,7 @@ class Chat::Session < ApplicationModel
   include Chat::Session::Assets
 
   # rubocop:disable Rails/InverseOf
-  has_many   :messages, class_name: 'Chat::Message', foreign_key: 'chat_session_id'
-  belongs_to :user,     class_name: 'User', optional: true
-  belongs_to :chat,     class_name: 'Chat'
+  has_many :messages, class_name: 'Chat::Message', foreign_key: 'chat_session_id'
   # rubocop:enable Rails/InverseOf
 
   before_create :generate_session_id
