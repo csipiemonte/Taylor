@@ -1,0 +1,128 @@
+<div class="article-meta-clip top">
+  <div class="article-content-meta top hide">
+    <div class="article-meta top">
+    <% if @article.from: %>
+      <div class="horizontal article-meta-row">
+        <div class="article-meta-key u-textTruncate"><%- @T('From') %></div>
+        <div class="article-meta-value flex contain-text"><%- @AddressLine(@article.from) %></div>
+      </div>
+    <% end %>
+    <% if @article.reply_to: %>
+      <div class="horizontal article-meta-row">
+        <div class="article-meta-key u-textTruncate"><%- @T('Reply-To') %></div>
+        <div class="article-meta-value flex contain-text"><%- @AddressLine(@article.reply_to) %></div>
+      </div>
+    <% end %>
+    <% if @article.to: %>
+      <div class="horizontal article-meta-row">
+        <div class="article-meta-key u-textTruncate"><%- @T('To') %></div>
+        <div class="article-meta-value flex contain-text"><%- @AddressLine(@article.to) %></div>
+      </div>
+    <% end %>
+    <% if @article.cc: %>
+      <div class="horizontal article-meta-row">
+        <div class="article-meta-key u-textTruncate"><%- @T('Cc') %></div>
+        <div class="article-meta-value flex contain-text"><%- @AddressLine(@article.cc) %></div>
+      </div>
+    <% end %>
+    <% if @article.subject: %>
+      <div class="horizontal article-meta-row">
+        <div class="article-meta-key u-textTruncate"><%- @T('Subject') %></div>
+        <div class="article-meta-value flex contain-text"><%= @article.subject %></div>
+      </div>
+    <% end %>
+    <% if @article.preferences.security?.encryption?.success || @article.preferences.security?.sign?.success: %>
+      <div class="horizontal article-meta-row">
+        <div class="article-meta-key u-textTruncate"><%- @T('Security') %></div>
+        <div class="article-meta-value flex contain-text">
+          <% if @article.preferences.security?.encryption?.success: %>
+            <span title="<%- @Ti(@article.preferences.security?.encryption?.comment) %>"><%- @Icon('lock', 'article-meta-icon') %> <%- @T('Encrypted') %></span>
+          <% end %>
+          <% if @article.preferences.security?.encryption?.success && @article.preferences.security?.sign?.success: %>
+          ,
+          <% end %>
+          <% if @article.preferences.security?.sign?.success is not null: %>
+            <span title="<%- @Ti(@article.preferences.security?.sign?.comment) %>"><%- @Icon((if @article.preferences.security?.sign?.success is true then 'signed' else 'not-signed'), 'article-meta-icon') %> <%- @T(if @article.preferences.security?.sign?.success is true then 'Signed' else 'Unsigned') %></span>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+    </div>
+  </div>
+</div>
+<div class="article-meta-permanent">
+<% if (@article.preferences.security?.sign?.success is false && @article.preferences.security?.sign?.comment) || (@article.preferences.security?.encryption?.success is false && @article.preferences.security?.encryption?.comment): %>
+  <div class="alert alert--warning">
+    <%- @Icon('not-signed') %> <%- @T('Security Error') %>
+    <% if @article.preferences.security?.sign?.success is false && @article.preferences.security?.sign?.comment: %>
+      <br>
+      <%- @T('Sign') %>: <%- @T(@article.preferences.security?.sign?.comment) %>
+    <% end %>
+    <% if @article.preferences.security?.encryption?.success is false && @article.preferences.security?.encryption?.comment: %>
+      <br>
+      <%- @T('Encryption') %>: <%- @T(@article.preferences.security?.encryption?.comment) %>
+    <% end %>
+    <div class="flex-spacer"></div>
+    <div class="btn btn--action btn--small js-securityRetryProcess"><%- @T('Retry security process') %></div>
+  </div>
+<% else if @article.preferences.security?.encryption?.success is true || @article.preferences.security?.sign?.success is true: %>
+  <div class="alert alert--blank horizontal">
+  <% if @article.preferences.security?.encryption?.success is true: %>
+    <span title="<%- @T('Encrypted') %>"><%- @Icon('lock') %></span>
+  <% end %>
+  <% if @article.preferences.security?.sign?.success is true: %>
+    <span title="<%- @T('Signed') %>"><%- @Icon('signed') %></span>
+  <% end %>
+  </div>
+<% end %>
+</div>
+<div class="article-content">
+  <% if @article.sender.name isnt 'Agent': %>
+  <%    position = 'left' %>
+  <% else: %>
+  <%    position = 'right' %>
+  <% end %>
+  <div class="js-avatar"></div>
+  <div class="bubble-gap">
+    <div class="internal-border">
+      <div class="textBubble">
+        <div class="bubble-arrow"></div>
+        <div class="textBubble-content" id="article-content-<%= @article.id %>" data-id="<%= @article.id %>">
+          <div class="richtext-content"><%- @article.html %></div>
+          <div class="textBubble-overflowContainer hide">
+            <div class="btn btn--text js-toggleFold"><%- @T('See more') %></div>
+          </div>
+        </div>
+        <%- @attachments %>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="article-meta-clip bottom">
+  <div class="article-content-meta bottom hide">
+    <div class="article-meta bottom">
+      <div class="horizontal article-meta-row">
+        <div class="article-meta-key"><%- @T('Channel') %></div>
+        <div class="article-meta-value">
+          <% icon = @article.type.name.split(" ")%>
+          <%- @Icon(icon[0], 'article-meta-icon') %>
+          <%- @T(@article.type.name) %>
+          <div class="article-meta-links">
+          <% if @links: %>
+            <% count = 0 %>
+            <% for link in @links: %>
+              <% if count > 0: %>|<% end %>
+              <a class="text-muted" href="<%- link.url %>" target="<%- link.target %>"><%- @T(link.name) %></a>
+              <% count =+ 1 %>
+            <% end %>
+          <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="js-article-actions"></div>
+
+<small class="task-subline"><%- @humanTime(@article.created_at) %></small>

@@ -1,0 +1,12 @@
+<label><%- @T(@head) %> (<%= @ticket_ids.length %>)</label>
+<% if @ticket_ids.length: %>
+  <%- @ticketList %>
+<% else: %>
+<div class="profile-ticketsPlaceholder vertical centered">
+  <div class="<%- @iconClass %>"></div>
+  <%- @T('none') %>
+</div>
+<% end %>
+<% if @ticket_ids.length > @ticket_ids_show.length: %>
+  <a href="#" class="js-showAll"><%- @T('Show all...') %></a>
+<% end %>
