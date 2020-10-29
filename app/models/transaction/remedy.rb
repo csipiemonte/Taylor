@@ -36,30 +36,37 @@ class Transaction::Remedy
       article = Ticket::Article.find(@item[:article_id])
       ticket_text = article.body
     end
-    Rails.logger.info("[REMEDY INTEGRATION LOG] creating Remedy ticket")
-    if @item[:type] == 'create'
-      ticket = {
-        "riepilogo": 'XXXXXXXXXXXXXXX',
-        "dettaglio": ticket_text,
-        "impatto": "Vasto/Diffuso",
-        "urgenza": "Critica",
-        "tipologia": "Ripristino di servizio utente",
-        "richiedente": {
-          "personId": "PPL000000018476"
-         },
-        "categorizzazione": {
-          "categoriaOperativa": {
-            "livello1": "1L - Gestione PdL",
-            "livello2": "Fornitura/Configurazione",
-            "livello3": "PDL"
+
+    Rails.logger.info("[REMEDY INTEGRATION LOG] type is ="+@item[:type])
+    if @item[:type] == "create"
+      remedy_id = ""
+      Rails.logger.info("[REMEDY INTEGRATION LOG] title is ="+zammad_ticket.title)
+      if !zammad_ticket.title["REMEDY_CREATED"]
+          Rails.logger.info("[REMEDY INTEGRATION LOG] creating Remedy ticket")
+          ticket = {
+            "riepilogo": 'XXXXXXXXXXXXXXX',
+            "dettaglio": ticket_text,
+            "impatto": "Vasto/Diffuso",
+            "urgenza": "Critica",
+            "tipologia": "Ripristino di servizio utente",
+            "richiedente": {
+              "personId": "PPL000000018476"
+             },
+            "categorizzazione": {
+              "categoriaOperativa": {
+                "livello1": "1L - Gestione PdL",
+                "livello2": "Fornitura/Configurazione",
+                "livello3": "PDL"
+                }
             }
-        }
-      }
-      remedy_ticket = RemedyApiService.create_ticket(ticket)
-      Rails.logger.info("[REMEDY INTEGRATION LOG] Remedy ticket created, id: #{remedy_ticket['ticketId']}")
-      status = RemedyApiService.get_ticket_status(remedy_ticket['ticketId'])
-      Rails.logger.info("[REMEDY INTEGRATION LOG] remedy status: #{status}")
-      zammad_ticket.remedy_id = remedy_ticket['ticketId']
+          }
+          remedy_ticket = RemedyApiService.create_ticket(ticket)
+          Rails.logger.info("[REMEDY INTEGRATION LOG] Remedy ticket created, id: #{remedy_ticket['ticketId']}")
+          remedy_id = remedy_ticket['ticketId']
+      else
+        remedy_id = zammad_ticket.title[15..@item[:title].length-1]
+      end
+      zammad_ticket.remedy_id = remedy_id
       Rails.logger.info("[REMEDY INTEGRATION LOG] Saving Remedy ticket_id on Zammad DB")
       zammad_ticket.save!
       Rails.logger.info("[REMEDY INTEGRATION LOG] saved")
