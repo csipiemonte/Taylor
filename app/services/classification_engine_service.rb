@@ -6,7 +6,7 @@ class ClassificationEngineService
   }
 
 
-  def self.classify(text, threshold=0.9)
+  def self.classify(text, threshold=0.85)
     payload = {"text":text, "threshold":threshold}
     return self.post(BASE_PATH+"/predict",payload)
   end

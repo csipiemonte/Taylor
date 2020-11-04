@@ -7,9 +7,9 @@ module Channel::Filter::ClassificationFilter
       subject = mail[:subject].html2text
       Rails.logger.info "CLASSIFICATION FILTER PRE - subject: #{subject}"
       text = subject+" "+subject+" "+body
-      response = ClassificationEngineService.classify(text)
+      response = ClassificationEngineService.classify(text,0.8)
       Rails.logger.info "CLASSIFICATION FILTER PRE - response: #{response}"
-      mail["classification"] = response["classification"] ? response["classification"] : response["proposed_classification"]
+      mail["classification"] = response["classification"] && response["classification"]!="NORESPONSE" ? response["classification"] : response["proposed_classification"]
     else
       Rails.logger.info "CLASSIFICATION FILTER POST - ticket: #{ticket}"
       tag = mail["classification"]
