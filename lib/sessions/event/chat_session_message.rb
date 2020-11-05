@@ -40,6 +40,15 @@ return is sent as message back to peer
       },
     }
 
+    Transaction::BackgroundJob.run(
+        object:     'Chat Message',
+        type:       'test',
+        user_id:  user_id,
+        object_id: chat_message.id,
+        cli_id: @client_id,
+        clients: @clients,
+    )
+
     # send to participents
     chat_session.send_to_recipients(message, @client_id)
 
