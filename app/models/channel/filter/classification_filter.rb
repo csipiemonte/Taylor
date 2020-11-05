@@ -10,13 +10,16 @@ module Channel::Filter::ClassificationFilter
       response = ClassificationEngineService.classify(text,0.8)
       Rails.logger.info "CLASSIFICATION FILTER PRE - response: #{response}"
       mail["classification"] = response["classification"] && response["classification"]!="NORESPONSE" ? response["classification"] : response["proposed_classification"]
+      true
     else
       Rails.logger.info "CLASSIFICATION FILTER POST - ticket: #{ticket}"
       tag = mail["classification"]
       Rails.logger.info "CLASSIFICATION FILTER POST - tag: #{tag}"
       ticket.tag_add(tag,1)
       ticket.save!
+      true
     end
+    true
   end
 
 
