@@ -57,8 +57,19 @@ return is sent as message back to peer
       },
     )
 
+
+
     # send broadcast to agents
     Chat.broadcast_agent_state_update([chat_session.chat_id])
+
+    Transaction::BackgroundJob.run(
+        object:     'Chat Session',
+        type:       'chat_session',
+        object_id: chat_session.chat_id,
+        chat_session: chat_session,
+        client_id: @client_id,
+        session: @session
+    )
 
     # return new session
     {

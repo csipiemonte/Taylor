@@ -7,34 +7,50 @@ class Transaction::Chatbot
 
   def perform
     return if Setting.get('import_mode')
-    return if @item[:object] != 'Chat Message'
-    Rails.logger.info "HERE WE AREEEEEEEEEE"
-    message = Chat::Message.find_by(id: @item[:object_id])
-    created_by = message[:created_by_id]
-    Rails.logger.info "INSIDE IF"
-    chat_session = Chat::Session.find_by(id: message[:chat_session_id])
-    Rails.logger.info "SESSION ID: #{chat_session}"
-    Rails.logger.info message
-    chat_message = Chat::Message.create(
-      chat_session_id: message[:chat_session_id],
-      content:         "risposta del bot a \"#{message[:content]}\"",
-      created_by_id:   1,
-    )
-    message_to_send = {
-      event: 'chat_session_message',
-      data:  {
-        session_id: message[:chat_session_id],
-        message:    chat_message
-      },
-    }
-
-    # send to participents
-    @item[:clients].each do |client_id,client|
-      Rails.logger.info "sending message to: #{client_id}"
-      Sessions.send(client_id,message_to_send)
+    if @item[:object] == 'Chat Session'
+      chatbot = User.find_by(login: 'chatbot@zammad.org')
+      chat_session = @item[:chat_session]
+      client_id = 333
+      clients = [@item[:client_id],client_id]
+      params = {
+        session: {
+          "id" => chatbot.id
+        },
+        payload: {
+          "agent" => chatbot,
+          "chat_id" => chat_session.chat_id
+        },
+        client_id: client_id,
+        clients: clients
+      }
+      event = Sessions::Event::ChatSessionStart.new(params)
+      result = event.run
+      event.destroy
+    elsif @item[:object] == 'Chat Message'
+      chatbot = User.find_by(login: 'chatbot@zammad.org')
+      message = Chat::Message.find_by(id: @item[:object_id])
+      created_by = message[:created_by_id]
+      chat_session = Chat::Session.find_by(id: message[:chat_session_id])
+      chat_message = Chat::Message.create(
+        chat_session_id: message[:chat_session_id],
+        content:         "risposta del bot a \"#{message[:content]}\"",
+        created_by_id:   chatbot.id,
+      )
+      message_to_send = {
+        event: 'chat_session_message',
+        data:  {
+          session_id: message[:chat_session_id],
+          message:    chat_message
+        },
+      }
+      # send to participents
+      @item[:clients].each do |client_id,client|
+        Sessions.send(client_id,message_to_send)
+      end
+      chat_ids = Chat.agent_active_chat_ids(chatbot)
+      # broadcast new state to agents
+      Chat.broadcast_agent_state_update(chat_ids)
     end
-
   end
-
 
 end
