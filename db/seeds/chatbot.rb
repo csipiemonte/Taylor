@@ -7,3 +7,14 @@ Setting.create_if_not_exists(
   state:       'Transaction::Chatbot',
   frontend:    false
 )
+
+User.create_if_not_exists(
+  login:           'chatbot@zammad.org',
+  firstname:       'Chat',
+  lastname:        'Bot',
+  email:           'chatbot@zammad.org',
+  password:        'turingtestpassed666',
+  active:          true,
+  roles:           [ Role.find_by(name: 'Agent') ]
+)
+
