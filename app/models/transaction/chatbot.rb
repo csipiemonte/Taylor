@@ -31,9 +31,11 @@ class Transaction::Chatbot
       message = Chat::Message.find_by(id: @item[:object_id])
       created_by = message[:created_by_id]
       chat_session = Chat::Session.find_by(id: message[:chat_session_id])
+      #reply = ChatbotService.answerTo(message)[0]["text"]
+      reply = "risposta del chatbot a \"#{message.content}\""
       chat_message = Chat::Message.create(
         chat_session_id: message[:chat_session_id],
-        content:         "risposta del bot a \"#{message[:content]}\"",
+        content:         reply,
         created_by_id:   chatbot.id,
       )
       message_to_send = {
