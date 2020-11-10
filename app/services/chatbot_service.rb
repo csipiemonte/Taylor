@@ -7,8 +7,8 @@ class ChatbotService
 
 
   def self.answerTo(text, user="")
-    payload = {"sender":user, "text":text}
-    return self.post(BASE_PATH+"/webhook",payload)
+    payload = {"sender":user, "message":text}
+    return self.post(BASE_PATH+"/webhook",payload)[0]["text"]
   end
 
   private
@@ -18,6 +18,7 @@ class ChatbotService
     uri = URI.parse(path)
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
+    http.verify_mode = OpenSSL::SSL::VERIFY_NONE
     request = Net::HTTP::Get.new(uri.request_uri)
     BASE_HEADERS.each do |key, value|
       request[key] = value
@@ -48,6 +49,7 @@ class ChatbotService
     uri = URI.parse(path)
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
+    http.verify_mode = OpenSSL::SSL::VERIFY_NONE
     request = Net::HTTP::Post.new(uri.request_uri)
     BASE_HEADERS.each do |key, value|
       request[key] = value
