@@ -8,6 +8,33 @@ Setting.create_if_not_exists(
   frontend:    false
 )
 
+Setting.create_if_not_exists(
+  title:       'Enable Chat-Bot',
+  name:        'chatbot_status',
+  area:        'Chat::Base',
+  description: 'Enable/disable online chat-bot.',
+  options:     {
+    form: [
+      {
+        display: '',
+        null:    true,
+        name:    'chat',
+        tag:     'boolean',
+        options: {
+          true  => 'yes',
+          false => 'no',
+        },
+      },
+    ],
+  },
+  preferences: {
+    trigger:    ['menu:render', 'chat:rerender'],
+    permission: ['admin.channel_chat'],
+  },
+  state:       true,
+  frontend:    true
+)
+
 User.create_if_not_exists(
   login:           'chatbot@zammad.org',
   firstname:       'Chat',

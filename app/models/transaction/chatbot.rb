@@ -6,7 +6,7 @@ class Transaction::Chatbot
   end
 
   def perform
-    return if Setting.get('import_mode')
+    return if Setting.get('import_mode') || !Setting.get('chatbot_status')
     if @item[:object] == 'Chat Session'
       chatbot = User.find_by(login: 'chatbot@zammad.org')
       chat_session = @item[:chat_session]
@@ -30,14 +30,39 @@ class Transaction::Chatbot
       sendMessageToClient(chat_session.id,welcome_message,clients)
     elsif @item[:object] == 'Chat Message'
       message = Chat::Message.find_by(id: @item[:object_id])
-      created_by = message[:created_by_id]
       chat_session = Chat::Session.find_by(id: message[:chat_session_id])
-      reply = ChatbotService.answerTo(message.content)
-      sendMessageToClient(message[:chat_session_id],reply)
+      if !chat_session.stop_chatbot
+        created_by = message[:created_by_id]
+        reply = ChatbotService.answerTo(message.content)
+        if(reply['@handoff'])
+          performHandoff(chat_session)
+        else
+          sendMessageToClient(message[:chat_session_id],reply)
+        end
+      end
     end
   end
 
   private
+
+  def performHandoff(chat_session)
+    chat_session.stop_chatbot = true
+    chat_session.save!
+    chatbot = User.find_by(login: 'chatbot@zammad.org')
+    params = {
+      session: {
+        "id" => chatbot.id
+      },
+      payload: {
+        "session_id" => chat_session.id,
+        "chat_id" => chat_session.chat_id
+        },
+      clients: @item[:clients]
+      }
+    event = Sessions::Event::ChatbotTransfer.new(params)
+    result = event.run
+    event.destroy
+  end
 
   def sendMessageToClient(session_id,text,clients=nil)
     chatbot = User.find_by(login: 'chatbot@zammad.org')
