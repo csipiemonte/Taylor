@@ -9,6 +9,7 @@ class App.ChannelChat extends App.ControllerSubContent
     'click .js-swatch': 'usePaletteColor'
     'click .js-toggle-chat': 'toggleChat'
     'change .js-chatSetting input': 'toggleChatSetting'
+    'change .js-chatBotSetting input': 'toggleChatBotSetting'
     'click .js-eyedropper': 'pickColor'
 
   elements:
@@ -25,6 +26,7 @@ class App.ChannelChat extends App.ControllerSubContent
     '.js-palette': 'palette'
     '.js-color': 'colorField'
     '.js-chatSetting input': 'chatSetting'
+    '.js-chatBotSetting input': 'chatBotSetting'
     '.js-eyedropper': 'eyedropper'
 
   apiOptions: [
@@ -147,7 +149,9 @@ class App.ChannelChat extends App.ControllerSubContent
       apiOptions: @apiOptions
       previewUrl: @previewUrl
       chatSetting: @Config.get('chat')
+      chatBotSetting: @Config.get('chatbot_status')
     )
+
 
     new Topics(
       el: @$('.js-topics')
@@ -321,6 +325,10 @@ class App.ChannelChat extends App.ControllerSubContent
   toggleChatSetting: =>
     value = @chatSetting.prop('checked')
     App.Setting.set('chat', value)
+
+  toggleChatBotSetting: =>
+    value = @chatBotSetting.prop('checked')
+    App.Setting.set('chatbot_status', value)
 
   updateParams: =>
     quote = (value) ->

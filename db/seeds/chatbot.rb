@@ -18,7 +18,7 @@ Setting.create_if_not_exists(
       {
         display: '',
         null:    true,
-        name:    'chat',
+        name:    'chatbot_status',
         tag:     'boolean',
         options: {
           true  => 'yes',
@@ -37,7 +37,7 @@ Setting.create_if_not_exists(
 
 User.create_if_not_exists(
   login:           'chatbot@zammad.org',
-  firstname:       'Chat',
+  firstname:       'Zimmy',
   lastname:        'Bot',
   email:           'chatbot@zammad.org',
   password:        'turingtestpassed666',
