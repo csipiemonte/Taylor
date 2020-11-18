@@ -62,12 +62,10 @@ class KnowledgeBasesCustomController < ApplicationController
  def is_published(category)
   return false if !category['id']
   answers = KnowledgeBase::Answer.where("category_id = #{category['id']} AND published_at IS NOT NULL")
-  return true if answers > 0
+  return true if answers.length > 0
   children = KnowledgeBase::Category.where(parent_id: category['id']).as_json
   children.each do |child|
-    if is_published child
-      return true
-    end
+    return true if is_published child
   end
   false
  end
