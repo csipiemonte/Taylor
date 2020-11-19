@@ -44,6 +44,7 @@ return is sent as message back to peer
         object:     'Chat Message',
         type:       'chat_message',
         user_id:  user_id,
+        chat_session: chat_session,
         object_id: chat_message.id,
         cli_id: @client_id,
         clients: @clients,

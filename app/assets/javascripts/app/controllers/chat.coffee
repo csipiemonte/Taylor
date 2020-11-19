@@ -441,7 +441,12 @@ class ChatWindow extends App.Controller
     @bind('chat_session_message', (data) =>
       return if data.session_id isnt @session.session_id
       return if data.self_written
-      @receiveMessage(data.message.content)
+      if data.agent_written
+        @addMessage(data.message.content,'agent')
+        $('.js-send').attr("disabled", true);
+        $('.js-customerChatInput').attr("disabled", true);
+      else
+        @receiveMessage(data.message.content)
     )
     @bind('chat_session_notice', (data) =>
       return if data.session_id isnt @session.session_id
