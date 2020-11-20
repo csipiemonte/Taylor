@@ -19,16 +19,14 @@ class KnowledgeBasesCustomController < ApplicationController
  end
 
  def show_category
-  category = KnowledgeBase::Category.find_by(id: params[:category_id]).as_json(except: [:created_at, :updated_at])
-  if is_to_show(category,params[:status])
+  category = KnowledgeBase::Category.find_by("knowledge_base_id = #{params[:knowledge_base_id]} AND id = #{params[:category_id]}").as_json(except: [:created_at, :updated_at])
+  if category && is_to_show(category,params[:status])
     name = KnowledgeBase::Category::Translation.find_by(category_id: params[:category_id])[:title]
     category[:name] = name
-    answers = KnowledgeBase::Answer.where(category_id: params[:category_id]).as_json(only: [:id, :title])
+    answers = KnowledgeBase::Answer.where("category_id = #{params[:category_id]} AND published_at IS NOT NULL").as_json(only: [:id, :title])
     answers.each do |answer|
       answer_title = KnowledgeBase::Answer::Translation.find_by(answer_id: answer['id'])
-      answer_content = KnowledgeBase::Answer::Translation::Content.find_by(id: answer_title[:content_id])
       answer[:title] = answer_title[:title]
-      answer[:body] = answer_content[:body]
     end
     children = KnowledgeBase::Category.where(parent_id: params[:category_id]).as_json(except: [:created_at, :updated_at])
     filtered_children = []
@@ -44,6 +42,38 @@ class KnowledgeBasesCustomController < ApplicationController
     }
   else
     render json:{}
+  end
+ end
+
+ def index_answers
+  category = KnowledgeBase::Category.find_by("knowledge_base_id = #{params[:knowledge_base_id]} AND id = #{params[:category_id]}").as_json()
+  if category && is_to_show(category,params[:status])
+    answers = KnowledgeBase::Answer.where("category_id = #{params[:category_id]} AND published_at IS NOT NULL").as_json(only: [:id, :title])
+    answers.each do |answer|
+      answer_title = KnowledgeBase::Answer::Translation.find_by(answer_id: answer['id'])
+      answer_content = KnowledgeBase::Answer::Translation::Content.find_by(id: answer_title[:content_id])
+      answer[:title] = answer_title[:title]
+      answer[:body] = answer_content[:body]
+    end
+    render json: answers
+  else
+    render json: {}
+  end
+ end
+
+ def show_answer
+  category = KnowledgeBase::Category.find_by("knowledge_base_id = #{params[:knowledge_base_id]} AND id = #{params[:category_id]}").as_json()
+  if category && is_to_show(category,params[:status])
+    answer = KnowledgeBase::Answer.find_by("id = #{params[:answer_id]} AND category_id = #{params[:category_id]} AND published_at IS NOT NULL").as_json(only: [:id, :title])
+    if answer
+      answer_title = KnowledgeBase::Answer::Translation.find_by(answer_id: answer['id'])
+      answer_content = KnowledgeBase::Answer::Translation::Content.find_by(id: answer_title[:content_id])
+      answer[:title] = answer_title[:title]
+      answer[:body] = answer_content[:body]
+    end
+    render json: answer
+  else
+    render json: nil
   end
  end
 
