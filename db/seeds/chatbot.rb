@@ -45,3 +45,34 @@ User.create_if_not_exists(
   roles:           [ Role.find_by(name: 'Agent') ]
 )
 
+Role.create_if_not_exists(
+  id:                5,
+  name:              'Supervisor',
+  note:              'To manage business activity.',
+  default_at_signup: false,
+  preferences:       {
+    not: ['Customer'],
+  },
+  updated_by_id:     1,
+  created_by_id:     1
+)
+
+Permission.create_if_not_exists(
+  name:        'chat.supervisor',
+  note:        'Access to %s',
+  preferences: {
+    translations: ['Chat'],
+    not:          ['chat.customer'],
+  },
+)
+
+supervisor = Role.find_by(name: 'Supervisor')
+supervisor.permission_grant('user_preferences')
+supervisor.permission_grant('ticket.agent')
+supervisor.permission_grant('chat.agent')
+supervisor.permission_grant('cti.agent')
+supervisor.permission_grant('knowledge_base.reader')
+supervisor.permission_grant('chat.supervisor')
+admin = Role.find_by(name: 'Admin')
+admin.permission_grant('chat.supervisor')
+
