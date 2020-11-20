@@ -1,0 +1,1 @@
+class App.ChatMonitor extends App.Controller
