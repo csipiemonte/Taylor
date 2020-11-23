@@ -1,7 +1,7 @@
 <div class="chat main">
   <div class="page-header">
       <div class="page-header-title">
-        <h1><%- @T('Customer Chat') %></h1>
+        <h1><%- @T('Chat Monitor') %></h1>
       </div>
       <div class="page-header-center js-header"></div>
       <div class="page-header-meta">

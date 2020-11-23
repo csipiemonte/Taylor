@@ -1,5 +1,8 @@
 class App.ChatMonitor extends App.Controller
 
+  elements:
+    '.chat-workspace':            'workspace'
+
   constructor: ->
     super
     @render()
@@ -10,6 +13,25 @@ class App.ChatMonitor extends App.Controller
       return
 
     @html App.view('chat_monitor/index')()
+
+    list = App.ChatSession.all()
+    console.log(list)
+
+    @workspace.html('')
+    @table = new App.ControllerTable(
+      tableId:  "chat-monitoring-table"
+      el:       @workspace
+      overview: @columns || [ 'id', 'user_id', 'state', 'stop_chatbot', 'created_at' ]
+      model:    App.ChatSession
+      objects:  list
+      #bindRow:
+      #  events:
+      #    'click': openTicket
+      callbackHeader: null
+      callbackAttributes: null
+      radio: true
+    )
+    @table.show()
 
 class ChatMonitorRouter extends App.ControllerPermanent
   requiredPermission: 'chat.supervisor'
