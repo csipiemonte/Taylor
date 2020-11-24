@@ -38,7 +38,8 @@ class KnowledgeBasesCustomController < ApplicationController
     render json:{
       category: category,
       answers: answers,
-      children: filtered_children
+      children: filtered_children,
+      breadcrumb: get_path(category)
     }
   else
     render json:{}
@@ -46,7 +47,7 @@ class KnowledgeBasesCustomController < ApplicationController
  end
 
  def index_answers
-  category = KnowledgeBase::Category.find_by("knowledge_base_id = #{params[:knowledge_base_id]} AND id = #{params[:category_id]}").as_json()
+  category = KnowledgeBase::Category.find_by("knowledge_base_id = #{params[:knowledge_base_id]} AND id = #{params[:category_id]}").as_json
   if category && is_to_show(category,params[:status])
     answers = KnowledgeBase::Answer.where("category_id = #{params[:category_id]} AND published_at IS NOT NULL").as_json(only: [:id, :title])
     answers.each do |answer|
@@ -62,7 +63,7 @@ class KnowledgeBasesCustomController < ApplicationController
  end
 
  def show_answer
-  category = KnowledgeBase::Category.find_by("knowledge_base_id = #{params[:knowledge_base_id]} AND id = #{params[:category_id]}").as_json()
+  category = KnowledgeBase::Category.find_by("knowledge_base_id = #{params[:knowledge_base_id]} AND id = #{params[:category_id]}").as_json
   if category && is_to_show(category,params[:status])
     answer = KnowledgeBase::Answer.find_by("id = #{params[:answer_id]} AND category_id = #{params[:category_id]} AND published_at IS NOT NULL").as_json(only: [:id, :title])
     if answer
@@ -83,6 +84,20 @@ class KnowledgeBasesCustomController < ApplicationController
  end
 
  private
+
+ def get_path(category)
+  id = category['id']
+  name = KnowledgeBase::Category::Translation.find_by(category_id: id)[:title]
+  icon = category['category_icon']
+  node = {:id => id, :name => name, :category_icon => icon}
+  if category['parent_id'].nil?
+   return [node]
+  end
+  parent = KnowledgeBase::Category.find_by("knowledge_base_id = #{category['knowledge_base_id']} AND id = #{category['parent_id']}").as_json
+  parent_node = get_path(parent)
+  parent_node << node
+  return parent_node
+ end
 
  def is_to_show(category, show_setting)
   show_setting = show_setting ? show_setting : 'published'
