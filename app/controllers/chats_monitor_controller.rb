@@ -4,14 +4,17 @@ class ChatMonitorController < ApplicationController
   prepend_before_action { authentication_check && authorize! }
 
   def index
-    chat_sessions = Chat::Session.all
-    chat_sessions.each do |chat_session|
-      agent = Users.find_by(id: chat_session['user_id'])
-      chat_session[:agent] = agent[:firstname]+' '+agent[:lastname]
-      messages = Chat::Messages.where(chat_session_id:chat_session['id'])
-      chat_session[:messages] = messages
+    sessions = []
+    Chat::Session.all.each do |chat_session|
+      session = chat_session.as_json
+      Rails.logger.info "CHAT SESSION: #{session}"
+      agent = User.find_by(id: chat_session['user_id'])
+      session[:agent] = agent[:firstname]+' '+agent[:lastname]
+      messages = Chat::Message.where(chat_session_id:chat_session['id'])
+      session[:messages] = messages
+      sessions << session
     end
-    render json: chat_sessions
+    render json: sessions
   end
 
 end
