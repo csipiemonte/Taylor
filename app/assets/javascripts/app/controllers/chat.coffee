@@ -326,11 +326,9 @@ class App.CustomerChat extends App.Controller
       removeCallback: @removeChat
       messageCallback: @updateNavMenu
     )
-
     @workspace.append chat.el
     chat.render()
     @chatWindows[session.session_id] = chat
-
     if @windowCount() is 1
       chat.focus()
 
@@ -510,7 +508,6 @@ class ChatWindow extends App.Controller
       session: @session
       chats: App.Chat.all()
     )
-
     @el.one('transitionend', @onTransitionend)
     @scrollHolder.scroll(@detectScrolledtoBottom)
 
@@ -954,3 +951,93 @@ App.Config.set('customer_chat', CustomerChatRouter, 'Routes')
 App.Config.set('customer_chat/session/:session_id', CustomerChatRouter, 'Routes')
 App.Config.set('CustomerChat', { controller: 'CustomerChat', permission: ['chat.agent'] }, 'permanentTask')
 App.Config.set('CustomerChat', { prio: 1200, parent: '', name: 'Customer Chat', target: '#customer_chat', key: 'CustomerChat', shown: false, permission: ['chat.agent'], class: 'chat' }, 'NavBar')
+
+class App.ChatMonitor extends App.Controller
+
+  elements:
+    '#chat-table-wrapper':            'table_wrapper'
+
+  sessions = []
+
+  constructor: ->
+    super
+    @render()
+
+  addChat = (session) ->
+    chat = new ChatWindow(
+      session: session
+      removeCallback: @removeChat
+      messageCallback: @updateNavMenu
+    )
+    $('#monitored-chats').append(chat.el)
+    chat.render()
+
+  rowClick = (id, e) ->
+    e.preventDefault()
+    addChat(sessions[id])
+
+  render: ->
+    if !@permissionCheck('chat.supervisor')
+      @renderScreenUnauthorized(objectName: 'Chat')
+      return
+    chatController = new App.CustomerChat()
+    @html App.view('chat_monitor/index')()
+    @ajax(
+      id:    'chat_session_index'
+      type:  'GET'
+      url:   "#{App.Config.get('api_path')}/chat_monitor"
+      processData: true
+      context: @
+      success: (data, status, xhr) =>
+        sessions = data
+        @table_wrapper.html('')
+        @table = new App.ControllerTable(
+          tableId:  "chat-monitoring-table"
+          el:       @table_wrapper
+          overview: [  'state', 'id', 'user_id', 'stop_chatbot', 'created_at' ]
+          attribute_list: [
+            { name: 'id',             display: 'Session Id',          }
+            { name: 'chat_id',        display: 'Chat Id'      }
+            { name: 'user_id',        display: 'Agent Id'         }
+            { name: 'stop_chatbot',   display: 'Handoff'         }
+            { name: 'name',           display: 'Name',        tag: 'input',    type: 'text', limit: 100, 'null': false }
+            { name: 'state',          display: 'State',       readonly: 1 }
+            { name: 'created_by_id',  display: 'Created by',  relation: 'User', readonly: 1 }
+            { name: 'created_at',     display: 'Created',     tag: 'datetime', readonly: 1 }
+            { name: 'updated_by_id',  display: 'Updated by',  relation: 'User', readonly: 1 }
+            { name: 'updated_at',     display: 'Updated',     tag: 'datetime', readonly: 1 }
+          ]
+          objects:  data
+          callbackHeader: null
+          callbackAttributes: null
+          radio: true
+          bindRow:
+            events:
+              'click':      rowClick
+        )
+        @table.show()
+    )
+
+
+class ChatMonitorRouter extends App.ControllerPermanent
+  requiredPermission: 'chat.supervisor'
+  constructor: (params) ->
+    super
+
+    # cleanup params
+    clean_params =
+      session_id: params.session_id
+
+    App.TaskManager.execute(
+      key:        'ChatMonitor'
+      controller: 'ChatMonitor'
+      params:     clean_params
+      show:       true
+      persistent: true
+    )
+
+App.Config.set('chat_monitor', ChatMonitorRouter, 'Routes')
+App.Config.set('chat_monitor/session/:session_id', ChatMonitorRouter, 'Routes')
+App.Config.set('ChatMonitor', { controller: 'ChatMonitor', permission: ['chat.supervisor'] }, 'permanentTask')
+App.Config.set('ChatMonitor', { prio: 1300, parent: '', name: 'Chat Monitor', target: '#chat_monitor', key: 'ChatMonitor', shown: true, permission: ['chat.supervisor'], class: 'eye' }, 'NavBar')
+

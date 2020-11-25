@@ -3,10 +3,6 @@
 class ChatSessionsController < ApplicationController
   prepend_before_action { authentication_check && authorize! }
 
-  def index
-    render json: Chat::Session.all
-  end
-
   def show
     model_show_render(Chat::Session, params)
   end

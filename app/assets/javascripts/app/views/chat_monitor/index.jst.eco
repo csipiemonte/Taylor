@@ -8,5 +8,6 @@
         <div class="btn btn--action js-settings"><%- @T('Settings') %></div>
       </div>
     </div>
-  <div class="chat-workspace"></div>
+  <div id="monitored-chats" class="chat-workspace"></div>
+  <div id="chat-table-wrapper"></div>
 </div>
