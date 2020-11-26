@@ -26,22 +26,22 @@ class Transaction::Chatbot
       result = event.run
       event.destroy
 
-      sendToActiveAgents({
-       event: 'chat_session_start',
-       data:  {
-         session: @item[:chat_session],
-       },
-      })
+      #sendToSupervisors({
+       #event: 'chat_session_start',
+       #data:  {
+         #session: @item[:chat_session],
+       #},
+      #})
 
       welcome_text = ChatbotService.answerTo("/get_started")
       welcome_message = createMessageFromText(welcome_text,@chatbot.id,@item[:chat_session].id)
       sendMessageToClient(welcome_message,@item[:chat_session].id,clients)
-      sendToActiveAgents(welcome_message)
+      sendToSupervisors(welcome_message)
 
     elsif @item[:object] == 'Chat Message'
       message = Chat::Message.find_by(id: @item[:object_id])
       broadcast_message = createMessageFromText(message.content,message[:created_by_id],message[:chat_session_id],false)
-      sendToActiveAgents(broadcast_message)
+      sendToSupervisors(broadcast_message)
       chat_session = Chat::Session.find_by(id: message[:chat_session_id])
       if !chat_session.stop_chatbot
         created_by = message[:created_by_id]
@@ -51,7 +51,7 @@ class Transaction::Chatbot
         else
           reply_message = createMessageFromText(reply_text,@chatbot.id,message[:chat_session_id])
           sendMessageToClient(reply_message,message[:chat_session_id])
-          #sendToActiveAgents(reply_message)
+          sendToSupervisors(reply_message)
         end
       end
     end
@@ -104,17 +104,18 @@ class Transaction::Chatbot
     Chat.broadcast_agent_state_update(chat_ids)
   end
 
-  def sendToActiveAgents(event)
-    active_agents = []
+  def sendToSupervisors(event)
+    supervisors = []
     Chat::Agent.where('active = ? OR updated_at > ?', true, Time.zone.now - 8.hours).each do |item|
       user = User.lookup(id: item.updated_by_id)
       next if !user
+      next if !user.role? "supervisor"
       #next if !Chat.agent_active_chat?(user, [@item[:chat_session]])
-      active_agents << user
+      supervisors << user
     end
     #Rails.logger.info "agents are: #{active_agents}"
-    active_agents.each do |agent|
-      Sessions.send_to(agent.id, event)
+    supervisors.each do |supervisor|
+      Sessions.send_to(supervisor.id, event)
     end
   end
 

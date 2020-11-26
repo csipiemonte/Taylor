@@ -415,6 +415,7 @@ class ChatWindow extends App.Controller
   constructor: ->
     super
 
+
     @showTimeEveryXMinutes = 2
     @lastTimestamp
     @lastAddedType
@@ -974,7 +975,7 @@ class App.ChatMonitor extends App.Controller
 
   rowClick = (id, e) ->
     e.preventDefault()
-    addChat(sessions[id])
+    addChat(sessions[id-1])
 
   render: ->
     if !@permissionCheck('chat.supervisor')
