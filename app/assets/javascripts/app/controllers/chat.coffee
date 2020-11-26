@@ -688,7 +688,12 @@ class ChatWindow extends App.Controller
     isFocused = @input.is(':focus')
 
     @removeWritingLoader()
-    @addMessage(message, 'customer', !isFocused)
+
+    if message.created_by_id
+      @addMessage(message.content, 'agent', !isFocused)
+    else
+      @addMessage(message.content, 'customer', !isFocused)
+
 
     if !isFocused
       @addUnreadMessages()
