@@ -7,14 +7,18 @@ class ChatMonitorController < ApplicationController
     sessions = []
     Chat::Session.all.each do |chat_session|
       session = chat_session.as_json
-      Rails.logger.info "CHAT SESSION: #{session}"
-      agent = User.find_by(id: chat_session['user_id'])
-      session[:agent] = agent[:firstname]+' '+agent[:lastname]
-      messages = Chat::Message.where(chat_session_id:chat_session['id'])
-      session[:messages] = messages
-      sessions << session
+      if chat_session['user_id']
+        agent = User.find_by(id: chat_session['user_id'])
+        session[:agent] = agent[:firstname]+' '+agent[:lastname]
+        sessions << session
+      end
     end
     render json: sessions
+  end
+
+  def show
+    messages = Chat::Message.where(chat_session_id:params[:chat_session_id])
+    render json: messages
   end
 
 end

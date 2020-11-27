@@ -48,7 +48,7 @@ User.create_if_not_exists(
 Role.create_if_not_exists(
   id:                5,
   name:              'Supervisor',
-  note:              'To manage business activity.',
+  note:              'To monitor the activity of the business.',
   default_at_signup: false,
   preferences:       {
     not: ['Customer'],

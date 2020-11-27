@@ -2,7 +2,7 @@ class Sessions::Event::ChatbotTransfer < Sessions::Event::ChatBase
 
   def run
     return super if super
-    return if !permission_check('chat.agent', 'chat')
+    return if ! (permission_check('chat.agent', 'chat') || permission_check('chat.supervisor', 'chat'))
 
     # find chat session
     chat_session = Chat::Session.find_by(id: @payload['session_id'])

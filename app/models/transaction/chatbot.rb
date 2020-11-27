@@ -7,8 +7,8 @@ class Transaction::Chatbot
   end
 
   def perform
-    return if Setting.get('import_mode') || !Setting.get('chatbot_status')
     if @item[:object] == 'Chat Session'
+      return if Setting.get('import_mode') || !Setting.get('chatbot_status')
       client_id = -333 #FAKE CLIENT_ID FOR CHATBOT
       clients = [@item[:client_id],client_id]
       params = {
@@ -26,12 +26,12 @@ class Transaction::Chatbot
       result = event.run
       event.destroy
 
-      #sendToSupervisors({
-       #event: 'chat_session_start',
-       #data:  {
-         #session: @item[:chat_session],
-       #},
-      #})
+      sendToSupervisors({
+       event: 'chat_session_start',
+       data:  {
+         session: @item[:chat_session],
+       },
+      })
 
       welcome_text = ChatbotService.answerTo("/get_started")
       welcome_message = createMessageFromText(welcome_text,@chatbot.id,@item[:chat_session].id)
@@ -40,8 +40,8 @@ class Transaction::Chatbot
 
     elsif @item[:object] == 'Chat Message'
       message = Chat::Message.find_by(id: @item[:object_id])
-      broadcast_message = createMessageFromText(message.content,message[:created_by_id],message[:chat_session_id],false)
-      sendToSupervisors(broadcast_message)
+      sendToSupervisors(@item[:event])
+      return if Setting.get('import_mode') || !Setting.get('chatbot_status')
       chat_session = Chat::Session.find_by(id: message[:chat_session_id])
       if !chat_session.stop_chatbot
         created_by = message[:created_by_id]
@@ -77,7 +77,7 @@ class Transaction::Chatbot
     event.destroy
   end
 
-  def createMessageFromText(text,user_id,session_id,agent_written=true)
+  def createMessageFromText(text,user_id,session_id)
     chat_message = Chat::Message.create(
       chat_session_id: session_id,
       content:         text,
@@ -87,8 +87,7 @@ class Transaction::Chatbot
       event: 'chat_session_message',
       data:  {
         session_id: @item[:chat_session].session_id,
-        message:    chat_message,
-        agent_written: agent_written
+        message:    chat_message
       },
     }
   end
@@ -106,14 +105,14 @@ class Transaction::Chatbot
 
   def sendToSupervisors(event)
     supervisors = []
-    Chat::Agent.where('active = ? OR updated_at > ?', true, Time.zone.now - 8.hours).each do |item|
+    Chat::Agent.all.each do |item|
       user = User.lookup(id: item.updated_by_id)
       next if !user
       next if !user.role? "supervisor"
       #next if !Chat.agent_active_chat?(user, [@item[:chat_session]])
       supervisors << user
     end
-    #Rails.logger.info "agents are: #{active_agents}"
+    Rails.logger.info "supervisors: #{supervisors}"
     supervisors.each do |supervisor|
       Sessions.send_to(supervisor.id, event)
     end

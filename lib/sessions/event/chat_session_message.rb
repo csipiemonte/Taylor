@@ -48,6 +48,7 @@ return is sent as message back to peer
         object_id: chat_message.id,
         cli_id: @client_id,
         clients: @clients,
+        event: message
     )
 
     # send to participents

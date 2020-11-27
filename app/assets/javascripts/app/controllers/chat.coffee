@@ -398,6 +398,8 @@ class ChatWindow extends App.Controller
     'submit .js-metaForm':           'sendMetaForm'
 
   elements:
+    '.chat-window':                  'root'
+    '.js-send':                      'send'
     '.js-customerChatInput':         'input'
     '.js-status':                    'status'
     '.js-close':                     'closeButton'
@@ -438,14 +440,14 @@ class ChatWindow extends App.Controller
       @showWritingLoader()
     )
     @bind('chat_session_message', (data) =>
+      console.log('here')
+      console.log(@monitored)
       return if data.session_id isnt @session.session_id
-      return if data.self_written
-      if data.agent_written
-        @addMessage(data.message.content,'agent')
-        $('.js-send').attr("disabled", true);
-        $('.js-customerChatInput').attr("disabled", true);
-      else
-        @receiveMessage(data.message.content)
+      console.log('there')
+      return if !@monitored && data.self_written
+      console.log('about to receive')
+      console.log(data.message)
+      @receiveMessage(data.message)
     )
     @bind('chat_session_notice', (data) =>
       return if data.session_id isnt @session.session_id
@@ -468,6 +470,14 @@ class ChatWindow extends App.Controller
       return if data.session_id isnt @session.session_id
       @focus()
     )
+
+  adjustForMonitoring: =>
+    @disconnectButton.addClass 'is-hidden'
+    @closeButton.removeClass 'is-hidden'
+    @root.css('min-height','400px')
+    @send.attr("disabled", true);
+    @input.attr("disabled", true);
+
 
   onLayoutChange: =>
     @scrollToBottom()
@@ -686,9 +696,7 @@ class ChatWindow extends App.Controller
 
   receiveMessage: (message) =>
     isFocused = @input.is(':focus')
-
     @removeWritingLoader()
-
     if message.created_by_id
       @addMessage(message.content, 'agent', !isFocused)
     else
@@ -701,7 +709,7 @@ class ChatWindow extends App.Controller
       @sounds.message.play()
       @notifyDesktop(
         title: @name
-        body: App.Utils.html2text(message)
+        body: App.Utils.html2text(message.content)
         url: '#customer_chat'
         callback: =>
           App.Event.trigger('chat_focus', { session_id: @session.session_id })
@@ -968,26 +976,20 @@ class App.ChatMonitor extends App.Controller
   constructor: ->
     super
     @render()
-
-  addChat = (session) ->
-    chat = new ChatWindow(
-      session: session
-      removeCallback: @removeChat
-      messageCallback: @updateNavMenu
+    @bind('chat_session_start', (data) =>
+      if data.session
+        @showTable()
     )
-    $('#monitored-chats').append(chat.el)
-    chat.render()
 
-  rowClick = (id, e) ->
-    e.preventDefault()
-    addChat(sessions[id-1])
 
   render: ->
     if !@permissionCheck('chat.supervisor')
       @renderScreenUnauthorized(objectName: 'Chat')
       return
-    chatController = new App.CustomerChat()
     @html App.view('chat_monitor/index')()
+    @showTable()
+
+  showTable: ->
     @ajax(
       id:    'chat_session_index'
       type:  'GET'
@@ -1019,10 +1021,41 @@ class App.ChatMonitor extends App.Controller
           radio: true
           bindRow:
             events:
-              'click':      rowClick
+              'click':      @rowClick
         )
         @table.show()
+        $('[data-column-key="created_at"]').click().click();
+
+  )
+
+  addChat = (session) ->
+    chat = new ChatWindow(
+      session: session
+      removeCallback: @removeChat
+      messageCallback: @updateNavMenu
+      monitored: true
     )
+    $('#monitored-chats').append(chat.el)
+    chat.render()
+    return chat
+
+  rowClick: (id, e) ->
+    e.preventDefault()
+    for session in sessions
+      if session["id"] == id
+        $.ajax(
+          id:    'chat_session_messages'
+          type:  'GET'
+          url:   "#{App.Config.get('api_path')}/chat_monitor/messages/"+id
+          processData: true
+          success: (data, status, xhr) =>
+            session["messages"] = data
+            chat = addChat(session)
+            chat.adjustForMonitoring()
+            $('.chat-window').css('min-height','400px')
+        )
+        break
+
 
 
 class ChatMonitorRouter extends App.ControllerPermanent
