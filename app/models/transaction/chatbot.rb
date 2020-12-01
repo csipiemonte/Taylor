@@ -8,6 +8,7 @@ class Transaction::Chatbot
 
   def perform
     if @item[:object] == 'Chat Session'
+      bindSupervisors(@item[:chat_session])
       return if Setting.get('import_mode') || !Setting.get('chatbot_status')
       client_id = -333 #FAKE CLIENT_ID FOR CHATBOT
       clients = [@item[:client_id],client_id]
@@ -25,23 +26,14 @@ class Transaction::Chatbot
       event = Sessions::Event::ChatSessionStart.new(params)
       result = event.run
       event.destroy
-
-      sendToSupervisors({
-       event: 'chat_session_start',
-       data:  {
-         session: @item[:chat_session],
-       },
-      })
-
       welcome_text = ChatbotService.answerTo("/get_started")
       welcome_message = createMessageFromText(welcome_text,@chatbot.id,@item[:chat_session].id)
       sendMessageToClient(welcome_message,@item[:chat_session].id,clients)
-      sendToSupervisors(welcome_message)
 
     elsif @item[:object] == 'Chat Message'
-      message = Chat::Message.find_by(id: @item[:object_id])
-      sendToSupervisors(@item[:event])
+      bindSupervisors(@item[:chat_session])
       return if Setting.get('import_mode') || !Setting.get('chatbot_status')
+      message = Chat::Message.find_by(id: @item[:object_id])
       chat_session = Chat::Session.find_by(id: message[:chat_session_id])
       if !chat_session.stop_chatbot
         created_by = message[:created_by_id]
@@ -51,7 +43,6 @@ class Transaction::Chatbot
         else
           reply_message = createMessageFromText(reply_text,@chatbot.id,message[:chat_session_id])
           sendMessageToClient(reply_message,message[:chat_session_id])
-          sendToSupervisors(reply_message)
         end
       end
     end
@@ -103,19 +94,34 @@ class Transaction::Chatbot
     Chat.broadcast_agent_state_update(chat_ids)
   end
 
-  def sendToSupervisors(event)
+  def bindSupervisors(chat_session)
     supervisors = []
-    Chat::Agent.all.each do |item|
+    Chat::Agent.where('active = ? OR updated_at > ?', true, Time.zone.now - 8.hours).each do |item|
       user = User.lookup(id: item.updated_by_id)
       next if !user
-      next if !user.role? "supervisor"
-      #next if !Chat.agent_active_chat?(user, [@item[:chat_session]])
+      next if !user.role? "Supervisor"
       supervisors << user
     end
     Rails.logger.info "supervisors: #{supervisors}"
+    client_list = Sessions.sessions
+    Rails.logger.info "client_list: #{client_list}"
     supervisors.each do |supervisor|
-      Sessions.send_to(supervisor.id, event)
+      client_list.each do |client_id|
+        Rails.logger.info "superv: #{supervisor}"
+        Rails.logger.info "client: #{client_id}"
+        session = Sessions.get(client_id)
+        next if !session
+        next if !session[:user]
+        next if !session[:user]['id']
+        next if session[:user]['id'].to_i != supervisor.id.to_i
+        next if chat_session.preferences[:participants].include? client_id
+        Rails.logger.info "adding recipient: #{client_id}"
+        Rails.logger.info "participents before: #{chat_session.preferences[:participants]}"
+        chat_session.preferences[:participants] = chat_session.add_recipient(client_id)
+        Rails.logger.info "participents after: #{chat_session.preferences[:participants]}"
+      end
     end
+    chat_session.save
   end
 
 end

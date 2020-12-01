@@ -7,7 +7,7 @@ class ChatMonitorController < ApplicationController
     sessions = []
     Chat::Session.all.each do |chat_session|
       session = chat_session.as_json
-      if chat_session['user_id']
+      if session && chat_session['user_id']
         agent = User.find_by(id: chat_session['user_id'])
         session[:agent] = agent[:firstname]+' '+agent[:lastname]
         sessions << session
