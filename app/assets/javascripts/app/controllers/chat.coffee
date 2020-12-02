@@ -972,18 +972,8 @@ class App.ChatMonitor extends App.Controller
     super
     @render()
     @bind('chat_session_start', (data) =>
-      if data.session
-        @showTable()
+      @showTable()
     )
-    protocol = 'ws://'
-    scriptProtocol = window.location.protocol.replace(':', '')
-    sp_offset = scriptProtocol.length+3
-    host = window.location.href.substr(sp_offset, window.location.href.split('/', 3).join('/').length-sp_offset)
-    if scriptProtocol is 'https'
-      protocol = 'wss://'
-    host_address = "#{ protocol }#{ host }/ws"
-    io = new Io({host:host_address})
-    io.connect()
 
   render: ->
     if !@permissionCheck('chat.supervisor')
@@ -1000,6 +990,7 @@ class App.ChatMonitor extends App.Controller
       processData: true
       context: @
       success: (data, status, xhr) =>
+        console.log('success')
         sessions = data
         @table_wrapper.html('')
         @table = new App.ControllerTable(
@@ -1018,6 +1009,8 @@ class App.ChatMonitor extends App.Controller
             { name: 'updated_by_id',  display: 'Updated by',  relation: 'User', readonly: 1 }
             { name: 'updated_at',     display: 'Updated',     tag: 'datetime', readonly: 1 }
           ]
+          orderBy: 'created_at'
+          orderDirection: 'DESC'
           objects:  data
           callbackHeader: null
           callbackAttributes: null
@@ -1026,9 +1019,6 @@ class App.ChatMonitor extends App.Controller
             events:
               'click':      @rowClick
         )
-        @table.show()
-        $('[data-column-key="created_at"]').click().click();
-
   )
 
   addChat = (session) ->
@@ -1082,67 +1072,3 @@ App.Config.set('chat_monitor', ChatMonitorRouter, 'Routes')
 App.Config.set('chat_monitor/session/:session_id', ChatMonitorRouter, 'Routes')
 App.Config.set('ChatMonitor', { controller: 'ChatMonitor', permission: ['chat.supervisor'] }, 'permanentTask')
 App.Config.set('ChatMonitor', { prio: 1300, parent: '', name: 'Chat Monitor', target: '#chat_monitor', key: 'ChatMonitor', shown: true, permission: ['chat.supervisor'], class: 'eye' }, 'NavBar')
-
-
-class Io
-  logPrefix: 'io'
-  constructor: (options) ->
-    @options = options
-
-  set: (params) =>
-    for key, value of params
-      @options[key] = value
-
-  connect: =>
-
-    @ws = new window.WebSocket("#{@options.host}")
-    @ws.onopen = (e) =>
-      @ping()
-
-    @ws.onmessage = (e) =>
-      pipes = JSON.parse(e.data)
-
-      for pipe in pipes
-        if pipe.event is 'pong'
-          @ping()
-
-    @ws.onclose = (e) =>
-
-      if @pingDelayId
-        clearTimeout(@pingDelayId)
-      if @manualClose
-
-        @manualClose = false
-        if @options.onClose
-          @options.onClose(e)
-      else
-
-        if @options.onError
-          @options.onError('Connection lost...')
-
-    @ws.onerror = (e) =>
-
-      if @options.onError
-        @options.onError(e)
-
-  close: =>
-
-    @manualClose = true
-    @ws.close()
-
-  reconnect: =>
-
-    @close()
-    @connect()
-
-  send: (event, data = {}) =>
-
-    msg = JSON.stringify
-      event: event
-      data: data
-    @ws.send msg
-
-  ping: =>
-    localPing = =>
-      @send('ping')
-    @pingDelayId = setTimeout(localPing, 29000)
