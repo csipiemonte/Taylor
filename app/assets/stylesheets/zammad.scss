@@ -9973,8 +9973,12 @@ output {
   background: #ffeaa9
 }
 
+.chat-message--sneak-peek{
+  opacity: 0.8
+}
+
 .js-chat-whisper-btn{
-  margin: auto 5px;
+  margin: auto 10px auto 0px;
   width: 2em;
   height: 2em;
   padding: 0.25em;

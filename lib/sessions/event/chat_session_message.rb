@@ -27,11 +27,24 @@ return is sent as message back to peer
     if @session
       user_id = @session['id']
     end
-    chat_message = Chat::Message.create(
-      chat_session_id: chat_session.id,
-      content:         @payload['data']['content'],
-      created_by_id:   user_id,
-    )
+
+    sneak_peak = @payload['data']['sneak_peak']
+    chat_message = {}
+
+    if sneak_peak
+      chat_message = {
+        chat_session_id: chat_session.id,
+        content:         @payload['data']['content'],
+        created_by_id:   user_id,
+        sneak_peak: true
+      }
+    else
+      chat_message = Chat::Message.create(
+        chat_session_id: chat_session.id,
+        content:         @payload['data']['content'],
+        created_by_id:   user_id,
+      )
+    end
 
     whispering = @payload['data']['whispering']
     customers = []
@@ -40,11 +53,8 @@ return is sent as message back to peer
       chat_message.whispering = true
       chat_message.save!
       customers = findCustomers chat_session.preferences[:participants]
-      Rails.logger.info "customers: #{customers}"
-      Rails.logger.info "participants: #{chat_session.preferences[:participants]}"
       chat_session.preferences[:participants] -= customers
       chat_session.save
-      Rails.logger.info "after save: #{chat_session.preferences[:participants]}"
     end
 
     message = {
@@ -55,7 +65,7 @@ return is sent as message back to peer
       },
     }
 
-    if !@payload['data']['whispering']
+    if !(whispering || sneak_peak)
       Transaction::BackgroundJob.run(
           object:     'Chat Message',
           type:       'chat_message',
@@ -73,7 +83,6 @@ return is sent as message back to peer
 
     chat_session.preferences[:participants] += customers
     chat_session.save
-    Rails.logger.info "after second save: #{chat_session.preferences[:participants]}"
 
     # send chat_session_init to agent
     {

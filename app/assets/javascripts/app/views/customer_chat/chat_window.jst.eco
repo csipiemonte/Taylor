@@ -52,9 +52,9 @@
   </div>
 </div>
 <div class="chat-controls">
+  <svg class="icon icon-eye js-chat-whisper-btn"><use xlink:href="assets/images/icons.svg#icon-eye"></use></svg>
   <div class="chat-input">
     <div class="form-control form-control--small form-control--multiline js-customerChatInput" contenteditable="true"></div>
   </div>
   <div class="btn btn--primary btn--slim btn--small js-send"><%- @T('Send') %></div>
-  <svg class="icon icon-eye js-chat-whisper-btn"><use xlink:href="assets/images/icons.svg#icon-eye"></use></svg>
 </div>

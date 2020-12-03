@@ -709,6 +709,8 @@ class ChatWindow extends App.Controller
       @addMessage(message.content, 'whispered', !isFocused)
     else if message.created_by_id
       @addMessage(message.content, 'agent', !isFocused)
+    else if message.sneak_peak
+      @sneakPeakMessage(message.content)
     else
       @addMessage(message.content, 'customer', !isFocused)
 
@@ -738,7 +740,7 @@ class ChatWindow extends App.Controller
       @messageCallback(@session.session_id)
     @unreadMessagesCounter = 0
 
-  addMessage: (message, sender, isNew, useMaybeAddTimestamp = true) =>
+  addMessage: (message, sender, isNew, useMaybeAddTimestamp = true, sneakPeakMessage = false) =>
     @maybeAddTimestamp() if useMaybeAddTimestamp
 
     @lastAddedType = sender
@@ -748,9 +750,18 @@ class ChatWindow extends App.Controller
       sender: sender
       isNew: isNew
       timestamp: Date.now()
+      sneakPeakMessage: sneakPeakMessage
     )
 
     @scrollToBottom(showHint: true)
+
+  sneakPeakMessage: (message) =>
+    placeholder = @$('.chat-message--sneak-peek')
+    if placeholder.length > 0
+      placeholder.text(message)
+    else
+      @addMessage(message, 'customer',false,false,true)
+
 
   showWritingLoader: =>
     if !@isTyping
