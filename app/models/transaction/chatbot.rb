@@ -99,26 +99,19 @@ class Transaction::Chatbot
     Chat::Agent.where('active = ? OR updated_at > ?', true, Time.zone.now - 8.hours).each do |item|
       user = User.lookup(id: item.updated_by_id)
       next if !user
-      next if !user.role? "Supervisor"
+      next if !(user.role?("Supervisor") || user.role?("Admin"))
       supervisors << user
     end
-    Rails.logger.info "supervisors: #{supervisors}"
     client_list = Sessions.sessions
-    Rails.logger.info "client_list: #{client_list}"
     supervisors.each do |supervisor|
       client_list.each do |client_id|
-        Rails.logger.info "superv: #{supervisor}"
-        Rails.logger.info "client: #{client_id}"
         session = Sessions.get(client_id)
         next if !session
         next if !session[:user]
         next if !session[:user]['id']
         next if session[:user]['id'].to_i != supervisor.id.to_i
         next if chat_session.preferences[:participants].include? client_id
-        Rails.logger.info "adding recipient: #{client_id}"
-        Rails.logger.info "participents before: #{chat_session.preferences[:participants]}"
         chat_session.preferences[:participants] = chat_session.add_recipient(client_id)
-        Rails.logger.info "participents after: #{chat_session.preferences[:participants]}"
       end
     end
     chat_session.save

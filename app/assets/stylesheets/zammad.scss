@@ -9966,6 +9966,28 @@ output {
   align-self: flex-end;
 }
 
+.chat-message--whispered {
+  @include bidi-style(margin-left, auto, margin-right, 0);
+  align-self: flex-end;
+  margin-left: auto;
+  background: #ffeaa9
+}
+
+.js-chat-whisper-btn{
+  margin: auto 5px;
+  width: 2em;
+  height: 2em;
+  padding: 0.25em;
+  background-color: #f1f2f3;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.js-chat-whisper-btn.enabled{
+  background-color: #ffeaa9;
+  border: 1px solid #ffc100;
+}
+
 .chat-message--agent + .chat-message--customer,
 .chat-message--customer + .chat-message--agent {
   margin-top: 10px;

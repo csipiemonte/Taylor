@@ -395,6 +395,7 @@ class ChatWindow extends App.Controller
     'click .js-info':                'toggleMeta'
     'click .js-createTicket':        'ticketCreate'
     'click .js-transferChat':        'transfer'
+    'click .js-chat-whisper-btn':    'whisperingBtnClick'
     'submit .js-metaForm':           'sendMetaForm'
 
   elements:
@@ -410,13 +411,13 @@ class ChatWindow extends App.Controller
     '.js-scrollHolder':              'scrollHolder'
     '.js-scrollHint':                'scrollHint'
     '.js-metaForm':                  'metaForm'
+    '.js-chat-whisper-btn':          'whisperBtn'
 
   sounds:
     message: new Audio('assets/sounds/chat_message.mp3')
 
   constructor: ->
     super
-
 
     @showTimeEveryXMinutes = 2
     @lastTimestamp
@@ -426,6 +427,8 @@ class ChatWindow extends App.Controller
     @resetUnreadMessages()
     @scrolledToBottom = true
     @scrollSnapTolerance = 10 # pixels
+
+    @whispering = false
 
     @chat = App.Chat.find(@session.chat_id)
     @name = @chat.displayName()
@@ -469,10 +472,13 @@ class ChatWindow extends App.Controller
   adjustForMonitoring: =>
     @disconnectButton.addClass 'is-hidden'
     @closeButton.removeClass 'is-hidden'
-    @root.css('min-height','400px')
-    @send.attr("disabled", true);
-    @input.attr("disabled", true);
 
+  whisperingBtnClick: =>
+    @whispering = !@whispering
+    if @whisperBtn.hasClass('enabled')
+      @whisperBtn.removeClass('enabled')
+    else
+      @whisperBtn.addClass('enabled')
 
   onLayoutChange: =>
     @scrollToBottom()
@@ -534,7 +540,9 @@ class ChatWindow extends App.Controller
 
       if @session.messages
         for message in @session.messages
-          if message.created_by_id
+          if message.whispering
+            @addMessage(message.content, 'whispered', false, activeChat)
+          else if message.created_by_id
             @addMessage(message.content, 'agent', false, activeChat)
           else
             @addMessage(message.content, 'customer', false, activeChat)
@@ -670,6 +678,7 @@ class ChatWindow extends App.Controller
         data:
           content: content
           session_id: @session.session_id
+          whispering: @whispering
       )
     if !delay
       send()
@@ -683,7 +692,11 @@ class ChatWindow extends App.Controller
       @delay(send, delay)
 
     @hideMeta()
-    @addMessage(content, 'agent')
+    if !@monitored
+      if @whispering
+        @addMessage(content, 'whispered')
+      else
+        @addMessage(content, 'agent')
     @input.html('')
 
   updateModified: (state) =>
@@ -692,7 +705,9 @@ class ChatWindow extends App.Controller
   receiveMessage: (message) =>
     isFocused = @input.is(':focus')
     @removeWritingLoader()
-    if message.created_by_id
+    if message.whispering
+      @addMessage(message.content, 'whispered', !isFocused)
+    else if message.created_by_id
       @addMessage(message.content, 'agent', !isFocused)
     else
       @addMessage(message.content, 'customer', !isFocused)
@@ -990,7 +1005,6 @@ class App.ChatMonitor extends App.Controller
       processData: true
       context: @
       success: (data, status, xhr) =>
-        console.log('success')
         sessions = data
         @table_wrapper.html('')
         @table = new App.ControllerTable(
