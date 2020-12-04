@@ -715,7 +715,7 @@ class ChatWindow extends App.Controller
       @addMessage(message.content, 'customer', !isFocused)
 
 
-    if !isFocused
+    if !isFocused && !message.sneak_peak
       @addUnreadMessages()
       @updateModified(true)
       @sounds.message.play()
@@ -741,6 +741,9 @@ class ChatWindow extends App.Controller
     @unreadMessagesCounter = 0
 
   addMessage: (message, sender, isNew, useMaybeAddTimestamp = true, sneakPeakMessage = false) =>
+    placeholder = @$('.chat-message--sneak-peek')
+    if placeholder.length > 0 && sender == "customer"
+      placeholder.remove()
     @maybeAddTimestamp() if useMaybeAddTimestamp
 
     @lastAddedType = sender

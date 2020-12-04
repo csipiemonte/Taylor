@@ -28,6 +28,7 @@ return is sent as message back to peer
       user_id = @session['id']
     end
 
+    Rails.logger.info "message incoming"
     sneak_peak = @payload['data']['sneak_peak']
     chat_message = {}
 

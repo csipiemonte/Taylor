@@ -959,7 +959,19 @@ do($ = window.jQuery, window) ->
       # on keyboard hidden
 
     onTyping: ->
-      console.log("typing")
+      message = @input.html()
+      messageElement = @view('message')
+        message: message
+        from: 'customer'
+        unreadClass: ''
+
+      # send sneak-message event
+      @send 'chat_session_message',
+        content: message
+        id: @_messageCount
+        session_id: @sessionId
+        sneak_peak: true
+
       # send typing start event only every 1.5 seconds
       return if @isTyping && @isTyping > new Date(new Date().getTime() - 1500)
       @isTyping = new Date()
@@ -967,23 +979,7 @@ do($ = window.jQuery, window) ->
         session_id: @sessionId
       @inactiveTimeout.start()
 
-      console.log("after if")
-      message = @input.html()
 
-      messageElement = @view('message')
-        message: message
-        from: 'customer'
-        unreadClass: ''
-
-      console.log("message created")
-      # send message event
-      @send 'chat_session_message',
-        content: message
-        id: @_messageCount
-        session_id: @sessionId
-        sneak_peak: true
-
-      console.log("sent")
 
 
     onSubmit: (event) =>
