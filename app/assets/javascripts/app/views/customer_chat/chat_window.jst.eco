@@ -50,9 +50,13 @@
     <% end %>
     <form class="js-metaForm" style="max-width: 200px; width: 100%;"></form>
   </div>
+  <div class="js-chat-agent-panel">
+    <svg class="icon icon-eye js-chat-btn peek-customer"><use xlink:href="assets/images/icons.svg#icon-eye"></use></svg>
+    <svg class="icon icon-eye js-chat-btn peek-agent"><use xlink:href="assets/images/icons.svg#icon-eye"></use></svg>
+  </div>
 </div>
 <div class="chat-controls">
-  <svg class="icon icon-eye js-chat-whisper-btn"><use xlink:href="assets/images/icons.svg#icon-eye"></use></svg>
+  <svg class="icon icon-message js-chat-btn whisper"><use xlink:href="assets/images/icons.svg#icon-message"></use></svg>
   <div class="chat-input">
     <div class="form-control form-control--small form-control--multiline js-customerChatInput" contenteditable="true"></div>
   </div>

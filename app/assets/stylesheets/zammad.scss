@@ -9975,8 +9975,20 @@ output {
   border: 1px dashed;
 }
 
-.js-chat-whisper-btn{
-  margin: auto 10px auto 0px;
+.js-chat-agent-panel{
+  position: absolute;
+  right: 0;
+  opacity: 0.5;
+  margin: 5px
+}
+
+.js-chat-agent-panel:hover{
+  opacity: 1
+}
+
+.js-chat-btn{
+  fill: #545454;
+  margin: 1px;
   min-height: 30px;
   min-width: 30px;
   max-height: 50vh;
@@ -9987,9 +9999,24 @@ output {
   border: 1px solid #e6e6e6;
 }
 
-.js-chat-whisper-btn.enabled{
+.js-chat-btn.peek-customer{
+}
+
+.js-chat-btn.peek-agent{
+  display: none;
+  fill: red;
+}
+
+.js-chat-btn.whisper{
+  margin: auto 10px auto 0px;
+}
+
+.js-chat-btn.enabled{
   background-color: #ffeaa9;
   border: 1px solid #ffc100;
+}
+
+.js-chat-btn.peek-agent.enabled{
 }
 
 .chat-message--agent + .chat-message--customer,

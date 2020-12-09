@@ -385,19 +385,21 @@ class ChatWindow extends App.Controller
   className: 'chat-window'
 
   events:
-    'keydown .js-customerChatInput': 'onKeydown'
-    'keyup .js-customerChatInput':   'onKeyup'
-    'focus .js-customerChatInput':   'clearUnread'
-    'click':                         'clearUnread'
-    'click .js-send':                'sendMessage'
-    'click .js-close':               'close'
-    'click .js-disconnect':          'disconnect'
-    'click .js-scrollHint':          'onScrollHintClick'
-    'click .js-info':                'toggleMeta'
-    'click .js-createTicket':        'ticketCreate'
-    'click .js-transferChat':        'transfer'
-    'click .js-chat-whisper-btn':    'whisperingBtnClick'
-    'submit .js-metaForm':           'sendMetaForm'
+    'keydown .js-customerChatInput':        'onKeydown'
+    'keyup .js-customerChatInput':          'onKeyup'
+    'focus .js-customerChatInput':          'clearUnread'
+    'click':                                'clearUnread'
+    'click .js-send':                       'sendMessage'
+    'click .js-close':                      'close'
+    'click .js-disconnect':                 'disconnect'
+    'click .js-scrollHint':                 'onScrollHintClick'
+    'click .js-info':                       'toggleMeta'
+    'click .js-createTicket':               'ticketCreate'
+    'click .js-transferChat':               'transfer'
+    'click .js-chat-btn.whisper':           'whisperingBtnClick'
+    'click .js-chat-btn.peek-customer':     'peekCustomerBtnClick'
+    'click .js-chat-btn.peek-agent':        'peekAgentBtnClick'
+    'submit .js-metaForm':                  'sendMetaForm'
 
   elements:
     '.chat-window':                  'root'
@@ -412,7 +414,9 @@ class ChatWindow extends App.Controller
     '.js-scrollHolder':              'scrollHolder'
     '.js-scrollHint':                'scrollHint'
     '.js-metaForm':                  'metaForm'
-    '.js-chat-whisper-btn':          'whisperBtn'
+    '.js-chat-btn.whisper':          'whisperBtn'
+    '.js-chat-btn.peek-customer':    'peekCustomerBtn'
+    '.js-chat-btn.peek-agent':       'peekAgentBtn'
 
   sounds:
     message: new Audio('assets/sounds/chat_message.mp3')
@@ -430,6 +434,8 @@ class ChatWindow extends App.Controller
     @scrollSnapTolerance = 10 # pixels
 
     @whispering = false
+    @peekingCustomer = false
+    @peekingAgent = false
 
     @chat = App.Chat.find(@session.chat_id)
     @name = @chat.displayName()
@@ -473,6 +479,7 @@ class ChatWindow extends App.Controller
   adjustForMonitoring: =>
     @disconnectButton.addClass 'is-hidden'
     @closeButton.removeClass 'is-hidden'
+    @peekAgentBtn.css('display','unset')
 
   whisperingBtnClick: =>
     @whispering = !@whispering
@@ -480,6 +487,20 @@ class ChatWindow extends App.Controller
       @whisperBtn.removeClass('enabled')
     else
       @whisperBtn.addClass('enabled')
+
+  peekCustomerBtnClick: =>
+    @peekingCustomer = !@peekingCustomer
+    if @peekCustomerBtn.hasClass('enabled')
+      @peekCustomerBtn.removeClass('enabled')
+    else
+      @peekCustomerBtn.addClass('enabled')
+
+  peekAgentBtnClick: =>
+    @peekingAgent = !@peekingAgent
+    if @peekAgentBtn.hasClass('enabled')
+      @peekAgentBtn.removeClass('enabled')
+    else
+      @peekAgentBtn.addClass('enabled')
 
   onLayoutChange: =>
     @scrollToBottom()
@@ -746,6 +767,9 @@ class ChatWindow extends App.Controller
     @unreadMessagesCounter = 0
 
   addMessage: (message, sender, isNew, useMaybeAddTimestamp = true, whispering = false, sneakPeekMessage = false) =>
+    if sneakPeekMessage
+      return if sender == "customer" && !@peekingCustomer
+      return if sender == "agent" && !@peekingAgent
     placeholder = @$('.chat-message--'+sender+'.chat-message--sneak-peek')
     if placeholder.length > 0 && sneakPeekMessage
       placeholder.text(message)
