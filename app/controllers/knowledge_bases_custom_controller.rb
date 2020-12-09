@@ -1,5 +1,4 @@
 class KnowledgeBasesCustomController < ApplicationController
- prepend_before_action { authentication_check && authorize! }
 
  def active
   render json: KnowledgeBase.where(active: true).as_json(only: [:id])
