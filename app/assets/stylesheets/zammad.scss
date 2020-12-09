@@ -9966,10 +9966,7 @@ output {
   align-self: flex-end;
 }
 
-.chat-message--whispered {
-  @include bidi-style(margin-left, auto, margin-right, 0);
-  align-self: flex-end;
-  margin-left: auto;
+.chat-message--agent.chat-message--whispered {
   background: #ffeaa9;
 }
 
@@ -9980,12 +9977,14 @@ output {
 
 .js-chat-whisper-btn{
   margin: auto 10px auto 0px;
-  width: 2em;
-  height: 2em;
+  min-height: 30px;
+  min-width: 30px;
+  max-height: 50vh;
   padding: 0.25em;
-  background-color: #f1f2f3;
-  border-radius: 50%;
   cursor: pointer;
+  background-color: white;
+  border-radius: 3px;
+  border: 1px solid #e6e6e6;
 }
 
 .js-chat-whisper-btn.enabled{

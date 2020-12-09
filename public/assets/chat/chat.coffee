@@ -970,7 +970,7 @@ do($ = window.jQuery, window) ->
         content: message
         id: @_messageCount
         session_id: @sessionId
-        sneak_peak: true
+        sneak_peek: true
 
       # send typing start event only every 1.5 seconds
       return if @isTyping && @isTyping > new Date(new Date().getTime() - 1500)

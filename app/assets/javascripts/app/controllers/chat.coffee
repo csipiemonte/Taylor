@@ -386,6 +386,7 @@ class ChatWindow extends App.Controller
 
   events:
     'keydown .js-customerChatInput': 'onKeydown'
+    'keyup .js-customerChatInput':   'onKeyup'
     'focus .js-customerChatInput':   'clearUnread'
     'click':                         'clearUnread'
     'click .js-send':                'sendMessage'
@@ -540,12 +541,10 @@ class ChatWindow extends App.Controller
 
       if @session.messages
         for message in @session.messages
-          if message.whispering
-            @addMessage(message.content, 'whispered', false, activeChat)
-          else if message.created_by_id
-            @addMessage(message.content, 'agent', false, activeChat)
+          if message.created_by_id
+            @addMessage(message.content, 'agent', false, activeChat, message.whispering)
           else
-            @addMessage(message.content, 'customer', false, activeChat)
+            @addMessage(message.content, 'customer', false, activeChat, message.whispering)
 
       # send init reply
       if activeChat && _.isEmpty(@session.messages)
@@ -626,14 +625,28 @@ class ChatWindow extends App.Controller
     @updateModified(false)
     @resetUnreadMessages()
 
+  onKeyup: (event) =>
+    TABKEY = 9
+    ENTERKEY = 13
+
+    if event.keyCode isnt TABKEY && event.keyCode isnt ENTERKEY
+      if !@monitored
+        App.WebSocket.send(
+          event:'chat_session_message'
+          data:
+            content: @input.html()
+            session_id: @session.session_id
+            whispering: @whispering
+            sneak_peek: true
+        )
+
   onKeydown: (event) =>
     TABKEY = 9
     ENTERKEY = 13
 
     if event.keyCode isnt TABKEY && event.keyCode isnt ENTERKEY
-
       # send typing start event only every 1.4 seconds
-      return if @isAgentTyping && @isAgentTyping > new Date(new Date().getTime() - 1400)
+      return if !@whispering && @isAgentTyping && @isAgentTyping > new Date(new Date().getTime() - 1400)
       @isAgentTyping = new Date()
       App.WebSocket.send(
         event:'chat_session_typing'
@@ -693,10 +706,7 @@ class ChatWindow extends App.Controller
 
     @hideMeta()
     if !@monitored
-      if @whispering
-        @addMessage(content, 'whispered')
-      else
-        @addMessage(content, 'agent')
+      @addMessage(content, 'agent', false, true, @whispering)
     @input.html('')
 
   updateModified: (state) =>
@@ -705,17 +715,12 @@ class ChatWindow extends App.Controller
   receiveMessage: (message) =>
     isFocused = @input.is(':focus')
     @removeWritingLoader()
-    if message.whispering
-      @addMessage(message.content, 'whispered', !isFocused)
-    else if message.created_by_id
-      @addMessage(message.content, 'agent', !isFocused)
-    else if message.sneak_peak
-      @sneakPeakMessage(message.content)
+    if message.created_by_id
+      @addMessage(message.content, 'agent', !isFocused, true, message.whispering, message.sneak_peek)
     else
-      @addMessage(message.content, 'customer', !isFocused)
+      @addMessage(message.content, 'customer', !isFocused, true, message.whispering, message.sneak_peek)
 
-
-    if !isFocused && !message.sneak_peak
+    if !isFocused && !message.sneak_peek
       @addUnreadMessages()
       @updateModified(true)
       @sounds.message.play()
@@ -740,30 +745,29 @@ class ChatWindow extends App.Controller
       @messageCallback(@session.session_id)
     @unreadMessagesCounter = 0
 
-  addMessage: (message, sender, isNew, useMaybeAddTimestamp = true, sneakPeakMessage = false) =>
-    placeholder = @$('.chat-message--sneak-peek')
-    if placeholder.length > 0 && sender == "customer"
-      placeholder.remove()
-    @maybeAddTimestamp() if useMaybeAddTimestamp
-
-    @lastAddedType = sender
-
-    @body.append App.view('customer_chat/chat_message')(
-      message: message
-      sender: sender
-      isNew: isNew
-      timestamp: Date.now()
-      sneakPeakMessage: sneakPeakMessage
-    )
-
-    @scrollToBottom(showHint: true)
-
-  sneakPeakMessage: (message) =>
-    placeholder = @$('.chat-message--sneak-peek')
-    if placeholder.length > 0
+  addMessage: (message, sender, isNew, useMaybeAddTimestamp = true, whispering = false, sneakPeekMessage = false) =>
+    placeholder = @$('.chat-message--'+sender+'.chat-message--sneak-peek')
+    if placeholder.length > 0 && sneakPeekMessage
       placeholder.text(message)
+      if !whispering && placeholder.hasClass('chat-message--whispered')
+        placeholder.removeClass('chat-message--whispered')
+      else if whispering && !placeholder.hasClass('chat-message--whispered')
+        placeholder.addClass('chat-message--whispered')
+
     else
-      @addMessage(message, 'customer',false,false,true)
+      placeholder.remove()
+      @maybeAddTimestamp() if useMaybeAddTimestamp
+      @lastAddedType = sender
+      @body.append App.view('customer_chat/chat_message')(
+        message: message
+        sender: sender
+        isNew: isNew
+        timestamp: Date.now()
+        whispered: whispering
+        sneakPeekMessage: sneakPeekMessage
+      )
+      @scrollToBottom(showHint: true)
+
 
 
   showWritingLoader: =>

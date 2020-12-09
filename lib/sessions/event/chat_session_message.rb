@@ -28,31 +28,31 @@ return is sent as message back to peer
       user_id = @session['id']
     end
 
-    Rails.logger.info "message incoming"
-    sneak_peak = @payload['data']['sneak_peak']
+    sneak_peek = @payload['data']['sneak_peek'] ? @payload['data']['sneak_peek'] : false
+    whispering = @payload['data']['whispering'] ? @payload['data']['whispering'] : false
     chat_message = {}
 
-    if sneak_peak
+    if sneak_peek
       chat_message = {
         chat_session_id: chat_session.id,
         content:         @payload['data']['content'],
         created_by_id:   user_id,
-        sneak_peak: true
+        sneak_peek: true,
+        whispering: whispering
       }
     else
       chat_message = Chat::Message.create(
         chat_session_id: chat_session.id,
         content:         @payload['data']['content'],
         created_by_id:   user_id,
+        whispering: whispering
       )
     end
 
-    whispering = @payload['data']['whispering']
+
     customers = []
 
-    if whispering
-      chat_message.whispering = true
-      chat_message.save!
+    if whispering || sneak_peek
       customers = findCustomers chat_session.preferences[:participants]
       chat_session.preferences[:participants] -= customers
       chat_session.save
@@ -66,7 +66,7 @@ return is sent as message back to peer
       },
     }
 
-    if !(whispering || sneak_peak)
+    if !(whispering || sneak_peek)
       Transaction::BackgroundJob.run(
           object:     'Chat Message',
           type:       'chat_message',
