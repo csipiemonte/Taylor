@@ -403,7 +403,7 @@ class ChatWindow extends App.Controller
     'submit .js-metaForm':                  'sendMetaForm'
 
   elements:
-    '.chat-window':                  'root'
+    '.js-chat-header':               'header'
     '.js-send':                      'send'
     '.js-customerChatInput':         'input'
     '.js-status':                    'status'
@@ -486,6 +486,7 @@ class ChatWindow extends App.Controller
     )
 
   adjustForMonitoring: =>
+    @header.parent().css('min-height','400px')
     @disconnectButton.addClass 'is-hidden'
     @closeButton.removeClass 'is-hidden'
     @peekAgentBtn.removeClass 'hidden'
@@ -629,11 +630,21 @@ class ChatWindow extends App.Controller
         @raiseFlagBtn.addClass('enabled')
       if @raiseFlagBtn.hasClass('hidden')
         @raiseFlagBtn.removeClass('hidden')
+      if @monitored
+        if !@header.parent().hasClass('bounce')
+          @header.parent().addClass('bounce')
+        console.log(@row)
+        if !@row.hasClass('.flashing-row')
+          @row.addClass(('.flashing-row'))
     else
       if @raiseFlagBtn.hasClass('enabled')
         @raiseFlagBtn.removeClass('enabled')
       if @monitored
+        if @header.parent().hasClass('bounce')
+          @header.parent().removeClass('bounce')
         @raiseFlagBtn.addClass('hidden')
+        if @row.hasClass('.flashing-row')
+          @row.removeClass(('.flashing-row'))
 
   focus: =>
     @input.focus()
@@ -1125,12 +1136,13 @@ class App.ChatMonitor extends App.Controller
         )
   )
 
-  addChat = (session) ->
+  addChat = (session, row) ->
     chat = new ChatWindow(
       session: session
       removeCallback: @removeChat
       messageCallback: @updateNavMenu
       monitored: true
+      row: row
     )
     $('#monitored-chats').append(chat.el)
     chat.render()
@@ -1138,6 +1150,7 @@ class App.ChatMonitor extends App.Controller
 
   rowClick: (id, e) ->
     e.preventDefault()
+    row = $(e.target)
     for session in sessions
       if session["id"] == id
         $.ajax(
@@ -1147,9 +1160,8 @@ class App.ChatMonitor extends App.Controller
           processData: true
           success: (data, status, xhr) =>
             session["messages"] = data
-            chat = addChat(session)
+            chat = addChat(session, row)
             chat.adjustForMonitoring()
-            $('.chat-window').css('min-height','400px')
         )
         break
 

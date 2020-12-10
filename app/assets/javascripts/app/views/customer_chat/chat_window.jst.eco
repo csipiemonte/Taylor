@@ -1,4 +1,4 @@
-<div class="chat-header">
+<div class="chat-header js-chat-header">
   <div class="chat-status js-status" data-status="online">
     <div class="chat-status-holder">
       <%- @Icon('status') %>
