@@ -9976,15 +9976,15 @@ output {
 }
 
 .js-chat-agent-panel{
-  position: fixed;
+  background: #f9fafb;
+  border-left: 1px solid #e8e8e8;
+  border-right: 1px solid #e8e8e8;
   right: 10px;
-  opacity: 0.85;
-  margin: 5px;
+  display: flex;
+  justify-content: flex-end;
+  padding: 5px;
 }
 
-.js-chat-agent-panel:hover{
-  opacity: 1
-}
 
 .js-chat-btn{
   fill: #545454;
