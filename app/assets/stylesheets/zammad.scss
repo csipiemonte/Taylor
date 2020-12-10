@@ -10003,7 +10003,6 @@ output {
 }
 
 .js-chat-btn.peek-agent{
-  display: none;
   fill: red;
 }
 
@@ -10016,7 +10015,9 @@ output {
   border: 1px solid #ffc100;
 }
 
-.js-chat-btn.peek-agent.enabled{
+.js-chat-btn.raise-flag.enabled{
+  background-color: #ff000060;
+  border: 1px solid red;
 }
 
 .chat-message--agent + .chat-message--customer,

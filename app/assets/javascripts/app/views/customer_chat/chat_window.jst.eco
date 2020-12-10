@@ -52,7 +52,8 @@
   </div>
   <div class="js-chat-agent-panel">
     <svg class="icon icon-eye js-chat-btn peek-customer"><use xlink:href="assets/images/icons.svg#icon-eye"></use></svg>
-    <svg class="icon icon-eye js-chat-btn peek-agent"><use xlink:href="assets/images/icons.svg#icon-eye"></use></svg>
+    <svg class="icon icon-eye js-chat-btn peek-agent hidden"><use xlink:href="assets/images/icons.svg#icon-eye"></use></svg>
+    <svg class="icon icon-eye js-chat-btn raise-flag"><use xlink:href="assets/images/icons.svg#icon-important"></use></svg>
   </div>
 </div>
 <div class="chat-controls">

@@ -399,6 +399,7 @@ class ChatWindow extends App.Controller
     'click .js-chat-btn.whisper':           'whisperingBtnClick'
     'click .js-chat-btn.peek-customer':     'peekCustomerBtnClick'
     'click .js-chat-btn.peek-agent':        'peekAgentBtnClick'
+    'click .js-chat-btn.raise-flag':        'raiseFlagBtnClick'
     'submit .js-metaForm':                  'sendMetaForm'
 
   elements:
@@ -417,6 +418,7 @@ class ChatWindow extends App.Controller
     '.js-chat-btn.whisper':          'whisperBtn'
     '.js-chat-btn.peek-customer':    'peekCustomerBtn'
     '.js-chat-btn.peek-agent':       'peekAgentBtn'
+    '.js-chat-btn.raise-flag':       'raiseFlagBtn'
 
   sounds:
     message: new Audio('assets/sounds/chat_message.mp3')
@@ -433,6 +435,7 @@ class ChatWindow extends App.Controller
     @scrolledToBottom = true
     @scrollSnapTolerance = 10 # pixels
 
+    @flag_raised = @session.flag_raised
     @whispering = false
     @peekingCustomer = false
     @peekingAgent = false
@@ -476,10 +479,17 @@ class ChatWindow extends App.Controller
       @focus()
     )
 
+    @bind('chat_session_flag',(data) =>
+      return if data.session_id isnt @session.session_id
+      @flag_raised = data.state
+      @displayFlag()
+    )
+
   adjustForMonitoring: =>
     @disconnectButton.addClass 'is-hidden'
     @closeButton.removeClass 'is-hidden'
-    @peekAgentBtn.css('display','unset')
+    @peekAgentBtn.removeClass 'hidden'
+
 
   whisperingBtnClick: =>
     @whispering = !@whispering
@@ -501,6 +511,15 @@ class ChatWindow extends App.Controller
       @peekAgentBtn.removeClass('enabled')
     else
       @peekAgentBtn.addClass('enabled')
+
+  raiseFlagBtnClick: =>
+    @flagRaised = !@flagRaised
+    if @raiseFlagBtn.hasClass('enabled')
+      @raiseFlagBtn.removeClass('enabled')
+      App.WebSocket.send(event:'chat_session_flag', session_id: @session.session_id, state:false)
+    else if !@monitored
+      App.WebSocket.send(event:'chat_session_flag', session_id: @session.session_id, state:true)
+      @raiseFlagBtn.addClass('enabled')
 
   onLayoutChange: =>
     @scrollToBottom()
@@ -601,6 +620,20 @@ class ChatWindow extends App.Controller
         className: ''
       params: @session
     )
+
+    @displayFlag()
+
+  displayFlag: =>
+    if @flag_raised
+      if !@raiseFlagBtn.hasClass('enabled')
+        @raiseFlagBtn.addClass('enabled')
+      if @raiseFlagBtn.hasClass('hidden')
+        @raiseFlagBtn.removeClass('hidden')
+    else
+      if @raiseFlagBtn.hasClass('enabled')
+        @raiseFlagBtn.removeClass('enabled')
+      if @monitored
+        @raiseFlagBtn.addClass('hidden')
 
   focus: =>
     @input.focus()
@@ -1024,6 +1057,9 @@ class App.ChatMonitor extends App.Controller
     '#chat-table-wrapper':            'table_wrapper'
 
   sessions = []
+  flag_counter = 0
+  sounds:
+    flag_new: new Audio('assets/sounds/chat_new.mp3')
 
   constructor: ->
     super
@@ -1032,10 +1068,21 @@ class App.ChatMonitor extends App.Controller
       @showTable()
     )
 
+    @bind('chat_session_flag',(data) =>
+      if data.state
+        flag_counter++
+        @sounds.flag_new.play()
+      else
+        flag_counter = Math.max(0,flag_counter-1)
+      @updateNavMenu()
+      @showTable()
+    )
+
   render: ->
     if !@permissionCheck('chat.supervisor')
       @renderScreenUnauthorized(objectName: 'Chat')
       return
+    @navupdate '#chat_monitor'
     @html App.view('chat_monitor/index')()
     @showTable()
 
@@ -1052,11 +1099,12 @@ class App.ChatMonitor extends App.Controller
         @table = new App.ControllerTable(
           tableId:  "chat-monitoring-table"
           el:       @table_wrapper
-          overview: [  'state', 'id', 'user_id', 'stop_chatbot', 'created_at' ]
+          overview: [  'state', 'id', 'user_id', 'stop_chatbot', 'flag_raised', 'created_at' ]
           attribute_list: [
             { name: 'id',             display: 'Session Id',          }
             { name: 'chat_id',        display: 'Chat Id'      }
             { name: 'user_id',        display: 'Agent Id'         }
+            { name: 'flag_raised',    display: 'Requiring help'         }
             { name: 'stop_chatbot',   display: 'Handoff'         }
             { name: 'name',           display: 'Name',        tag: 'input',    type: 'text', limit: 100, 'null': false }
             { name: 'state',          display: 'State',       readonly: 1 }
@@ -1105,6 +1153,8 @@ class App.ChatMonitor extends App.Controller
         )
         break
 
+  counter: =>
+    return flag_counter
 
 
 class ChatMonitorRouter extends App.ControllerPermanent

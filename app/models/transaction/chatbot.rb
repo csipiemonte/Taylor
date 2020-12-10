@@ -8,7 +8,7 @@ class Transaction::Chatbot
 
   def perform
     if @item[:object] == 'Chat Session'
-      bindSupervisors(@item[:chat_session])
+      ChatbotService.bindSupervisors(@item[:chat_session])
       return if Setting.get('import_mode') || !Setting.get('chatbot_status')
       client_id = -333 #FAKE CLIENT_ID FOR CHATBOT
       clients = [@item[:client_id],client_id]
@@ -31,7 +31,7 @@ class Transaction::Chatbot
       sendMessageToClient(welcome_message,@item[:chat_session].id,clients)
 
     elsif @item[:object] == 'Chat Message'
-      bindSupervisors(@item[:chat_session])
+      ChatbotService.bindSupervisors(@item[:chat_session])
       return if Setting.get('import_mode') || !Setting.get('chatbot_status')
       message = Chat::Message.find_by(id: @item[:object_id])
       chat_session = Chat::Session.find_by(id: message[:chat_session_id])
@@ -92,29 +92,6 @@ class Transaction::Chatbot
     chat_ids = Chat.agent_active_chat_ids(@chatbot)
     # broadcast new state to agents
     Chat.broadcast_agent_state_update(chat_ids)
-  end
-
-  def bindSupervisors(chat_session)
-    supervisors = []
-    Chat::Agent.where('active = ? OR updated_at > ?', true, Time.zone.now - 8.hours).each do |item|
-      user = User.lookup(id: item.updated_by_id)
-      next if !user
-      next if !(user.role?("Supervisor") || user.role?("Admin"))
-      supervisors << user
-    end
-    client_list = Sessions.sessions
-    supervisors.each do |supervisor|
-      client_list.each do |client_id|
-        session = Sessions.get(client_id)
-        next if !session
-        next if !session[:user]
-        next if !session[:user]['id']
-        next if session[:user]['id'].to_i != supervisor.id.to_i
-        next if chat_session.preferences[:participants].include? client_id
-        chat_session.preferences[:participants] = chat_session.add_recipient(client_id)
-      end
-    end
-    chat_session.save
   end
 
 end
