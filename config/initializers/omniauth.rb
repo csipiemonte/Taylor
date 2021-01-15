@@ -57,6 +57,9 @@ Rails.application.config.middleware.use OmniAuth::Builder do
 
   # SAML database connect
   provider :saml_database
+
+  # CSI SPID (Shibboleth) custom omniauth Strategy
+  provider :csimodshib
 end
 
 # This fixes issue #1642 and is required for setups in which Zammad is used
