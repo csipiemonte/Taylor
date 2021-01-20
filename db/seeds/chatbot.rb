@@ -36,6 +36,7 @@ Setting.create_if_not_exists(
 )
 
 User.create_if_not_exists(
+  id:              3,
   login:           'chatbot@zammad.org',
   firstname:       'Zimmy',
   lastname:        'Bot',
