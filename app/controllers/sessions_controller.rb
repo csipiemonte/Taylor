@@ -88,12 +88,14 @@ class SessionsController < ApplicationController
     authorization.user.update_last_login
 
     # redirect to app
-    #redirect_to '/'
     if request.env['omniauth.auth']['provider'] == "csimodshib" && request.env["action_dispatch.request.query_parameters"]["origin"]
       redirect_to "#{request.env["action_dispatch.request.query_parameters"]["origin"]}"
+    elsif request.env['omniauth.origin'] 
+      redirect_to "#{request.env['omniauth.origin']}"
     else
       redirect_to '/'
     end
+
   end
 
   def failure_omniauth
