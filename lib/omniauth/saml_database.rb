@@ -11,12 +11,15 @@ class SamlDatabase < OmniAuth::Strategies::SAML
     entity_id                      = "#{http_type}://#{fqdn}/auth/saml/metadata"
     assertion_consumer_service_url = "#{http_type}://#{fqdn}/auth/saml/callback"
 
-    config  = Setting.get('auth_saml_credentials') || {}
+    config  = Setting.get('auth_advanced_saml_credentials') || {}
     options = config.reject { |_k, v| v.blank? }
       .merge(
-        assertion_consumer_service_url: assertion_consumer_service_url,
-        issuer:                         entity_id,
-      )
+        attribute_statements:{
+          login: ['Shib-Identita-CodiceFiscale'],
+          first_name: ['Shib-Identita-Nome'],
+          last_name: ['Shib-Identita-Cognome']
+        }
+
 
     args[0] = options
 

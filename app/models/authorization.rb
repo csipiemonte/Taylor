@@ -63,8 +63,13 @@ class Authorization < ApplicationModel
   def self.create_from_hash(hash, user = nil)
 
     if !user && Setting.get('auth_third_party_auto_link_at_inital_login')
-      if hash['info'] && hash['info']['email'].present?
-        user = User.find_by(email: hash['info']['email'].downcase)
+      if hash['info']
+        if hash['info']['email'].present?
+          user = User.find_by(email: hash['info']['email'].downcase)
+        end
+        if !user && hash['info']['nickname'].present?
+          user = User.find_by(login: hash['info']['nickname'])
+        end
       end
     end
 
