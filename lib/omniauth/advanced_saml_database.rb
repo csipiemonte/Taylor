@@ -1,5 +1,5 @@
-class SamlDatabase < OmniAuth::Strategies::SAML
-  option :name, 'saml'
+class AdvancedSAMLDatabase < OmniAuth::Strategies::SAML
+  option :name, 'advanced_saml'
 
   def initialize(app, *args, &block)
 
@@ -20,6 +20,7 @@ class SamlDatabase < OmniAuth::Strategies::SAML
           last_name: ['Shib-Identita-Cognome']
         }
 
+        )
 
     args[0] = options
 
