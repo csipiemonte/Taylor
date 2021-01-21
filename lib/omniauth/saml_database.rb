@@ -19,7 +19,7 @@ class SamlDatabase < OmniAuth::Strategies::SAML
           first_name: ['Shib-Identita-Nome'],
           last_name: ['Shib-Identita-Cognome']
         }
-
+      )
 
     args[0] = options
 
