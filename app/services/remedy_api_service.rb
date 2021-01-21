@@ -11,8 +11,7 @@ class RemedyApiService
   BASE_HEADERS= {
     'Authorization': "Bearer #{ACCESS_TOKEN}",
     'X-Request-ID':  X_REQUEST_ID,  # campo libero, per auditing. il nome comparirà nel logger di remedy
-    'X-Forwarded-For': X_FOR
-    ED_FOR, # campo libero, per auditing. il nome comparirà nel logger di remedy
+    'X-Forwarded-For': X_FORWARDED_FOR, # campo libero, per auditing. il nome comparirà nel logger di remedy
     'accept': 'application/json'
   }
 
