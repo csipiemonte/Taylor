@@ -66,8 +66,11 @@ end
 # with a reverse proxy (like e.g. NGINX) handling the HTTPS stuff.
 # This leads to the generation of a wrong redirect_uri because Rack detects a
 # HTTP request which breaks OAuth2.
-OmniAuth.config.full_host = proc {
-  "#{Setting.get('http_type')}://#{Setting.get('fqdn')}"
-}
+
+# This fix / setting causes omniauth callback sent to SP to be static.
+# It is commented to permit omniauth to get hostname diynamically from request (as omniauth default)
+#OmniAuth.config.full_host = proc {
+#  "#{Setting.get('http_type')}://#{Setting.get('fqdn')}"
+#}
 
 OmniAuth.config.logger = Rails.logger
