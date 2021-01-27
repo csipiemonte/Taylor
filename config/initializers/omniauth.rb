@@ -60,6 +60,9 @@ Rails.application.config.middleware.use OmniAuth::Builder do
 
   # CSI SPID (Shibboleth) custom omniauth Strategy
   provider :csimodshib
+
+  # CSI SPID (Shibboleth) custom omniauth Strategy
+  provider :csisaml
 end
 
 # This fixes issue #1642 and is required for setups in which Zammad is used

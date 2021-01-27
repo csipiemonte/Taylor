@@ -112,7 +112,7 @@ App.Config.set('auth_provider_all', {
     config: 'auth_saml'
     class:  'saml'
   advanced_saml:
-    url:    '/auth/saml'
+    url:    '/auth/csisaml'
     name:   'SAML'
     config: 'auth_advanced_saml'
     class:  'saml'

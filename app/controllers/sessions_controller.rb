@@ -56,9 +56,9 @@ class SessionsController < ApplicationController
 
     # in case, remove switched_from_user_id
     session[:switched_from_user_id] = nil
-
+    Rails.logger.info "\n\n!!!!!!!!!!!!!entering\n\n"
     auth = request.env['omniauth.auth']
-
+    Rails.logger.info "\n\n!!!!!!!!!!!!!auth is: #{auth}\n\n"
     if !auth
       logger.info('AUTH IS NULL, SERVICE NOT LINKED TO ACCOUNT')
 
@@ -90,7 +90,7 @@ class SessionsController < ApplicationController
     # redirect to app
     if request.env['omniauth.auth']['provider'] == "csimodshib" && request.env["action_dispatch.request.query_parameters"]["origin"]
       redirect_to "#{request.env["action_dispatch.request.query_parameters"]["origin"]}"
-    elsif request.env['omniauth.origin'] 
+    elsif request.env['omniauth.origin']
       redirect_to "#{request.env['omniauth.origin']}"
     else
       redirect_to '/'
