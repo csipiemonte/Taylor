@@ -22,6 +22,7 @@ Rails.application.config.middleware.use OmniAuth::Builder do
 
   # google database connect
   provider :google_oauth2_database, 'not_change_will_be_set_by_database', 'not_change_will_be_set_by_database', {
+    client_options: {connection_opts: {proxy: 'http://proxy-srv.csi.it:3128'}},
     authorize_options: {
       access_type:     'online',
       approval_prompt: '',
