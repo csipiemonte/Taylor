@@ -1,6 +1,6 @@
 class ChatbotService
 
-  BASE_PATH = "https://zammadbotrasa.demorpa.nivolapiemonte.it/webhooks/rest"
+  BASE_PATH = Setting.get('chat_bot_api_settings')
   BASE_HEADERS = {
     'accept': 'application/json'
   }
@@ -30,6 +30,7 @@ class ChatbotService
 
   def self.answerTo(text, user="")
     payload = {"sender":user, "message":text}
+    Rails.logger.info "BASE_PATH: #{BASE_PATH}"
     return self.post(BASE_PATH+"/webhook",payload)[0]["text"]
   end
 
