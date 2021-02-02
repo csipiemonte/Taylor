@@ -1,6 +1,6 @@
 class ClassificationEngineService
 
-  BASE_PATH = "http://int-sdnet-convplat1.sdp.csi.it:7800"
+  BASE_PATH = Setting.get('classification_engine_api_settings')
   BASE_HEADERS = {
     'accept': 'application/json'
   }
