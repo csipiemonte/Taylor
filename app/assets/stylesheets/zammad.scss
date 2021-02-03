@@ -3193,6 +3193,16 @@ ol.tabs li {
     background: hsl(0,0%,27%);
   }
 
+  &.auth-provider--csi {
+    background: #13387e;
+  }
+
+  .provider-icon.icon-csi-button{
+      background-color:white;
+      width: 29px;
+      height: 28px;
+  }
+
   .provider-name {
     flex: 1;
   }
