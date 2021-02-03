@@ -30,7 +30,17 @@ class SessionsController < ApplicationController
     # return current session
     render json: SessionHelper.json_hash(user).merge(config: config_frontend)
   rescue Exceptions::NotAuthorized => e
+    
+    auth = session["first_step_login.auth"]
+    error = session["first_step_login.error"]
+    if auth
+      auth_creation_info = { provider: auth[:provider], uid: auth[:uid], info: {email: auth[:info][:email]} }
+    else
+      auth_creation_info = nil
+    end
+
     render json: {
+      first_step_login: {auth: auth_creation_info, error: error},
       error:       e.message,
       config:      config_frontend,
       models:      SessionHelper.models,
@@ -69,6 +79,49 @@ class SessionsController < ApplicationController
     # Create a new user or add an auth to existing user, depending on
     # whether there is already a user signed in.
     authorization = Authorization.find_from_hash(auth)
+
+    if isRequestFromCSIpwa?
+      # if session["first_step_login.auth"] is present, this is the second step
+      # of new account creation in CSI custom pwa
+      first_step_auth = session["first_step_login.auth"]
+      second_step_url = request.env['omniauth.params']['second_step_url']
+      if authorization and first_step_auth
+        if first_step_auth.provider != auth.provider
+          # create authorization of first step provider, and associate with existing user of second step provider
+          second_step_auth = Authorization.find_by(uid: auth.uid)
+          unless second_step_auth
+            session["first_step_login.error"] = {code:"non_existing_account"}
+            redirect_to second_step_url
+            return 
+          end
+          authorization = Authorization.create_from_hash(first_step_auth, second_step_auth.user)
+        end
+        session["first_step_login.auth"] = nil
+        session["first_step_login.error"] = nil
+      end
+
+      if !authorization 
+        if !first_step_auth
+          # ask user confirm
+          session["first_step_login.auth"] = auth
+          redirect_to second_step_url
+          return 
+        else
+          if first_step_auth.provider == auth.provider
+            session["first_step_login.auth"] = nil
+            session["first_step_login.error"] = nil
+            # normal user create
+            authorization = Authorization.create_from_hash(auth, current_user)
+          else
+            session["first_step_login.error"] = {code:"non_existing_account"}
+            redirect_to second_step_url
+            return 
+          end
+        end
+      
+      end
+    end
+    
     if !authorization
       authorization = Authorization.create_from_hash(auth, current_user)
     end
@@ -239,4 +292,7 @@ class SessionsController < ApplicationController
     config
   end
 
+  def isRequestFromCSIpwa?
+    request.env['omniauth.params'] && request.env['omniauth.params']['app'] == 'pwa'
+  end
 end
