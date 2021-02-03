@@ -114,7 +114,7 @@ class UsersController < ApplicationController
     # initial admin account
     count = User.all.count
     admin_account_exists = true
-    if count <= 2
+    if count <= 3
       admin_account_exists = false
     end
 
@@ -157,7 +157,7 @@ class UsersController < ApplicationController
       # add first user as admin/agent and to all groups
       group_ids = []
       role_ids  = []
-      if count <= 2
+      if count <= 3
         Role.where(name: %w[Admin Agent]).each do |role|
           role_ids.push role.id
         end

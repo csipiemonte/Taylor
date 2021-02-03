@@ -77,3 +77,26 @@ supervisor.permission_grant('chat.supervisor')
 admin = Role.find_by(name: 'Admin')
 admin.permission_grant('chat.supervisor')
 
+Setting.create_if_not_exists(
+  title:       'Chat-Bot API URL',
+  name:        'chat_bot_api_settings',
+  area:        'System::Network',
+  description: 'Use this section to set the Chat-Bot API URL.',
+  options:     {
+    form: [
+      {
+        display: '',
+        null:    false,
+        name:    'chatbot_api_url',
+        tag:     'input',
+        placeholder: 'https://example.com/api/v1/service'
+      },
+    ],
+  },
+  preferences: {
+    permission:       ['admin.system'],
+  },
+  frontend:    true
+)
+
+
