@@ -41,7 +41,7 @@ User.create_if_not_exists(
   firstname:       'Zimmy',
   lastname:        'Bot',
   email:           'chatbot@zammad.org',
-  password:        'turingtestpassed666',
+  password:        '',
   active:          true,
   roles:           [ Role.find_by(name: 'Agent') ]
 )

@@ -13,12 +13,6 @@ Setting.create_if_not_exists(
   area:        'Services',
   description: 'Defines Enviroment variables for Remedy API calls',
   options:     {},
-  state:       {
-      access_token: 'f9b12cd4-16f3-3956-96fa-2f288667b9f3',
-      base_url: 'https://tst-api-piemonte.ecosis.csi.it/tecno/troubleticketing/v1',
-      request_id:'zammad_to_remedy',
-      forwarded_for:'127.0.0.1'
-     },
   frontend:    false
 )
 Setting.create_if_not_exists(
