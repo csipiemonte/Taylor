@@ -20,8 +20,8 @@ Setting.create_if_not_exists(
   preferences: {
     controller:       'SettingsAreaSwitch',
     sub:              ['auth_advanced_saml_credentials'],
-    title_i18n:       ['Advanced SAML'],
-    description_i18n: ['Advanced SAML'],
+    title_i18n:       ['CSI-SAML'],
+    description_i18n: ['CSI-SAML'],
     permission:       ['admin.security'],
   },
   state:       false,
@@ -91,3 +91,8 @@ Setting.create_if_not_exists(
   },
   frontend:    false
 )
+
+old_saml_setting = Setting.find_by(name:'auth_saml')
+old_saml_setting.preferences[:hidden] = true
+old_saml_setting.save!
+

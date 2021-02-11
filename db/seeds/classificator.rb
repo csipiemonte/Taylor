@@ -18,3 +18,25 @@ Setting.create_if_not_exists(
   frontend:    false
 )
 
+Setting.create_if_not_exists(
+  title:       'Classification Engine API URL',
+  name:        'classification_engine_api_settings',
+  area:        'System::Network',
+  description: 'Use this section to set the Classification Engine API URL.',
+  options:     {
+    form: [
+      {
+        display: '',
+        null:    false,
+        name:    'classification_engine_api_url',
+        tag:     'input',
+        placeholder: 'https://example.com/api/v1/service'
+      },
+    ],
+  },
+  preferences: {
+    permission:       ['admin.system'],
+  },
+  frontend:    true
+)
+

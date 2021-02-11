@@ -108,12 +108,7 @@ App.Config.set('auth_provider_all', {
     class:  'weibo'
   saml:
     url:    '/auth/saml'
-    name:   'SAML'
-    config: 'auth_saml'
-    class:  'saml'
-  advanced_saml:
-    url:    '/auth/saml'
-    name:   'SAML'
+    name:   'CSI'
     config: 'auth_advanced_saml'
-    class:  'saml'
+    class:  'csi'
 })

@@ -20,9 +20,11 @@ Rails.application.config.middleware.use OmniAuth::Builder do
   # linkedin database connect
   provider :linked_in_database, 'not_change_will_be_set_by_database', 'not_change_will_be_set_by_database'
 
+  proxy = Setting.get('proxy') if Setting.get('proxy')
+
   # google database connect
   provider :google_oauth2_database, 'not_change_will_be_set_by_database', 'not_change_will_be_set_by_database', {
-    client_options: {connection_opts: {proxy: 'http://proxy-srv.csi.it:3128'}},
+    client_options: {connection_opts: {proxy: proxy}},
     authorize_options: {
       access_type:     'online',
       approval_prompt: '',
@@ -61,6 +63,9 @@ Rails.application.config.middleware.use OmniAuth::Builder do
 
   # CSI SPID (Shibboleth) custom omniauth Strategy
   provider :csimodshib
+
+  # CSI SPID (Shibboleth) custom omniauth Strategy
+  provider :csisaml
 end
 
 # This fixes issue #1642 and is required for setups in which Zammad is used

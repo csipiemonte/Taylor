@@ -42,6 +42,7 @@ class Index extends App.ControllerContent
     auth_providers = []
     for key, provider of auth_provider_all
       if @Config.get(provider.config) is true || @Config.get(provider.config) is 'true'
+        console.log(key)
         auth_providers.push provider
 
     @html App.view('login')(

@@ -2,7 +2,7 @@ source 'https://rubygems.org'
 
 # core - base
 ruby '2.6.5'
-gem 'rails', '5.2.4.3'
+gem 'rails', '5.2.4.4'
 
 # core - rails additions
 gem 'activerecord-import'
@@ -84,6 +84,7 @@ gem 'omniauth-saml'
 gem 'omniauth-twitter'
 gem 'omniauth-weibo-oauth2'
 gem "omniauth-csimodshib", path: "vendor/custom_gems/omniauth-csimodshib"
+gem "omniauth-csisaml", path: "vendor/custom_gems/omniauth-csisaml"
 
 # channels
 gem 'gmail_xoauth'

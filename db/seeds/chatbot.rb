@@ -41,7 +41,7 @@ User.create_if_not_exists(
   firstname:       'Zimmy',
   lastname:        'Bot',
   email:           'chatbot@zammad.org',
-  password:        'turingtestpassed666',
+  password:        '',
   active:          true,
   roles:           [ Role.find_by(name: 'Agent') ]
 )
@@ -76,4 +76,27 @@ supervisor.permission_grant('knowledge_base.reader')
 supervisor.permission_grant('chat.supervisor')
 admin = Role.find_by(name: 'Admin')
 admin.permission_grant('chat.supervisor')
+
+Setting.create_if_not_exists(
+  title:       'Chat-Bot API URL',
+  name:        'chat_bot_api_settings',
+  area:        'System::Network',
+  description: 'Use this section to set the Chat-Bot API URL.',
+  options:     {
+    form: [
+      {
+        display: '',
+        null:    false,
+        name:    'chatbot_api_url',
+        tag:     'input',
+        placeholder: 'https://example.com/api/v1/service'
+      },
+    ],
+  },
+  preferences: {
+    permission:       ['admin.system'],
+  },
+  frontend:    true
+)
+
 
