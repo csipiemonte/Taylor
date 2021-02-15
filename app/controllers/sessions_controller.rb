@@ -27,10 +27,18 @@ class SessionsController < ApplicationController
 
     initiate_session_for(user)
 
+    key = "User::authorizations:pwa::#{user.id}"
+    linked_accounts = Cache.get(key)
+    if !linked_accounts
+      linked_accounts = user.authorizations().map{|auth| {uid: auth[:uid], provider: auth[:provider],username: auth[:username]}}
+      Cache.write(key, linked_accounts)
+    end
+
     # return current session
-    render json: SessionHelper.json_hash(user).merge(config: config_frontend)
+    render json: SessionHelper.json_hash(user).merge(config: config_frontend, linked_accounts: linked_accounts)
   rescue Exceptions::NotAuthorized => e
     
+    # CSI pwa automatic account linking info
     auth = session["first_step_login.auth"]
     error = session["first_step_login.error"]
     if auth
@@ -80,7 +88,7 @@ class SessionsController < ApplicationController
     # whether there is already a user signed in.
     authorization = Authorization.find_from_hash(auth)
 
-    if isRequestFromCSIpwa?
+    if isRequestFromCSIpwaLoginPage?
       # if session["first_step_login.auth"] is present, this is the second step
       # of new account creation in CSI custom pwa
       first_step_auth = session["first_step_login.auth"]
@@ -292,7 +300,7 @@ class SessionsController < ApplicationController
     config
   end
 
-  def isRequestFromCSIpwa?
-    request.env['omniauth.params'] && request.env['omniauth.params']['app'] == 'pwa'
+  def isRequestFromCSIpwaLoginPage?
+    request.env['omniauth.params'] && request.env['omniauth.params']['app'] == 'pwa' && !request.env['omniauth.params']['second_step_url'].to_s.strip.empty?
   end
 end

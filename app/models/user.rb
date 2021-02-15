@@ -848,6 +848,10 @@ returns
     # delete permission cache
     key = "User::permissions?:local_key:::#{id}"
     Cache.delete(key)
+
+    # delete CSI pwa cache
+    key = "User::authorizations:pwa::#{id}"
+    Cache.delete(key)
   end
 
 =begin
