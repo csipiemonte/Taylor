@@ -46,17 +46,20 @@ User.create_if_not_exists(
   roles:           [ Role.find_by(name: 'Agent') ]
 )
 
-Role.create_if_not_exists(
-  id:                5,
-  name:              'Supervisor',
-  note:              'To monitor the activity of the business.',
-  default_at_signup: false,
-  preferences:       {
-    not: ['Customer'],
-  },
-  updated_by_id:     1,
-  created_by_id:     1
-)
+supervisor = Role.find_by(name:'Supervisor')
+if !supervisor
+  Role.create!(
+    id:                '4',
+    name:              'Supervisor',
+    note:              'To monitor the activity of the business.',
+    default_at_signup: false,
+    preferences:       {
+      not: ['Customer'],
+    },
+    updated_by_id:     1,
+    created_by_id:     1
+  )
+end
 
 Permission.create_if_not_exists(
   name:        'chat.supervisor',
