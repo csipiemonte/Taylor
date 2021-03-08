@@ -87,3 +87,7 @@
 
 # Backup files
 *~
+
+# Development IDE and Tools
+.devcontainer
+.vscode

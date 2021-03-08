@@ -19,5 +19,15 @@ Rails.application.routes.draw do
     end
   end
 
+  # load nextcrm api routes
+  files = Dir.glob( "#{dir}/routes/nextcrm/**/*.rb" )
+  files.each do |file|
+    if Rails.configuration.cache_classes
+      require_dependency file
+    else
+      load file
+    end
+  end
+
   match '*a', to: 'errors#routing', via: %i[get post put delete options]
 end

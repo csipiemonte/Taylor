@@ -153,6 +153,8 @@ group :development, :test do
   gem 'pry-remote'
   gem 'pry-rescue'
   gem 'pry-stack_explorer'
+  gem 'debase'
+  gem 'ruby-debug-ide'
 
   # test frameworks
   gem 'rails-controller-testing'
