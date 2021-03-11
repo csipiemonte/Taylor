@@ -9,6 +9,9 @@ module Api::Nextcrm::V1::Concerns::ReadesApiManagerJwt
 
   def check_apiman_jwt
     logger.debug " api apimanager jwt ---->  #{request.headers["X-JWT-Assertion"]} "
+
+    return if params[:debug]
+
     apimanager_raw_jwt = request.headers["X-JWT-Assertion"]
 
     ## TODO eliminare finito lo sviluppo
@@ -28,14 +31,20 @@ module Api::Nextcrm::V1::Concerns::ReadesApiManagerJwt
 
     decoded_jwt = JWT.decode(apimanager_raw_jwt, nil, false)
     jwt_meta = decoded_jwt[0]
-    application_name = jwt_meta["ApplicationName"].downcase
+    application_name = jwt_meta["ApplicationName"]
+    if application_name
+      application_name = application_name.downcase
+    else
+      raise Exceptions::NotAuthorized, "ApplicationName in X-JWT-Assertion not found: #{apimanager_raw_jwt}"
+    end
+
     app_user = User.find_by(email: "#{application_name}@csi.it")
     if app_user
       current_user_set(app_user, "basic_auth")
       logger.debug { "current user setted to #{current_user.email} " }
     else
       Rails.logger.error{"user not found with X-JWT-Assertion ApplicationName: #{application_name}"}
-      raise Exceptions::NotAuthorized, "user not found with X-JWT-Assertion ApplicationName: #{application_name}"
+      raise Exceptions::NotAuthorized, "user not found with X-JWT-Assertion: #{apimanager_raw_jwt}  -  ApplicationName: #{application_name}"
 
     end
 
