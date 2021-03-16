@@ -26,6 +26,11 @@ class Observer::Ticket::Article::FillupFromGeneral < ActiveRecord::Observer
     return true if type.name == 'facebook feed comment'
     return true if type.name == 'sms'
 
+
+    # CSI channels
+    return true if type.name == 'api'
+
+
     user_id = record.created_by_id
 
     if record.origin_by_id.present?
