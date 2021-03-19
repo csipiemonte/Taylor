@@ -7,6 +7,7 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
   end
 
   def search
+    params[:expand] = true
     if params[:filter]
       filter = JSON.parse(params[:filter])
       query = filterToElasticSearchQuery(filter)
