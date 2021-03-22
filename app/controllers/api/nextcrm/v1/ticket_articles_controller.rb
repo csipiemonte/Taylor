@@ -6,6 +6,9 @@ class Api::Nextcrm::V1::TicketArticlesController < ::TicketArticlesController
   end
 
   def create
+    if not params[:type_id]
+      raise Exceptions::UnprocessableEntity, "Need at least article: { type_id: \"<id>\" "
+    end
     super
   end
 
