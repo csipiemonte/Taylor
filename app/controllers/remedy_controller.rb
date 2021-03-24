@@ -210,4 +210,8 @@ class RemedyController < ApplicationController
     render json: {level_1:categorization[:level_1], level_2:categorization[:level_2]}
   end
 
+  def triples_table
+    render json: RemedyTripleMapping.joins(:remedy_triple,:ticket_categorization)
+  end
+
  end
