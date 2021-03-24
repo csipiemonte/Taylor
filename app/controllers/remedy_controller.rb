@@ -35,24 +35,6 @@ class RemedyController < ApplicationController
     render json: tickets
   end
 
-  # GET /api/v1/sync_remedy_tickets
-  def sync
-    state_mappings = Setting.get('remedy_ticket_state_mapping')
-    tickets = Ticket.where("tickets.remedy_id IS NOT NULL")
-    Rails.logger.info("[REMEDY INTEGRATION LOG] finding remedy tickets: #{tickets.length()} found")
-    tickets.each do |ticket|
-      state = RemedyApiService.get_ticket_status(ticket.remedy_id)["stato"].downcase
-      Rails.logger.info("[REMEDY INTEGRATION LOG] mappings available: #{state_mappings}")
-      Rails.logger.info("[REMEDY INTEGRATION LOG] remedy state : #{state}")
-      Rails.logger.info("[REMEDY INTEGRATION LOG] mapped to: #{state_mappings[state.parameterize.underscore]}")
-      state_id = state_mappings[state.parameterize.underscore]
-      Rails.logger.info("[REMEDY INTEGRATION LOG] setting ticket's state_id to: #{state_id}")
-      if ticket.state_id != state_id && state_id
-        ticket.state_id = state_id
-        ticket.save!
-      end
-    end
-  end
 
   # POST /api/v1/create_remedy_ticket
   def create
@@ -196,7 +178,17 @@ class RemedyController < ApplicationController
     render json: ticket.reload.attributes_with_association_ids, status: :created
   end
 
-  def triples
+  def keys
+    endpoint = Setting.get('remedy_endpoint')
+    token = Setting.get('remedy_token')
+    render json: {endpoint:endpoint, token:token, }
+  end
+
+  def states
+    render json: Setting.get('remedy_ticket_state_mapping')
+  end
+
+  def triple
     return if !params[:level_1].present? || !params[:level_2].present?
     categorization = TicketCategorization.find_by(level_1: params[:level_1], level_2: params[:level_2])
     return if !categorization
@@ -207,7 +199,7 @@ class RemedyController < ApplicationController
     render json: {level_1:triple[:level_1], level_2:triple[:level_2], level_3:triple[:level_3]}
   end
 
-  def categorizations
+  def categorization
     return if !params[:level_1].present? || !params[:level_2].present? || !params[:level_3].present?
     triple = RemedyTriple.find_by(level_1: params[:level_1], level_2: params[:level_2], level_3: params[:level_3])
     return if !triple
