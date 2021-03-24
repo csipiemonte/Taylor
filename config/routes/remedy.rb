@@ -4,4 +4,6 @@ Zammad::Application.routes.draw do
   match api_path + '/remedy_tickets',                                       to: 'remedy#index',            via: :get
   match api_path + '/sync_remedy_tickets',                                  to: 'remedy#sync',             via: :get
   match api_path + '/create_remedy_tickets',                                to: 'remedy#create',           via: :post
+  match api_path + '/remedy_triples',                                       to: 'remedy#triples',          via: :post
+  match api_path + '/ticket_categorization',                                to: 'remedy#categorizations',   via: :post
 end

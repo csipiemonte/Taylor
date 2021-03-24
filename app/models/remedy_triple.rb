@@ -1,0 +1,2 @@
+class RemedyTriple < ApplicationModel
+end

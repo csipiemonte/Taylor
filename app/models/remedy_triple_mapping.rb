@@ -1,0 +1,2 @@
+class RemedyTripleMapping < ApplicationModel
+end

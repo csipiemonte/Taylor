@@ -4,6 +4,8 @@ class RemedyController < ApplicationController
   include ChecksUserAttributesByCurrentUserPermission
   include TicketStats
 
+  prepend_before_action { authentication_check && authorize! }
+
   # GET /api/v1/remedy_tickets
   def index
     tickets = Ticket.where("tickets.remedy_id IS NOT NULL")   #.order(id: :asc).offset(offset).limit(per_page)
@@ -192,6 +194,28 @@ class RemedyController < ApplicationController
     end
 
     render json: ticket.reload.attributes_with_association_ids, status: :created
+  end
+
+  def triples
+    return if !params[:level_1].present? || !params[:level_2].present?
+    categorization = TicketCategorization.find_by(level_1: params[:level_1], level_2: params[:level_2])
+    return if !categorization
+    mapping = RemedyTripleMapping.find_by(ticket_categorization_id: categorization[:id])
+    return if !mapping
+    triple = RemedyTriple.find_by(id: mapping[:remedy_triple_id])
+    return if !triple
+    render json: {level_1:triple[:level_1], level_2:triple[:level_2], level_3:triple[:level_3]}
+  end
+
+  def categorizations
+    return if !params[:level_1].present? || !params[:level_2].present? || !params[:level_3].present?
+    triple = RemedyTriple.find_by(level_1: params[:level_1], level_2: params[:level_2], level_3: params[:level_3])
+    return if !triple
+    mapping = RemedyTripleMapping.find_by(remedy_triple_id: triple[:id])
+    return if !mapping
+    categorization = TicketCategorization.find_by(id: mapping[:ticket_categorization_id])
+    return if !categorization
+    render json: {level_1:categorization[:level_1], level_2:categorization[:level_2]}
   end
 
  end
