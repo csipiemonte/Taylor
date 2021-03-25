@@ -1,13 +1,4 @@
 Setting.create_if_not_exists(
-  title:       'Defines transaction backend.',
-  name:        'Remedy_transaction',
-  area:        'Transaction::Backend::Async',
-  description: 'Defines the transaction backend which makes calls to Remedy\'s API.',
-  options:     {},
-  state:       'Transaction::Remedy',
-  frontend:    false
-)
-Setting.create_if_not_exists(
   title:       'Remedy Enviroment Variables',
   name:        'remedy_env_vars',
   area:        'Services',
