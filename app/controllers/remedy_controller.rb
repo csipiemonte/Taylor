@@ -7,33 +7,39 @@ class RemedyController < ApplicationController
   prepend_before_action { authentication_check && authorize! }
 
   # GET /api/v1/remedy_tickets
-  def index
-    tickets = Ticket.where("tickets.remedy_id IS NOT NULL")   #.order(id: :asc).offset(offset).limit(per_page)
-    if response_expand?
-      list = []
-      tickets.each do |ticket|
-        list.push ticket.attributes_with_association_names
-      end
-      render json: list, status: :ok
-      return
+    def migrating
+      remedy_agent = User.find_by(login:'remedy.agent@zammad.org')
+      tickets = Ticket.where("tickets.remedy_id IS NULL AND tickets.owner_id = #{remedy_agent[:id]}")
+      render json: tickets
     end
 
-    if response_full?
-      assets = {}
-      item_ids = []
-      tickets.each do |item|
-        item_ids.push item.id
-        assets = item.assets(assets)
+    def index
+      tickets = Ticket.where("tickets.remedy_id IS NOT NULL")   #.order(id: :asc).offset(offset).limit(per_page)
+      if response_expand?
+        list = []
+        tickets.each do |ticket|
+          list.push ticket.attributes_with_association_names
+        end
+        render json: list, status: :ok
+        return
       end
-      render json: {
-        record_ids: item_ids,
-        assets:     assets,
-      }, status: :ok
-      return
-    end
 
-    render json: tickets
-  end
+      if response_full?
+        assets = {}
+        item_ids = []
+        tickets.each do |item|
+          item_ids.push item.id
+          assets = item.assets(assets)
+        end
+        render json: {
+          record_ids: item_ids,
+          assets:     assets,
+        }, status: :ok
+        return
+      end
+
+      render json: tickets
+    end
 
 
   # POST /api/v1/create_remedy_ticket
