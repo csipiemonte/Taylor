@@ -104,3 +104,6 @@ Setting.create_if_not_exists(
   },
   frontend:    false
 )
+
+Setting.find_by(name: 'Remedy_transaction').try(:destroy)
+
