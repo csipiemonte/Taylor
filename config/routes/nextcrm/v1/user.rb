@@ -4,6 +4,7 @@ Zammad::Application.routes.draw do
     match  '/users',                                       to: 'users#index',              via: :get
     match  '/users/search',                                to: 'users#search',             via: :get
     match  '/users',                                       to: 'users#create',             via: :post
+    match  '/users/:id',                                   to: 'users#update',             via: :put
   end
  
  end
