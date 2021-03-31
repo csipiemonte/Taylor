@@ -1,10 +1,11 @@
 class Api::Nextcrm::V1::TicketsController < ::TicketsController
   include Api::Nextcrm::V1::Concerns::ReadesApiManagerJwt
   include Api::Nextcrm::V1::Concerns::Filterable
+  include Api::Nextcrm::V1::Concerns::ResponseHideAttributes
 
   def index
     super
-    # puts JSON.parse(response.body).first.to_yaml.gsub("\n-", "\n\n-")
+    hideTicketAttributesInResponse()
   end
 
   def search
@@ -15,12 +16,15 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
       params[:query] = query
     end
     super
+    hideTicketAttributesInResponse()
   end
 
   def filter_updated
 
     from_time = params[:from]
     to_time = params[:to]
+
+    ### TODO impostare massimo from-to a 1 mese ###
 
     per_page = params[:per_page] || params[:limit] || 50
     per_page = per_page.to_i
@@ -32,7 +36,7 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
     offset = (page - 1) * per_page
 
 
-    ########################### TODO  move in model concern ##
+    ########################### TODO  spostare in model concern ##
     limit = per_page
     sort_by = ["updated_at"]
     order_by = ["desc"]

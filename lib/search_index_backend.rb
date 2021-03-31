@@ -659,6 +659,7 @@ return true if backend is configured
 =end
 
   def self.enabled?
+    return false # TODO rimuovere - debug
     return false if Setting.get('es_url').blank?
 
     true
