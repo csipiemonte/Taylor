@@ -124,6 +124,9 @@ gem 'twilio-ruby'
 # feature - ordering
 gem 'acts_as_list'
 
+# feature (CSI) - fast json parser
+gem 'oj'
+
 # integrations
 gem 'clearbit'
 gem 'net-ldap'
