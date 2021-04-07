@@ -185,10 +185,11 @@ class RemedyController < ApplicationController
   end
 
   def keys
-    endpoint = Setting.get('remedy_endpoint')
+    base_url = Setting.get('remedy_base_url')
     token = Setting.get('remedy_token')
-    render json: {endpoint:endpoint, token:token, }
+    render json: {base_url:base_url, token:token, }
   end
+
 
   def states
     render json: Setting.get('remedy_ticket_state_mapping')
@@ -220,4 +221,17 @@ class RemedyController < ApplicationController
     render json: RemedyTripleMapping.joins(:remedy_triple,:ticket_categorization)
   end
 
- end
+  def priorities
+    priorities = Setting.get('remedy_ticket_priority_mapping')
+    result = {}
+    priorities.each do |index,priority|
+      values = priority.split('-')
+      Rails.logger.info "priority: #{values}"
+      result["#{index}"] = {
+        impatto:values[0],
+        urgenza:values[1]
+      }
+    end
+    render json: result
+  end
+end

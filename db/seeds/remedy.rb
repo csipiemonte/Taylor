@@ -10,7 +10,7 @@ Setting.create_if_not_exists(
   title:       'Remedy Ticket\'s State Mapping',
   name:        'remedy_ticket_state_mapping',
   area:        'Services',
-  description: 'Defines Ticket Mappings between Remedy and Zammad',
+  description: 'Defines ticket\'s states mappings between Remedy and Zammad',
   options:     {},
   state:       {
       nuovo: 1,
@@ -63,6 +63,17 @@ Setting.create_if_not_exists(
     permission: ['admin.integration'],
   },
   frontend:    false,
+  title:       'Remedy Ticket\'s Priority Mapping',
+  name:        'remedy_ticket_priority_mapping',
+  area:        'Services',
+  description: 'Defines ticket\'s priorities mappings between Remedy and Zammad',
+  options:     {},
+  state:       {
+      1 => 'Minimo/Localizzato-Bassa',
+      2 => 'Moderato/Limitato-Media',
+      3 => 'Significativo/Grande-Alta'
+   },
+  frontend:    false
 )
 Setting.create_if_not_exists(
   title:       'Remedy Token',
@@ -85,10 +96,10 @@ Setting.create_if_not_exists(
   frontend:    false
 )
 Setting.create_if_not_exists(
-  title:       'Remedy Endpoint',
-  name:        'remedy_endpoint',
+  title:       'Remedy Base URL',
+  name:        'remedy_base_url',
   area:        'Integration::Remedy',
-  description: 'Endpoint for Remedy.',
+  description: 'Remedy Base URL.',
   options:     {
     form: [
       {
@@ -117,3 +128,4 @@ User.create_if_not_exists(
   active:          true,
   roles:           [ Role.find_by(name: 'Agent') ]
 )
+
