@@ -1,7 +1,7 @@
 Setting.create_if_not_exists(
   title:       'Remedy Enviroment Variables',
   name:        'remedy_env_vars',
-  area:        'Services',
+  area:        'Integration::Remedy',
   description: 'Defines Enviroment variables for Remedy API calls',
   options:     {},
   frontend:    false
@@ -9,7 +9,7 @@ Setting.create_if_not_exists(
 Setting.create_if_not_exists(
   title:       'Remedy Ticket\'s State Mapping',
   name:        'remedy_ticket_state_mapping',
-  area:        'Services',
+  area:        'Integration::Remedy',
   description: 'Defines ticket\'s states mappings between Remedy and Zammad',
   options:     {},
   state:       {
@@ -67,7 +67,7 @@ Setting.create_if_not_exists(
 Setting.create_if_not_exists(
   title:       'Remedy Ticket\'s Priority Mapping',
   name:        'remedy_ticket_priority_mapping',
-  area:        'Services',
+  area:        'Integration::Remedy',
   description: 'Defines ticket\'s priorities mappings between Remedy and Zammad',
   options:     {},
   state:       {
@@ -130,4 +130,5 @@ User.create_if_not_exists(
   active:          true,
   roles:           [ Role.find_by(name: 'Agent') ]
 )
+
 
