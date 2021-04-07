@@ -62,7 +62,9 @@ Setting.create_if_not_exists(
     prio:       2,
     permission: ['admin.integration'],
   },
-  frontend:    false,
+  frontend:    false
+)
+Setting.create_if_not_exists(
   title:       'Remedy Ticket\'s Priority Mapping',
   name:        'remedy_ticket_priority_mapping',
   area:        'Services',
