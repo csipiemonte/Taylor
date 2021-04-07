@@ -234,4 +234,8 @@ class RemedyController < ApplicationController
     end
     render json: result
   end
+
+  def integration_status
+    render json: Setting.get('remedy_integration')
+  end
 end
