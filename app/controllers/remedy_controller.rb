@@ -238,4 +238,8 @@ class RemedyController < ApplicationController
   def integration_status
     render json: Setting.get('remedy_integration')
   end
+
+  def state_alignment
+    render json: Setting.get('remedy_state_alignment')
+  end
 end
