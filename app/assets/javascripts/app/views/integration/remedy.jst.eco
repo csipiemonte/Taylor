@@ -12,10 +12,10 @@
       <tbody>
         <tr>
           <td class="settings-list-row-control"><%- @T('Endpoint') %>
-          <td class="settings-list-control-cell"><input type="url" class="form-control form-control--small js-select" readonly value="<%- @remedy_endpoint %>">
+          <td class="settings-list-control-cell"><input type="url" class="form-control form-control--small js-select" id="remedy_base_url" value="<%- @remedy_base_url %>">
         <tr>
           <td class="settings-list-row-control"><%- @T('Token') %>
-          <td class="settings-list-control-cell"><input type="url" class="form-control form-control--small js-select" readonly value="<%- @remedy_token %>">
+          <td class="settings-list-control-cell"><input type="text" class="form-control form-control--small js-select" id="remedy_token" value="<%- @remedy_token %>">
       </tbody>
     </table>
   </div>
