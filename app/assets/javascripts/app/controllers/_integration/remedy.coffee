@@ -25,14 +25,16 @@ class Form extends App.Controller
     @html App.view('integration/remedy')(
       remedy_base_url: App.Setting.get('remedy_base_url')
       remedy_token: App.Setting.get('remedy_token')
-      remedy_state_mapping: App.Setting.get('remedy_ticket_state_mapping')
+      remedy_state_alignment: App.Setting.get('remedy_state_alignment')
     )
 
 
   update: (e) =>
     e.preventDefault()
+    state_alignment = $('#remedy_state_alignment').prop('checked')
     base_url = $('#remedy_base_url').val()
     token = $('#remedy_token').val()
+    App.Setting.set('remedy_state_alignment', state_alignment)
     App.Setting.set('remedy_base_url', base_url)
     App.Setting.set('remedy_token', token, {notify: true})
 

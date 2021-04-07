@@ -20,41 +20,16 @@
     </table>
   </div>
 
-
-  <h2><%- @T('Ticket state mapping') %></h2>
-  <p>Zammad State IDs:</p>
-  <ol>
-    <li> new </li>
-    <li> open </li>
-    <li> pending reminder </li>
-    <li> closed </li>
-    <li> merged </li>
-    <li> removed </li>
-    <li> pending closed </li>
-  </ol>
-
-  <div class="settings-entry">
-    <table class="settings-list js-inboundBlockCallerId" style="width: 100%;">
-      <thead>
-        <tr>
-          <th width="50%"><%- @T('Remedy State') %>
-          <th width="40%"><%- @T('Zammad State ID') %>
-          <th width="10%"><%- @T('Action') %>
-      </thead>
-      <tbody>
-<% for remedy_state, zammad_state_id in @remedy_state_mapping: %>
-        <tr class="js-row">
-          <td class="settings-list-control-cell"><input name="remedy_state" value="<%= remedy_state %>" class="form-control form-control--small js-summary">
-          <td class="settings-list-control-cell"><input name="zammad_state_id" value="<%= zammad_state_id %>" class="form-control form-control--small js-summary">
-          <td class="settings-list-row-control"><div class="btn btn--text js-remove"><%- @Icon('trash') %> <%- @T('Remove') %></div>
-<% end %>
-        <tr>
-          <td class="settings-list-control-cell"><input name="remedy_state" value="" placeholder="nuovo" class="form-control form-control--small js-summary">
-          <td class="settings-list-control-cell"><input name="zammad_state_id" value="" placeholder="1" class="form-control form-control--small js-summary">
-          <td class="settings-list-row-control"><div class="btn btn--text btn--create js-add"><%- @Icon('plus-small') %> <%- @T('Add') %></div>
-      </tbody>
-    </table>
+<div class="settings-entry">
+  <h2><%- @T('Data Alignment') %></h2>
+  <div class="page-header-title">
+    <div class="zammad-switch zammad-switch--small">
+       <input type="checkbox" id="remedy_state_alignment" <% if @remedy_state_alignment: %>checked<% end %>>
+       <label for="remedy_state_alignment"></label>
+    </div>
+    <p>Enable alignment on ticket's state</p>
   </div>
+</div>
 
   <button type="submit" class="btn btn--primary js-submit"><%- @T('Save') %></button>
 </form>

@@ -131,4 +131,13 @@ User.create_if_not_exists(
   roles:           [ Role.find_by(name: 'Agent') ]
 )
 
+Setting.create_if_not_exists(
+  title:       'Remedy State Alignment',
+  name:        'remedy_state_alignment',
+  area:        'Integration::Remedy',
+  description: 'Defines whether the aligner will align ticket states between Remedy and Zammad.',
+  options:     {},
+  state:       true,
+  frontend:    false
+)
 
