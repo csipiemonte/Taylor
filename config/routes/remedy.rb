@@ -17,9 +17,7 @@ Zammad::Application.routes.draw do
   match api_path + '/remedy_priorities',                             to: 'remedy#priorities',               via: :get
 
   # Integration Settings
-  match api_path + '/remedy_integration_status',                     to: 'remedy#integration_status',       via: :get
-  match api_path + '/remedy_state_alignment',                        to: 'remedy#state_alignment' ,         via: :get
-  match api_path + '/remedy_keys',                                   to: 'remedy#keys',                     via: :get
+  match api_path + '/remedy_settings',                               to: 'remedy#settings',                 via: :get
 
   match api_path + '/sync_remedy_tickets',                           to: 'remedy#sync',                     via: :get
 

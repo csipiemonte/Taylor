@@ -184,13 +184,6 @@ class RemedyController < ApplicationController
     render json: ticket.reload.attributes_with_association_ids, status: :created
   end
 
-  def keys
-    base_url = Setting.get('remedy_base_url')
-    token = Setting.get('remedy_token')
-    render json: {base_url:base_url, token:token, }
-  end
-
-
   def states
     render json: Setting.get('remedy_ticket_state_mapping')
   end
@@ -235,11 +228,27 @@ class RemedyController < ApplicationController
     render json: result
   end
 
+  def settings
+    render json: {
+      remedy_enabled: integration_status,
+      state_alignment: state_alignment,
+      remedy_coordinates: keys
+    }
+  end
+
+  private
+
   def integration_status
-    render json: Setting.get('remedy_integration')
+    Setting.get('remedy_integration')
   end
 
   def state_alignment
-    render json: Setting.get('remedy_state_alignment')
+    Setting.get('remedy_state_alignment')
+  end
+
+  def keys
+    base_url = Setting.get('remedy_base_url')
+    token = Setting.get('remedy_token')
+    {base_url:base_url, token:token, }
   end
 end
