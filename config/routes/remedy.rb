@@ -1,11 +1,7 @@
 Zammad::Application.routes.draw do
     api_path = Rails.configuration.api_path
 
-
-  # Create a new Remedy Ticket
-  match api_path + '/create_remedy_tickets',                         to: 'remedy#create',                   via: :post
-
-  # Indexing Remedy Tickets
+  # Index Remedy Tickets
   match api_path + '/remedy_tickets',                                to: 'remedy#index',                    via: :get
   match api_path + '/remedy_migrating',                              to: 'remedy#migrating',                via: :get
 
@@ -18,7 +14,5 @@ Zammad::Application.routes.draw do
 
   # Integration Settings
   match api_path + '/remedy_settings',                               to: 'remedy#settings',                 via: :get
-
-  match api_path + '/sync_remedy_tickets',                           to: 'remedy#sync',                     via: :get
 
 end
