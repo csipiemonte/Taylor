@@ -114,7 +114,7 @@ class UsersController < ApplicationController
     # initial admin account
     count = User.all.count
     admin_account_exists = true
-    if count <= 3
+    if count <= 4
       admin_account_exists = false
     end
 
