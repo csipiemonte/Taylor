@@ -35,6 +35,9 @@ Setting.create_if_not_exists(
     ],
   },
   preferences: {
+      prio:           156
+      trigger:        ['menu:render'],
+      authentication: true,
     permission:       ['admin.system'],
   },
   frontend:    true
@@ -44,7 +47,7 @@ Setting.create_if_not_exists(
   title:       'Classification Engine Enabled',
   name:        'classification_engine_enabled',
   area:        'System::Network',
-  description: 'Defines the Classification Engine is enabled or not.',
+  description: 'Abilita il Classification Engine',
   options:     {
     form: [
       {
@@ -61,10 +64,10 @@ Setting.create_if_not_exists(
   },
   state:       true,
   preferences: {
-    prio:           1,
+    prio:           15,
     trigger:        ['menu:render'],
     authentication: true,
-    permission:     ['admin.integration'],
+    permission:     ['admin.system'],
   },
   frontend:    true
 )
