@@ -93,6 +93,23 @@ class RemedyController < ApplicationController
     }
   end
 
+  def most_recent_state
+  return if !params[:compare]
+    Rails.logger.info "PARAMS #{params}"
+    highest_value = 0
+    highest_key = ""
+    params[:compare].each do |key,value|
+      return if !value.is_a? Integer
+      state = Ticket::State.find_by(id: value)
+      return if !state
+      if state[:state_type_id] > highest_value
+        highest_key = key
+        highest_value = value
+      end
+    end
+    render json: {key:highest_key,value:highest_value}
+  end
+
   private
 
   def integration_status
