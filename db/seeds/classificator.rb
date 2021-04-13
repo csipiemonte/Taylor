@@ -35,7 +35,7 @@ Setting.create_if_not_exists(
     ],
   },
   preferences: {
-      prio:           16
+      prio:           16,
       trigger:        ['menu:render'],
       authentication: true,
     permission:       ['admin.system'],
