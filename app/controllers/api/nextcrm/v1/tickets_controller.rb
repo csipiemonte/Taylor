@@ -78,6 +78,13 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
   end
 
   def create
+   
+    params.delete :owner_id
+    params.delete :owner
+
+    params.delete :state_id
+    params.delete :state
+    
     if params[:article] and not params[:article][:type_id]
       raise Exceptions::UnprocessableEntity, "Need at least article: { type_id: \"<id>\" "
     end
@@ -88,6 +95,14 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
   end
 
   def update
+
+    params.delete :owner_id
+    params.delete :owner
+
+    params.delete :state
+    if params[:state_id] and params[:state_id] != 4 # closed
+      raise Exceptions::UnprocessableEntity, "Available ticket state id: [4]"
+    end
     
     if params[:ticket] and params[:ticket][:customer_id]
       params[:ticket][:customer_id] = "guess:#{params[:ticket][:customer_id]}"

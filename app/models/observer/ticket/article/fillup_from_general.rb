@@ -28,7 +28,8 @@ class Observer::Ticket::Article::FillupFromGeneral < ActiveRecord::Observer
 
 
     # CSI channels
-    return true if type.name == 'api'
+    return true if type.id == 13 # web (via api)
+    return true if type.id == 14 # phone (via api)
 
 
     user_id = record.created_by_id
