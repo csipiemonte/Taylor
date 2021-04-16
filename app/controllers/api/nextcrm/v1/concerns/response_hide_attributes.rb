@@ -9,6 +9,8 @@ module Api::Nextcrm::V1::Concerns::ResponseHideAttributes
     if obj_resp.is_a? Array
       obj_resp.each do |ticket| 
         ticket.delete("article_ids")
+        ticket.delete("group_id")
+        ticket.delete("owner_id")
       end
       str_resp = Oj.dump(obj_resp)
       response.body = str_resp
