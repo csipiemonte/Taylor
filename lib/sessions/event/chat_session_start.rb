@@ -38,7 +38,7 @@ return is sent as message back to peer
     end
     chat_session.user_id = chat_user.id
     chat_session.state = 'running'
-    chat_session.preferences[:participants] = chat_session.add_recipient(@client_id)
+    chat_session.preferences[:participants] = chat_session.add_recipient(@client_id.to_s)
     chat_session.save
 
     session_attributes = chat_session.attributes
