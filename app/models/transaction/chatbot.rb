@@ -8,9 +8,8 @@ class Transaction::Chatbot
 
   def perform
     if @item[:object] == 'Chat Session'
-      ChatbotService.bindSupervisors(@item[:chat_session])
       return if Setting.get('import_mode') || !Setting.get('chatbot_status')
-      client_id = -333 #FAKE CLIENT_ID FOR CHATBOT
+      client_id = 0 #FAKE CLIENT_ID FOR CHATBOT
       clients = [@item[:client_id],client_id]
       params = {
         session: {

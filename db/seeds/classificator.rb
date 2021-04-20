@@ -35,8 +35,41 @@ Setting.create_if_not_exists(
     ],
   },
   preferences: {
+      prio:           16,
+      trigger:        ['menu:render'],
+      authentication: true,
     permission:       ['admin.system'],
   },
   frontend:    true
 )
+Ticket::Article::Type.create_if_not_exists(id: 13, name: 'remedy', communication: true)
+Setting.create_if_not_exists(
+  title:       'Classification Engine Enabled',
+  name:        'classification_engine_enabled',
+  area:        'System::Network',
+  description: 'Abilita il Classification Engine',
+  options:     {
+    form: [
+      {
+        display: '',
+        null:    true,
+        name:    'classification_engine_enabled',
+        tag:     'boolean',
+        options: {
+          true  => 'yes',
+          false => 'no',
+        },
+      },
+    ],
+  },
+  state:       true,
+  preferences: {
+    prio:           15,
+    trigger:        ['menu:render'],
+    authentication: true,
+    permission:     ['admin.system'],
+  },
+  frontend:    true
+)
+
 

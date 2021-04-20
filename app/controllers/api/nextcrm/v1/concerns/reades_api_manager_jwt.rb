@@ -44,7 +44,7 @@ module Api::Nextcrm::V1::Concerns::ReadesApiManagerJwt
     if application_name
       application_name = application_name.downcase
     else
-      raise Exceptions::NotAuthorized, "ApplicationName in X-JWT-Assertion not found: #{apimanager_raw_jwt}"
+      raise Exceptions::NotAuthorized, "http://wso2.org/claims/applicationname in X-JWT-Assertion not found: #{apimanager_raw_jwt}"
     end
 
     app_user = User.find_by(email: "#{application_name}@csi.it")
@@ -52,8 +52,8 @@ module Api::Nextcrm::V1::Concerns::ReadesApiManagerJwt
       current_user_set(app_user, "basic_auth")
       logger.debug { "current user setted to #{current_user.email} " }
     else
-      Rails.logger.error{"user not found with X-JWT-Assertion ApplicationName: #{application_name}"}
-      raise Exceptions::NotAuthorized, "user not found with X-JWT-Assertion: #{apimanager_raw_jwt}  -  ApplicationName: #{application_name}"
+      Rails.logger.error{"user not found with X-JWT-Assertion http://wso2.org/claims/applicationname: #{application_name}"}
+      raise Exceptions::NotAuthorized, "user not found with X-JWT-Assertion: #{apimanager_raw_jwt}  -  http://wso2.org/claims/applicationname: #{application_name}"
 
     end
 

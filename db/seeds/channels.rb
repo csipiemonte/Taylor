@@ -1,5 +1,6 @@
 if Channel.all.length < 1
   Channel.create_if_not_exists(
+    id: 1,
     area:        'Email::Notification',
     options:     {
       outbound: {
@@ -17,6 +18,7 @@ if Channel.all.length < 1
     active:      false,
   )
   Channel.create_if_not_exists(
+    id: 2,
     area:        'Email::Notification',
     options:     {
       outbound: {

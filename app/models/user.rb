@@ -32,6 +32,9 @@ class User < ApplicationModel
   after_commit      :update_caller_id
   before_destroy    :destroy_longer_required_objects
 
+  # CSI validations
+  before_validation :ensure_uniq_codice_fiscale
+
   store :preferences
 
   activity_stream_permission 'admin.user'
@@ -1263,5 +1266,21 @@ raise 'Minimum one user need to have admin permissions'
     return if destroyed? && phone.blank?
 
     Cti::CallerId.build(self)
+  end
+
+
+  def ensure_uniq_codice_fiscale
+
+    # per evitare che stringhe vuote facciano scattare il vincolo unique sul db
+    if !self.codice_fiscale.nil? and self.codice_fiscale.strip === ''
+      self.codice_fiscale = nil
+    end
+
+    return true if self.codice_fiscale.blank?
+    return true if !changes
+    return true if !changes['codice_fiscale']
+    return true if !User.exists?(codice_fiscale: self.codice_fiscale.strip)
+
+    raise Exceptions::UnprocessableEntity, "Codice Fiscale '#{self.codice_fiscale.strip}' is already used for other user."
   end
 end
