@@ -9,7 +9,7 @@ class RemedyController < ApplicationController
   # GET /api/v1/remedy_tickets
     def migrating
       remedy_agent = User.find_by(login:'remedy.agent@zammad.org')
-      tickets = Ticket.where("tickets.remedy_id IS NULL AND tickets.owner_id = #{remedy_agent[:id]}")
+      tickets = Ticket.where("tickets.remedy_id IS NULL") #AND tickets.owner_id = #{remedy_agent[:id]}"
       render json: tickets
     end
 
