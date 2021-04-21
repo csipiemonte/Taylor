@@ -26,3 +26,11 @@ saml_settings.state = {
   assertion_consumer_service_url: ENV['ASSERTION_CONSUMER_SERVICE_URL']
 }
 saml_settings.save!
+
+remedy_base_url = Setting.find_by(name: "remedy_base_url")
+remedy_base_url.state = "https://tst-api-piemonte.ecosis.csi.it/tecno/troubleticketing/v1"
+remedy_base_url.save!
+
+remedy_base_url = Setting.find_by(name: "remedy_token")
+remedy_base_url.state = "f9b12cd4-16f3-3956-96fa-2f288667b9f3"
+remedy_base_url.save!
