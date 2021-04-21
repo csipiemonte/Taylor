@@ -1,0 +1,35 @@
+<form>
+
+  <h2><%- @T('Remedy API') %></h2>
+
+  <div class="settings-entry">
+    <table class="settings-list" style="width: 100%;">
+      <thead>
+        <tr>
+          <th width="20%"><%- @T('Type') %>
+          <th width="80%"><%- @T('URL') %>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="settings-list-row-control"><%- @T('Endpoint') %>
+          <td class="settings-list-control-cell"><input type="url" class="form-control form-control--small js-select" id="remedy_base_url" value="<%- @remedy_base_url %>">
+        <tr>
+          <td class="settings-list-row-control"><%- @T('Token') %>
+          <td class="settings-list-control-cell"><input type="text" class="form-control form-control--small js-select" id="remedy_token" value="<%- @remedy_token %>">
+      </tbody>
+    </table>
+  </div>
+
+<div class="settings-entry">
+  <h2><%- @T('Data Alignment') %></h2>
+  <div class="page-header-title">
+    <div class="zammad-switch zammad-switch--small">
+       <input type="checkbox" id="remedy_state_alignment" <% if @remedy_state_alignment: %>checked<% end %>>
+       <label for="remedy_state_alignment"></label>
+    </div>
+    <p>Enable alignment on ticket's state</p>
+  </div>
+</div>
+
+  <button type="submit" class="btn btn--primary js-submit"><%- @T('Save') %></button>
+</form>
