@@ -20,6 +20,7 @@
     </table>
   </div>
 
+<!--
 <div class="settings-entry">
   <h2><%- @T('Data Alignment') %></h2>
   <div class="page-header-title">
@@ -30,6 +31,7 @@
     <p>Enable alignment on ticket's state</p>
   </div>
 </div>
+-->
 
   <button type="submit" class="btn btn--primary js-submit"><%- @T('Save') %></button>
 </form>
