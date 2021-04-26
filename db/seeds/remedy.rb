@@ -172,6 +172,7 @@ Ticket::State.create_if_not_exists(
      state_type: Ticket::StateType.find_by(name: 'open'),
      created_by_id: 1,
      updated_by_id: 1,
+     external_state_id: 2,
 )
 
 attribute = ObjectManager::Attribute.get(
