@@ -58,23 +58,23 @@ ObjectManager::Attribute.add(
     'create_middle' => { 
       'ticket.customer' => { 
         'shown' => true, 
-        'required' => true, 
+        'required' => false, 
         'item_class' => 'column' 
       },
       'ticket.agent'    => { 
         'shown' => true, 
-        'required' => true, 
+        'required' => false, 
         'item_class' => 'column' 
       } 
     },
     'edit' => { 
       'ticket.customer' => { 
         'shown' => true, 
-        'required' => true 
+        'required' => false 
       },
       'ticket.agent' => { 
         'shown' => true, 
-        'required' => true 
+        'required' => false 
       } 
     } 
   },
