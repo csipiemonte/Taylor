@@ -157,6 +157,24 @@ attribute = ObjectManager::Attribute.get(
 attribute.data_option[:required_if][:state_id] = Ticket::State.by_category(:pending).pluck(:id)
 attribute.data_option[:shown_if][:state_id] = Ticket::State.by_category(:pending).pluck(:id)
 attribute.save!
+
+Ticket::State.create_if_not_exists(
+     id: 9,
+     name: 'pending user feedback',
+     state_type: Ticket::StateType.find_by(name: 'open'),
+     created_by_id: 1,
+     updated_by_id: 1,
+)
+
+Ticket::State.create_if_not_exists(
+     id: 10,
+     name: 'pending external activity',
+     state_type: Ticket::StateType.find_by(name: 'open'),
+     created_by_id: 1,
+     updated_by_id: 1,
+     external_state_id: 2,
+)
+
 attribute = ObjectManager::Attribute.get(
    object: 'Ticket',
    name: 'state_id',
@@ -167,3 +185,10 @@ attribute.screens[:create_middle]['ticket.customer'][:filter] = Ticket::State.by
 attribute.screens[:edit]['ticket.agent'][:filter] = Ticket::State.by_category(:viewable_agent_edit).pluck(:id)
 attribute.screens[:edit]['ticket.customer'][:filter] = Ticket::State.by_category(:viewable_customer_edit).pluck(:id)
 attribute.save!
+
+
+
+
+
+
+
