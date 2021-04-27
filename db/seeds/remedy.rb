@@ -141,10 +141,14 @@ Setting.create_if_not_exists(
   frontend:    false
 )
 
+Ticket::StateType.create_if_not_exists(id: 8, name: 'resolved')
+Ticket::StateType.create_if_not_exists(id: 9, name: 'pending user feedback')
+Ticket::StateType.create_if_not_exists(id: 10, name: 'pending external activity')
+
 Ticket::State.create_if_not_exists(
      id: 8,
      name: 'resolved',
-     state_type: Ticket::StateType.find_by(name: 'pending action'),
+     state_type: Ticket::StateType.find_by(name: 'resolved'),
      ignore_escalation: true,
      next_state: Ticket::State.find_by(name: 'closed'),
      created_by_id: 1,
@@ -161,18 +165,20 @@ attribute.save!
 Ticket::State.create_if_not_exists(
      id: 9,
      name: 'pending user feedback',
-     state_type: Ticket::StateType.find_by(name: 'open'),
+     state_type: Ticket::StateType.find_by(name: 'pending user feedback'),
      created_by_id: 1,
      updated_by_id: 1,
+     ignore_escalation: true,
 )
 
 Ticket::State.create_if_not_exists(
      id: 10,
      name: 'pending external activity',
-     state_type: Ticket::StateType.find_by(name: 'open'),
+     state_type: Ticket::StateType.find_by(name: 'pending external activity'),
      created_by_id: 1,
      updated_by_id: 1,
      external_state_id: 2,
+     ignore_escalation: true,
 )
 
 attribute = ObjectManager::Attribute.get(
