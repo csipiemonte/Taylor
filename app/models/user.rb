@@ -33,7 +33,10 @@ class User < ApplicationModel
   before_destroy    :destroy_longer_required_objects
 
   # CSI validations
-  before_validation :ensure_uniq_codice_fiscale
+  before_validation -> { ensure_uniq_attribute('codice_fiscale','Codice Fiscale') }
+  before_validation -> { ensure_uniq_attribute('tessera_team','Tessera TEAM') }
+  before_validation -> { ensure_uniq_attribute('tessera_stp','Tessera STP') }
+  before_validation -> { ensure_uniq_attribute('tessera_eni','Tessera ENI') }
 
   store :preferences
 
@@ -1269,18 +1272,17 @@ raise 'Minimum one user need to have admin permissions'
   end
 
 
-  def ensure_uniq_codice_fiscale
 
+  def ensure_uniq_attribute(attribute_name, attribute_display_name)
     # per evitare che stringhe vuote facciano scattare il vincolo unique sul db
-    if !self.codice_fiscale.nil? and self.codice_fiscale.strip === ''
-      self.codice_fiscale = nil
+    if !self[attribute_name].nil? and self[attribute_name].strip === ''
+      self[attribute_name] = nil
     end
-
-    return true if self.codice_fiscale.blank?
+    return true if self[attribute_name].blank?
     return true if !changes
-    return true if !changes['codice_fiscale']
-    return true if !User.exists?(codice_fiscale: self.codice_fiscale.strip)
-
-    raise Exceptions::UnprocessableEntity, "Codice Fiscale '#{self.codice_fiscale.strip}' is already used for other user."
+    return true if !changes[attribute_name]
+    return true if !User.exists?(tessera_eni: self[attribute_name].strip)
+    raise Exceptions::UnprocessableEntity, "#{attribute_display_name} '#{self[attribute_name].strip}' is already used for other user."
   end
+
 end
