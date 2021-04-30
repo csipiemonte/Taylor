@@ -141,39 +141,46 @@ Setting.create_if_not_exists(
   frontend:    false
 )
 
-Ticket::State.create_if_not_exists(
-     id: 8,
-     name: 'resolved',
-     state_type: Ticket::StateType.find_by(name: 'pending action'),
-     ignore_escalation: true,
-     next_state: Ticket::State.find_by(name: 'closed'),
-     created_by_id: 1,
-     updated_by_id: 1,
-)
-attribute = ObjectManager::Attribute.get(
-     object: 'Ticket',
-     name: 'pending_time',
-   )
-attribute.data_option[:required_if][:state_id] = Ticket::State.by_category(:pending).pluck(:id)
-attribute.data_option[:shown_if][:state_id] = Ticket::State.by_category(:pending).pluck(:id)
-attribute.save!
+#Ticket::StateType.create_if_not_exists(id: 8, name: 'resolved')
+#Ticket::StateType.create_if_not_exists(id: 9, name: 'pending user feedback')
+#Ticket::StateType.create_if_not_exists(id: 10, name: 'pending external activity')
 
-Ticket::State.create_if_not_exists(
-     id: 9,
-     name: 'pending user feedback',
-     state_type: Ticket::StateType.find_by(name: 'open'),
-     created_by_id: 1,
-     updated_by_id: 1,
-)
+state_to_delete = Ticket::State.find_by(name: 'pending close').try(:destroy)
+state_to_delete = Ticket::State.find_by(name: 'pending reminder').try(:destroy)
 
-Ticket::State.create_if_not_exists(
-     id: 10,
-     name: 'pending external activity',
-     state_type: Ticket::StateType.find_by(name: 'open'),
-     created_by_id: 1,
-     updated_by_id: 1,
-     external_state_id: 2,
-)
+if !Ticket::State.find_by(name:'resolved')
+  Ticket::State.create_if_not_exists(
+       name: 'resolved',
+       state_type: Ticket::StateType.find_by(name: 'open'),
+       ignore_escalation: true,
+       created_by_id: 1,
+       updated_by_id: 1,
+       active: true
+  )
+end
+
+if !Ticket::State.find_by(name:'pending user feedback')
+  Ticket::State.create_if_not_exists(
+       name: 'pending user feedback',
+       state_type: Ticket::StateType.find_by(name: 'open'),
+       created_by_id: 1,
+       updated_by_id: 1,
+       ignore_escalation: true,
+       active: true
+  )
+end
+
+if !Ticket::State.find_by(name:'pending external activity')
+  Ticket::State.create_if_not_exists(
+       name: 'pending external activity',
+       state_type: Ticket::StateType.find_by(name: 'open'),
+       created_by_id: 1,
+       updated_by_id: 1,
+       external_state_id: 2,
+       ignore_escalation: true,
+       active: true
+  )
+end
 
 attribute = ObjectManager::Attribute.get(
    object: 'Ticket',
@@ -186,9 +193,34 @@ attribute.screens[:edit]['ticket.agent'][:filter] = Ticket::State.by_category(:v
 attribute.screens[:edit]['ticket.customer'][:filter] = Ticket::State.by_category(:viewable_customer_edit).pluck(:id)
 attribute.save!
 
+Translation.create_if_not_exists(
+  locale: 'it-it',
+  source: 'resolved',
+  target: 'Risolto',
+  target_initial: 'Risolto',
+  format: 'string',
+  created_by_id: '1',
+  updated_by_id: '1',
+)
 
+Translation.create_if_not_exists(
+  locale: 'it-it',
+  source: 'pending user feedback',
+  target: 'In attesa di informazioni dal cliente',
+  target_initial: 'In attesa di informazioni dal cliente',
+  format: 'string',
+  created_by_id: '1',
+  updated_by_id: '1',
+)
 
-
-
+Translation.create_if_not_exists(
+  locale: 'it-it',
+  source: 'pending external activity',
+  target: 'In attesa di lavorazione esterna',
+  target_initial: 'In attesa di lavorazione esterna',
+  format: 'string',
+  created_by_id: '1',
+  updated_by_id: '1',
+)
 
 
