@@ -228,9 +228,54 @@ Translation.create_if_not_exists(
   updated_by_id: '1',
 )
 
-if !Trigger.find_by(name: 'auto-close resolved tickets')
-  Trigger.create!(
+if !Job.find_by(name: 'auto-close resolved tickets')
+  Job.create!(
     name: 'auto-close resolved tickets',
+    timeplan: {
+      'days' => {
+        'Mon': true,
+        'Tue': true,
+        'Wed': true,
+        'Thu': true,
+        'Fri': true,
+        'Sat': true,
+        'Sun': true,
+      },
+      'hours' => {
+        '0': true,
+        '1': true,
+        '2': true,
+        '3': true,
+        '4': true,
+        '5': true,
+        '6': true,
+        '7': true,
+        '8': true,
+        '9': true,
+        '10': true,
+        '11': true,
+        '12': true,
+        '13': true,
+        '14': true,
+        '15': true,
+        '16': true,
+        '17': true,
+        '18': true,
+        '19': true,
+        '20': true,
+        '21': true,
+        '22': true,
+        '23': true,
+      },
+      'minutes' => {
+        '0': true,
+        '10': true,
+        '20': true,
+        '30': true,
+        '40': true,
+        '50': true,
+      }
+    },
     condition:            {
       'ticket.updated_at' =>{
         'operator' => 'before (relative)',
@@ -253,6 +298,9 @@ if !Trigger.find_by(name: 'auto-close resolved tickets')
     updated_by_id:        1,
   )
 end
+
+
+
 
 
 
