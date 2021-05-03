@@ -18,7 +18,10 @@ class ExternalTicketsController < TicketsController
       # loop over response array of tickets to hide/change attributes
       obj_resp.each do |ticket|
         if states_to_hide_ids.include?(ticket["state_id"].to_s)
-          ticket["state_id"]  = states_to_hide_hash[ticket["state_id"]].external_state_id
+          state = states_to_hide_hash[ticket["state_id"]]
+          if state
+            ticket["state_id"]  = states_to_hide_hash[ticket["state_id"]].external_state_id
+          end
         end
       end
       str_resp = Oj.dump(obj_resp)
