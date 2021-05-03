@@ -145,8 +145,13 @@ Setting.create_if_not_exists(
 #Ticket::StateType.create_if_not_exists(id: 9, name: 'pending user feedback')
 #Ticket::StateType.create_if_not_exists(id: 10, name: 'pending external activity')
 
-state_to_delete = Ticket::State.find_by(name: 'pending close').try(:destroy)
-state_to_delete = Ticket::State.find_by(name: 'pending reminder').try(:destroy)
+
+pending_close = Ticket::State.find_by(name: 'pending close')
+pending_close.active = false
+pending_close.save!
+pending_reminder = Ticket::State.find_by(name: 'pending reminder')
+pending_reminder.active = false
+pending_reminder.save!
 
 if !Ticket::State.find_by(name:'resolved')
   Ticket::State.create_if_not_exists(
@@ -186,18 +191,18 @@ attribute = ObjectManager::Attribute.get(
    object: 'Ticket',
    name: 'state_id',
  )
-attribute.data_option[:filter] = Ticket::State.by_category(:viewable).pluck(:id)
-attribute.screens[:create_middle]['ticket.agent'][:filter] = Ticket::State.by_category(:viewable_agent_new).pluck(:id)
-attribute.screens[:create_middle]['ticket.customer'][:filter] = Ticket::State.by_category(:viewable_customer_new).pluck(:id)
-attribute.screens[:edit]['ticket.agent'][:filter] = Ticket::State.by_category(:viewable_agent_edit).pluck(:id)
-attribute.screens[:edit]['ticket.customer'][:filter] = Ticket::State.by_category(:viewable_customer_edit).pluck(:id)
+attribute.data_option[:filter] = Ticket::State.by_category(:viewable).where(active: [true]).pluck(:id)
+attribute.screens[:create_middle]['ticket.agent'][:filter] = Ticket::State.by_category(:viewable_agent_new).where(active: [true]).pluck(:id)
+attribute.screens[:create_middle]['ticket.customer'][:filter] = Ticket::State.by_category(:viewable_customer_new).where(active: [true]).pluck(:id)
+attribute.screens[:edit]['ticket.agent'][:filter] = Ticket::State.by_category(:viewable_agent_edit).where(active: [true]).pluck(:id)
+attribute.screens[:edit]['ticket.customer'][:filter] = Ticket::State.by_category(:viewable_customer_edit).where(active: [true]).pluck(:id)
 attribute.save!
 
 Translation.create_if_not_exists(
   locale: 'it-it',
   source: 'resolved',
-  target: 'Risolto',
-  target_initial: 'Risolto',
+  target: 'risolto',
+  target_initial: 'risolto',
   format: 'string',
   created_by_id: '1',
   updated_by_id: '1',
@@ -206,8 +211,8 @@ Translation.create_if_not_exists(
 Translation.create_if_not_exists(
   locale: 'it-it',
   source: 'pending user feedback',
-  target: 'In attesa di informazioni dal cliente',
-  target_initial: 'In attesa di informazioni dal cliente',
+  target: 'in attesa di informazioni da utente',
+  target_initial: 'in attesa di informazioni da utente',
   format: 'string',
   created_by_id: '1',
   updated_by_id: '1',
@@ -216,11 +221,39 @@ Translation.create_if_not_exists(
 Translation.create_if_not_exists(
   locale: 'it-it',
   source: 'pending external activity',
-  target: 'In attesa di lavorazione esterna',
-  target_initial: 'In attesa di lavorazione esterna',
+  target: 'in attesa di lavorazione esterna',
+  target_initial: 'in attesa di lavorazione esterna',
   format: 'string',
   created_by_id: '1',
   updated_by_id: '1',
 )
+
+if !Trigger.find_by(name: 'auto-close resolved tickets')
+  Trigger.create!(
+    name: 'auto-close resolved tickets',
+    condition:            {
+      'ticket.updated_at' =>{
+        'operator' => 'before (relative)',
+        'value': '1',
+        'range': 'hour'
+      },
+      'ticket.state_id' => {
+        'operator' => 'is',
+        'value'    => Ticket::State.lookup(name: 'resolved').id.to_s,
+      }
+    },
+    perform:              {
+      'ticket.state_id' => {
+        value: Ticket::State.lookup(name: 'closed').id.to_s,
+      }
+    },
+    disable_notification: true,
+    active:               true,
+    created_by_id:        1,
+    updated_by_id:        1,
+  )
+end
+
+
 
 
