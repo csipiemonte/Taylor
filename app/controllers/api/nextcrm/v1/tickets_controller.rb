@@ -19,6 +19,7 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
     hideTicketAttributesInResponse()
   end
 
+  # al momento non utilizzata
   def filter_updated
 
     from_time = params[:from]
@@ -82,8 +83,9 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
     params.delete :owner_id
     params.delete :owner
 
-    params.delete :state_id
     params.delete :state
+    params[:state_id] = 1 # new # TODO (solo) il valore 1 viene sovrascritto, da capire dove
+    
     
     if params[:article] and not params[:article][:type_id]
       raise Exceptions::UnprocessableEntity, "Need at least article: { type_id: \"<id>\" "
@@ -113,5 +115,5 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
 
 
 
-
+  
 end
