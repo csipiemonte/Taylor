@@ -297,7 +297,7 @@ class App.TicketCreate extends App.Controller
 
     if $('select[name="service_catalog_item_id"] option').length == 0
       sc_selector = $('select[name="service_catalog_item_id"]')
-      sc_selector.append(new Option("-",0))
+      sc_selector.append('<option value>-</option>')
       $.each categories.service_catalog_items, (index,value) ->
         o = new Option(value["name"], value["id"])
         $(o).html(value["name"])
@@ -305,7 +305,7 @@ class App.TicketCreate extends App.Controller
 
     if $('select[name="service_catalog_sub_item_id"] option').length == 0
       scs_selector = $('select[name="service_catalog_sub_item_id"]')
-      scs_selector.append(new Option("-",0))
+      scs_selector.append('<option value>-</option>')
       $.each categories.service_catalog_sub_items, (index,value) ->
         o = new Option(value["name"], value["id"])
         $(o).html(value["name"])
@@ -313,7 +313,7 @@ class App.TicketCreate extends App.Controller
 
     if $('select[name="asset_id"] option').length == 0
       as_selector = $('select[name="asset_id"]')
-      as_selector.append(new Option("-",0))
+      as_selector.append('<option value>-</option>')
       $.each categories.assets, (index,value) ->
         o = new Option(value["name"], value["id"])
         $(o).html(value["name"])
