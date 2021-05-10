@@ -12,12 +12,12 @@ ObjectManager::Attribute.add(
   active:      true,
   screens:     {
     "create"=> {
-      "ticket.customer" => {"shown"=>true, "required"=>false}, 
-      "ticket.agent" => {"shown"=>true, "required"=>false}, 
+      "ticket.customer" => {"shown"=>true, "required"=>false},
+      "ticket.agent" => {"shown"=>true, "required"=>false},
       "admin.user" => {"shown"=>true, "required"=>false}
     },
    "view" => {
-     "ticket.customer "=> {"shown"=>true}, "ticket.agent" => {"shown"=>true}, "admin.user" => {"shown"=>true} 
+     "ticket.customer "=> {"shown"=>true}, "ticket.agent" => {"shown"=>true}, "admin.user" => {"shown"=>true}
     },
    "edit" => {
      "ticket.agent" =>{"shown"=>true, "required"=>false}, "admin.user"=>{"shown"=>true, "required"=>false}
@@ -198,29 +198,29 @@ ObjectManager::Attribute.add(
   },
   editable:    true,
   active:      true,
-  screens: { 
-    'create_middle' => { 
-      'ticket.customer' => { 
-        'shown' => true, 
-        'required' => true, 
-        'item_class' => 'column' 
+  screens: {
+    'create_middle' => {
+      'ticket.customer' => {
+        'shown' => true,
+        'required' => true,
+        'item_class' => 'column'
       },
-      'ticket.agent'    => { 
-        'shown' => true, 
-        'required' => true, 
-        'item_class' => 'column' 
-      } 
+      'ticket.agent'    => {
+        'shown' => true,
+        'required' => true,
+        'item_class' => 'column'
+      }
     },
-    'edit' => { 
-      'ticket.customer' => { 
-        'shown' => true, 
-        'required' => true 
+    'edit' => {
+      'ticket.customer' => {
+        'shown' => true,
+        'required' => true
       },
-      'ticket.agent' => { 
-        'shown' => true, 
-        'required' => true 
-      } 
-    } 
+      'ticket.agent' => {
+        'shown' => true,
+        'required' => true
+      }
+    }
   },
 
   to_create:   false,
@@ -228,5 +228,3 @@ ObjectManager::Attribute.add(
   to_delete:   false,
   position:    1830,
 )
-
-
