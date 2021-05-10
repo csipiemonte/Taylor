@@ -35,9 +35,9 @@ class SessionsController < ApplicationController
     end
 
     # return current session
-    render json: SessionHelper.json_hash(user).merge(config: config_frontend, linked_accounts: linked_accounts)
+    render json: SessionHelper.json_hash(user).merge(config: config_frontend, linked_accounts: linked_accounts, categories: categories)
   rescue Exceptions::NotAuthorized => e
-    
+
     # CSI pwa automatic account linking info
     auth = session["first_step_login.auth"]
     error = session["first_step_login.error"]
@@ -100,7 +100,7 @@ class SessionsController < ApplicationController
           unless second_step_auth
             session["first_step_login.error"] = {code:"non_existing_account"}
             redirect_to second_step_url
-            return 
+            return
           end
           authorization = Authorization.create_from_hash(first_step_auth, second_step_auth.user)
         end
@@ -108,12 +108,12 @@ class SessionsController < ApplicationController
         session["first_step_login.error"] = nil
       end
 
-      if !authorization 
+      if !authorization
         if !first_step_auth
           # ask user confirm
           session["first_step_login.auth"] = auth
           redirect_to second_step_url
-          return 
+          return
         else
           if first_step_auth.provider == auth.provider
             session["first_step_login.auth"] = nil
@@ -123,13 +123,13 @@ class SessionsController < ApplicationController
           else
             session["first_step_login.error"] = {code:"non_existing_account"}
             redirect_to second_step_url
-            return 
+            return
           end
         end
-      
+
       end
     end
-    
+
     if !authorization
       authorization = Authorization.create_from_hash(auth, current_user)
     end
@@ -298,6 +298,14 @@ class SessionsController < ApplicationController
     end
 
     config
+  end
+
+  def categories
+    {
+      service_catalog_items: ServiceCatalogItem.all,
+      service_catalog_sub_items: ServiceCatalogSubItem.all,
+      assets:     Asset.all
+    }
   end
 
   def isRequestFromCSIpwaLoginPage?

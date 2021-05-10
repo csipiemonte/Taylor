@@ -97,7 +97,6 @@ class SidebarTicket extends App.Controller
     @item
 
   reload: (args) =>
-
     # apply tag changes
     if @tagWidget
       if args.tags
@@ -115,8 +114,20 @@ class SidebarTicket extends App.Controller
       @linkKbAnswerWidget.reload(args.links)
 
   editTicket: (el) =>
+    categories = App.Config.get("categories")
+
+    console.log "the ticket cat:"
+    console.log @categorization
+
     @el = el
-    localEl = $(App.view('ticket_zoom/sidebar_ticket')())
+    localEl = $(App.view('ticket_zoom/sidebar_ticket')(
+      isAgent: @permissionCheck('ticket.agent')
+      service_catalog_items: categories.service_catalog_items
+      service_catalog_sub_items: categories.service_catalog_sub_items
+      assets: categories.assets
+      ticket: @ticket
+      categorization: @categorization
+    ))
 
     @edit = new Edit(
       object_id: @ticket.id
@@ -154,6 +165,8 @@ class SidebarTicket extends App.Controller
         object_id: @ticket.id
       )
     @html localEl
+    if @permissionCheck('ticket.agent')
+      @setCategorizationValues()
 
   showTicketHistory: =>
     new App.TicketHistory(
@@ -173,5 +186,13 @@ class SidebarTicket extends App.Controller
       ticket_id: @ticket.id
       container: @el.closest('.content')
     )
+
+  setCategorizationValues: =>
+    $('#Ticket_'+@ticket.id+'_service_catalog_item_id').on "change", ->
+      @ticket.service_catalog_item_id = $('#Ticket_'+@ticket.id+'_service_catalog_item_id').val()
+    $('#Ticket_'+@ticket.id+'_service_catalog_sub_item_id').on "change", ->
+      @ticket.service_catalog_sub_item_id = $('#Ticket_'+@ticket.id+'_service_catalog_sub_item_id').val()
+    $('#Ticket_'+@ticket.id+'_asset_id').on "change", ->
+      @ticket.asset_id = $('#Ticket_'+@ticket.id+'_asset_id').val()
 
 App.Config.set('100-TicketEdit', SidebarTicket, 'TicketZoomSidebar')

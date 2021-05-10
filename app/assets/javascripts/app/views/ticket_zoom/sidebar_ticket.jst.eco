@@ -1,6 +1,64 @@
 <form>
   <fieldset class="edit"></fieldset>
 </form>
+
+<% if @isAgent: %>
+
+<div data-attribute-name="service_catalog_item" class="select form-group">
+  <div class="formGroup-label">
+    <label for="Ticket_service_catalog_item">service catalog</label>
+  </div>
+  <div class="controls "><div class="controls controls--select">
+  <select id="Ticket_<%= @ticket.id %>_service_catalog_item_id" class="form-control" name="service_catalog_item_id" required="">
+    <option value>-</option>
+    <% for service_catalog_item in @service_catalog_items: %>
+      <option value="<%= service_catalog_item.id %>"<% if @categorization.service_catalog_item_id == service_catalog_item.id: %> selected<% end %>><%= service_catalog_item.name %></option>
+    <% end %>
+  </select>
+    <svg class="icon icon-arrow-down "><use xlink:href="assets/images/icons.svg#icon-arrow-down"></use></svg>
+</div>
+    <span class="help-inline"></span>
+    <span class="help-block"></span>
+  </div>
+</div>
+
+<div data-attribute-name="service_catalog_sub_item" class="select form-group">
+  <div class="formGroup-label">
+    <label for="Ticket_service_catalog_sub_item">service catalog sub item</label>
+  </div>
+  <div class="controls "><div class="controls controls--select">
+  <select id="Ticket_<%= @ticket.id %>_service_catalog_sub_item_id" class="form-control" name="service_catalog_sub_item_id" required="">
+    <option value>-</option>
+    <% for service_catalog_sub_item in @service_catalog_sub_items: %>
+      <option value="<%= service_catalog_sub_item.id %>"<% if @categorization.service_catalog_sub_item_id == service_catalog_sub_item.id: %> selected<% end %>><%= service_catalog_sub_item.name %></option>
+    <% end %>
+  </select>
+    <svg class="icon icon-arrow-down "><use xlink:href="assets/images/icons.svg#icon-arrow-down"></use></svg>
+</div>
+    <span class="help-inline"></span>
+    <span class="help-block"></span>
+  </div>
+</div>
+
+<div data-attribute-name="asset" class="select form-group">
+  <div class="formGroup-label">
+    <label for="Ticket_asset">asset</label>
+  </div>
+  <div class="controls "><div class="controls controls--select">
+  <select id="Ticket_<%= @ticket.id %>_asset_id" class="form-control" name="asset" required="">
+    <option value>-</option>
+    <% for asset in @assets: %>
+      <option value="<%= asset.id %>"<% if @categorization.asset_id == asset.id: %> selected<% end %>><%= asset.name %></option>
+    <% end %>
+  </select>
+    <svg class="icon icon-arrow-down "><use xlink:href="assets/images/icons.svg#icon-arrow-down"></use></svg>
+</div>
+    <span class="help-inline"></span>
+    <span class="help-block"></span>
+  </div>
+</div>
+<% end %>
+
 <div class="tags"></div>
 <div class="links"></div>
 <div class="link_kb_answers"></div>
