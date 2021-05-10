@@ -107,7 +107,17 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
     end
     
     if params[:ticket] and params[:ticket][:customer_id]
-      params[:ticket][:customer_id] = "guess:#{params[:ticket][:customer_id]}"
+      # check if input email is present as linked account 
+      value = params[:ticket][:customer_id]
+      linked_authorization = Authorization.where(email: value).last
+      if linked_authorization
+        user = User.where(id: linked_authorization.user_id).last
+        if user and user.email
+          value = user.email
+        end
+      end
+      # autocreate user if not exists with "guess" keywork
+      params[:ticket][:customer_id] = "guess:#{value}"
     end
     super
   end
