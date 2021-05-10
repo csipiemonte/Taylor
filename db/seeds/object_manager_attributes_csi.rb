@@ -258,7 +258,7 @@ ObjectManager::Attribute.add(
     },
     'edit' => {
       'ticket.agent' => {
-        'shown' => true,
+        'shown' => false,
         'required' => false
       }
     }
@@ -298,7 +298,7 @@ ObjectManager::Attribute.add(
     },
     'edit' => {
       'ticket.agent' => {
-        'shown' => true,
+        'shown' => false,
         'required' => false
       }
     }
@@ -338,7 +338,7 @@ ObjectManager::Attribute.add(
     },
     'edit' => {
       'ticket.agent' => {
-        'shown' => true,
+        'shown' => false,
         'required' => false
       }
     }
