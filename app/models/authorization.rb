@@ -102,7 +102,8 @@ class Authorization < ApplicationModel
       username: hash['info']['nickname'] || hash['info']['username'] || hash['info']['name'] || hash['info']['email'] || hash['username'],
       provider: hash['provider'],
       token:    hash['credentials']['token'],
-      secret:   hash['credentials']['secret']
+      secret:   hash['credentials']['secret'],
+      email:    hash['info']['email']
     )
   end
 

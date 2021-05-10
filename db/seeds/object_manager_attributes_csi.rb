@@ -186,14 +186,14 @@ ObjectManager::Attribute.add(
   display:     'Utente Riconosciuto',
   data_type:   'select',
   data_option: {
-    default:    '',
+    default:    'No',
     options:    {
       'no'           => 'No',
       'si'            => 'Si',
     },
-    nulloption: true,
+    nulloption: false,
     multiple:   false,
-    null:       true,
+    null:       false,
     # translate:  true,
   },
   editable:    true,
@@ -202,23 +202,23 @@ ObjectManager::Attribute.add(
     'create_middle' => { 
       'ticket.customer' => { 
         'shown' => true, 
-        'required' => false, 
+        'required' => true, 
         'item_class' => 'column' 
       },
       'ticket.agent'    => { 
         'shown' => true, 
-        'required' => false, 
+        'required' => true, 
         'item_class' => 'column' 
       } 
     },
     'edit' => { 
       'ticket.customer' => { 
         'shown' => true, 
-        'required' => false 
+        'required' => true 
       },
       'ticket.agent' => { 
         'shown' => true, 
-        'required' => false 
+        'required' => true 
       } 
     } 
   },

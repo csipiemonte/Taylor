@@ -19,6 +19,7 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
     hideTicketAttributesInResponse()
   end
 
+  # al momento non utilizzata
   def filter_updated
 
     from_time = params[:from]
@@ -82,8 +83,9 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
     params.delete :owner_id
     params.delete :owner
 
-    params.delete :state_id
     params.delete :state
+    params[:state_id] = 1 # new # TODO (solo) il valore 1 viene sovrascritto, da capire dove
+    
     
     if params[:article] and not params[:article][:type_id]
       raise Exceptions::UnprocessableEntity, "Need at least article: { type_id: \"<id>\" "
@@ -105,7 +107,17 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
     end
     
     if params[:ticket] and params[:ticket][:customer_id]
-      params[:ticket][:customer_id] = "guess:#{params[:ticket][:customer_id]}"
+      # check if input email is present as linked account 
+      value = params[:ticket][:customer_id]
+      linked_authorization = Authorization.where(email: value).last
+      if linked_authorization
+        user = User.where(id: linked_authorization.user_id).last
+        if user and user.email
+          value = user.email
+        end
+      end
+      # autocreate user if not exists with "guess" keywork
+      params[:ticket][:customer_id] = "guess:#{value}"
     end
     super
   end
@@ -113,5 +125,5 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
 
 
 
-
+  
 end
