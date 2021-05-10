@@ -12,12 +12,12 @@ ObjectManager::Attribute.add(
   active:      true,
   screens:     {
     "create"=> {
-      "ticket.customer" => {"shown"=>true, "required"=>false}, 
-      "ticket.agent" => {"shown"=>true, "required"=>false}, 
+      "ticket.customer" => {"shown"=>true, "required"=>false},
+      "ticket.agent" => {"shown"=>true, "required"=>false},
       "admin.user" => {"shown"=>true, "required"=>false}
     },
    "view" => {
-     "ticket.customer "=> {"shown"=>true}, "ticket.agent" => {"shown"=>true}, "admin.user" => {"shown"=>true} 
+     "ticket.customer "=> {"shown"=>true}, "ticket.agent" => {"shown"=>true}, "admin.user" => {"shown"=>true}
     },
    "edit" => {
      "ticket.agent" =>{"shown"=>true, "required"=>false}, "admin.user"=>{"shown"=>true, "required"=>false}
@@ -198,35 +198,75 @@ ObjectManager::Attribute.add(
   },
   editable:    true,
   active:      true,
-  screens: { 
-    'create_middle' => { 
-      'ticket.customer' => { 
-        'shown' => true, 
-        'required' => false, 
-        'item_class' => 'column' 
+  screens: {
+    'create_middle' => {
+      'ticket.customer' => {
+        'shown' => true,
+        'required' => false,
+        'item_class' => 'column'
       },
-      'ticket.agent'    => { 
-        'shown' => true, 
-        'required' => false, 
-        'item_class' => 'column' 
-      } 
+      'ticket.agent'    => {
+        'shown' => true,
+        'required' => false,
+        'item_class' => 'column'
+      }
     },
-    'edit' => { 
-      'ticket.customer' => { 
-        'shown' => true, 
-        'required' => false 
+    'edit' => {
+      'ticket.customer' => {
+        'shown' => true,
+        'required' => false
       },
-      'ticket.agent' => { 
-        'shown' => true, 
-        'required' => false 
-      } 
-    } 
+      'ticket.agent' => {
+        'shown' => true,
+        'required' => false
+      }
+    }
   },
 
   to_create:   false,
   to_migrate:  false,
   to_delete:   false,
   position:    1830,
+)
+
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'Ticket',
+  name:        'service_catalog_item_id',
+  display:     'Service Catalog',
+  data_type:   'select',
+  data_option: {
+    default:        '',
+    relation:       'ServiceCatalogItem',
+    autocapitalize: false,
+    multiple:       false,
+    guess:          true,
+    null:           true,
+    limit:          200,
+    translate:      false,
+    permission:     ['ticket.agent'],
+  },
+  editable:    false,
+  active:      true,
+  screens: {
+    'create_middle' => {
+      'ticket.agent'    => {
+        'shown' => true,
+        'required' => false,
+        'item_class' => 'column'
+      }
+    },
+    'edit' => {
+      'ticket.agent' => {
+        'shown' => true,
+        'required' => false
+      }
+    }
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    1630,
 )
 
 

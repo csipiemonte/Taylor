@@ -190,6 +190,13 @@ class App.TicketZoom extends App.Controller
     @ticket = App.Ticket.fullLocal(@ticket_id)
     @ticket.article = undefined
 
+    if data.assets.Ticket[@ticket.id].service_catalog_item_id
+      @ticket.service_catalog_item_id = data.assets.Ticket[@ticket.id].service_catalog_item_id
+    if data.assets.Ticket[@ticket.id].service_catalog_sub_item_id
+      @ticket.service_catalog_sub_item_id = data.assets.Ticket[@ticket.id].service_catalog_sub_item_id
+    if data.assets.Ticket[@ticket.id].asset_id
+      @ticket.asset_id = data.assets.Ticket[@ticket.id].asset_id
+
     # render page
     @render(local)
 
@@ -482,6 +489,12 @@ class App.TicketZoom extends App.Controller
         el:        elLocal.find('.ticketZoom-header')
       )
 
+      @categorization = {
+        service_catalog_item_id : @ticket.service_catalog_item_id,
+        service_catalog_sub_item_id : @ticket.service_catalog_sub_item_id,
+        asset_id : @ticket.asset_id
+      }
+
       @sidebarWidget = new App.TicketZoomSidebar(
         el:           elLocal
         sidebarState: @sidebarState
@@ -494,6 +507,7 @@ class App.TicketZoom extends App.Controller
         markForm:     @markForm
         tags:         @tags
         links:        @links
+        categorization: @categorization
       )
 
       # check if autolock is needed
@@ -893,6 +907,12 @@ class App.TicketZoom extends App.Controller
   submitPost: (e, ticket, macro) =>
     taskAction = @$('.js-secondaryActionButtonLabel').data('type')
 
+    categorization = {
+      "service_catalog_item_id" : $('#Ticket_'+ticket.id+'_service_catalog_item_id').val(),
+      "service_catalog_sub_item_id" : $('#Ticket_'+ticket.id+'_service_catalog_sub_item_id').val(),
+      "asset_id" : $('#Ticket_'+ticket.id+'_asset_id').val()
+    }
+
     if macro && macro.ux_flow_next_up
       taskAction = macro.ux_flow_next_up
 
@@ -905,7 +925,7 @@ class App.TicketZoom extends App.Controller
       id: "ticket_update_#{ticket.id}"
       type: 'PUT'
       url: "#{App.Ticket.url}/#{ticket.id}?all=true"
-      data: JSON.stringify(ticket.attributes())
+      data: JSON.stringify(jQuery.extend(ticket.attributes(), categorization))
       processData: true
       success: (data) =>
 
