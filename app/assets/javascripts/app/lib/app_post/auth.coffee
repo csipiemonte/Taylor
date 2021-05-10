@@ -103,6 +103,9 @@ class App.Auth
       App.TaskManager.tasksInitial()
       return false
 
+    if data.categories
+      App.Config.set("categories",data.categories)
+
     # clear local store
     if type isnt 'check'
       App.Event.trigger('clearStore')

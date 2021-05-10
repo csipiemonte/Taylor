@@ -284,6 +284,8 @@ class App.TicketCreate extends App.Controller
       if !_.isEmpty(params['form_id'])
         @formId = params['form_id']
 
+    categories = App.Config.get("categories")
+
     @html(App.view('agent_ticket_create')(
       head:           'New Ticket'
       agent:          @permissionCheck('ticket.agent')
@@ -292,6 +294,31 @@ class App.TicketCreate extends App.Controller
       availableTypes: @availableTypes
       form_id:        @formId
     ))
+
+    if $('select[name="service_catalog_item_id"] option').length == 0
+      sc_selector = $('select[name="service_catalog_item_id"]')
+      sc_selector.append('<option value>-</option>')
+      $.each categories.service_catalog_items, (index,value) ->
+        o = new Option(value["name"], value["id"])
+        $(o).html(value["name"])
+        sc_selector.append(o)
+
+    if $('select[name="service_catalog_sub_item_id"] option').length == 0
+      scs_selector = $('select[name="service_catalog_sub_item_id"]')
+      scs_selector.append('<option value>-</option>')
+      $.each categories.service_catalog_sub_items, (index,value) ->
+        o = new Option(value["name"], value["id"])
+        $(o).html(value["name"])
+        scs_selector.append(o)
+
+    if $('select[name="asset_id"] option').length == 0
+      as_selector = $('select[name="asset_id"]')
+      as_selector.append('<option value>-</option>')
+      $.each categories.assets, (index,value) ->
+        o = new Option(value["name"], value["id"])
+        $(o).html(value["name"])
+        as_selector.append(o)
+      @categories_added = true
 
     App.Ticket.configure_attributes.push {
       name: 'cc'
