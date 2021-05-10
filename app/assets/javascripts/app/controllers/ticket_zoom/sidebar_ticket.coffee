@@ -115,10 +115,6 @@ class SidebarTicket extends App.Controller
 
   editTicket: (el) =>
     categories = App.Config.get("categories")
-
-    console.log "the ticket cat:"
-    console.log @categorization
-
     @el = el
     localEl = $(App.view('ticket_zoom/sidebar_ticket')(
       isAgent: @permissionCheck('ticket.agent')

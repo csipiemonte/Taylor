@@ -269,4 +269,84 @@ ObjectManager::Attribute.add(
   position:    1630,
 )
 
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'Ticket',
+  name:        'service_catalog_sub_item_id',
+  display:     'Service Catalog Sub Item',
+  data_type:   'select',
+  data_option: {
+    default:        '',
+    relation:       'ServiceCatalogSubItem',
+    autocapitalize: false,
+    multiple:       false,
+    guess:          true,
+    null:           true,
+    limit:          200,
+    translate:      false,
+    permission:     ['ticket.agent'],
+  },
+  editable:    false,
+  active:      true,
+  screens: {
+    'create_middle' => {
+      'ticket.agent'    => {
+        'shown' => true,
+        'required' => false,
+        'item_class' => 'column'
+      }
+    },
+    'edit' => {
+      'ticket.agent' => {
+        'shown' => true,
+        'required' => false
+      }
+    }
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    1631,
+)
+
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'Ticket',
+  name:        'asset_id',
+  display:     'Asset',
+  data_type:   'select',
+  data_option: {
+    default:        '',
+    relation:       'Asset',
+    autocapitalize: false,
+    multiple:       false,
+    guess:          true,
+    null:           true,
+    limit:          200,
+    translate:      false,
+    permission:     ['ticket.agent'],
+  },
+  editable:    false,
+  active:      true,
+  screens: {
+    'create_middle' => {
+      'ticket.agent'    => {
+        'shown' => true,
+        'required' => false,
+        'item_class' => 'column'
+      }
+    },
+    'edit' => {
+      'ticket.agent' => {
+        'shown' => true,
+        'required' => false
+      }
+    }
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    1632,
+)
+
 
