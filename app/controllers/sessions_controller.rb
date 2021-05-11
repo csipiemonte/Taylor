@@ -52,7 +52,8 @@ class SessionsController < ApplicationController
       error:       e.message,
       config:      config_frontend,
       models:      SessionHelper.models,
-      collections: { Locale.to_app_model => Locale.where(active: true) }
+      collections: { Locale.to_app_model => Locale.where(active: true) },
+      categories: categories
     }
   end
 
@@ -74,12 +75,9 @@ class SessionsController < ApplicationController
 
     # in case, remove switched_from_user_id
     session[:switched_from_user_id] = nil
-    Rails.logger.info "\n\n!!!!!!!!!!!!!entering\n\n"
     auth = request.env['omniauth.auth']
-    Rails.logger.info "\n\n!!!!!!!!!!!!!auth is: #{auth}\n\n"
-    if !auth
-      logger.info('AUTH IS NULL, SERVICE NOT LINKED TO ACCOUNT')
 
+    if !auth
       # redirect to app
       redirect_to '/'
     end
