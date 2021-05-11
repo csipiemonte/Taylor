@@ -123,6 +123,85 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
   end
 
 
+  private
+
+  def hideTicketAttributesInResponse
+    whitelist_parameters = %w[
+      id 
+      priority_id 
+      state_id 
+      organization_id 
+      number 
+      title 
+      customer_id 
+      note 
+      first_response_at 
+      first_response_escalation_at 
+      first_response_in_min 
+      first_response_diff_in_min 
+      close_at 
+      close_escalation_at 
+      close_in_min 
+      close_diff_in_min 
+      update_escalation_at 
+      update_in_min 
+      update_diff_in_min 
+      last_contact_at 
+      last_contact_agent_at 
+      last_contact_customer_at 
+      last_owner_update_at 
+      create_article_type_id 
+      create_article_sender_id 
+      article_count escalation_at 
+      pending_time type time_unit 
+      preferences updated_by_id 
+      created_by_id created_at 
+      updated_at 
+      remedy_id 
+      prova_richiesta_field 
+      utente_riconosciuto 
+      service_catalog_item_id 
+      service_catalog_sub_item_id 
+      asset_id 
+      ticket_time_accounting_ids 
+      group 
+      ticket_time_accounting 
+      state 
+      priority 
+      owner 
+      customer 
+      created_by 
+      updated_by 
+      create_article_type 
+      create_article_sender
+    ].to_set
+
+    states_to_hide_array = Ticket::State.select(:id,:name,:external_state_id).where.not(external_state_id: nil).where(active: true).to_a
+    # convert to hash {id => object} to improve access lookup speed in loop
+    states_to_hide_hash = states_to_hide_array.to_h{|state| [state.id, state] }
+    states_to_hide_ids = states_to_hide_hash.keys
+    # convert array in Set to improve 'include?' lookup speed in loop
+    states_to_hide_ids = states_to_hide_ids.to_set
+    # optimized json parse
+    obj_resp = Oj.load(response.body)
+
+    if obj_resp.is_a? Array
+      # loop over response array of tickets to hide/change attributes
+      obj_resp.each do |ticket| 
+        # whitelist
+        ticket.keys.each do |attribute|
+          ticket.delete(attribute) unless whitelist_parameters.include?(attribute)
+        end
+
+        if states_to_hide_ids.include?(ticket["state_id"].to_s) and states_to_hide_hash[ticket["state_id"]]
+          ticket["state_id"]  = states_to_hide_hash[ticket["state_id"]].external_state_id
+        end
+      end
+      str_resp = Oj.dump(obj_resp)
+      response.body = str_resp
+
+    end
+  end
 
 
   
