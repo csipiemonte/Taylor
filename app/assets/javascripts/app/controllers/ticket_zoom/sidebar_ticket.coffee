@@ -124,7 +124,7 @@ class SidebarTicket extends App.Controller
       ticket: @ticket
       categorization: @categorization
     ))
-    @setCategorizationValues()
+    setTimeout @setCategorizationValues, 500
 
     @edit = new Edit(
       object_id: @ticket.id
@@ -183,22 +183,19 @@ class SidebarTicket extends App.Controller
     )
 
   setCategorizationValues: () =>
-    sc_selector = $('#Ticket_'+@ticket.id+'_service_catalog_item_id')
-    scs_selector = $('#Ticket_'+@ticket.id+'_service_catalog_item_id')
-    as_selector = $('#Ticket_'+@ticket.id+'_asset_id')
+    categories = App.Config.get("categories")
+
+    sc_selector = @$('select[name="service_catalog_item_id"]')
+    scs_selector = @$('select[name="service_catalog_sub_item_id"]')
+    as_selector = @$('select[name="asset_id"]')
+
     sc_selector.change ->
-      categories = App.Config.get("categories")
-      @ticket.service_catalog_item_id = @.value
-      selected = @ticket.service_catalog_item_id
+      selected = @.value
       scs_selector.empty().append('<option value>-</option>')
       $.each categories.service_catalog_sub_items, (index,value) ->
         if not selected || parseInt(value["parent_service"]) == parseInt(selected)
           o = new Option(value["name"], value["id"])
           $(o).html(value["name"])
           scs_selector.append(o)
-    scs_selector.change ->
-      @ticket.service_catalog_sub_item_id =  @.value
-    as_selector.change ->
-      @ticket.asset_id = @.value
 
 App.Config.set('100-TicketEdit', SidebarTicket, 'TicketZoomSidebar')
