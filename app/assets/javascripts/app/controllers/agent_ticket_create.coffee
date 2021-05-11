@@ -420,23 +420,19 @@ class App.TicketCreate extends App.Controller
     @fillOptions(sc_selector,categories.service_catalog_items)
     @fillOptions(scs_selector,categories.service_catalog_sub_items)
     @fillOptions(as_selector,categories.assets)
+    callback = @fillOptions
 
     sc_selector.change ->
       selected = @.value
-      scs_selector.empty().append('<option value>-</option>')
-      $.each categories.service_catalog_sub_items, (index,value) ->
-        if not selected || parseInt(value["parent_service"]) == parseInt(selected)
-          o = new Option(value["name"], value["id"])
-          $(o).html(value["name"])
-          scs_selector.append(o)
+      children = categories.service_catalog_sub_items.filter (value) -> not selected || parseInt(value["parent_service"]) == parseInt(selected)
+      callback(scs_selector,children)
 
   fillOptions: (elem, array) ->
-    if elem && elem.find('option').length == 0
-      elem.append('<option value>-</option>')
-      $.each array, (index,value) ->
-        o = new Option(value["name"], value["id"])
-        $(o).html(value["name"])
-        elem.append(o)
+    elem.empty().append('<option value>-</option>')
+    $.each array, (index,value) ->
+      o = new Option(value["name"], value["id"])
+      $(o).html(value["name"])
+      elem.append(o)
 
 
   toggleButton: (event) ->

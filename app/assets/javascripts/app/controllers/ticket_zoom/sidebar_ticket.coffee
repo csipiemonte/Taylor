@@ -189,13 +189,21 @@ class SidebarTicket extends App.Controller
     scs_selector = @$('select[name="service_catalog_sub_item_id"]')
     as_selector = @$('select[name="asset_id"]')
 
+    sc_val = sc_selector.val()
+    @fillOptions(scs_selector,categories.service_catalog_sub_items.filter (elem) -> not sc_val || parseInt(elem["parent_service"]) == parseInt(sc_val))
+    scs_selector.val(@categorization.service_catalog_sub_item_id)
+
+    callback = @fillOptions
     sc_selector.change ->
       selected = @.value
-      scs_selector.empty().append('<option value>-</option>')
-      $.each categories.service_catalog_sub_items, (index,value) ->
-        if not selected || parseInt(value["parent_service"]) == parseInt(selected)
-          o = new Option(value["name"], value["id"])
-          $(o).html(value["name"])
-          scs_selector.append(o)
+      children = categories.service_catalog_sub_items.filter (elem) -> not selected || parseInt(elem["parent_service"]) == parseInt(selected)
+      callback(scs_selector,children)
+
+  fillOptions: (elem, array) ->
+    elem.empty().append('<option value>-</option>')
+    $.each array, (index,value) ->
+      o = new Option(value["name"], value["id"])
+      $(o).html(value["name"])
+      elem.append(o)
 
 App.Config.set('100-TicketEdit', SidebarTicket, 'TicketZoomSidebar')
