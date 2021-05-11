@@ -284,8 +284,6 @@ class App.TicketCreate extends App.Controller
       if !_.isEmpty(params['form_id'])
         @formId = params['form_id']
 
-    categories = App.Config.get("categories")
-
     @html(App.view('agent_ticket_create')(
       head:           'New Ticket'
       agent:          @permissionCheck('ticket.agent')
@@ -294,31 +292,6 @@ class App.TicketCreate extends App.Controller
       availableTypes: @availableTypes
       form_id:        @formId
     ))
-
-    if $('select[name="service_catalog_item_id"] option').length == 0
-      sc_selector = $('select[name="service_catalog_item_id"]')
-      sc_selector.append('<option value>-</option>')
-      $.each categories.service_catalog_items, (index,value) ->
-        o = new Option(value["name"], value["id"])
-        $(o).html(value["name"])
-        sc_selector.append(o)
-
-    if $('select[name="service_catalog_sub_item_id"] option').length == 0
-      scs_selector = $('select[name="service_catalog_sub_item_id"]')
-      scs_selector.append('<option value>-</option>')
-      $.each categories.service_catalog_sub_items, (index,value) ->
-        o = new Option(value["name"], value["id"])
-        $(o).html(value["name"])
-        scs_selector.append(o)
-
-    if $('select[name="asset_id"] option').length == 0
-      as_selector = $('select[name="asset_id"]')
-      as_selector.append('<option value>-</option>')
-      $.each categories.assets, (index,value) ->
-        o = new Option(value["name"], value["id"])
-        $(o).html(value["name"])
-        as_selector.append(o)
-      @categories_added = true
 
     App.Ticket.configure_attributes.push {
       name: 'cc'
@@ -433,7 +406,38 @@ class App.TicketCreate extends App.Controller
     # update taskbar with new meta data
     App.TaskManager.touch(@taskKey)
 
+    setTimeout @setCategorizationValues, 500
+
     @tokanice()
+
+  setCategorizationValues: =>
+    categories = App.Config.get("categories")
+
+    sc_selector = @$('select[name="service_catalog_item_id"]')
+    scs_selector = @$('select[name="service_catalog_sub_item_id"]')
+    as_selector = @$('select[name="asset_id"]')
+
+    @fillOptions(sc_selector,categories.service_catalog_items)
+    @fillOptions(scs_selector,categories.service_catalog_sub_items)
+    @fillOptions(as_selector,categories.assets)
+
+    sc_selector.change ->
+      selected = @.value
+      scs_selector.empty().append('<option value>-</option>')
+      $.each categories.service_catalog_sub_items, (index,value) ->
+        if not selected || parseInt(value["parent_service"]) == parseInt(selected)
+          o = new Option(value["name"], value["id"])
+          $(o).html(value["name"])
+          scs_selector.append(o)
+
+  fillOptions: (elem, array) ->
+    if elem && elem.find('option').length == 0
+      elem.append('<option value>-</option>')
+      $.each array, (index,value) ->
+        o = new Option(value["name"], value["id"])
+        $(o).html(value["name"])
+        elem.append(o)
+
 
   toggleButton: (event) ->
     @$(event.currentTarget).toggleClass('btn--active')
