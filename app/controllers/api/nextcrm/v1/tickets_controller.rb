@@ -129,49 +129,26 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
     whitelist_parameters = %w[
       id 
       priority_id 
+      priority
       state_id 
-      organization_id 
+      state
       number 
       title 
       customer_id 
       note 
-      first_response_at 
-      first_response_escalation_at 
-      first_response_in_min 
-      first_response_diff_in_min 
-      close_at 
-      close_escalation_at 
-      close_in_min 
-      close_diff_in_min 
-      update_escalation_at 
-      update_in_min 
-      update_diff_in_min 
-      last_contact_at 
-      last_contact_agent_at 
-      last_contact_customer_at 
-      last_owner_update_at 
       create_article_type_id 
       create_article_sender_id 
-      article_count escalation_at 
-      pending_time type time_unit 
-      preferences updated_by_id 
-      created_by_id created_at 
-      updated_at 
-      remedy_id 
-      prova_richiesta_field 
+      article_count  
+      type 
       utente_riconosciuto 
-      service_catalog_item_id 
-      service_catalog_sub_item_id 
       asset_id 
-      ticket_time_accounting_ids 
-      group 
-      ticket_time_accounting 
-      state 
-      priority 
-      owner 
       customer 
       created_by 
       updated_by 
+      updated_by_id 
+      created_by_id 
+      created_at 
+      updated_at 
       create_article_type 
       create_article_sender
     ].to_set
