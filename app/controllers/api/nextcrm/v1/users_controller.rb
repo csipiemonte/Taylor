@@ -9,11 +9,18 @@ class Api::Nextcrm::V1::UsersController < ::UsersController
   end
 
   def search
+    customer_role_id = Role.find_by(name: "Customer").id
     if params[:filter]
       filter = JSON.parse(params[:filter])
       query = filterToElasticSearchQuery(filter)
       params[:query] = query
     end
+    if  params[:query] 
+      params[:query] += " AND role_ids:#{customer_role_id} "
+    else
+      params[:query] = "role_ids:#{customer_role_id}"
+    end
+  
     super
   end
 
