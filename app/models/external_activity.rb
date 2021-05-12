@@ -1,3 +1,5 @@
-class ServiceCatalogSubItem < ApplicationModel
-  belongs_to :service_catalog_item
+class ExternalActivity < ApplicationModel
+  belongs_to :ticket
+  belongs_to :external_ticketing_system
+  store :data
 end

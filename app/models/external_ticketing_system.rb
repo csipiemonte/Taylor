@@ -1,3 +1,3 @@
-class ServiceCatalogItem < ApplicationModel
-  has_many :mappings,  class_name: 'ServiceCatalogSubItem'
+class ExternalTicketingSystem < ApplicationModel
+  has_many :mappings,  class_name: 'ExternalActivity'
 end
