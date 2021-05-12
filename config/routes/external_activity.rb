@@ -7,5 +7,6 @@ Zammad::Application.routes.draw do
 
     match api_path + '/external_ticketing_system/',                         to: 'external_activity#index_external_ticketing_system',   via: :get
     match api_path + '/external_ticketing_system/:id',                      to: 'external_activity#show_external_ticketing_system',    via: :get
+    match api_path + '/external_ticketing_system/',                         to: 'external_activity#create_external_ticketing_system',  via: :post
 
 end

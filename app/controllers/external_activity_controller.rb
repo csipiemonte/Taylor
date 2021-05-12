@@ -24,7 +24,7 @@ class ExternalActivityController < ApplicationController
     external_activity = ExternalActivity.create(
       external_ticketing_system_id: params[:ticketing_system_id],
       ticket_id: params[:ticket_id],
-      data: {value: params[:data]},
+      data: params[:data],
       bidirectional_alignment: params[:bidirectional_alignment]
     )
     external_activity.save!
@@ -37,6 +37,16 @@ class ExternalActivityController < ApplicationController
 
   def show_external_ticketing_system
     render json: ExternalTicketingSystem.find_by(id: params[:id])
+  end
+
+  def create_external_ticketing_system
+    external_ticketing_system = ExternalTicketingSystem.create(
+      name: params[:name],
+      model: params[:model],
+      icon_path: params[:icon]
+    )
+    external_ticketing_system.save!
+    render json: external_ticketing_system
   end
 
 end
