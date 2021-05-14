@@ -143,6 +143,7 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
       type 
       utente_riconosciuto 
       asset_id 
+      asset
       customer 
       created_by 
       updated_by 
@@ -153,6 +154,8 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
       create_article_type 
       create_article_sender
     ].to_set
+    # convert to hash {id => object} to improve access lookup speed in loop
+    all_assets = Asset.select(:id,:name).to_a.to_h{|asset| [asset.id, asset.name] }
     states_to_hide_array = Ticket::State.select(:id,:name,:external_state_id).where.not(external_state_id: nil).where(active: true).to_a
     # convert to hash {id => object} to improve access lookup speed in loop
     states_to_hide_hash = states_to_hide_array.to_h{|state| [state.id, state] }
@@ -177,6 +180,11 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
         end
         # state translation
         ticket["state"] = states_traslations[ticket["state"]] if ticket["state"]
+        # asset name
+        ticket["asset"] ||= nil
+        if ticket["asset_id"] 
+          ticket["asset"] = all_assets[ticket["asset_id"]]
+        end
       end
       str_resp = Oj.dump(obj_resp)
       response.body = str_resp
