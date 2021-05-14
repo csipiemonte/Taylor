@@ -1,15 +1,24 @@
 <% if @isAgent: %>
+  <p class="text-muted">
+  <% if @dispatched: %>
+    <%- @T('Created at') %> <%= @activity.created_at %>:
+  <% else: %>
+    <%- @T('Create new external Activity on') %> <%= @system.name %>:
+  <% end %>
+  </p>
   <% for field in @fields: %>
     <div data-attribute-name="External_Activity_<%= @externalActivityId %>_<%= field.name %>" class="select form-group">
       <div class="formGroup-label">
         <label for="<%= field.name %>"><%= field.label %> <span></span></label>
       </div>
       <div class="controls "><div class="controls">
-        <input id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="<%= field.type %>" class="<% if field.type!="checkbox": %>form-control<% end %>" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if field.read_only: %>readonly<% end %> <% if field.default: %>value="<%= field.default %>"<% end %>>
+        <input id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="<%= field.type %>" class="<% if field.type!="checkbox": %>form-control<% end %>" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @dispatched || field.read_only: %>readonly<% end %> <% if @dispatched && @values[field.name]: %>value="<%= @values[field.name] %>" <% else if field.default: %>value="<%= field.default %>"<% end %>>
       </div>
       </div>
     </div>
   <% end %>
-  <button id="External_Activity_<%= @externalActivityId %>_submit" class="btn btn--primary"><%- @T('Create') %></button>
+  <% if !@dispatched: %>
+    <button id="External_Activity_<%= @externalActivityId %>_submit" class="btn btn--primary"><%- @T('Create') %></button>
+  <% end %>
   <hr>
 <% end %>

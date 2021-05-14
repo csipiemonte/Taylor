@@ -1,14 +1,14 @@
 class ExternalActivity extends App.Controller
   sidebarItem: =>
     systems = []
-    @systems = systems
-    cb = @loadSystem
     @ajax(
       id:    'ticketing_system_selector'
       type:  'GET'
       url:   "#{@apiPath}/external_ticketing_system"
       async: false
       success: (data, status, xhr) =>
+        @systems = data
+        cb = @loadSystem
         data.forEach (system) ->
           systems.push {
             title:    system.name
@@ -31,13 +31,38 @@ class ExternalActivity extends App.Controller
       system: @system
     ))
     @html(addButton)
+    @ajax(
+      id:    'external_activities'
+      type:  'GET'
+      url:   "#{@apiPath}/external_activity/system/"+@system.id+"?ticket_id="+@ticket.id
+      success: (data, status, xhr) =>
+        console.log data
+        cb = @displayExternalActivity
+        data.forEach (activity) ->
+          cb(activity)
+
+    )
     @$('.js-newExternalActivityLabel').on('click', =>
        @createDispatchForm()
     )
 
+  displayExternalActivity: (activity) =>
+    externalActivityId = Math.floor(Math.random() * 10000) + 10000
+    @$('.dispatch-box').append App.view('ticket_zoom/sidebar_external_activity_form')(
+           system: @system
+           externalActivityId : externalActivityId
+           ticket : @ticket
+           isAgent: @permissionCheck('ticket.agent')
+           fields: Object.values(@system.model)
+           dispatched: true
+           values: activity.data
+           activity: activity
+         )
+
   createDispatchForm: () =>
     externalActivityId = Math.floor(Math.random() * 10000) + 10000
     @$('.dispatch-box').append App.view('ticket_zoom/sidebar_external_activity_form')(
+      system: @system
       externalActivityId : externalActivityId
       ticket : @ticket
       isAgent: @permissionCheck('ticket.agent')
@@ -50,7 +75,7 @@ class ExternalActivity extends App.Controller
   createExternalActivity: (externalActivityId) =>
     new_activity_fields = {}
     Object.values(@system.model).forEach (field) ->
-      new_activity_fields[field.name] = @$('#External_Activity_'+externalActivityId+'_'+field.name)
+      new_activity_fields[field.name] = @$('#External_Activity_'+externalActivityId+'_'+field.name).val()
     data = JSON.stringify(
       "ticketing_system_id":@system.id,
       "ticket_id":@ticket.id,
@@ -62,7 +87,7 @@ class ExternalActivity extends App.Controller
       url:   "#{@apiPath}/external_activity"
       data: data
       success: (data, status, xhr) =>
-
+        @loadSystem(@system)
     )
 
   showObjects: (el) =>
