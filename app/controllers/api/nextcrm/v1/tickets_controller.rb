@@ -1,7 +1,7 @@
 class Api::Nextcrm::V1::TicketsController < ::TicketsController
   include Api::Nextcrm::V1::Concerns::ReadesApiManagerJwt
   include Api::Nextcrm::V1::Concerns::Filterable
-  include Api::Nextcrm::V1::Concerns::ResponseHideAttributes
+
 
   def index
     params[:expand] = true

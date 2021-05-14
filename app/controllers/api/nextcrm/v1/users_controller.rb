@@ -5,7 +5,7 @@ class Api::Nextcrm::V1::UsersController < ::UsersController
   def index
     
     super
-    # puts response.body = {debug: "message"}.to_json
+    alterUserAttributesInResponse()
   end
 
   def search
@@ -22,6 +22,7 @@ class Api::Nextcrm::V1::UsersController < ::UsersController
     end
   
     super
+    alterUserAttributesInResponse()
   end
 
   def create
@@ -42,6 +43,47 @@ class Api::Nextcrm::V1::UsersController < ::UsersController
 
   def update
     super
+  end
+
+  private
+
+  def alterUserAttributesInResponse
+    # convert array in Set to improve 'include?' lookup speed in loop
+    whitelist_parameters = %w[
+      id 
+      email
+      firstname
+      lastname
+      phone
+      fax
+      mobile
+      active
+      note
+      codice_fiscale
+      tessera_team
+      tessera_stp
+      tessera_eni
+      birthdate
+      last_login
+      created_at
+      updated_at
+    ].to_set
+
+     # optimized json parse
+     obj_resp = Oj.load(response.body)
+
+     if obj_resp.is_a? Array
+      # loop over response array of object to hide/change attributes
+      obj_resp.each do |user| 
+        # whitelist
+        user.keys.each do |attribute|
+          user.delete(attribute) unless whitelist_parameters.include?(attribute)
+        end
+        
+      end
+      str_resp = Oj.dump(obj_resp)
+      response.body = str_resp
+    end
   end
 
 end
