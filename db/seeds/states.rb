@@ -1,3 +1,6 @@
+# seed custom CSI per l'aggiunta di altri stati
+
+# stati 'pending close' e 'pending reminder' resi non attivi
 pending_close = Ticket::State.find_by(name: 'pending close')
 pending_close.active = false
 pending_close.save!
@@ -5,44 +8,70 @@ pending_reminder = Ticket::State.find_by(name: 'pending reminder')
 pending_reminder.active = false
 pending_reminder.save!
 
-if !Ticket::State.find_by(name:'resolved')
-  Ticket::State.create_if_not_exists(
-       name: 'resolved',
-       state_type: Ticket::StateType.find_by(name: 'open'),
-       ignore_escalation: true,
-       created_by_id: 1,
-       updated_by_id: 1,
-       active: true
-  )
-end
+# stati custom CSI
+Ticket::State.create_if_not_exists(
+  id:                8,
+  name:              'resolved',
+  state_type:        Ticket::StateType.find_by(name: 'open'),
+  ignore_escalation: true,
+  created_by_id:     1,
+  updated_by_id:     1,
+  active:            true
+)
+Ticket::State.create_if_not_exists(
+  id:                9,
+  name:              'pending user feedback',
+  state_type:        Ticket::StateType.find_by(name: 'open'),
+  created_by_id:     1,
+  updated_by_id:     1,
+  ignore_escalation: true,
+  active:            true
+)
+Ticket::State.create_if_not_exists(
+  id:                10,
+  name:              'pending external activity',
+  state_type:        Ticket::StateType.find_by(name: 'open'),
+  created_by_id:     1,
+  updated_by_id:     1,
+  external_state_id: 2,
+  ignore_escalation: true,
+  active:            true
+)
 
-if !Ticket::State.find_by(name:'pending user feedback')
-  Ticket::State.create_if_not_exists(
-       name: 'pending user feedback',
-       state_type: Ticket::StateType.find_by(name: 'open'),
-       created_by_id: 1,
-       updated_by_id: 1,
-       ignore_escalation: true,
-       active: true
-  )
-end
+# traduzione stati custom CSI
+Translation.create_if_not_exists(
+  locale:         'it-it',
+  source:         'resolved',
+  target:         'risolto',
+  target_initial: 'risolto',
+  format:         'string',
+  created_by_id:  '1',
+  updated_by_id:  '1',
+)
+Translation.create_if_not_exists(
+  locale:         'it-it',
+  source:         'pending user feedback',
+  target:         'in attesa di informazioni da utente',
+  target_initial: 'in attesa di informazioni da utente',
+  format:         'string',
+  created_by_id:  '1',
+  updated_by_id:  '1',
+)
+Translation.create_if_not_exists(
+  locale:         'it-it',
+  source:         'pending external activity',
+  target:         'in attesa di lavorazione esterna',
+  target_initial: 'in attesa di lavorazione esterna',
+  format:         'string',
+  created_by_id:  '1',
+  updated_by_id:  '1',
+)
 
-if !Ticket::State.find_by(name:'pending external activity')
-  Ticket::State.create_if_not_exists(
-       name: 'pending external activity',
-       state_type: Ticket::StateType.find_by(name: 'open'),
-       created_by_id: 1,
-       updated_by_id: 1,
-       external_state_id: 2,
-       ignore_escalation: true,
-       active: true
-  )
-end
-
+# gli stati custom CSI devono essere resi disponibili all'interno within Zammad UI - inizio
 attribute = ObjectManager::Attribute.get(
-   object: 'Ticket',
-   name: 'state_id',
- )
+  object: 'Ticket',
+  name:   'state_id',
+)
 attribute.data_option[:filter] = Ticket::State.by_category(:viewable).where(active: [true]).pluck(:id)
 attribute.screens[:create_middle]['ticket.agent'][:filter] = Ticket::State.by_category(:viewable_agent_new).where(active: [true]).pluck(:id)
 attribute.screens[:create_middle]['ticket.customer'][:filter] = Ticket::State.by_category(:viewable_customer_new).where(active: [true]).pluck(:id)
@@ -50,41 +79,12 @@ attribute.screens[:edit]['ticket.agent'][:filter] = Ticket::State.by_category(:v
 attribute.screens[:edit]['ticket.customer'][:filter] = Ticket::State.by_category(:viewable_customer_edit).where(active: [true]).pluck(:id)
 attribute.save!
 
-Translation.create_if_not_exists(
-  locale: 'it-it',
-  source: 'resolved',
-  target: 'risolto',
-  target_initial: 'risolto',
-  format: 'string',
-  created_by_id: '1',
-  updated_by_id: '1',
-)
-
-Translation.create_if_not_exists(
-  locale: 'it-it',
-  source: 'pending user feedback',
-  target: 'in attesa di informazioni da utente',
-  target_initial: 'in attesa di informazioni da utente',
-  format: 'string',
-  created_by_id: '1',
-  updated_by_id: '1',
-)
-
-Translation.create_if_not_exists(
-  locale: 'it-it',
-  source: 'pending external activity',
-  target: 'in attesa di lavorazione esterna',
-  target_initial: 'in attesa di lavorazione esterna',
-  format: 'string',
-  created_by_id: '1',
-  updated_by_id: '1',
-)
-
+# Job per la chiusura automatica dei ticket in stato 'resolved'
 if !Job.find_by(name: 'auto-close resolved tickets')
   Job.create!(
-    name: 'auto-close resolved tickets',
-    timeplan: {
-      'days' => {
+    name:                 'auto-close resolved tickets',
+    timeplan:             {
+      'days'    => {
         'Mon': true,
         'Tue': true,
         'Wed': true,
@@ -93,17 +93,17 @@ if !Job.find_by(name: 'auto-close resolved tickets')
         'Sat': true,
         'Sun': true,
       },
-      'hours' => {
-        '0': true,
-        '1': true,
-        '2': true,
-        '3': true,
-        '4': true,
-        '5': true,
-        '6': true,
-        '7': true,
-        '8': true,
-        '9': true,
+      'hours'   => {
+        '0':  true,
+        '1':  true,
+        '2':  true,
+        '3':  true,
+        '4':  true,
+        '5':  true,
+        '6':  true,
+        '7':  true,
+        '8':  true,
+        '9':  true,
         '10': true,
         '11': true,
         '12': true,
@@ -120,7 +120,7 @@ if !Job.find_by(name: 'auto-close resolved tickets')
         '23': true,
       },
       'minutes' => {
-        '0': true,
+        '0':  true,
         '10': true,
         '20': true,
         '30': true,
@@ -129,12 +129,12 @@ if !Job.find_by(name: 'auto-close resolved tickets')
       }
     },
     condition:            {
-      'ticket.updated_at' =>{
+      'ticket.updated_at' => {
         'operator' => 'before (relative)',
         'value': '1',
         'range': 'hour'
       },
-      'ticket.state_id' => {
+      'ticket.state_id'   => {
         'operator' => 'is',
         'value'    => Ticket::State.lookup(name: 'resolved').id.to_s,
       }

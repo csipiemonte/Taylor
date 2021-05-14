@@ -68,9 +68,12 @@ ObjectManager::Attribute.add(
   data_option: {
     default:    '',
     options:    {
-      'Incident'           => 'Incident',
-      'Problem'            => 'Problem',
-      'Request for Change' => 'Request for Change',
+      # 'Incident'           => 'Incident',
+      # 'Problem'            => 'Problem',
+      # 'Request for Change' => 'Request for Change',
+      'Richiesta informativa generica'    => 'Richiesta informativa generica',
+      'Domanda sul servizio applicativo'  => 'Domanda sul servizio applicativo',
+      'Segnalazione di malfunzionamento'  => 'Segnalazione di malfunzionamento',
     },
     nulloption: true,
     multiple:   false,
@@ -78,19 +81,43 @@ ObjectManager::Attribute.add(
     translate:  true,
   },
   editable:    true,
-  active:      false,
-  screens:     {
-    create_middle: {
-      '-all-' => {
-        null:       false,
-        item_class: 'column',
+  active:      true,
+  # screens:     {
+  #   create_middle: {
+  #     '-all-' => {
+  #       null:       false,
+  #       item_class: 'column',
+  #     },
+  #   },
+  #   edit:          {
+  #     'ticket.agent' => {
+  #       null: false,
+  #     },
+  #   },
+  # },
+  screens: {
+    'create_middle' => {
+      'ticket.customer' => {
+        'shown' => true,
+        'required' => false,
+        'item_class' => 'column'
       },
+      'ticket.agent'    => {
+        'shown' => true,
+        'required' => false,
+        'item_class' => 'column'
+      }
     },
-    edit:          {
+    'edit' => {
+      'ticket.customer' => {
+        'shown' => true,
+        'required' => false
+      },
       'ticket.agent' => {
-        null: false,
-      },
-    },
+        'shown' => true,
+        'required' => false
+      }
+    }
   },
   to_create:   false,
   to_migrate:  false,
