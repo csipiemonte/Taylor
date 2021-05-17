@@ -1,5 +1,6 @@
 <% if @isAgent: %>
   <p class="text-muted">
+  <p id="External_Activity_<%= @externalActivityId %>_import-from-ticket" style="color: #429ed7;cursor: pointer;">Import data from user's ticket</p>
   <% if @dispatched: %>
     <%- @T('Created at') %> <%= @activity.created_at %>:
   <% else: %>
