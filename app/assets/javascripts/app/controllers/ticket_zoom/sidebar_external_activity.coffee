@@ -75,23 +75,34 @@ class ExternalActivity extends App.Controller
     )
 
    buildSelectField: (externalActivityId) =>
-    cb = @addOption
     instance = @
     $.each @system.model, (key, field) ->
+      selectField = $('#External_Activity_'+externalActivityId+'_'+field["name"])
       if field["select"] != undefined
-        selectField = $('#External_Activity_'+externalActivityId+'_'+field["name"])
         for key, option of field["select"]["options"]
-          cb(selectField, option)
+          instance.addOption(selectField, option)
         if field["select"]["service"] != undefined
-          instance.ajax(
-            id:    'options for '+field["name"]
-            type:  'GET'
-            url:   "#{instance.apiPath}/"+field["select"]["service"]
-            success: (data, status, xhr) =>
-              console.log selectField
-              data.forEach (option) =>
-                cb(selectField,option)
-          )
+          instance.fetchOptionValues(field,selectField)
+        if field["select"]["parent"] != undefined
+          parent = $('#External_Activity_'+externalActivityId+'_'+field["select"]["parent"])
+          parent.change ->
+            console.log "hello"
+            instance.fetchOptionValues(field,selectField,@.value)
+
+  fetchOptionValues: (field,selectField,parentValue="") =>
+    cb = @addOption
+    url = "#{@apiPath}/"+field["select"]["service"]
+    if parentValue!=""
+      url+="?parent_id="+parentValue
+    @.ajax(
+      id:    'options for '+field["name"]
+      type:  'GET'
+      url: url
+      success: (data, status, xhr) =>
+        selectField.empty().append('<option value>-</option>')
+        data.forEach (option) =>
+          cb(selectField,option)
+    )
 
   addOption: (selectField, option) =>
     o = new Option(option["name"], option["id"]);
