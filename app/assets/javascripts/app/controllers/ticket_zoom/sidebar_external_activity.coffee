@@ -36,7 +36,6 @@ class ExternalActivity extends App.Controller
       type:  'GET'
       url:   "#{@apiPath}/external_activity/system/"+@system.id+"?ticket_id="+@ticket.id
       success: (data, status, xhr) =>
-        console.log data
         cb = @displayExternalActivity
         data.forEach (activity) ->
           cb(activity)
@@ -68,9 +67,36 @@ class ExternalActivity extends App.Controller
       isAgent: @permissionCheck('ticket.agent')
       fields: Object.values(@system.model)
     )
+
+    @buildSelectField(externalActivityId)
+
     @$('#External_Activity_'+externalActivityId+'_submit').on('click', =>
        @createExternalActivity(externalActivityId)
     )
+
+   buildSelectField: (externalActivityId) =>
+    cb = @addOption
+    instance = @
+    $.each @system.model, (key, field) ->
+      if field["select"] != undefined
+        selectField = $('#External_Activity_'+externalActivityId+'_'+field["name"])
+        for key, option of field["select"]["options"]
+          cb(selectField, option)
+        if field["select"]["service"] != undefined
+          instance.ajax(
+            id:    'options for '+field["name"]
+            type:  'GET'
+            url:   "#{instance.apiPath}/"+field["select"]["service"]
+            success: (data, status, xhr) =>
+              console.log selectField
+              data.forEach (option) =>
+                cb(selectField,option)
+          )
+
+  addOption: (selectField, option) =>
+    o = new Option(option["name"], option["id"]);
+    $(o).html(option["name"]);
+    selectField.append(o);
 
   createExternalActivity: (externalActivityId) =>
     new_activity_fields = {}

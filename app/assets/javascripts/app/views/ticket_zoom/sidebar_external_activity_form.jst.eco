@@ -9,10 +9,17 @@
   <% for field in @fields: %>
     <div data-attribute-name="External_Activity_<%= @externalActivityId %>_<%= field.name %>" class="select form-group">
       <div class="formGroup-label">
-        <label for="<%= field.name %>"><%= field.label %> <span></span></label>
+        <label for="<%= field.name %>"><%= field.label %> <span><% if @required: %>*<% end %></span></label>
       </div>
-      <div class="controls "><div class="controls">
-        <input id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="<%= field.type %>" class="<% if field.type!="checkbox": %>form-control<% end %>" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @dispatched || field.read_only: %>readonly<% end %> <% if @dispatched && @values[field.name]: %>value="<%= @values[field.name] %>" <% else if field.default: %>value="<%= field.default %>"<% end %>>
+      <div class="controls "><div class="controls controls--select">
+        <% if field.select: %>
+          <select id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="<%= field.type %>" class="<% if field.type!="checkbox": %>form-control<% end %>" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @dispatched || field.read_only: %>readonly<% end %> <% if @dispatched && @values[field.name]: %>value="<%= @values[field.name] %>" <% else if field.default: %>value="<%= field.default %>"<% end %>>>
+            <option value>-</option>
+          </select>
+          <svg class="icon icon-arrow-down "><use xlink:href="assets/images/icons.svg#icon-arrow-down"></use></svg>
+        <% else: %>
+          <input id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="<%= field.type %>" class="<% if field.type!="checkbox": %>form-control<% end %>" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @dispatched || field.read_only: %>readonly<% end %> <% if @dispatched && @values[field.name]: %>value="<%= @values[field.name] %>" <% else if field.default: %>value="<%= field.default %>"<% end %>>
+        <% end %>
       </div>
       </div>
     </div>
