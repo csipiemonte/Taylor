@@ -68,13 +68,28 @@ class ExternalActivity extends App.Controller
       fields: Object.values(@system.model)
     )
 
-    @buildSelectField(externalActivityId)
+    @buildSelectFields(externalActivityId)
 
-    @$('#External_Activity_'+externalActivityId+'_submit').on('click', =>
-       @createExternalActivity(externalActivityId)
+    @$('#External_Activity_'+externalActivityId+'_import-from-ticket').on('click', =>
+      @importFieldsFromTicket(externalActivityId)
     )
 
-   buildSelectField: (externalActivityId) =>
+    @$('#External_Activity_'+externalActivityId+'_submit').on('click', =>
+      @createExternalActivity(externalActivityId)
+    )
+
+  importFieldsFromTicket: (externalActivityId) =>
+    @ajax(
+      id:    'ticket'
+      type:  'GET'
+      url:   "#{@apiPath}/tickets/"+@ticket.id
+      success: (data, status, xhr) =>
+        $.each @system.model, (key, field) ->
+          if field["core_field"] != undefined
+            $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(data[field["core_field"]])
+    )
+
+  buildSelectFields: (externalActivityId) =>
     instance = @
     $.each @system.model, (key, field) ->
       selectField = $('#External_Activity_'+externalActivityId+'_'+field["name"])
@@ -86,7 +101,6 @@ class ExternalActivity extends App.Controller
         if field["select"]["parent"] != undefined
           parent = $('#External_Activity_'+externalActivityId+'_'+field["select"]["parent"])
           parent.change ->
-            console.log "hello"
             instance.fetchOptionValues(field,selectField,@.value)
 
   fetchOptionValues: (field,selectField,parentValue="") =>
