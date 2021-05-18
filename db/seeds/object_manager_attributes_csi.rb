@@ -1,44 +1,75 @@
 # CSI attribute
 ObjectManager::Attribute.add(
-  force:       true,
-  object:      'User',
-  name:        'birthdate',
-  display:     'Data di Nascita',
-  data_type:   'date',
-  data_option:  {    future:      false,
-    past:        true, "diff"=>24, "default"=>nil, "null"=>true, "options"=>{}, "relation"=>""},
+  force:           true,
+  object:          'User',
+  name:            'birthdate',
+  display:         'Data di Nascita',
+  data_type:       'date',
+  data_option:     {
+    future:       false,
+    past:         true,
+    'diff'     => 24,
+    'default'  => nil,
+    'null'     => true,
+    'options'  => {},
+    'relation' => ''
+  },
   data_option_new: {},
-  editable:    false,
-  active:      true,
-  screens:     {
-    "create"=> {
-      "ticket.customer" => {"shown"=>true, "required"=>false},
-      "ticket.agent" => {"shown"=>true, "required"=>false},
-      "admin.user" => {"shown"=>true, "required"=>false}
+  editable:        false,
+  active:          true,
+  screens:         {
+    'create'          => {
+      'ticket.customer' => { 'shown' => true, 'required' => false },
+      'ticket.agent'    => { 'shown' => true, 'required' => false },
+      'admin.user'      => { 'shown' => true, 'required' => false }
     },
-   "view" => {
-     "ticket.customer "=> {"shown"=>true}, "ticket.agent" => {"shown"=>true}, "admin.user" => {"shown"=>true}
+    'view'            => {
+      'ticket.customer' => {
+        'shown' => true
+      },
+      'ticket.agent'    => {
+        'shown' => true
+      },
+      'admin.user'      => {
+        'shown' => true
+      }
     },
-   "edit" => {
-     "ticket.agent" =>{"shown"=>true, "required"=>false}, "admin.user"=>{"shown"=>true, "required"=>false}
+    'edit'            => {
+      'ticket.agent' => {
+        'shown'    => true,
+        'required' => false
+      },
+      'admin.user'   => {
+        'shown'    => true,
+        'required' => false
+      }
     },
-   "signup" => {
-     "ticket.customer" => {"shown"=>false, "required"=>false}
+    'signup'          => {
+      'ticket.customer' => {
+        'shown'    => false,
+        'required' => false
+      }
     },
-   "invite_customer" => {
-     "ticket.agent"=>{"shown"=>false, "required"=>false}, "admin.user"=>{"shown"=>false, "required"=>false}
+    'invite_customer' => {
+      'ticket.agent' => {
+        'shown'    => false,
+        'required' => false
+      },
+      'admin.user'   => {
+        'shown'    => false,
+        'required' => false
+      }
     },
-   "invite_agent" => {
-     "admin.user"=>{"shown"=>false, "required"=>false}
+    'invite_agent'    => {
+      'admin.user' => { 'shown' => false, 'required' => false }
     }
   },
-  to_create:   false,
-  to_migrate:  false,
-  to_delete:   false,
-  to_config: false,
-  position:    1560,
+  to_create:       false,
+  to_migrate:      false,
+  to_delete:       false,
+  to_config:       false,
+  position:        1560,
 )
-
 
 ObjectManager::Attribute.add(
   force:       true,
@@ -47,9 +78,9 @@ ObjectManager::Attribute.add(
   display:     'Codice Fiscale',
   data_type:   'input',
   data_option: {
-    type:       'text',
-    maxlength:  16,
-    null:       true,
+    type:      'text',
+    maxlength: 16,
+    null:      true,
   },
   editable:    false,
   active:      true,
@@ -74,6 +105,7 @@ ObjectManager::Attribute.add(
   position:    1561,
 )
 
+# CSI attribute per sanita
 ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
@@ -81,9 +113,9 @@ ObjectManager::Attribute.add(
   display:     'Tessera TEAM',
   data_type:   'input',
   data_option: {
-    type:       'text',
-    maxlength:  20,
-    null:       true,
+    type:      'text',
+    maxlength: 20,
+    null:      true,
   },
   editable:    false,
   active:      true,
@@ -108,6 +140,7 @@ ObjectManager::Attribute.add(
   position:    1562,
 )
 
+# CSI attribute per sanita
 ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
@@ -115,9 +148,9 @@ ObjectManager::Attribute.add(
   display:     'Tessera STP',
   data_type:   'input',
   data_option: {
-    type:       'text',
-    maxlength:  16,
-    null:       true,
+    type:      'text',
+    maxlength: 16,
+    null:      true,
   },
   editable:    false,
   active:      true,
@@ -142,6 +175,7 @@ ObjectManager::Attribute.add(
   position:    1563,
 )
 
+# CSI attribute per sanita
 ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
@@ -149,9 +183,9 @@ ObjectManager::Attribute.add(
   display:     'Tessera ENI',
   data_type:   'input',
   data_option: {
-    type:       'text',
-    maxlength:  16,
-    null:       true,
+    type:      'text',
+    maxlength: 16,
+    null:      true,
   },
   editable:    false,
   active:      true,
@@ -176,9 +210,6 @@ ObjectManager::Attribute.add(
   position:    1564,
 )
 
-
-
-
 ObjectManager::Attribute.add(
   force:       true,
   object:      'Ticket',
@@ -188,8 +219,8 @@ ObjectManager::Attribute.add(
   data_option: {
     default:    'No',
     options:    {
-      'no'           => 'No',
-      'si'            => 'Si',
+      'no' => 'No',
+      'si' => 'Si',
     },
     nulloption: false,
     multiple:   false,
@@ -198,31 +229,30 @@ ObjectManager::Attribute.add(
   },
   editable:    true,
   active:      true,
-  screens: {
+  screens:     {
     'create_middle' => {
       'ticket.customer' => {
-        'shown' => true,
-        'required' => true,
+        'shown'      => true,
+        'required'   => true,
         'item_class' => 'column'
       },
       'ticket.agent'    => {
-        'shown' => true,
-        'required' => true,
+        'shown'      => true,
+        'required'   => true,
         'item_class' => 'column'
       }
     },
-    'edit' => {
+    'edit'          => {
       'ticket.customer' => {
-        'shown' => true,
+        'shown'    => true,
         'required' => true
       },
-      'ticket.agent' => {
-        'shown' => true,
+      'ticket.agent'    => {
+        'shown'    => true,
         'required' => true
       }
     }
   },
-
   to_create:   false,
   to_migrate:  false,
   to_delete:   false,
@@ -248,17 +278,17 @@ ObjectManager::Attribute.add(
   },
   editable:    false,
   active:      true,
-  screens: {
+  screens:     {
     'create_middle' => {
-      'ticket.agent'    => {
-        'shown' => true,
-        'required' => false,
+      'ticket.agent' => {
+        'shown'      => true,
+        'required'   => false,
         'item_class' => 'column'
       }
     },
-    'edit' => {
+    'edit'          => {
       'ticket.agent' => {
-        'shown' => false,
+        'shown'    => false,
         'required' => false
       }
     }
@@ -288,17 +318,17 @@ ObjectManager::Attribute.add(
   },
   editable:    false,
   active:      true,
-  screens: {
+  screens:     {
     'create_middle' => {
-      'ticket.agent'    => {
-        'shown' => true,
-        'required' => false,
+      'ticket.agent' => {
+        'shown'      => true,
+        'required'   => false,
         'item_class' => 'column'
       }
     },
-    'edit' => {
+    'edit'          => {
       'ticket.agent' => {
-        'shown' => false,
+        'shown'    => false,
         'required' => false
       }
     }
@@ -328,17 +358,17 @@ ObjectManager::Attribute.add(
   },
   editable:    false,
   active:      true,
-  screens: {
+  screens:     {
     'create_middle' => {
-      'ticket.agent'    => {
-        'shown' => true,
-        'required' => false,
+      'ticket.agent' => {
+        'shown'      => true,
+        'required'   => false,
         'item_class' => 'column'
       }
     },
-    'edit' => {
+    'edit'          => {
       'ticket.agent' => {
-        'shown' => false,
+        'shown'    => false,
         'required' => false
       }
     }
@@ -349,4 +379,33 @@ ObjectManager::Attribute.add(
   position:    1632,
 )
 
-
+# Aggiunta relation
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'ExternalActivity',
+  name:        'external_ticketing_system_id',
+  display:     'Ticketing system',
+  data_type:   'select',
+  data_option: {
+    relation:   'ExternalTicketingSystem',
+    nulloption: false,
+    multiple:   false,
+    null:       false,
+    default:    ExternalTicketingSystem.lookup(name: 'Remedy').id,
+    translate:  true,
+  },
+  editable:    false,
+  active:      true,
+  screens:     {
+    create_middle: {},
+    edit:          {
+      'ticket.agent' => {
+        null: false,
+      },
+    },
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    1633,
+)

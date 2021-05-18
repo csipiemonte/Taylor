@@ -891,6 +891,7 @@ perform changes on ticket
     end
 
     perform_notification = {}
+    perform_external_activity = nil # CSI custom external activity
     perform_article = {}
     changed = false
     perform.each do |key, value|
@@ -904,6 +905,12 @@ perform changes on ticket
       end
       if object_name == 'notification'
         perform_notification[key] = value
+        next
+      end
+
+      # external activity
+      if key == 'ticket.external_activity'
+        perform_external_activity = value
         next
       end
 
@@ -990,6 +997,12 @@ perform changes on ticket
         send_email_notification(value, article, perform_origin)
       end
     end
+
+    # custom CSI external activity -- start
+    if !perform_external_activity.nil?
+      create_external_activity(value, article, perform_origin)
+    end
+    # custom CSI external activity -- end
 
     true
   end
@@ -1683,5 +1696,56 @@ result
       created_by_id: 1,
     )
 
+  end
+
+  # CSI custom external activity
+  # A fronte di una determinata condizione sul ticket si procede con la
+  # creazione di una external activity
+  def create_external_activity(value, article, perform_origin)
+    logger.info "ticket.rb value:  #{value}"
+    logger.info "ticket.rb article:  #{article}"
+    logger.info "ticket.rb perform_origin:  #{perform_origin}"
+=begin
+    if sms_recipients.blank?
+      logger.debug "No SMS recipients found for Ticket# #{number}"
+      return
+    end
+
+    sms_recipients_to = sms_recipients
+                        .map { |recipient| "#{recipient.fullname} (#{recipient.mobile})" }
+                        .join(', ')
+
+    channel = Channel.find_by(area: 'Sms::Notification')
+    if !channel.active?
+      # write info message since we have an active trigger
+      logger.info "Found possible SMS recipient(s) (#{sms_recipients_to}) for Ticket# #{number} but SMS channel is not active."
+      return
+    end
+
+    objects = build_notification_template_objects(article)
+    body = NotificationFactory::Renderer.new(
+      objects:  objects,
+      template: value['body'],
+      escape:   false
+    ).render.html2text.tr(' ', ' ') # convert non-breaking space to simple space
+
+    # attributes content_type is not needed for SMS
+    Ticket::Article.create(
+      ticket_id:     id,
+      subject:       'SMS notification',
+      to:            sms_recipients_to,
+      body:          body,
+      internal:      value['internal'] || false, # default to public if value was not set
+      sender:        Ticket::Article::Sender.find_by(name: 'System'),
+      type:          Ticket::Article::Type.find_by(name: 'sms'),
+      preferences:   {
+        perform_origin: perform_origin,
+        sms_recipients: sms_recipients.map(&:mobile),
+        channel_id:     channel.id,
+      },
+      updated_by_id: 1,
+      created_by_id: 1,
+    )
+=end
   end
 end
