@@ -16,6 +16,7 @@
 
     <p id="External_Activity_<%= @externalActivityId %>_import-from-ticket" style="color: #429ed7;cursor: pointer;">✎ Import data from user's ticket</p>
   <% end %>
+  <form>
   <% for field in @fields: %>
     <div data-attribute-name="External_Activity_<%= @externalActivityId %>_<%= field.name %>" class="select form-group">
       <div class="formGroup-label">
@@ -37,5 +38,6 @@
   <% if !@dispatched: %>
     <button id="External_Activity_<%= @externalActivityId %>_submit" class="btn btn--primary"><%- @T('Create') %></button>
   <% end %>
+  </form>
   <hr>
 <% end %>
