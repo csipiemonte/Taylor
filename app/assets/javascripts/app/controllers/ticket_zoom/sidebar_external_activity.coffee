@@ -57,6 +57,7 @@ class ExternalActivity extends App.Controller
            values: activity.data
            activity: activity
          )
+    @buildSelectFields(externalActivityId,activity)
 
   createDispatchForm: () =>
     externalActivityId = Math.floor(Math.random() * 10000) + 10000
@@ -89,7 +90,7 @@ class ExternalActivity extends App.Controller
             $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(data[field["core_field"]])
     )
 
-  buildSelectFields: (externalActivityId) =>
+  buildSelectFields: (externalActivityId,activity=null) =>
     instance = @
     $.each @system.model, (key, field) ->
       selectField = $('#External_Activity_'+externalActivityId+'_'+field["name"])
@@ -97,16 +98,22 @@ class ExternalActivity extends App.Controller
         for key, option of field["select"]["options"]
           instance.addOption(selectField, option)
         if field["select"]["service"] != undefined
-          instance.fetchOptionValues(field,selectField)
-        if field["select"]["parent"] != undefined
+          instance.fetchOptionValues(field,selectField,null,activity)
+        else if activity != null && activity.data[field["name"]]
+          instance.setOptionValue(selectField,activity.data[field["name"]])
+        if activity==null && field["select"]["parent"] != undefined
           parent = $('#External_Activity_'+externalActivityId+'_'+field["select"]["parent"])
           parent.change ->
             instance.fetchOptionValues(field,selectField,@.value)
 
-  fetchOptionValues: (field,selectField,parentValue="") =>
+  setOptionValue: (selectField,value) =>
+     console.log value
+     selectField.val(value)
+
+  fetchOptionValues: (field,selectField,parentValue=null,activity=null) =>
     cb = @addOption
     url = "#{@apiPath}/"+field["select"]["service"]
-    if parentValue!=""
+    if parentValue!=null
       url+="?parent_id="+parentValue
     @.ajax(
       id:    'options for '+field["name"]
@@ -116,6 +123,8 @@ class ExternalActivity extends App.Controller
         selectField.empty().append('<option value>-</option>')
         data.forEach (option) =>
           cb(selectField,option)
+        if activity != null && activity.data[field["name"]]
+          @.setOptionValue(selectField,activity.data[field["name"]])
     )
 
   addOption: (selectField, option) =>
