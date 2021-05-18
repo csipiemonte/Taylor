@@ -1,6 +1,5 @@
 class Api::Nextcrm::V1::TicketArticlesController < ::TicketArticlesController
   include Api::Nextcrm::V1::Concerns::ReadesApiManagerJwt
-  include Api::Nextcrm::V1::Concerns::ResponseHideAttributes
 
   def index_by_ticket
     super
@@ -20,6 +19,19 @@ class Api::Nextcrm::V1::TicketArticlesController < ::TicketArticlesController
 
   def destroy
     super
+  end
+
+  private
+
+  def  alterArticleAttributesInResponse
+    # optimized json parse
+    obj_resp = Oj.load(response.body)
+    if obj_resp.is_a? Array
+      # override response array of articles with a selection of internal only articles 
+      obj_resp = obj_resp.select { |article| article['internal'] == false }
+      str_resp = Oj.dump(obj_resp)
+      response.body = str_resp
+    end
   end
 
 
