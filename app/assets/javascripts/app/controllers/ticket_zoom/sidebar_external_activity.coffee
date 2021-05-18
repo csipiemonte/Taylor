@@ -87,8 +87,6 @@ class ExternalActivity extends App.Controller
       success: (data, status, xhr) =>
         $.each @system.model, (key, field) ->
           if field["core_field"] != undefined
-            console.log field["core_field"]
-            console.log data[field["core_field"]]
             $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(data[field["core_field"]])
     )
 
@@ -135,8 +133,16 @@ class ExternalActivity extends App.Controller
 
   createExternalActivity: (externalActivityId) =>
     new_activity_fields = {}
+    validated = true
     Object.values(@system.model).forEach (field) ->
-      new_activity_fields[field.name] = @$('#External_Activity_'+externalActivityId+'_'+field.name).val()
+      dom_field = @$('#External_Activity_'+externalActivityId+'_'+field.name)
+      value = dom_field.val()
+      if dom_field.prop('required') && value == ""
+        validated = false
+        return
+      new_activity_fields[field.name] = value
+    if !validated
+      return
     bidirectional_alignment = $('#External_Activity_'+externalActivityId+'_bidirectional_alignment:checkbox:checked').length > 0
     data = JSON.stringify(
       "ticketing_system_id":@system.id,
