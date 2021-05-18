@@ -2,13 +2,24 @@
   <% if @dispatched: %>
     <p class="text-muted"><%- @T('Created at') %> <%= @activity.created_at %>:</p>
   <% else: %>
-    <p class="text-muted"><%- @T('Create new external Activity on') %> <%= @system.name %>:</p>
-    <p id="External_Activity_<%= @externalActivityId %>_import-from-ticket" style="color: #429ed7;cursor: pointer;">Import data from user's ticket</p>
+
+    <div class="">
+        <div class="page-header-title">
+          <div class="zammad-switch zammad-switch--small">
+             <input name="External_Activity_<%= @externalActivityId %>_bidirectional_alignment" type="checkbox" id="External_Activity_<%= @externalActivityId %>_bidirectional_alignment" checked>
+             <label for="External_Activity_<%= @externalActivityId %>_bidirectional_alignment"></label>
+          </div>
+          <h4>Bidirectional Alignment</h4>
+        </div>
+      <div class="text-muted">Get activity updates from external system</div>
+    </div>
+
+    <p id="External_Activity_<%= @externalActivityId %>_import-from-ticket" style="color: #429ed7;cursor: pointer;">✎ Import data from user's ticket</p>
   <% end %>
   <% for field in @fields: %>
     <div data-attribute-name="External_Activity_<%= @externalActivityId %>_<%= field.name %>" class="select form-group">
       <div class="formGroup-label">
-        <label for="<%= field.name %>"><%= field.label %> <span><% if @required: %>*<% end %></span></label>
+        <label for="<%= field.name %>"><%= field.label %> <span><% if field.required: %>*<% end %></span></label>
       </div>
       <div class="controls "><div class="controls controls--select">
         <% if field.select: %>
