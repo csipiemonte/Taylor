@@ -37,6 +37,7 @@
   <% end %>
   <% if !@dispatched: %>
     <button id="External_Activity_<%= @externalActivityId %>_submit" class="btn btn--primary"><%- @T('Create') %></button>
+    <button id="External_Activity_<%= @externalActivityId %>_hidden_submit" class="btn btn--primary" style="display: none;"><%- @T('Create') %></button>
   <% end %>
   </form>
   <hr>

@@ -41,7 +41,7 @@ class ExternalActivity extends App.Controller
           cb(activity)
 
     )
-    @$('.js-newExternalActivityLabel').on('click', =>
+    @$('.js-newExternalActivityLabel').on('click', () =>
        @createDispatchForm()
     )
 
@@ -75,7 +75,8 @@ class ExternalActivity extends App.Controller
       @importFieldsFromTicket(externalActivityId)
     )
 
-    @$('#External_Activity_'+externalActivityId+'_submit').on('click', =>
+    @$('#External_Activity_'+externalActivityId+'_submit').on('click', (e) =>
+      e.preventDefault()
       @createExternalActivity(externalActivityId)
     )
 
@@ -142,6 +143,7 @@ class ExternalActivity extends App.Controller
         return
       new_activity_fields[field.name] = value
     if !validated
+      @$('#External_Activity_'+externalActivityId+'_hidden_submit').click()
       return
     bidirectional_alignment = $('#External_Activity_'+externalActivityId+'_bidirectional_alignment:checkbox:checked').length > 0
     data = JSON.stringify(
