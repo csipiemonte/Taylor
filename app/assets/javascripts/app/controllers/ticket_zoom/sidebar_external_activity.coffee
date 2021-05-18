@@ -87,6 +87,8 @@ class ExternalActivity extends App.Controller
       success: (data, status, xhr) =>
         $.each @system.model, (key, field) ->
           if field["core_field"] != undefined
+            console.log field["core_field"]
+            console.log data[field["core_field"]]
             $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(data[field["core_field"]])
     )
 
@@ -107,7 +109,6 @@ class ExternalActivity extends App.Controller
             instance.fetchOptionValues(field,selectField,@.value)
 
   setOptionValue: (selectField,value) =>
-     console.log value
      selectField.val(value)
 
   fetchOptionValues: (field,selectField,parentValue=null,activity=null) =>
@@ -136,10 +137,12 @@ class ExternalActivity extends App.Controller
     new_activity_fields = {}
     Object.values(@system.model).forEach (field) ->
       new_activity_fields[field.name] = @$('#External_Activity_'+externalActivityId+'_'+field.name).val()
+    bidirectional_alignment = $('#External_Activity_'+externalActivityId+'_bidirectional_alignment:checkbox:checked').length > 0
     data = JSON.stringify(
       "ticketing_system_id":@system.id,
       "ticket_id":@ticket.id,
-      "data": new_activity_fields
+      "data": new_activity_fields,
+      "bidirectional_alignment":bidirectional_alignment
     )
     @ajax(
       id:    'create_external_activity'
