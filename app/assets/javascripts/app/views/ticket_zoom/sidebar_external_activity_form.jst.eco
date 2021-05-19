@@ -9,7 +9,7 @@
   <% for field in @fields: %>
     <div data-attribute-name="External_Activity_<%= @externalActivityId %>_<%= field.name %>" class="select form-group" <% if field.visible == false: %> style="display: none;" <% end %>>
       <div class="formGroup-label">
-        <label for="<%- @T(field.name) %>"><%= field.label %> <span><% if field.required: %>*<% end %></span></label>
+        <label for="<%= field.name %>"><%- @T(field.label) %> <span><% if field.required: %>*<% end %></span></label>
       </div>
       <div class="controls "><div class="controls controls--select">
         <% if field.select: %>

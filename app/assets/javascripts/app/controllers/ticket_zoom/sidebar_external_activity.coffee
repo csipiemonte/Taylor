@@ -89,8 +89,19 @@ class ExternalActivity extends App.Controller
       url:   "#{@apiPath}/tickets/"+@ticket.id
       success: (data, status, xhr) =>
         $.each @system.model, (key, field) ->
-          if field["core_field"] != undefined
-            $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(data[field["core_field"]])
+          value = data[field["core_field"]]
+          if field["core_field"] && value
+            $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(value)
+    )
+    @ajax(
+      id:    'ticket_articles'
+      type:  'GET'
+      url:   "#{@apiPath}/ticket_articles/by_ticket/"+@ticket.id
+      success: (data, status, xhr) =>
+        $.each @system.model, (key, field) ->
+          value = data[0][field["core_field"]]
+          if field["core_field"] && value
+            $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(value)
     )
 
   buildSelectFields: (externalActivityId,activity=null) =>
