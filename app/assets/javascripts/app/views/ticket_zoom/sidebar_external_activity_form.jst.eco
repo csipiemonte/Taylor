@@ -3,13 +3,13 @@
     <p class="text-muted"><%- @T('Created at') %> <%= @activity.created_at %>:</p>
   <% else: %>
 
-    <p id="External_Activity_<%= @externalActivityId %>_import-from-ticket" style="color: #429ed7;cursor: pointer;">✎ Import data from user's ticket</p>
+    <p id="External_Activity_<%= @externalActivityId %>_import-from-ticket" style="color: #429ed7;cursor: pointer;"><%- @T('✎ Import data from user\'s ticket') %></p>
   <% end %>
   <form>
   <% for field in @fields: %>
     <div data-attribute-name="External_Activity_<%= @externalActivityId %>_<%= field.name %>" class="select form-group" <% if field.visible == false: %> style="display: none;" <% end %>>
       <div class="formGroup-label">
-        <label for="<%= field.name %>"><%= field.label %> <span><% if field.required: %>*<% end %></span></label>
+        <label for="<%- @T(field.name) %>"><%= field.label %> <span><% if field.required: %>*<% end %></span></label>
       </div>
       <div class="controls "><div class="controls controls--select">
         <% if field.select: %>

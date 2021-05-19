@@ -6,7 +6,7 @@
 
 <div data-attribute-name="service_catalog_item" class="select form-group">
   <div class="formGroup-label">
-    <label for="Ticket_service_catalog_item">service catalog</label>
+    <label for="Ticket_service_catalog_item"><%- @T('Service Catalog') %></label>
   </div>
   <div class="controls "><div class="controls controls--select">
   <select id="Ticket_<%= @ticket.id %>_service_catalog_item_id" class="form-control" name="service_catalog_item_id" required="">
@@ -24,7 +24,7 @@
 
 <div data-attribute-name="service_catalog_sub_item" class="select form-group">
   <div class="formGroup-label">
-    <label for="Ticket_service_catalog_sub_item">service catalog sub item</label>
+    <label for="Ticket_service_catalog_sub_item"><%- @T('Service Catalog Sub Item') %></label>
   </div>
   <div class="controls "><div class="controls controls--select">
   <select id="Ticket_<%= @ticket.id %>_service_catalog_sub_item_id" class="form-control" name="service_catalog_sub_item_id" required="">
@@ -42,7 +42,7 @@
 
 <div data-attribute-name="asset" class="select form-group">
   <div class="formGroup-label">
-    <label for="Ticket_asset">asset</label>
+    <label for="Ticket_asset"><%- @T('Asset') %></label>
   </div>
   <div class="controls "><div class="controls controls--select">
   <select id="Ticket_<%= @ticket.id %>_asset_id" class="form-control" name="asset" required="">
