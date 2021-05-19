@@ -41,8 +41,10 @@ class ExternalActivity extends App.Controller
           cb(activity)
 
     )
-    @$('.js-newExternalActivityLabel').on('click', () =>
+    newActivityButton = @$('.js-newExternalActivityLabel')
+    newActivityButton.on('click', () =>
        @createDispatchForm()
+       newActivityButton.hide()
     )
 
   displayExternalActivity: (activity) =>
