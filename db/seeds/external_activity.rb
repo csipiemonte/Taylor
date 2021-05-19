@@ -66,7 +66,7 @@ remedy_model = {
   '7' => {
       'required': true,
       'name':'service_catalog',
-      'label':'service catalog',
+      'label':'Service Catalog',
       'select' => {
           'service': 'service_catalog'
       }
@@ -74,7 +74,7 @@ remedy_model = {
   '8' => {
       'required': true,
       'name':'service_catalog_sub_item',
-      'label':'service catalog sub item',
+      'label':'Service Catalog sub item',
       'select' => {
           'service': 'service_catalog_sub_item',
           'parent': 'service_catalog'
@@ -97,4 +97,38 @@ if remedy_model != remedy_current_model
   remedy_ticketing_system["model"] = remedy_model
   remedy_ticketing_system.save!
 end
+
+def create_translation(locale, source, target)
+    Translation.create_if_not_exists(
+         locale:         locale,
+         source:         source,
+         target:         target,
+         target_initial: target,
+         format:         'string',
+         created_by_id:  '1',
+         updated_by_id:  '1',
+    )
+end
+
+
+['en-ca','en-gb','en-us','uk'].each do |en_locale|
+  create_translation(en_locale,'Service Catalog','Service')
+  create_translation(en_locale,'Service Catalog sub item','Service Detail')
+  create_translation(en_locale,'Asset','Application')
+end
+
+create_translation('it-it','Service Catalog','Servizio')
+create_translation('it-it','Service Catalog Sub Item','Dettaglio Servizio')
+create_translation('it-it','Asset','Applicazione')
+
+create_translation('it-it','Get Updates','Ricevi Aggiornamenti')
+create_translation('it-it','Get activity updates from the external system','Ricevi gli aggiornamenti dell\'attività dal sistema esterno')
+create_translation('it-it','✎ Import data from user\'s ticket','✎ Importa dati da richiesta utente')
+create_translation('it-it','External activity','Attività Esterna')
+create_translation('it-it','New external activity on','Nuova attività esterna su')
+
+
+
+
+
 
