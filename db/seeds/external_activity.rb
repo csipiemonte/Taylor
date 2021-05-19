@@ -15,7 +15,8 @@ remedy_model = {
       'required': true,
       'type':'text',
       'name':'dettaglio',
-      'label':'dettaglio'
+      'label':'dettaglio',
+      'core_field':'body'
   },
   '3' => {
       'required': true,
@@ -74,7 +75,7 @@ remedy_model = {
   '8' => {
       'required': true,
       'name':'service_catalog_sub_item',
-      'label':'Service Catalog sub item',
+      'label':'Service Catalog Sub Item',
       'select' => {
           'service': 'service_catalog_sub_item',
           'parent': 'service_catalog'
@@ -83,7 +84,7 @@ remedy_model = {
   '9' => {
       'required': true,
       'name':'asset',
-      'label':'asset',
+      'label':'Asset',
       'core_field': 'asset_id',
       'select' => {
           'service': 'asset'
@@ -113,7 +114,7 @@ end
 
 ['en-ca','en-gb','en-us','uk'].each do |en_locale|
   create_translation(en_locale,'Service Catalog','Service')
-  create_translation(en_locale,'Service Catalog sub item','Service Detail')
+  create_translation(en_locale,'Service Catalog Sub Item','Service Detail')
   create_translation(en_locale,'Asset','Application')
 end
 
