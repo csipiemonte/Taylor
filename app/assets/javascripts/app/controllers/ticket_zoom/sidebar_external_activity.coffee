@@ -37,8 +37,10 @@ class ExternalActivity extends App.Controller
       url:   "#{@apiPath}/external_activity/system/"+@system.id+"?ticket_id="+@ticket.id
       success: (data, status, xhr) =>
         cb = @displayExternalActivity
-        data.forEach (activity) ->
-          cb(activity)
+        if data.length > 0
+          @$('.js-newExternalActivityLabel').hide()
+          data.forEach (activity) ->
+            cb(activity)
 
     )
     newActivityButton = @$('.js-newExternalActivityLabel')
