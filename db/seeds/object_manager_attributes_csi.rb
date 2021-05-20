@@ -379,30 +379,56 @@ ObjectManager::Attribute.add(
   position:    1632,
 )
 
-# Aggiunta relation
+# aggiunta dell'attributo 'external_activity' all'oggetto 'Ticket'
+# per poter avere il campo 'External Activity' nella configurazione
+# dei trigger. In questo modo 'External Activity' appare sia nelle condition
+# sia nelle perform.
+all_ticketing_systems = ExternalTicketingSystem.all.pluck(:id, :name)
+
+hash_ticketing_systems = {}
+all_ticketing_systems.each do |key, value|
+  hash_ticketing_systems[key] = value
+end
+
 ObjectManager::Attribute.add(
   force:       true,
-  object:      'ExternalActivity',
-  name:        'external_ticketing_system_id',
-  display:     'Ticketing system',
+  object:      'Ticket',
+  name:        'external_activity',
+  display:     'External Activity',
   data_type:   'select',
   data_option: {
-    relation:   'ExternalTicketingSystem',
+    default:    ExternalTicketingSystem.lookup(name: 'Remedy').id,
+    options:    hash_ticketing_systems,
     nulloption: false,
     multiple:   false,
     null:       false,
-    default:    ExternalTicketingSystem.lookup(name: 'Remedy').id,
-    translate:  true,
+    translate:  false,
   },
   editable:    false,
   active:      true,
-  screens:     {
-    create_middle: {},
-    edit:          {
-      'ticket.agent' => {
-        null: false,
+  screens: {
+    'create_middle' => {
+      'ticket.customer' => {
+        'shown' => false,
+        'required' => false,
+        'item_class' => 'column'
       },
+      'ticket.agent'    => {
+        'shown' => false,
+        'required' => false,
+        'item_class' => 'column'
+      }
     },
+    'edit' => {
+      'ticket.customer' => {
+        'shown' => false,
+        'required' => false
+      },
+      'ticket.agent' => {
+        'shown' => false,
+        'required' => false
+      }
+    }
   },
   to_create:   false,
   to_migrate:  false,

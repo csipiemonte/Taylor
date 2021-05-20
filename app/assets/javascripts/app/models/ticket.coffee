@@ -12,7 +12,6 @@ class App.Ticket extends App.Model
       { name: 'state_id',                 display: 'State',             tag: 'select',   multiple: false, null: false, relation: 'TicketState', default: 'new', width: '12%', edit: true, customer: true },
       { name: 'pending_time',             display: 'Pending till',      tag: 'datetime', null: true, width: '130px' },
       { name: 'priority_id',              display: 'Priority',          tag: 'select',   multiple: false, null: false, relation: 'TicketPriority', default: '2 normal', width: '54px', edit: true, customer: true },
-      { name: 'external_activity',        display: 'External Activity', tag: 'select',   multiple: false, null: false, relation: 'ExternalTicketingSystem', width: '54px', edit: true, customer: true },
       { name: 'article_count',            display: 'Article#',     readonly: 1, width: '12%' },
       { name: 'time_unit',                display: 'Accounted Time',          readonly: 1, width: '12%' },
       { name: 'escalation_at',            display: 'Escalation at',           tag: 'datetime', null: true, readonly: 1, width: '110px', class: 'escalation' },

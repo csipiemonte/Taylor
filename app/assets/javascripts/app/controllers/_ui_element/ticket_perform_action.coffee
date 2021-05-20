@@ -85,9 +85,12 @@ class App.UiElement.ticket_perform_action
     )
 
     # change attribute selector
+    # Al 'change' sulla select presente nel div con class="js-attributeSelector" si popola a cascata l'area con i campi richiesti dall'attributo selezionato
+    # Si tratta della select presente sotto l'etichetta "Esegui modifica sull'oggetto"
     item.on('change', '.js-attributeSelector select', (e) =>
       elementRow = $(e.target).closest('.js-filterElement')
       groupAndAttribute = elementRow.find('.js-attributeSelector option:selected').attr('value')
+      console.log('groupAndAttribute', groupAndAttribute)
       @rebuildAttributeSelectors(item, elementRow, groupAndAttribute, elements, {}, attribute)
       @updateAttributeSelectors(item)
     )
@@ -168,6 +171,8 @@ class App.UiElement.ticket_perform_action
     # disable - if we only have one attribute
     @disableRemoveForOneAttribute(elementFull)
 
+  # Metodo per ricreare l'area con i campi di input conseguenti all'attributo selezionato
+  # in "Esegui modifica sull'oggetto"
   @rebuildAttributeSelectors: (elementFull, elementRow, groupAndAttribute, elements, meta, attribute) ->
 
     # set attribute
@@ -176,18 +181,39 @@ class App.UiElement.ticket_perform_action
 
     notificationTypeMatch = groupAndAttribute.match(/^notification.([\w]+)$/)
     articleTypeMatch = groupAndAttribute.match(/^article.([\w]+)$/)
+    # custom CSI
+    externalActivityTypeMatch = groupAndAttribute.match(/^ticket.external_activity$/)
 
     if _.isArray(notificationTypeMatch) && notificationType = notificationTypeMatch[1]
       elementRow.find('.js-setAttribute').html('').addClass('hide')
       elementRow.find('.js-setArticle').html('').addClass('hide')
+      elementRow.find('.js-setExternalActivity').html('').addClass('hide')
       @buildNotificationArea(notificationType, elementFull, elementRow, groupAndAttribute, elements, meta, attribute)
     else if _.isArray(articleTypeMatch) && articleType = articleTypeMatch[1]
       elementRow.find('.js-setAttribute').html('').addClass('hide')
       elementRow.find('.js-setNotification').html('').addClass('hide')
+      elementRow.find('.js-setExternalActivity').html('').addClass('hide')
       @buildArticleArea(articleType, elementFull, elementRow, groupAndAttribute, elements, meta, attribute)
+    else if _.isArray(externalActivityTypeMatch)
+      console.log('externalActivityTypeMatch')
+      elementRow.find('.js-setAttribute').html('').addClass('hide')
+      elementRow.find('.js-setNotification').html('').addClass('hide')
+      elementRow.find('.js-setArticle').html('').addClass('hide')
+
+      if !elementRow.find('.js-setAttribute div').get(0)
+        attributeSelectorElement = $( App.view('generic/ticket_perform_action/attribute_selector')(
+          attribute: attribute
+          name: name
+          meta: meta || {}
+        ))
+        elementRow.find('.js-setAttribute').html(attributeSelectorElement).removeClass('hide')
+      @buildOperator(elementFull, elementRow, groupAndAttribute, elements, meta, attribute)
+      @buildExternalActivityArea(elementRow)
+
     else
       elementRow.find('.js-setNotification').html('').addClass('hide')
       elementRow.find('.js-setArticle').html('').addClass('hide')
+      elementRow.find('.js-setExternalActivity').html('').addClass('hide')
       if !elementRow.find('.js-setAttribute div').get(0)
         attributeSelectorElement = $( App.view('generic/ticket_perform_action/attribute_selector')(
           attribute: attribute
@@ -508,6 +534,33 @@ class App.UiElement.ticket_perform_action
     )
 
     elementRow.find('.js-setArticle').html(articleElement).removeClass('hide')
+
+  # custom CSI
+  # External Activity Area dove inserire i campi di input previsti nel model
+  # associato all'external activity system selezionato nella select con name 'perform::ticket.external_activity::value'
+  @buildExternalActivityArea: (elementRow) ->
+
+    # $('select[name="' + name + '"] option:selected').val();
+    selectExtActName = 'perform::ticket.external_activity::value'
+    extActSystem = elementRow.find('select[name="' + selectExtActName + '"] option:selected').attr('value')
+
+    elementRow.find('.js-setExternalActivity').empty()
+    console.log('extActSystem', extActSystem)
+
+    # apiPath = App.Config.get('api_path')
+    # $.ajax "#{apiPath}/external_ticketing_system/#{extActSystem}",
+		#  type: 'GET'
+    #  async: false
+    #  success: (data, status, xhr) =>
+    #    console.log('data', {data})
+        # @putFieldsExternalActivityArea(elementRow, data.model)
+
+  @putFieldsExternalActivityArea: (elementRow, model) ->
+    extActAreaElement = $( App.view('generic/ticket_perform_action/external_activity')(
+      fields: Object.values(model)
+    ))
+
+    elementRow.find('.js-setExternalActivity').html(extActAreaElement).removeClass('hide')
 
   @humanText: (condition) ->
     none = App.i18n.translateContent('No filter.')

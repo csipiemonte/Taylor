@@ -1,0 +1,34 @@
+<% for field in @fields: %>
+  <div class="form-group"
+    <% if field.visible == false: %> style="display: none;" <% end %>
+  >
+    <div class="formGroup-label">
+      <label for="External_System_Model_<%= field.name %>">
+        <%= field.label %> <span><% if field.required: %>*<% end %></span>
+      </label>
+    </div>
+      <% if field.core_field: %>
+        <div class="formGroup-label">
+          core_field -> <%= field.core_field %>
+        </div>
+      <% else: %>
+        <div class="controls js-recipient u-positionOrigin">
+          <% if field.select: %>
+            <select id="External_System_Model_<%= field.name %>"
+              type="<%= field.type %>"
+              class="<% if field.type!="checkbox": %>form-control<% end %>"
+              name="External_System_Model_<%= field.name %>" <% if field.required: %>required<% end %> 
+            >
+              <option value>-</option>
+            </select>
+            <svg class="icon icon-arrow-down "><use xlink:href="assets/images/icons.svg#icon-arrow-down"></use></svg>
+          <% else: %>
+            <input id="External_System_Model_<%= field.name %>"
+              type="<%= field.type %>"
+              class="<% if field.type!="checkbox": %>form-control<% end %>"
+              name="External_System_Model_<%= field.name %>" <% if field.required: %>required<% end %> <% if field.read_only: %>readonly disabled<% end %> <% if field.default: %>value="<%= field.default %>"<% end %>>
+          <% end %>
+        </div>
+      <% end %>
+  </div>
+<% end %>
