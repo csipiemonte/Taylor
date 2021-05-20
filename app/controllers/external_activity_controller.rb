@@ -27,6 +27,14 @@ class ExternalActivityController < ApplicationController
       data: params[:data],
       bidirectional_alignment: params[:bidirectional_alignment]
     )
+    render json: external_activity
+  end
+
+  def update_external_activity
+    return if not params[:id]
+    return if not params[:data]
+    external_activity = ExternalActivity.find_by(id:params[:id])
+    external_activity.data = params[:data]
     external_activity.save!
     render json: external_activity
   end

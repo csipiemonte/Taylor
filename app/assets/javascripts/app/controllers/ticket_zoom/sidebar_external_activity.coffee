@@ -62,6 +62,7 @@ class ExternalActivity extends App.Controller
            activity: activity
          )
     @buildSelectFields(externalActivityId,activity)
+    @buildCommentFields(externalActivityId,activity)
 
   createDispatchForm: () =>
     externalActivityId = Math.floor(Math.random() * 10000) + 10000
@@ -122,6 +123,49 @@ class ExternalActivity extends App.Controller
           parent.change ->
             instance.fetchOptionValues(field,selectField,@.value)
 
+  buildCommentFields: (externalActivityId,activity=null) =>
+    instance = @
+    $.each @system.model, (key, field) ->
+      commentField = instance.$('#External_Activity_'+externalActivityId+'_'+field["name"])
+      if field["type"] == "comment" && activity!=null
+        commentList = activity["data"][field["name"]]
+        if !commentList
+          commentList = {}
+        selector = 'div[data-attribute-name="External_Activity_'+externalActivityId+'_'+field["name"]+'"]'
+        jQuery.each commentList, (i, comment) ->
+          instance.addComment(commentField, comment, selector)
+        for key, comment of commentList
+          instance.addComment(commentField, comment)
+        commentButton = instance.$('#External_Activity_'+externalActivityId+'_'+field["name"]+'_comment_button')
+        commentButton.on('click', (e) =>
+          e.preventDefault()
+          index = Object.keys(commentList).length+1
+          commentList[""+index] = {
+            "external":false,
+            "text":commentField.val()
+          }
+          commentField.attr('disabled',true)
+          commentButton.hide()
+          activity["data"][field["name"]] = commentList
+          instance.update_external_activity(activity)
+        )
+
+
+  update_external_activity: (activity) =>
+    @ajax(
+      id:    'update_external_activity'
+      type:  'PUT'
+      url:   "#{@apiPath}/external_activity/"+activity["id"]
+      data: JSON.stringify({data:activity["data"]})
+      success: (data, status, xhr) =>
+    )
+
+
+  addComment: (commentField,comment,selector) =>
+    $(App.view('ticket_zoom/sidebar_external_activity_comment')(
+      comment:comment
+    )).insertBefore(selector)
+
   setOptionValue: (selectField,value) =>
      selectField.val(value)
 
@@ -156,7 +200,13 @@ class ExternalActivity extends App.Controller
       if dom_field.prop('required') && value == ""
         validated = false
         return
-      new_activity_fields[field.name] = value
+      if field.type!='comment'
+        new_activity_fields[field.name] = value
+      else
+        new_activity_fields[field.name] = {1:{
+          "external": false,
+          "text":value
+        }}
     if !validated
       @$('#External_Activity_'+externalActivityId+'_hidden_submit').click()
       return
