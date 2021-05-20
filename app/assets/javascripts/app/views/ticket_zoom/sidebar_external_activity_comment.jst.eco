@@ -1,0 +1,16 @@
+<div class="select form-group">
+  <div class="formGroup-label">
+    <% if @comment.external: %>
+      <label for="commento" style="display: block;margin: 0.5em 0 1em auto;"><%- @T('external operator') %></label>
+    <% else: %>
+      <label for="commento">@T('crm operator')</label>
+    <% end %>
+  </div>
+  <div class="controls "><div class="controls controls--select">
+    <textarea class="form-control">@comment.text</textarea>
+  </div>
+</div>
+
+
+
+
