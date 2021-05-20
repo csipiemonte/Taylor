@@ -545,15 +545,16 @@ class App.UiElement.ticket_perform_action
     extActSystem = elementRow.find('select[name="' + selectExtActName + '"] option:selected').attr('value')
 
     elementRow.find('.js-setExternalActivity').empty()
-    console.log('extActSystem', extActSystem)
 
-    # apiPath = App.Config.get('api_path')
-    # $.ajax "#{apiPath}/external_ticketing_system/#{extActSystem}",
-		#  type: 'GET'
-    #  async: false
-    #  success: (data, status, xhr) =>
-    #    console.log('data', {data})
-        # @putFieldsExternalActivityArea(elementRow, data.model)
+    apiPath = App.Config.get('api_path')
+    App.Ajax.request(
+      type:  'GET'
+      url:   "#{apiPath}/external_ticketing_system/#{extActSystem}"
+      async: false
+      success: (data, status, xhr) =>
+        console.log('data', {data})
+        @putFieldsExternalActivityArea(elementRow, data.model)
+    )
 
   @putFieldsExternalActivityArea: (elementRow, model) ->
     extActAreaElement = $( App.view('generic/ticket_perform_action/external_activity')(
