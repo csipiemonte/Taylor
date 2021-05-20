@@ -89,13 +89,18 @@ remedy_model = {
       'select' => {
           'service': 'asset'
       }
-  }
+  },
+  '10' => {
+    'name':'commento',
+    'label':'commento',
+    'type':'comment'
+    }
 }
 
 remedy_ticketing_system = ExternalTicketingSystem.find_by(name: 'Remedy')
-remedy_current_model = remedy_ticketing_system["model"]
+remedy_current_model = remedy_ticketing_system['model']
 if remedy_model != remedy_current_model
-  remedy_ticketing_system["model"] = remedy_model
+  remedy_ticketing_system['model'] = remedy_model
   remedy_ticketing_system.save!
 end
 
@@ -127,6 +132,9 @@ create_translation('it-it','Get activity updates from the external system','Rice
 create_translation('it-it','✎ Import data from user\'s ticket','✎ Importa dati da richiesta utente')
 create_translation('it-it','External activity','Attività Esterna')
 create_translation('it-it','New external activity on','Nuova attività esterna su')
+
+create_translation('it-it','crm operator','operatore crm')
+create_translation('it-it','external operator','operatore esterno')
 
 
 

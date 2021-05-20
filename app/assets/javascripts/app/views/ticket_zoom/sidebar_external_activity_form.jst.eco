@@ -17,6 +17,11 @@
             <option value>-</option>
           </select>
           <svg class="icon icon-arrow-down "><use xlink:href="assets/images/icons.svg#icon-arrow-down"></use></svg>
+        <% else if field.type=='comment': %>
+          <textarea id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="text" class="form-control" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if field.read_only: %>readonly <% else if field.default: %>value="<%= field.default %>"<% end %>></textarea>
+          <% if @dispatched: %>
+            <button id="External_Activity_<%= @externalActivityId %>_<%= field.name %>_comment_button" class="btn btn--primary" style="display: block;margin: 0.5em 0 1em auto;">✉ <%- @T('Send') %></button>
+          <% end %>
         <% else: %>
           <input id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="<%= field.type %>" class="<% if field.type!="checkbox": %>form-control<% end %>" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @dispatched || field.read_only: %>readonly disabled<% end %> <% if @dispatched && @values[field.name]: %>value="<%= @values[field.name] %>" <% else if field.default: %>value="<%= field.default %>"<% end %>>
         <% end %>
