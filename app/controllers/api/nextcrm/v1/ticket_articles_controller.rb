@@ -3,7 +3,7 @@ class Api::Nextcrm::V1::TicketArticlesController < ::TicketArticlesController
 
   def index_by_ticket
     super
-    hideInternalArticles()
+    alterArticleAttributesInResponse()
   end
 
   def create
