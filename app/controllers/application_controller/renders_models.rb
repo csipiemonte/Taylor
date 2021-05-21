@@ -6,6 +6,7 @@ module ApplicationController::RendersModels
   # model helper
   def model_create_render(object, params)
 
+    Rails.logger.info "model_create_render - params: #{params}"
     clean_params = object.association_name_to_id_convert(params)
     clean_params = object.param_cleanup(clean_params, true)
 

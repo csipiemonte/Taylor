@@ -540,7 +540,6 @@ class App.UiElement.ticket_perform_action
   # associato all'external activity system selezionato nella select con name 'perform::ticket.external_activity::value'
   @buildExternalActivityArea: (elementRow) ->
 
-    # $('select[name="' + name + '"] option:selected').val();
     selectExtActName = 'perform::ticket.external_activity::value'
     extActSystem = elementRow.find('select[name="' + selectExtActName + '"] option:selected').attr('value')
 
@@ -553,15 +552,79 @@ class App.UiElement.ticket_perform_action
       async: false
       success: (data, status, xhr) =>
         console.log('data', {data})
-        @putFieldsExternalActivityArea(elementRow, data.model)
+        @putFieldsExternalActivityArea(extActSystem, elementRow, data.model)
     )
 
-  @putFieldsExternalActivityArea: (elementRow, model) ->
+  @putFieldsExternalActivityArea: (extActSystemId, elementRow, model) ->
+    # popolamento della view per i parametri della perform sulla external activity
     extActAreaElement = $( App.view('generic/ticket_perform_action/external_activity')(
+      extActSystemId: extActSystemId
       fields: Object.values(model)
     ))
 
     elementRow.find('.js-setExternalActivity').html(extActAreaElement).removeClass('hide')
+    @buildSelectFieldsExtActArea(extActSystemId, elementRow, model)
+
+  # metodo per popolare con le options corrette i campi di tipo 'select'
+  # presenti all'interno della External Activity Area
+  @buildSelectFieldsExtActArea: (extActSystemId, elementRow, model, modelValues = null) =>
+
+    instance = @
+    $.each model, (key, field) ->
+      if field["select"] == undefined
+        return
+
+      selectField = elementRow.find('#External_System_Model_' + extActSystemId + '_' + field["name"])
+
+      # ciclo sulle options per quella select presenti nel modello
+      # e popolamento della select corrispondente 
+      if field["select"]["options"] != undefined
+        for key, option of field["select"]["options"]
+          instance.addOption(selectField, option)
+
+        instance.setOptionValue(selectField, modelValues, field["name"])
+
+      # popolamento delle select di tipo service (tre livelli di categorizzazione)
+      # che non dipendono da un parent
+      if field["select"]["service"] != undefined
+        if field["select"]["parent"] != undefined
+          # field["select"]["parent"] coincide con il campo 'name' del parent
+          parentSelectFld = $('#External_System_Model_' + extActSystemId + '_' + field["select"]["parent"])
+          parentSelectFld.change ->
+            if (parentSelectFld.val() > 0)
+              instance.fetchOptionValues(field, selectField, parentSelectFld.val(), modelValues)
+            else
+              selectField.val(0)
+        else
+            instance.fetchOptionValues(field, selectField, null, modelValues)
+            if modelValues != null && modelValues[field["name"]]
+              instance.setOptionValue(selectField, modelValues, field["name"])
+
+  @fetchOptionValues: (field, selectField, parentValue = null, modelValues) =>
+    instance = @
+    apiPath = App.Config.get('api_path')
+    url = "#{apiPath}/" + field["select"]["service"]
+    if parentValue != null
+      url += "?parent_id=" + parentValue
+    App.Ajax.request(
+      type:  'GET'
+      url:   url
+      async: false
+      success: (data, status, xhr) =>
+        selectField.empty().append('<option value="0">-</option>')
+        data.forEach (option) =>
+          instance.addOption(selectField, option)
+        @setOptionValue(selectField, modelValues, field["name"])
+    )
+
+  @addOption: (selectField, option) =>
+    o = new Option(option["name"], option["id"]);
+    $(o).html(option["name"]);
+    selectField.append(o);
+
+  @setOptionValue: (selectField, modelValues, paramName) =>
+    if modelValues != null && modelValues[paramName]
+      selectField.val(modelValues[paramName])
 
   @humanText: (condition) ->
     none = App.i18n.translateContent('No filter.')
