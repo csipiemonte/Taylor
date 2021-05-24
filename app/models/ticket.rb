@@ -871,7 +871,8 @@ perform changes on ticket
 
   # perform: attributo perform della tabella trigger
   def perform_changes(perform, perform_origin, item = nil, current_user_id = nil)
-    logger.debug { "Perform #{perform_origin} #{perform.inspect} on Ticket.find(#{id})" }
+    # TODO cambiare in debug
+    logger.info { "Perform #{perform_origin} #{perform.inspect} on Ticket.find(#{id})" }
 
     article = begin
                 Ticket::Article.find_by(id: item.try(:dig, :article_id))
@@ -895,6 +896,8 @@ perform changes on ticket
     perform_external_activity = nil # CSI custom external activity
     perform_article = {}
     changed = false
+
+    # ciclo su ogni chiave valore presente nell'hash memorizzata nella colonna 'perform'
     perform.each do |key, value|
       (object_name, attribute) = key.split('.', 2)
       raise "Unable to update object #{object_name}.#{attribute}, only can update tickets, send notifications and create articles!" if object_name != 'ticket' && object_name != 'article' && object_name != 'notification'
@@ -910,7 +913,7 @@ perform changes on ticket
       end
 
       # external activity
-      if key == 'ticket.external_activity'
+      if if key == 'external_activity'
         perform_external_activity = value
         next
       end
@@ -1001,7 +1004,7 @@ perform changes on ticket
 
     # custom CSI external activity -- start
     if !perform_external_activity.nil?
-      create_external_activity(value, article, perform_origin)
+      create_external_activity(value, article, item)
     end
     # custom CSI external activity -- end
 
@@ -1702,10 +1705,11 @@ result
   # CSI custom external activity
   # A fronte di una determinata condizione sul ticket si procede con la
   # creazione di una external activity
-  def create_external_activity(value, article, perform_origin)
+  def create_external_activity(value, article, item)
     logger.info "ticket.rb value:  #{value}"
     logger.info "ticket.rb article:  #{article}"
-    logger.info "ticket.rb perform_origin:  #{perform_origin}"
+    logger.info "ticket.rb perform_origin:  #{item}"
+    # TODO verifica che non ci sia già una activity aperta per lo stesso tk
 =begin
     if sms_recipients.blank?
       logger.debug "No SMS recipients found for Ticket# #{number}"
