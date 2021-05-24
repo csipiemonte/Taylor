@@ -871,7 +871,6 @@ perform changes on ticket
 
   # perform: attributo perform della tabella trigger
   def perform_changes(perform, perform_origin, item = nil, current_user_id = nil)
-    # TODO cambiare in debug
     logger.info { "Perform #{perform_origin} #{perform.inspect} on Ticket.find(#{id})" }
 
     article = begin
@@ -893,14 +892,14 @@ perform changes on ticket
     end
 
     perform_notification = {}
-    perform_external_activity = nil # CSI custom external activity
+    perform_external_activity = false # CSI custom external activity
     perform_article = {}
     changed = false
 
     # ciclo su ogni chiave valore presente nell'hash memorizzata nella colonna 'perform'
     perform.each do |key, value|
       (object_name, attribute) = key.split('.', 2)
-      raise "Unable to update object #{object_name}.#{attribute}, only can update tickets, send notifications and create articles!" if object_name != 'ticket' && object_name != 'article' && object_name != 'notification'
+      raise "Unable to update object #{object_name}.#{attribute}, only can update tickets, send notifications, create articles and external activities!" if object_name != 'ticket' && object_name != 'article' && object_name != 'notification' && object_name != 'external_activity'
 
       # send notification/create article (after changes are done)
       if object_name == 'article'
@@ -913,8 +912,8 @@ perform changes on ticket
       end
 
       # external activity
-      if if key == 'external_activity'
-        perform_external_activity = value
+      if attribute == 'external_activity'
+        perform_external_activity = true
         next
       end
 
@@ -1003,8 +1002,8 @@ perform changes on ticket
     end
 
     # custom CSI external activity -- start
-    if !perform_external_activity.nil?
-      create_external_activity(value, article, item)
+    if perform_external_activity
+      create_external_activity(perform)
     end
     # custom CSI external activity -- end
 
@@ -1705,52 +1704,35 @@ result
   # CSI custom external activity
   # A fronte di una determinata condizione sul ticket si procede con la
   # creazione di una external activity
-  def create_external_activity(value, article, item)
-    logger.info "ticket.rb value:  #{value}"
-    logger.info "ticket.rb article:  #{article}"
-    logger.info "ticket.rb perform_origin:  #{item}"
-    # TODO verifica che non ci sia già una activity aperta per lo stesso tk
-=begin
-    if sms_recipients.blank?
-      logger.debug "No SMS recipients found for Ticket# #{number}"
-      return
+  def create_external_activity(extActModel)
+    logger.info { "create_external_activity - Perform external activity #{extActModel.inspect} on Ticket.find(#{id})" }
+
+    core_field_prefix = 'core_field::'
+    coreFieldValues = {}
+    extActModel['external_activity'].each do |key, value|
+      next if !value.start_with?(core_field_prefix)
+      logger.info { "create_external_activity - value #{value}" }
+      core_field_value = value.slice!(core_field_prefix.length, value.length)
+      logger.info { "create_external_activity - core_field_value #{core_field_value}" }
+
+      case core_field_value
+      when 'title'
+        coreFieldValues[key] = title
+        next
+      when 'body'
+        coreFieldValues[key] = articles.first.body
+      end
     end
 
-    sms_recipients_to = sms_recipients
-                        .map { |recipient| "#{recipient.fullname} (#{recipient.mobile})" }
-                        .join(', ')
-
-    channel = Channel.find_by(area: 'Sms::Notification')
-    if !channel.active?
-      # write info message since we have an active trigger
-      logger.info "Found possible SMS recipient(s) (#{sms_recipients_to}) for Ticket# #{number} but SMS channel is not active."
-      return
+    coreFieldValues.each do |key, value|
+      extActModel['external_activity'][key] = value
     end
 
-    objects = build_notification_template_objects(article)
-    body = NotificationFactory::Renderer.new(
-      objects:  objects,
-      template: value['body'],
-      escape:   false
-    ).render.html2text.tr(' ', ' ') # convert non-breaking space to simple space
-
-    # attributes content_type is not needed for SMS
-    Ticket::Article.create(
-      ticket_id:     id,
-      subject:       'SMS notification',
-      to:            sms_recipients_to,
-      body:          body,
-      internal:      value['internal'] || false, # default to public if value was not set
-      sender:        Ticket::Article::Sender.find_by(name: 'System'),
-      type:          Ticket::Article::Type.find_by(name: 'sms'),
-      preferences:   {
-        perform_origin: perform_origin,
-        sms_recipients: sms_recipients.map(&:mobile),
-        channel_id:     channel.id,
-      },
-      updated_by_id: 1,
-      created_by_id: 1,
+    ExternalActivity.create(
+      external_ticketing_system_id: extActModel['ticket.external_activity'].value,
+      ticket_id:                    id,
+      data:                         extActModel['external_activity'],
+      bidirectional_alignment:      true,
     )
-=end
   end
 end

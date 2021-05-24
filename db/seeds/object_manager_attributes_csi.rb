@@ -406,26 +406,26 @@ ObjectManager::Attribute.add(
   },
   editable:    false,
   active:      true,
-  screens: {
+  screens:     {
     'create_middle' => {
       'ticket.customer' => {
-        'shown' => false,
-        'required' => false,
+        'shown'      => false,
+        'required'   => false,
         'item_class' => 'column'
       },
       'ticket.agent'    => {
-        'shown' => false,
-        'required' => false,
+        'shown'      => false,
+        'required'   => false,
         'item_class' => 'column'
       }
     },
-    'edit' => {
+    'edit'          => {
       'ticket.customer' => {
-        'shown' => false,
+        'shown'    => false,
         'required' => false
       },
-      'ticket.agent' => {
-        'shown' => false,
+      'ticket.agent'    => {
+        'shown'    => false,
         'required' => false
       }
     }
