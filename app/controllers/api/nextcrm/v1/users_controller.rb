@@ -26,6 +26,7 @@ class Api::Nextcrm::V1::UsersController < ::UsersController
   end
 
   def create
+    params[:active] = true
     # check if input email is present as linked account 
     if params[:email]
       value = params[:email]
