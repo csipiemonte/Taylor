@@ -43,6 +43,7 @@ class Api::Nextcrm::V1::UsersController < ::UsersController
   end
 
   def update
+    params.delete :active
     super
   end
 

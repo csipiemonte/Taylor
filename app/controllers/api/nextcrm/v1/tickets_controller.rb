@@ -96,6 +96,7 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
       params[:ticket][:customer_id] = "guess:#{params[:ticket][:customer_id]}"
     end
     super
+    alterTicketAttributesInResponse()
   end
 
   def update
@@ -104,8 +105,11 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
     params.delete :owner
 
     params.delete :state
-    if params[:state_id] and params[:state_id] != 4 # closed
-      raise Exceptions::UnprocessableEntity, "Available ticket state id: [4]"
+    if params[:state_id] 
+      # 4:chiuso 1:nuovo 9:in attesa di informazioni da utente
+      if [1,4,9, "1","4","9"].include? params[:state_id]
+        raise Exceptions::UnprocessableEntity, "forbidden ticket state id"
+      end
     end
     
     if params[:ticket] and params[:ticket][:customer_id]
@@ -122,39 +126,14 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
       params[:ticket][:customer_id] = "guess:#{value}"
     end
     super
+    alterTicketAttributesInResponse()
   end
 
 
   private
 
   def alterTicketAttributesInResponse
-    whitelist_parameters = %w[
-      id 
-      priority_id 
-      priority
-      state_id 
-      state
-      number 
-      title 
-      customer_id 
-      note 
-      create_article_type_id 
-      create_article_sender_id 
-      article_count  
-      type 
-      utente_riconosciuto 
-      asset_id 
-      asset
-      customer 
-      created_by 
-      updated_by 
-      updated_by_id 
-      created_by_id 
-      created_at 
-      updated_at 
-      create_article_type 
-      create_article_sender
-    ].to_set
+
     # convert to hash {id => object} to improve access lookup speed in loop
     all_assets = Asset.select(:id,:name).to_a.to_h{|asset| [asset.id, asset.name] }
     states_to_hide_array = Ticket::State.select(:id,:name,:external_state_id).where.not(external_state_id: nil).where(active: true).to_a
@@ -171,28 +150,59 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
     if obj_resp.is_a? Array
       # loop over response array of tickets to hide/change attributes
       obj_resp.each do |ticket| 
-        # whitelist
-        ticket.keys.each do |attribute|
-          ticket.delete(attribute) unless whitelist_parameters.include?(attribute)
-        end
-        # internal states subtitution
-        if states_to_hide_ids.include?(ticket["state_id"].to_s) and states_to_hide_hash[ticket["state_id"]]
-          ticket["state_id"]  = states_to_hide_hash[ticket["state_id"]].external_state_id
-        end
-        # state translation
-        ticket["state"] = states_traslations[ticket["state"]] if ticket["state"]
-        # asset name
-        ticket["asset"] ||= nil
-        if ticket["asset_id"] 
-          ticket["asset"] = all_assets[ticket["asset_id"]]
-        end
+        modify_ticket(ticket, all_assets, states_to_hide_hash , states_to_hide_ids, states_traslations)
       end
       str_resp = Oj.dump(obj_resp)
       response.body = str_resp
-
+    else
+      ticket = obj_resp
+      modify_ticket(ticket, all_assets, states_to_hide_hash , states_to_hide_ids, states_traslations)
+      str_resp = Oj.dump(obj_resp)
+      response.body = str_resp
     end
   end
 
+  def modify_ticket(ticket, all_assets, states_to_hide_hash , states_to_hide_ids, states_traslations)
+    whitelist_parameters = %w[
+      id 
+      priority_id 
+      priority
+      state_id 
+      state
+      number 
+      title 
+      customer_id 
+      note 
+      article_count  
+      type 
+      utente_riconosciuto 
+      asset_id 
+      asset
+      customer 
+      created_at 
+      updated_at 
+      create_article_type_id 
+      create_article_sender_id 
+      create_article_type 
+      create_article_sender
+    ].to_set
+
+    # whitelist
+    ticket.keys.each do |attribute|
+      ticket.delete(attribute) unless whitelist_parameters.include?(attribute)
+    end
+    # internal states subtitution
+    if states_to_hide_ids.include?(ticket["state_id"].to_s) and states_to_hide_hash[ticket["state_id"]]
+      ticket["state_id"]  = states_to_hide_hash[ticket["state_id"]].external_state_id
+    end
+    # state translation
+    ticket["state"] = states_traslations[ticket["state"]] if ticket["state"]
+    # asset name
+    ticket["asset"] ||= nil
+    if ticket["asset_id"] 
+      ticket["asset"] = all_assets[ticket["asset_id"]]
+    end
+  end
 
   
 end

@@ -67,9 +67,15 @@ class Api::Nextcrm::V1::TicketArticlesController < ::TicketArticlesController
       created_at 
       updated_at 
     ].to_set
+
+    # TODO  substitute/hide operator name in the field "from"
+    #article_creator = User.find_by(email: articleObj["created_by"])
+
     articleObj.keys.each do |attribute|
       articleObj.delete(attribute) unless whitelist_parameters.include?(attribute)
     end
+    
+
   end
 
 
