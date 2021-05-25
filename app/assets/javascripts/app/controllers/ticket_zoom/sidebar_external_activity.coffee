@@ -43,6 +43,7 @@ class ExternalActivity extends App.Controller
             cb(activity)
 
     )
+    @fetchedOptions = []
     newActivityButton = @$('.js-newExternalActivityLabel')
     newActivityButton.on('click', () =>
        @createDispatchForm()
@@ -86,15 +87,23 @@ class ExternalActivity extends App.Controller
     )
 
   importFieldsFromTicket: (externalActivityId) =>
+    instance = @
     @ajax(
       id:    'ticket'
       type:  'GET'
       url:   "#{@apiPath}/tickets/"+@ticket.id
       success: (data, status, xhr) =>
         $.each @system.model, (key, field) ->
-          value = data[field["core_field"]]
-          if field["core_field"] && value
-            $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(value)
+          if field["core_field"]
+            value = data[field["core_field"]]
+            if field["select"] && field["select"]["service"]
+              $.each instance.fetchedOptions[field["name"]], (index,option) ->
+                if option["id"] == value
+                  $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(option["name"])
+                  return
+            else
+              $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(value)
+
     )
     @ajax(
       id:    'ticket_articles'
@@ -179,6 +188,7 @@ class ExternalActivity extends App.Controller
       type:  'GET'
       url: url
       success: (data, status, xhr) =>
+        @fetchedOptions[field["name"]] = data
         selectField.empty().append('<option value>-</option>')
         data.forEach (option) =>
           cb(selectField,option)
@@ -187,7 +197,7 @@ class ExternalActivity extends App.Controller
     )
 
   addOption: (selectField, option) =>
-    o = new Option(option["name"], option["id"]);
+    o = new Option(option["name"], option["name"]);
     $(o).html(option["name"]);
     selectField.append(o);
 
