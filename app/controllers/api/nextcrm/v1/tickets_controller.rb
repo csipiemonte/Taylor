@@ -91,7 +91,8 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
     if params[:article] and not params[:article][:type_id]
       raise Exceptions::UnprocessableEntity, "Need at least article: { type_id: \"<id>\" "
     end
-    if params[:ticket] and params[:ticket][:customer_id]
+    if params[:ticket] and params[:ticket][:customer]
+      # "guess" for autocreate works only in customer_id field 
       params[:ticket][:customer_id] = "guess:#{params[:ticket][:customer_id]}"
     end
     super
