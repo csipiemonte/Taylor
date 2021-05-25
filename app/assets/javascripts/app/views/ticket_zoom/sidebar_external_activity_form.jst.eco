@@ -7,27 +7,29 @@
   <% end %>
   <form>
   <% for field in @fields: %>
-    <div data-attribute-name="External_Activity_<%= @externalActivityId %>_<%= field.name %>" class="select form-group" <% if field.visible == false: %> style="display: none;" <% end %>>
-      <div class="formGroup-label">
-        <label for="<%= field.name %>"><%- @T(field.label) %> <span><% if field.required: %>*<% end %></span></label>
-      </div>
-      <div class="controls "><div class="controls controls--select">
-        <% if field.select: %>
-          <select id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="<%= field.type %>" class="<% if field.type!="checkbox": %>form-control<% end %>" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @dispatched || field.read_only: %>readonly disabled<% end %> <% if @dispatched && @values[field.name]: %>value="<%= @values[field.name] %>" <% else if field.default: %>value="<%= field.default %>"<% end %>>>
-            <option value>-</option>
-          </select>
-          <svg class="icon icon-arrow-down "><use xlink:href="assets/images/icons.svg#icon-arrow-down"></use></svg>
-        <% else if field.type=='comment': %>
-          <textarea id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="text" class="form-control" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if field.read_only: %>readonly <% else if field.default: %>value="<%= field.default %>"<% end %>></textarea>
-          <% if @dispatched: %>
-            <button id="External_Activity_<%= @externalActivityId %>_<%= field.name %>_comment_button" class="btn btn--primary" style="display: block;margin: 0.5em 0 1em auto;">✉ <%- @T('Send') %></button>
+    <% if !((field.send_only && @dispatched) || (field.receive_only && !@dispatched)): %>
+      <div data-attribute-name="External_Activity_<%= @externalActivityId %>_<%= field.name %>" class="select form-group" <% if field.visible == false: %> style="display: none;" <% end %>>
+        <div class="formGroup-label">
+          <label for="<%= field.name %>"><%- @T(field.label) %> <span><% if field.required: %>*<% end %></span></label>
+        </div>
+        <div class="controls "><div class="controls controls--select">
+          <% if field.select: %>
+            <select id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="<%= field.type %>" class="<% if field.type!="checkbox": %>form-control<% end %>" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @dispatched || field.read_only: %>readonly disabled<% end %> <% if @dispatched && @values[field.name]: %>value="<%= @values[field.name] %>" <% else if field.default: %>value="<%= field.default %>"<% end %>>>
+              <option value>-</option>
+            </select>
+            <svg class="icon icon-arrow-down "><use xlink:href="assets/images/icons.svg#icon-arrow-down"></use></svg>
+          <% else if field.type=='comment': %>
+            <textarea id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="text" class="form-control" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if field.read_only: %>readonly <% else if field.default: %>value="<%= field.default %>"<% end %>></textarea>
+            <% if @dispatched: %>
+              <button id="External_Activity_<%= @externalActivityId %>_<%= field.name %>_comment_button" class="btn btn--primary" style="display: block;margin: 0.5em 0 1em auto;">✉ <%- @T('Send') %></button>
+            <% end %>
+          <% else: %>
+            <input id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="<%= field.type %>" class="<% if field.type!="checkbox": %>form-control<% end %>" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @dispatched || field.read_only: %>readonly disabled<% end %> <% if @dispatched && @values[field.name]: %>value="<%= @values[field.name] %>" <% else if field.default: %>value="<%= field.default %>"<% end %>>
           <% end %>
-        <% else: %>
-          <input id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="<%= field.type %>" class="<% if field.type!="checkbox": %>form-control<% end %>" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @dispatched || field.read_only: %>readonly disabled<% end %> <% if @dispatched && @values[field.name]: %>value="<%= @values[field.name] %>" <% else if field.default: %>value="<%= field.default %>"<% end %>>
-        <% end %>
+        </div>
+        </div>
       </div>
-      </div>
-    </div>
+    <% end %>
   <% end %>
   <% if !@dispatched: %>
     <div class="">
