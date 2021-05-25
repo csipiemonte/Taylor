@@ -5,6 +5,12 @@ ExternalTicketingSystem.create_if_not_exists(
 
 # to update model just edit the following variable, then seed the database :)
 remedy_model = {
+  '0' => {
+    'name':'remedy_id',
+    'label':'remedy id',
+    'type':'text',
+    'receive_only': true
+    },
   '1' => {
       'required': true,
       'name':'riepilogo',
