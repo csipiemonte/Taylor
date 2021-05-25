@@ -37,7 +37,9 @@ class ExternalActivityController < ApplicationController
   end
 
   def index_external_ticketing_system
-    render json: ExternalTicketingSystem.all
+    systems = ExternalTicketingSystem.all
+    systems = systems.find_by(name: params[:name]) if params[:name].present? && params[:name]!=""
+    render json: systems
   end
 
   def show_external_ticketing_system
