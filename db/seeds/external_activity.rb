@@ -36,10 +36,10 @@ remedy_model = {
       'label':'impatto',
       'select' => {
           'options' => {
-              '1' => {'id':'Minimo/localizzato', 'name':'Minimo/localizzato'},
-              '2' => {'id':'Moderato/limitato', 'name':'Moderato/limitato'},
-              '3' => {'id':'Significativo/grande', 'name':'Significativo/grande'},
-              '4' => {'id':'Vasto/diffuso', 'name':'Vasto/diffuso'}
+              '1' => {'id':'Minimo/Localizzato', 'name':'Minimo/Localizzato'},
+              '2' => {'id':'Moderato/Limitato', 'name':'Moderato/Limitato'},
+              '3' => {'id':'Significativo/Grande', 'name':'Significativo/Grande'},
+              '4' => {'id':'Vasto/Diffuso', 'name':'Vasto/Diffuso'}
           }
       }
   },
@@ -62,8 +62,7 @@ remedy_model = {
       'label':'tipologia',
       'select' => {
           'options' => {
-              '1' => {'id':'Richiesta utente', 'name':'Richiesta utente'},
-              '2' => {'id':'Ripristino di servizio utente', 'name':'Ripristino di servizio utente'}
+              '1' => {'id':'Ripristino di servizio utente', 'name':'Ripristino di servizio utente'}
           }
       }
   },
