@@ -19,6 +19,12 @@ remedy_model = {
       'core_field':'body'
   },
   '3' => {
+    'name':'stato',
+    'label':'stato',
+    'type':'text',
+    'receive_only': true
+    },
+  '4' => {
       'required': true,
       'name':'impatto',
       'label':'impatto',
@@ -31,7 +37,7 @@ remedy_model = {
           }
       }
   },
-  '4' => {
+  '5' => {
       'required': true,
       'name':'urgenza',
       'label':'urgenza',
@@ -44,7 +50,7 @@ remedy_model = {
           }
       }
   },
-  '5' => {
+  '6' => {
       'required': true,
       'name':'tipologia',
       'label':'tipologia',
@@ -55,7 +61,7 @@ remedy_model = {
           }
       }
   },
-  '6' => {
+  '7' => {
       'required': true,
       'name':'richiedente',
       'label':'richiedente',
@@ -64,7 +70,7 @@ remedy_model = {
       'read_only': true,
       'visible': false
   },
-  '7' => {
+  '8' => {
       'required': true,
       'name':'service_catalog',
       'label':'Service Catalog',
@@ -72,7 +78,7 @@ remedy_model = {
           'service': 'service_catalog'
       }
   },
-  '8' => {
+  '9' => {
       'required': true,
       'name':'service_catalog_sub_item',
       'label':'Service Catalog Sub Item',
@@ -81,7 +87,7 @@ remedy_model = {
           'parent': 'service_catalog'
       }
   },
-  '9' => {
+  '10' => {
       'required': true,
       'name':'asset',
       'label':'Asset',
@@ -90,7 +96,7 @@ remedy_model = {
           'service': 'asset'
       }
   },
-  '10' => {
+  '11' => {
     'name':'commento',
     'label':'commento',
     'type':'comment'
