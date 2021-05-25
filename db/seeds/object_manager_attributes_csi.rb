@@ -397,11 +397,10 @@ ObjectManager::Attribute.add(
   display:     'External Activity',
   data_type:   'select',
   data_option: {
-    default:    ExternalTicketingSystem.lookup(name: 'Remedy').id,
+    default:    '',
     options:    hash_ticketing_systems,
-    nulloption: false,
     multiple:   false,
-    null:       false,
+    null:       true,
     translate:  false,
   },
   editable:    false,

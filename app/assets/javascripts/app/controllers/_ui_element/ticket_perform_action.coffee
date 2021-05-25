@@ -253,7 +253,6 @@ class App.UiElement.ticket_perform_action
     @buildPreCondition(elementFull, elementRow, groupAndAttribute, elements, meta, attribute)
 
   @buildPreCondition: (elementFull, elementRow, groupAndAttribute, elements, meta, attributeConfig) ->
-    console.log('elementFull', {elementFull})
     currentOperator = elementRow.find('.js-operator option:selected').attr('value')
     currentPreCondition = elementRow.find('.js-preCondition option:selected').attr('value')
 
@@ -274,6 +273,9 @@ class App.UiElement.ticket_perform_action
 
     name = "#{attribute.name}::#{groupAndAttribute}::value"
     attributeSelected = elements[groupAndAttribute]
+    console.log('attributeSelected', {attributeSelected})
+    if (attributeSelected == undefined) # CSI CUSTOM - aggiunto TODO perche' c'e' un undefined
+      return
 
     preCondition = false
     if attributeSelected.relation is 'User'

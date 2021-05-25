@@ -1704,34 +1704,35 @@ result
   # CSI custom external activity
   # A fronte di una determinata condizione sul ticket si procede con la
   # creazione di una external activity
-  def create_external_activity(extActModel)
-    logger.info { "create_external_activity - Perform external activity #{extActModel.inspect} on Ticket.find(#{id})" }
+  def create_external_activity(ext_act_perform)
+    logger.info { "create_external_activity - Perform external activity #{ext_act_perform.inspect} on Ticket.find(#{id})" }
 
     core_field_prefix = 'core_field::'
-    coreFieldValues = {}
-    extActModel['external_activity'].each do |key, value|
+    core_field_values = {}
+    ext_act_perform['external_activity'].each do |key, value|
       next if !value.start_with?(core_field_prefix)
+
       logger.info { "create_external_activity - value #{value}" }
       core_field_value = value.slice!(core_field_prefix.length, value.length)
       logger.info { "create_external_activity - core_field_value #{core_field_value}" }
 
       case core_field_value
       when 'title'
-        coreFieldValues[key] = title
+        core_field_values[key] = title
         next
       when 'body'
-        coreFieldValues[key] = articles.first.body
+        core_field_values[key] = articles.first.body
       end
     end
 
-    coreFieldValues.each do |key, value|
-      extActModel['external_activity'][key] = value
+    core_field_values.each do |key, value|
+      ext_act_perform['external_activity'][key] = value
     end
 
     ExternalActivity.create(
-      external_ticketing_system_id: extActModel['ticket.external_activity'].value,
+      external_ticketing_system_id: ext_act_perform['ticket.external_activity']['value'],
       ticket_id:                    id,
-      data:                         extActModel['external_activity'],
+      data:                         ext_act_perform['external_activity'],
       bidirectional_alignment:      true,
     )
   end

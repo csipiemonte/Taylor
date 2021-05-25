@@ -1,34 +1,36 @@
 <% for field in @fields: %>
-  <div class="form-group"
-    <% if field.visible == false: %> style="display: none;" <% end %>
-  >
-    <% if (field.core_field != undefined && (field.core_field is 'title' || field.core_field is 'body')): %>
-      <input id="perform::external_activity::<%= field.name %>"
-        type="hidden"
-        name="perform::external_activity::<%= field.name %>" value="core_field::<%= field.core_field %>" />
-    <% else: %>
-      <div class="formGroup-label">
-        <label for="perform::external_activity::<%= field.name %>">
-          <%- @T(field.label) %> <span><% if field.required: %>*<% end %></span>
-        </label>
-      </div>
-      <div class="controls js-recipient u-positionOrigin">
-        <% if field.select: %>
-          <select id="perform::external_activity::<%= field.name %>"
-            type="<%= field.type %>"
-            class="<% if field.type!="checkbox": %>form-control<% end %>"
-            name="perform::external_activity::<%= field.name %>" <% if field.required: %>required<% end %> 
-          >
-            <option value>-</option>
-          </select>
-          <svg class="icon icon-arrow-down "><use xlink:href="assets/images/icons.svg#icon-arrow-down"></use></svg>
-        <% else: %>
-          <input id="perform::external_activity::<%= field.name %>"
-            type="<%= field.type %>"
-            class="<% if field.type!="checkbox": %>form-control<% end %>"
-            name="perform::external_activity::<%= field.name %>" <% if field.required: %>required<% end %> <% if field.read_only: %>readonly disabled<% end %> <% if field.default: %>value="<%= field.default %>"<% end %>>
-        <% end %>
-      </div>
-    <% end %>
-  </div>
+  <% if (field.receive_only == undefined || field.receive_only == false): %>
+    <div class="form-group"
+      <% if field.visible == false: %> style="display: none;" <% end %>
+    >
+      <% if (field.core_field != undefined && (field.core_field is 'title' || field.core_field is 'body')): %>
+        <input id="perform::external_activity::<%= field.name %>"
+          type="hidden"
+          name="perform::external_activity::<%= field.name %>" value="core_field::<%= field.core_field %>" />
+      <% else: %>
+        <div class="formGroup-label">
+          <label for="perform::external_activity::<%= field.name %>">
+            <%- @T(field.label) %> <span><% if field.required: %>*<% end %></span>
+          </label>
+        </div>
+        <div class="controls js-recipient u-positionOrigin">
+          <% if field.select: %>
+            <select id="perform::external_activity::<%= field.name %>"
+              type="<%= field.type %>"
+              class="<% if field.type!="checkbox": %>form-control<% end %>"
+              name="perform::external_activity::<%= field.name %>" <% if field.required: %>required<% end %> 
+            >
+              <option value>-</option>
+            </select>
+            <svg class="icon icon-arrow-down "><use xlink:href="assets/images/icons.svg#icon-arrow-down"></use></svg>
+          <% else: %>
+            <input id="perform::external_activity::<%= field.name %>"
+              type="<%= field.type %>"
+              class="<% if field.type!="checkbox": %>form-control<% end %>"
+              name="perform::external_activity::<%= field.name %>" <% if field.required: %>required<% end %> <% if field.read_only: %>readonly disabled<% end %> <% if field.default: %>value="<%= field.default %>"<% end %>>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
 <% end %>
