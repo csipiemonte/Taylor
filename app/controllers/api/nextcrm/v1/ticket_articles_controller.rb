@@ -13,13 +13,13 @@ class Api::Nextcrm::V1::TicketArticlesController < ::TicketArticlesController
     super
   end
 
-  def update
-    super
-  end
+  # def update
+  #   super
+  # end
 
-  def destroy
-    super
-  end
+  # def destroy
+  #   super
+  # end
 
   private
 
