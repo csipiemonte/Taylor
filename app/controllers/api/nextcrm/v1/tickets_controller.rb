@@ -175,6 +175,7 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
       note 
       article_count  
       type 
+      type_id
       utente_riconosciuto 
       asset_id 
       asset

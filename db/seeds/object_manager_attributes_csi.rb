@@ -349,4 +349,68 @@ ObjectManager::Attribute.add(
   position:    1632,
 )
 
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'Ticket',
+  name:        'type_id',
+  display:     'Type',
+  data_type:   'select',
+  data_option: {
+    default:    nil,
+    options: Ticket::Type.all.map { |tt| [tt.id, tt.name] }.to_h,
+    # options:    {
+      # 'Incident'           => 'Incident',
+      # 'Problem'            => 'Problem',
+      # 'Request for Change' => 'Request for Change',
+    # },
+    nulloption: true,
+    multiple:   false,
+    null:       true,
+    translate:  true,
+  },
+  editable:    false,
+  active:      true,
+  # screens:     {
+  #   create_middle: {
+  #     '-all-' => {
+  #       null:       false,
+  #       item_class: 'column',
+  #     },
+  #   },
+  #   edit:          {
+  #     'ticket.agent' => {
+  #       null: false,
+  #     },
+  #   },
+  # },
+  screens: {
+    'create_middle' => {
+      'ticket.customer' => {
+        'shown' => true,
+        'required' => false,
+        'item_class' => 'column'
+      },
+      'ticket.agent'    => {
+        'shown' => true,
+        'required' => false,
+        'item_class' => 'column'
+      }
+    },
+    'edit' => {
+      'ticket.customer' => {
+        'shown' => true,
+        'required' => false
+      },
+      'ticket.agent' => {
+        'shown' => true,
+        'required' => false
+      }
+    }
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    20,
+)
+
 
