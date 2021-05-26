@@ -68,8 +68,13 @@ class Api::Nextcrm::V1::TicketArticlesController < ::TicketArticlesController
       updated_at 
     ].to_set
 
-    # TODO  substitute/hide operator name in the field "from"
-    #article_creator = User.find_by(email: articleObj["created_by"])
+
+    # if articleObj["from"] && !articleObj["from"].empty?
+    #   article_creator = User.where(email: articleObj["from"]).take
+    #   if article_creator && article_creator.permissions?("virtual_agent")
+    #     articleObj["from"] = "Operatore"
+    #   end
+    # end
 
     articleObj.keys.each do |attribute|
       articleObj.delete(attribute) unless whitelist_parameters.include?(attribute)

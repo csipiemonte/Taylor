@@ -182,7 +182,6 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
       created_at 
       updated_at 
       create_article_type_id 
-      create_article_sender_id 
       create_article_type 
       create_article_sender
     ].to_set
