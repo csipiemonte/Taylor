@@ -242,21 +242,9 @@ class ExternalActivity extends App.Controller
 
 
   showObjectsContent: (objectIds) =>
-    @html("<div>#{App.i18n.translateInline('')}</div>")
     if @systems.length > 0
       @loadSystem(@systems[0])
     return
-
-  showList: (objects) =>
-    list = $(App.view('ticket_zoom/sidebar_idoit')(
-      objects: objects
-    ))
-    list.delegate('.js-delete', 'click', (e) =>
-      e.preventDefault()
-      objectId = $(e.currentTarget).attr 'data-object-id'
-      @delete(objectId)
-    )
-    @html(list)
 
   showError: (message) =>
     @html App.i18n.translateInline(message)
@@ -265,46 +253,10 @@ class ExternalActivity extends App.Controller
     @showObjectsContent()
 
   delete: (objectId) =>
-    localObjects = []
-    for localObjectId in @objectIds
-      if objectId.toString() isnt localObjectId.toString()
-        localObjects.push localObjectId
-    @objectIds = localObjects
-    if @ticket && @ticket.id
-      @updateTicket(@ticket.id, @objectIds)
-    @showObjectsContent()
 
   postParams: (args) =>
-    return if !args.ticket
-    return if args.ticket.created_at
-    return if !@objectIds
-    return if _.isEmpty(@objectIds)
-    args.ticket.preferences ||= {}
-    args.ticket.preferences.idoit ||= {}
-    args.ticket.preferences.idoit.object_ids = @objectIds
 
   updateTicket: (ticket_id, objectIds, callback) =>
-    App.Ajax.request(
-      id:    "idoit-update-#{ticket_id}"
-      type:  'POST'
-      url:   "#{@apiPath}/integration/idoit_ticket_update"
-      data:  JSON.stringify(ticket_id: ticket_id, object_ids: objectIds)
-      success: (data, status, xhr) ->
-        if callback
-          callback(objectIds)
 
-      error: (xhr, status, details) =>
-
-        # do not close window if request is aborted
-        return if status is 'abort'
-
-        # show error message
-        @log 'errors', details
-        @notify(
-          type:    'error'
-          msg:     App.i18n.translateContent(details.error_human || details.error || 'Unable to update object!')
-          timeout: 6000
-        )
-    )
 
 App.Config.set('999-ExternalActivity', ExternalActivity, 'TicketZoomSidebar')
