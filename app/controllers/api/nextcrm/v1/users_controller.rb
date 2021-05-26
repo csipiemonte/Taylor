@@ -43,6 +43,18 @@ class Api::Nextcrm::V1::UsersController < ::UsersController
   end
 
   def update
+    if params[:id]
+      user_to_update = User.where(id: params[:id]).take
+      if user_to_update && !user_to_update.role?('Customer')
+        raise Exceptions::NotAuthorized, "id must be of Customer user"
+      end
+    end
+    if params[:email]
+      user_to_update = User.where(email: params[:email]).take
+      if user_to_update && !user_to_update.role?('Customer')
+        raise Exceptions::NotAuthorized, "email must be of Customer user"
+      end
+    end
     params.delete :active
     super
   end
