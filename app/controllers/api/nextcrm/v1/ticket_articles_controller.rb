@@ -69,12 +69,12 @@ class Api::Nextcrm::V1::TicketArticlesController < ::TicketArticlesController
     ].to_set
 
 
-    # if articleObj["from"] && !articleObj["from"].empty?
-    #   article_creator = User.where(email: articleObj["from"]).take
-    #   if article_creator && article_creator.permissions?("virtual_agent")
-    #     articleObj["from"] = "Operatore"
-    #   end
-    # end
+    if articleObj["from"] && !articleObj["from"].empty?
+      article_creator = User.where(email: articleObj["from"]).take
+      if !article_creator || !article_creator.role?('Customer')
+        articleObj["from"] = "Operatore"
+      end
+    end
 
     articleObj.keys.each do |attribute|
       articleObj.delete(attribute) unless whitelist_parameters.include?(attribute)
