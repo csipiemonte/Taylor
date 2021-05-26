@@ -40,6 +40,7 @@ class Api::Nextcrm::V1::UsersController < ::UsersController
       params[:email] = value
     end
     super
+    alterUserAttributesInResponse()
   end
 
   def update
@@ -57,11 +58,32 @@ class Api::Nextcrm::V1::UsersController < ::UsersController
     end
     params.delete :active
     super
+    alterUserAttributesInResponse()
   end
 
   private
 
   def alterUserAttributesInResponse
+
+
+    # optimized json parse
+    obj_resp = Oj.load(response.body)
+
+    if obj_resp.is_a? Array
+      # loop over response array of object to hide/change attributes
+      obj_resp.each do |user| 
+        alterUserdata(user)
+      end
+    else
+      user = obj_resp
+      alterUserdata(user)
+    end
+
+    str_resp = Oj.dump(obj_resp)
+    response.body = str_resp
+  end
+
+  def alterUserdata(user)
     # convert array in Set to improve 'include?' lookup speed in loop
     whitelist_parameters = %w[
       id 
@@ -83,20 +105,9 @@ class Api::Nextcrm::V1::UsersController < ::UsersController
       updated_at
     ].to_set
 
-     # optimized json parse
-     obj_resp = Oj.load(response.body)
-
-     if obj_resp.is_a? Array
-      # loop over response array of object to hide/change attributes
-      obj_resp.each do |user| 
-        # whitelist
-        user.keys.each do |attribute|
-          user.delete(attribute) unless whitelist_parameters.include?(attribute)
-        end
-        
-      end
-      str_resp = Oj.dump(obj_resp)
-      response.body = str_resp
+    # whitelist
+    user.keys.each do |attribute|
+      user.delete(attribute) unless whitelist_parameters.include?(attribute)
     end
   end
 
