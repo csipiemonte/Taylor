@@ -72,6 +72,8 @@ class Ticket < ApplicationModel
   belongs_to    :create_article_type,    class_name: 'Ticket::Article::Type', optional: true
   belongs_to    :create_article_sender,  class_name: 'Ticket::Article::Sender', optional: true
 
+  belongs_to    :type,                  class_name: 'Ticket::Type', optional: true
+
   self.inheritance_column = nil
 
   attr_accessor :callback_loop
