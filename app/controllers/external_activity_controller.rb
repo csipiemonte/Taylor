@@ -29,10 +29,10 @@ class ExternalActivityController < ApplicationController
 
   def update_external_activity
     return if not params[:id]
-    return if not params[:data]
     external_activity = ExternalActivity.find_by(id:params[:id])
-    external_activity.data = params[:data]
+    external_activity.data = params[:data] if params[:data]
     external_activity.delivered = params[:delivered] if params[:delivered].present?
+    external_activity.needs_attention = params[:needs_attention] if params[:needs_attention].present?
     external_activity.save!
     render json: external_activity
   end
