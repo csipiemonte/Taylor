@@ -9,7 +9,8 @@ remedy_model = {
     'name':'remedy_id',
     'label':'remedy id',
     'type':'text',
-    'receive_only': true
+    'receive_only': true,
+    'external_visibility':true
     },
   '1' => {
       'required': true,
@@ -28,7 +29,8 @@ remedy_model = {
     'name':'stato',
     'label':'stato',
     'type':'text',
-    'receive_only': true
+    'receive_only': true,
+    'external_visibility':true
     },
   '4' => {
       'required': true,
@@ -148,7 +150,15 @@ create_translation('it-it','crm operator','operatore crm')
 create_translation('it-it','external operator','operatore esterno')
 
 
-
+Setting.create_if_not_exists(
+  title:       'External Activity Public Visibility',
+  name:        'external_activity_public_visibility',
+  area:        'Integration::Remedy',
+  description: 'For each external ticketing system specifies whether external activities are included in tickets fetched by individual virtual operators',
+  options:     {},
+  state:       {},
+  frontend:    false
+)
 
 
 

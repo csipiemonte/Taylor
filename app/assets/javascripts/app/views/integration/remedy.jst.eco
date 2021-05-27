@@ -20,6 +20,30 @@
     </table>
   </div>
 
+
+<table class="settings-list">
+  <thead>
+    <tr>
+      <th><%- @T('Virtual Agent') %></th>
+      <th><%- @T('Public Data')%></th></tr>
+  </thead>
+  <tbody>
+    <% for virtual_agent in @virtual_agents: %>
+      <tr>
+        <td><%= virtual_agent.firstname %> <%= virtual_agent.lastname %></td>
+        <td>
+          <label class="inline-label checkbox-replacement">
+            <input type="checkbox" value="read" id="remedy_visibility_for_<%= virtual_agent.id %>">
+            <svg class="icon icon-checkbox icon-unchecked"><use xlink:href="assets/images/icons.svg#icon-checkbox"></use></svg>
+            <svg class="icon icon-checkbox-checked icon-checked"><use xlink:href="assets/images/icons.svg#icon-checkbox-checked"></use></svg>
+          </label>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+
 <!--
 <div class="settings-entry">
   <h2><%- @T('Data Alignment') %></h2>
