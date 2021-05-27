@@ -73,7 +73,7 @@ remedy_model = {
       'name':'richiedente',
       'label':'richiedente',
       'type':'text',
-      'default':'PPL000000018476',
+      'default':'PPL000000429692',
       'read_only': true,
       'visible': false
   },
