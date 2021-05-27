@@ -108,6 +108,8 @@ class App.Ticket extends App.Model
       return App.i18n.translateContent('Ticket |%s| is escalated!', item.title)
     else if item.type is 'escalation_warning'
       return App.i18n.translateContent('Ticket |%s| will escalate soon!', item.title)
+    else if item.type is 'external_activity'
+      return App.i18n.translateContent('An external activity related to Ticket |%s| needs attention!', item.title)
     return "Unknow action for (#{@objectDisplayName()}/#{item.type}), extend activityMessage() of model."
 
   # apply macro

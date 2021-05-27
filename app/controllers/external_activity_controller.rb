@@ -32,7 +32,21 @@ class ExternalActivityController < ApplicationController
     external_activity = ExternalActivity.find_by(id:params[:id])
     external_activity.data = params[:data] if params[:data].present?
     external_activity.delivered = params[:delivered] if params[:delivered]!=nil
-    external_activity.needs_attention = params[:needs_attention] if params[:needs_attention]!=nil
+    if params[:needs_attention]!=nil
+      external_activity.needs_attention = params[:needs_attention]
+      if external_activity.needs_attention
+        Role.where(name: 'Agent').first.users.where(active: true).each do |agent|
+          OnlineNotification.add(
+            type:          'external_activity',
+            object:        'Ticket',
+            o_id:          external_activity.ticket_id,
+            seen:          false,
+            created_by_id: 1,
+            user_id:       agent.id,
+          )
+        end
+      end
+    end
     external_activity.save!
     render json: external_activity
   end
