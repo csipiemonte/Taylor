@@ -59,11 +59,29 @@ class ExternalActivity extends App.Controller
            isAgent: @permissionCheck('ticket.agent')
            fields: Object.values(@system.model)
            dispatched: true
+           needs_attention: activity.needs_attention
            values: activity.data
            activity: activity
          )
     @buildSelectFields(externalActivityId,activity)
     @buildCommentFields(externalActivityId,activity)
+    @buildNeedsAttentionField(externalActivityId,activity)
+
+
+  buildNeedsAttentionField: (externalActivityId,activity) =>
+    needsAttentionButtonWrapper =
+    needsAttentionButton = @$('#External_Activity_'+externalActivityId+'_needs_attention')
+    needsAttentionButton.on('click', () =>
+      @ajax(
+        id:    'update_external_activity'
+        type:  'PUT'
+        url:   "#{@apiPath}/external_activity/"+activity["id"]
+        data: JSON.stringify({needs_attention:false})
+        success: (data, status, xhr) =>
+      )
+      needsAttentionButton.closest('.page-header-title').parent().hide()
+    )
+
 
   createDispatchForm: () =>
     externalActivityId = Math.floor(Math.random() * 10000) + 10000
@@ -218,7 +236,7 @@ class ExternalActivity extends App.Controller
           "text":value
         }}
     if !validated
-      @$('#External_Activity_'+externalActivityId+'_hidden_submit').click()
+      @$('#External_Activity_'+externalActivityId+'_hidden_submit').on 'click'
       return
     bidirectional_alignment = $('#External_Activity_'+externalActivityId+'_bidirectional_alignment:checkbox:checked').length > 0
     data = JSON.stringify(

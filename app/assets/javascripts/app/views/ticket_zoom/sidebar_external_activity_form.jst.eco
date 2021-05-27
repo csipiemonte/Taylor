@@ -1,5 +1,17 @@
 <% if @isAgent: %>
   <% if @dispatched: %>
+    <% if @needs_attention: %>
+      <div class="">
+          <div class="page-header-title">
+            <div class="zammad-switch zammad-switch--small">
+               <input name="External_Activity_<%= @externalActivityId %>_needs_attention" type="checkbox" id="External_Activity_<%= @externalActivityId %>_needs_attention" checked>
+               <label for="External_Activity_<%= @externalActivityId %>_needs_attention"></label>
+            </div>
+            <h4><%- @T('Needs Attention') %></h4>
+          </div>
+        <div class="text-muted" style="margin-bottom: 1em;"><%- @T('⚠ There are new changes on this activity') %></div>
+      </div>
+     <% end %>
     <p class="text-muted"><%- @T('Created at') %> <%= @activity.created_at %>:</p>
   <% else: %>
 
