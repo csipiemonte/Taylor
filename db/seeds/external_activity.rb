@@ -149,6 +149,11 @@ create_translation('it-it','New external activity on','Nuova attività esterna s
 create_translation('it-it','crm operator','operatore crm')
 create_translation('it-it','external operator','operatore esterno')
 
+create_translation('it-it','Update on an external activity related to Ticket |%s|','C\'è un aggiornamento su un\'attività esterna legata al Ticket |%s|')
+create_translation('it-it','⚠ There are new changes on this activity','⚠ Ci sono aggiornamenti su questa attività')
+create_translation('it-it','Needs Attention','Richiede Attenzione')
+
+
 
 Setting.create_if_not_exists(
   title:       'External Activity Public Visibility',

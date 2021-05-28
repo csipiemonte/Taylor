@@ -110,7 +110,7 @@ class App.Ticket extends App.Model
       return App.i18n.translateContent('Ticket |%s| will escalate soon!', item.title)
     else if item.type is 'external_activity'
       $('#external_activity_reload').click()
-      return App.i18n.translateContent('An external activity related to Ticket |%s| needs attention!', item.title)
+      return App.i18n.translateContent('Update on an external activity related to Ticket |%s|', item.title)
     return "Unknow action for (#{@objectDisplayName()}/#{item.type}), extend activityMessage() of model."
 
   # apply macro
