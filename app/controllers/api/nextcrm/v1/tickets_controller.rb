@@ -80,16 +80,20 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
   end
 
   def create
-   
+    params[:expand] = true
     params.delete :owner_id
     params.delete :owner
 
     params.delete :state
-    params[:state_id] = 1 # new # TODO (solo) il valore 1 viene sovrascritto, da capire dove
+    params[:state_id] = 1 # new 
     
     
-    if params[:article] and not params[:article][:type_id]
-      raise Exceptions::UnprocessableEntity, "Need at least article: { type_id: \"<id>\" "
+    if params[:article] 
+      if not params[:article][:type_id]
+        raise Exceptions::UnprocessableEntity, "Need at least article: { type_id: \"<id>\" "
+      end
+      # sender_id di default viene valorizzato a 1 (Agent) e in questo caso app/models/observer/reset_new_state.rb setta lo state_id a 2 (aperto)
+      params[:article][:sender_id] = 2 # indica che il testo del ticket (article) e'stato creato da un Customer
     end
     if params[:ticket] and params[:ticket][:customer]
       # "guess" for autocreate works only in customer_id field 
@@ -100,7 +104,7 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
   end
 
   def update
-
+    params[:expand] = true
     params.delete :owner_id
     params.delete :owner
 

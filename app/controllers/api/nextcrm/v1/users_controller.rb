@@ -28,17 +28,20 @@ class Api::Nextcrm::V1::UsersController < ::UsersController
   def create
     params[:active] = true
     # check if input email is present as linked account 
-    if params[:email]
-      value = params[:email]
-      linked_authorization = Authorization.where(email: value).last
-      if linked_authorization
-        user = User.where(id: linked_authorization.user_id).last
-        if user and user.email
-          value = user.email
-        end
-      end
-      params[:email] = value
+    if !params[:email] || params[:email].empty?
+      raise Exceptions::UnprocessableEntity, "email is required"
     end
+    
+    value = params[:email]
+    linked_authorization = Authorization.where(email: value).last
+    if linked_authorization
+      user = User.where(id: linked_authorization.user_id).last
+      if user and user.email
+        value = user.email
+      end
+    end
+    params[:email] = value
+    
     super
     alterUserAttributesInResponse()
   end
