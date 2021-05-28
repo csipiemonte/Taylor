@@ -31,6 +31,10 @@ class ExternalActivity extends App.Controller
       system: @system
     ))
     @html(addButton)
+    @$('#external_activity_reload').on('click', () =>
+      @reload()
+      newActivityButton.hide()
+    )
     @ajax(
       id:    'external_activities'
       type:  'GET'
@@ -99,8 +103,10 @@ class ExternalActivity extends App.Controller
       @importFieldsFromTicket(externalActivityId)
     )
 
-    @$('#External_Activity_'+externalActivityId+'_submit').on('click', (e) =>
+    submitButton = @$('#External_Activity_'+externalActivityId+'_submit')
+    submitButton.on('click', (e) =>
       e.preventDefault()
+      submitButton.prop("disabled",true)
       @createExternalActivity(externalActivityId)
     )
 

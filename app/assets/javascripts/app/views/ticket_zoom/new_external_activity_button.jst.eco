@@ -10,3 +10,4 @@
   <input type="text" name="new_external_activity" class="hide js-newTagInput ui-autocomplete-input" autocomplete="off">
 <ul class="ui-autocomplete ui-front ui-menu ui-widget ui-widget-content" id="ui-id-1" tabindex="0" style="display: none;"></ul></form>
 </div>
+<div id="external_activity_reload" style="display: none;"><div>
