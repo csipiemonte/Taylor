@@ -237,7 +237,7 @@ ObjectManager::Attribute.add(
   data_type:   'select',
   data_option: {
     default:        '',
-    relation:       'ServiceCatalogItem',
+    options: {},
     autocapitalize: false,
     multiple:       false,
     guess:          true,
@@ -277,7 +277,7 @@ ObjectManager::Attribute.add(
   data_type:   'select',
   data_option: {
     default:        '',
-    relation:       'ServiceCatalogSubItem',
+    options: {},
     autocapitalize: false,
     multiple:       false,
     guess:          true,
@@ -317,7 +317,7 @@ ObjectManager::Attribute.add(
   data_type:   'select',
   data_option: {
     default:        '',
-    relation:       'Asset',
+    options: {},
     autocapitalize: false,
     multiple:       false,
     guess:          true,
