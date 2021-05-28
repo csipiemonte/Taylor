@@ -1731,8 +1731,11 @@ result
       ext_act_perform['external_activity'][key] = value
     end
 
+    ext_act_system = ext_act_perform['external_activity']['system']['value']
+    ext_act_perform['external_activity'].delete('system')
+
     ExternalActivity.create(
-      external_ticketing_system_id: ext_act_perform['ticket.external_activity']['value'],
+      external_ticketing_system_id: ext_act_system,
       ticket_id:                    id,
       data:                         ext_act_perform['external_activity'],
       bidirectional_alignment:      true,

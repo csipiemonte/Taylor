@@ -16,6 +16,11 @@ class App.UiElement.ticket_perform_action
         name: 'Notification'
         model: 'Notification'
 
+    # Aggiunta voce e sottovoce nel menu perform
+    groups.external_activity =
+      name: 'External Activity'
+      model: 'ExternalActivity'
+
     # merge config
     elements = {}
     for groupKey, groupMeta of groups
@@ -25,6 +30,8 @@ class App.UiElement.ticket_perform_action
           elements["#{groupKey}.sms"] = { name: 'sms', display: 'SMS' }
         else if groupKey is 'article'
           elements["#{groupKey}.note"] = { name: 'note', display: 'Note' }
+        else if groupKey is 'external_activity'
+          elements["#{groupKey}.new_activity"] = { name: 'new_activity', display: 'New Activity' }
       else
 
         for row in App[groupMeta.model].configure_attributes
@@ -60,6 +67,8 @@ class App.UiElement.ticket_perform_action
 
   @render: (attribute, params = {}) ->
 
+    console.log(' RENDER  - attribute', {attribute})
+    console.log(' RENDER  - params', {params})
     [defaults, groups, elements] = @defaults(attribute)
 
     # return item
@@ -107,6 +116,7 @@ class App.UiElement.ticket_perform_action
 
       for groupAndAttribute in defaults
 
+        console.log('groupAndAttribute if', groupAndAttribute)
         # build and append
         element = @placeholder(item, attribute, params, groups, elements)
         item.append(element)
@@ -116,6 +126,8 @@ class App.UiElement.ticket_perform_action
 
       for groupAndAttribute, meta of params[attribute.name]
 
+        console.log('groupAndAttribute else', groupAndAttribute)
+        console.log('meta else', meta)
         # build and append
         element = @placeholder(item, attribute, params, groups, elements)
         @rebuildAttributeSelectors(item, element, groupAndAttribute, elements, meta, attribute)
@@ -182,40 +194,33 @@ class App.UiElement.ticket_perform_action
     notificationTypeMatch = groupAndAttribute.match(/^notification.([\w]+)$/)
     articleTypeMatch = groupAndAttribute.match(/^article.([\w]+)$/)
     # custom CSI
-    externalActivityTypeMatch = groupAndAttribute.match(/^ticket.external_activity$/)
+    externalActivityTypeMatch = groupAndAttribute.match(/^external_activity.([\w]+)$/)
 
     if _.isArray(notificationTypeMatch) && notificationType = notificationTypeMatch[1]
       elementRow.find('.js-setAttribute').html('').addClass('hide')
       elementRow.find('.js-setArticle').html('').addClass('hide')
       elementRow.find('.js-setExternalActivity').html('').addClass('hide')
+      elementRow.find('.js-setExternalActivityContent').html('').addClass('hide')
       @buildNotificationArea(notificationType, elementFull, elementRow, groupAndAttribute, elements, meta, attribute)
     else if _.isArray(articleTypeMatch) && articleType = articleTypeMatch[1]
       elementRow.find('.js-setAttribute').html('').addClass('hide')
       elementRow.find('.js-setNotification').html('').addClass('hide')
       elementRow.find('.js-setExternalActivity').html('').addClass('hide')
+      elementRow.find('.js-setExternalActivityContent').html('').addClass('hide')
       @buildArticleArea(articleType, elementFull, elementRow, groupAndAttribute, elements, meta, attribute)
-    else if _.isArray(externalActivityTypeMatch)
+    else if _.isArray(externalActivityTypeMatch) && externalActivityType = articleTypeMatch[1]
+      # externalActivityType propagarlo
       console.log('meta', {meta})
       console.log('attribute', {attribute})
       elementRow.find('.js-setAttribute').html('').addClass('hide')
       elementRow.find('.js-setNotification').html('').addClass('hide')
       elementRow.find('.js-setArticle').html('').addClass('hide')
-
-      if !elementRow.find('.js-setAttribute div').get(0)
-        attributeSelectorElement = $( App.view('generic/ticket_perform_action/attribute_selector')(
-          attribute: attribute
-          name: name
-          meta: meta || {}
-        ))
-        elementRow.find('.js-setAttribute').html(attributeSelectorElement).removeClass('hide')
-
-      @buildOperator(elementFull, elementRow, groupAndAttribute, elements, meta, attribute)
       @buildExternalActivityArea(elementRow, attribute)
-
     else
       elementRow.find('.js-setNotification').html('').addClass('hide')
       elementRow.find('.js-setArticle').html('').addClass('hide')
       elementRow.find('.js-setExternalActivity').html('').addClass('hide')
+      elementRow.find('.js-setExternalActivityContent').html('').addClass('hide')
       if !elementRow.find('.js-setAttribute div').get(0)
         attributeSelectorElement = $( App.view('generic/ticket_perform_action/attribute_selector')(
           attribute: attribute
@@ -274,16 +279,16 @@ class App.UiElement.ticket_perform_action
     name = "#{attribute.name}::#{groupAndAttribute}::value"
     attributeSelected = elements[groupAndAttribute]
     console.log('attributeSelected', {attributeSelected})
-    if (attributeSelected == undefined) # CSI CUSTOM - aggiunto TODO perche' c'e' un undefined
-      return
 
     preCondition = false
+
     if attributeSelected.relation is 'User'
       preCondition = 'user'
       attribute.tag = 'user_autocompletion'
     if attributeSelected.relation is 'Organization'
       preCondition = 'org'
       attribute.tag = 'autocompletion_ajax'
+
     if !preCondition
       elementRow.find('.js-preCondition select').html('')
       elementRow.find('.js-preCondition').addClass('hide')
@@ -542,16 +547,38 @@ class App.UiElement.ticket_perform_action
 
   # custom CSI
   # External Activity Area dove inserire i campi di input previsti nel model
-  # associato all'external activity system selezionato nella select con name 'perform::ticket.external_activity::value'
+  # associato all'external activity system selezionato nella select con name 'perform::external_activity::system::value'
+  # ATTENZIONE: per far funzionare il tutto con la logica zammad e' necessario che i parametri
+  # della perform inizino tutti con 'perform::external_activity'
   @buildExternalActivityArea: (elementRow, attribute) ->
+    instance = @
+    extActSystemElement = App.view('generic/ticket_perform_action/external_activity_system')
+    elementRow.find('.js-setExternalActivity').html(extActSystemElement).removeClass('hide')
 
-    selectExtActName = 'perform::ticket.external_activity::value'
-    extActSystemFld = elementRow.find('select[name="' + selectExtActName + '"] option:selected')
+    selectExtActName = 'perform::external_activity::system::value'
+    extActSystemFld = elementRow.find('[name="' + selectExtActName + '"]') # select popolata con gli external activity system
 
-    elementRow.find('.js-setExternalActivity').empty()
-    @fetchExternalSystemModel(elementRow, extActSystemFld.val(), attribute)
+    apiPath = App.Config.get('api_path')
+    App.Ajax.request(
+      type:  'GET'
+      url:   "#{apiPath}/external_ticketing_system"
+      async: false
+      success: (data, status, xhr) =>
+        console.log('external_ticketing_system', {data})
+        extActSystemFld.empty().append('<option value="">-</option>')
+        data.forEach (option) =>
+          instance.addOption(extActSystemFld, option)
+
+        if (attribute.value != undefined && attribute.value.external_activity.system != undefined)
+          @fetchExternalSystemModel(elementRow, attribute.value.external_activity.system.value, attribute)
+    )
+
     extActSystemFld.change ->
-      @fetchExternalSystemModel(elementRow, extActSystemFld.val(), {})
+      extSysSel = elementRow.find('[name="' + selectExtActName + '"] option:selected').val()
+      if (extSysSel != '')
+        instance.fetchExternalSystemModel(elementRow, extSysSel, {})
+      else
+        elementRow.find('.js-setExternalActivityContent').html('').addClass('hide')
 
   @fetchExternalSystemModel: (elementRow, extActSystemId, attribute) =>
     apiPath = App.Config.get('api_path')
@@ -570,7 +597,7 @@ class App.UiElement.ticket_perform_action
       fields: Object.values(model)
     ))
 
-    elementRow.find('.js-setExternalActivity').html(extActAreaElement).removeClass('hide')
+    elementRow.find('.js-setExternalActivityContent').html(extActAreaElement).removeClass('hide')
     @buildSelectFieldsExtActArea(elementRow, model, attribute)
 
   # metodo per popolare con le options corrette i campi di tipo 'select'
@@ -582,7 +609,7 @@ class App.UiElement.ticket_perform_action
       if field["select"] == undefined
         return
 
-      selectField = elementRow.find('[name="perform::external_activity::' + field["name"] + '"]')
+      selectField = elementRow.find('select[name="perform::external_activity::' + field["name"] + '"]')
 
       # ciclo sulle options per quella select presenti nel modello
       # e popolamento della select corrispondente 
@@ -597,17 +624,20 @@ class App.UiElement.ticket_perform_action
       if field["select"]["service"] != undefined
         if field["select"]["parent"] != undefined
           # field["select"]["parent"] coincide con il campo 'name' del parent
-          parentSelectFld = $('[name="perform::external_activity::' + field["select"]["parent"] + '"]')
-          parentSelectFld.change ->
-            if (parentSelectFld.val() > 0)
-              instance.fetchOptionValues(field, selectField, parentSelectFld.val(), attribute)
-            else
-              selectField.val(0)
-        else
-            instance.fetchOptionValues(field, selectField, null, attribute)
-            instance.setOptionValue(selectField, attribute, field["name"])
+          jqSelect = 'select[name="perform::external_activity::' + field["select"]["parent"] + '"]'
+          parentSelectFld = $(jqSelect)
 
-  @fetchOptionValues: (field, selectField, parentValue = null, attribute) =>
+          parentSelectFld.change ->
+            parentSelectOptSelVal = $(jqSelect + ' option:selected').val()
+            if (parentSelectOptSelVal != '')
+              instance.fetchOptionValues(field, selectField, parentSelectOptSelVal, attribute)
+            else
+              selectField.val('')
+        else
+          instance.fetchOptionValues(field, selectField, null, attribute)
+          instance.setOptionValue(selectField, attribute, field["name"])
+
+  @fetchOptionValues: (field, selectField, parentValue, attribute) =>
     instance = @
     apiPath = App.Config.get('api_path')
     url = "#{apiPath}/" + field["select"]["service"]
@@ -618,7 +648,7 @@ class App.UiElement.ticket_perform_action
       url:   url
       async: false
       success: (data, status, xhr) =>
-        selectField.empty().append('<option value="0">-</option>')
+        selectField.empty().append('<option value="">-</option>')
         data.forEach (option) =>
           instance.addOption(selectField, option)
         @setOptionValue(selectField, attribute, field["name"])

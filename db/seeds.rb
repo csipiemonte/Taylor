@@ -12,11 +12,7 @@ Cache.clear
 # this is the __ordered__ list of seed files
 # extend only if needed - try to add your changes
 # to the matching one of the existing files
-<<<<<<< HEAD
-seeds = %w[settings user_nr_1 signatures roles permissions groups links ticket_state_types ticket_states ticket_priorities ticket_article_types ticket_article_senders macros community_user_resources overviews channels report_profiles chats object_manager_attributes schedulers triggers karma_activities chatbot advanced_saml remedy classificator custom_trigger states external_activity object_manager_attributes_csi virtual_agent]
-=======
-seeds = %w[settings user_nr_1 signatures roles permissions groups links ticket_state_types ticket_states ticket_priorities ticket_article_types ticket_article_senders macros community_user_resources overviews channels report_profiles chats object_manager_attributes schedulers triggers karma_activities chatbot advanced_saml remedy classificator object_manager_attributes_csi custom_trigger states external_activity virtual_agent ticket_types]
->>>>>>> 6fca24b... [api] esporre type_id
+seeds = %w[settings user_nr_1 signatures roles permissions groups links ticket_state_types ticket_states ticket_priorities ticket_article_types ticket_article_senders macros community_user_resources overviews channels report_profiles chats object_manager_attributes schedulers triggers karma_activities chatbot advanced_saml remedy classificator custom_trigger states external_activity object_manager_attributes_csi virtual_agent ticket_types]
 values = "values_#{Rails.env.downcase}"
 seeds.concat [values]
 
