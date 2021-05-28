@@ -32,11 +32,12 @@ class VirtualAgentTicketsController < TicketsController
   private
 
   def include_external_activities (visibility,ticket)
+
     ticket["external_activities"] = {}
     ExternalTicketingSystem.all.each do |system|
       if visibility[system.name]["virtual_agent_"+current_user.id.to_s] == true
         activities = []
-        ExternalActivity.where(ticket_id:ticket["id"]).each do |activity|
+        ExternalActivity.where(external_ticketing_system_id:system.id, ticket_id:ticket["id"]).each do |activity|
           nested_activity = {}
           system.model.each do |key,field|
             Rails.logger.info "field #{field}"
