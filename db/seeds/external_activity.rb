@@ -14,6 +14,7 @@ remedy_model = {
     },
   '1' => {
       'required': true,
+      'type':'text',
       'name':'riepilogo',
       'label':'riepilogo',
       'core_field':'title'
