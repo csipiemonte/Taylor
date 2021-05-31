@@ -873,7 +873,7 @@ perform changes on ticket
 
   # perform: attributo perform della tabella trigger
   def perform_changes(perform, perform_origin, item = nil, current_user_id = nil)
-    logger.info { "Perform #{perform_origin} #{perform.inspect} on Ticket.find(#{id})" }
+    logger.info { "perform_changes - Perform #{perform_origin} #{perform.inspect} on Ticket.find(#{id})" }
 
     article = begin
                 Ticket::Article.find_by(id: item.try(:dig, :article_id))
@@ -894,7 +894,7 @@ perform changes on ticket
     end
 
     perform_notification = {}
-    perform_external_activity = false # CSI custom external activity
+    perform_external_activity = {} # CSI custom external activity
     perform_article = {}
     changed = false
 
@@ -914,8 +914,8 @@ perform changes on ticket
       end
 
       # external activity
-      if attribute == 'external_activity'
-        perform_external_activity = true
+      if object_name == 'external_activity'
+        perform_external_activity[key] = value
         next
       end
 
@@ -1004,8 +1004,13 @@ perform changes on ticket
     end
 
     # custom CSI external activity -- start
-    if perform_external_activity
-      create_external_activity(perform)
+    perform_external_activity.each do |key, value|
+
+      case key
+      when 'external_activity.new_activity'
+        create_external_activity(value)
+        # create_external_activity(perform)
+      end
     end
     # custom CSI external activity -- end
 
@@ -1021,6 +1026,7 @@ perform active triggers on ticket
 =end
 
   def self.perform_triggers(ticket, article, item, options = {})
+    logger.info { "perform_triggers - ticket #{ticket}, article #{article}, item #{item}), #{options} #{options}" }
     recursive = Setting.get('ticket_trigger_recursive')
     type = options[:type] || item[:type]
     local_options = options.clone
@@ -1711,7 +1717,9 @@ result
 
     core_field_prefix = 'core_field::'
     core_field_values = {}
-    ext_act_perform['external_activity'].each do |key, value|
+
+    # identificazione dei core_field::
+    ext_act_perform.each do |key, value|
       next if !value.start_with?(core_field_prefix)
 
       logger.info { "create_external_activity - value #{value}" }
@@ -1720,7 +1728,7 @@ result
 
       case core_field_value
       when 'title'
-        core_field_values[key] = title
+        core_field_values[key] = title # campo 'title' di ticket
         next
       when 'body'
         core_field_values[key] = articles.first.body
@@ -1728,16 +1736,16 @@ result
     end
 
     core_field_values.each do |key, value|
-      ext_act_perform['external_activity'][key] = value
+      ext_act_perform[key] = value
     end
 
-    ext_act_system = ext_act_perform['external_activity']['system']['value']
-    ext_act_perform['external_activity'].delete('system')
+    ext_act_system = ext_act_perform['system']
+    ext_act_perform.delete('system')
 
     ExternalActivity.create(
       external_ticketing_system_id: ext_act_system,
       ticket_id:                    id,
-      data:                         ext_act_perform['external_activity'],
+      data:                         ext_act_perform,
       bidirectional_alignment:      true,
     )
   end

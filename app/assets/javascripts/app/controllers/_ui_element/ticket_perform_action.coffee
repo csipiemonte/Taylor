@@ -199,27 +199,27 @@ class App.UiElement.ticket_perform_action
     if _.isArray(notificationTypeMatch) && notificationType = notificationTypeMatch[1]
       elementRow.find('.js-setAttribute').html('').addClass('hide')
       elementRow.find('.js-setArticle').html('').addClass('hide')
-      elementRow.find('.js-setExternalActivity').html('').addClass('hide')
+      elementRow.find('.js-setExternalActivity').addClass('hide')
       elementRow.find('.js-setExternalActivityContent').html('').addClass('hide')
       @buildNotificationArea(notificationType, elementFull, elementRow, groupAndAttribute, elements, meta, attribute)
     else if _.isArray(articleTypeMatch) && articleType = articleTypeMatch[1]
       elementRow.find('.js-setAttribute').html('').addClass('hide')
       elementRow.find('.js-setNotification').html('').addClass('hide')
-      elementRow.find('.js-setExternalActivity').html('').addClass('hide')
+      elementRow.find('.js-setExternalActivity').addClass('hide')
       elementRow.find('.js-setExternalActivityContent').html('').addClass('hide')
       @buildArticleArea(articleType, elementFull, elementRow, groupAndAttribute, elements, meta, attribute)
-    else if _.isArray(externalActivityTypeMatch) && externalActivityType = articleTypeMatch[1]
+    else if _.isArray(externalActivityTypeMatch) && externalActivityType = externalActivityTypeMatch[1]
       # externalActivityType propagarlo
       console.log('meta', {meta})
       console.log('attribute', {attribute})
       elementRow.find('.js-setAttribute').html('').addClass('hide')
       elementRow.find('.js-setNotification').html('').addClass('hide')
       elementRow.find('.js-setArticle').html('').addClass('hide')
-      @buildExternalActivityArea(elementRow, attribute)
+      @buildExternalActivityArea(externalActivityType, elementRow, meta, attribute)
     else
       elementRow.find('.js-setNotification').html('').addClass('hide')
       elementRow.find('.js-setArticle').html('').addClass('hide')
-      elementRow.find('.js-setExternalActivity').html('').addClass('hide')
+      elementRow.find('.js-setExternalActivity').addClass('hide')
       elementRow.find('.js-setExternalActivityContent').html('').addClass('hide')
       if !elementRow.find('.js-setAttribute div').get(0)
         attributeSelectorElement = $( App.view('generic/ticket_perform_action/attribute_selector')(
@@ -550,13 +550,14 @@ class App.UiElement.ticket_perform_action
   # associato all'external activity system selezionato nella select con name 'perform::external_activity::system::value'
   # ATTENZIONE: per far funzionare il tutto con la logica zammad e' necessario che i parametri
   # della perform inizino tutti con 'perform::external_activity'
-  @buildExternalActivityArea: (elementRow, attribute) ->
-    instance = @
-    extActSystemElement = App.view('generic/ticket_perform_action/external_activity_system')
-    elementRow.find('.js-setExternalActivity').html(extActSystemElement).removeClass('hide')
+  @buildExternalActivityArea: (externalActivityType, elementRow, meta, attribute) ->
 
-    selectExtActName = 'perform::external_activity::system::value'
-    extActSystemFld = elementRow.find('[name="' + selectExtActName + '"]') # select popolata con gli external activity system
+    return if elementRow.find(".js-setExternalActivity .js-body-#{externalActivityType}").get(0)
+
+    instance = @
+
+    # #{attribute.name} valorizzato a perform -> name="perform::external_activity.new_activity"
+    name = "#{attribute.name}::external_activity.#{externalActivityType}"
 
     apiPath = App.Config.get('api_path')
     App.Ajax.request(
@@ -565,22 +566,37 @@ class App.UiElement.ticket_perform_action
       async: false
       success: (data, status, xhr) =>
         console.log('external_ticketing_system', {data})
-        extActSystemFld.empty().append('<option value="">-</option>')
-        data.forEach (option) =>
-          instance.addOption(extActSystemFld, option)
 
-        if (attribute.value != undefined && attribute.value.external_activity.system != undefined)
-          @fetchExternalSystemModel(elementRow, attribute.value.external_activity.system.value, attribute)
+        systemFirstOption = ''
+        systemOptions = {}
+        data.forEach (option) =>
+          systemOptions[option["id"]] = option["name"]
+          if (systemFirstOption == '')
+            systemFirstOption = option["id"]
+
+        systemSelectionValue = meta.system || systemFirstOption
+        systemSelection = App.UiElement.select.render(
+          name: "#{name}::system"
+          multiple: false
+          null: false
+          options: systemOptions
+          value: systemSelectionValue
+          translate: false
+        )
+        console.log('systemSelection', {systemSelection})
+        elementRow.find('.js-external-activity-system').html(systemSelection)
+        console.log('remove class hide')
+        elementRow.find('.js-setExternalActivity').removeClass('hide')
+        console.log('fetchExternalSystemModel')
+
+        @fetchExternalSystemModel(elementRow, systemSelectionValue, name, meta)
+
+        systemSelection.change ->
+          extSysSel = elementRow.find('[name="' + name + '::system"] option:selected').val()
+          instance.fetchExternalSystemModel(elementRow, extSysSel, name, meta)
     )
 
-    extActSystemFld.change ->
-      extSysSel = elementRow.find('[name="' + selectExtActName + '"] option:selected').val()
-      if (extSysSel != '')
-        instance.fetchExternalSystemModel(elementRow, extSysSel, {})
-      else
-        elementRow.find('.js-setExternalActivityContent').html('').addClass('hide')
-
-  @fetchExternalSystemModel: (elementRow, extActSystemId, attribute) =>
+  @fetchExternalSystemModel: (elementRow, extActSystemId, name, meta) =>
     apiPath = App.Config.get('api_path')
     App.Ajax.request(
       type:  'GET'
@@ -588,28 +604,30 @@ class App.UiElement.ticket_perform_action
       async: false
       success: (data, status, xhr) =>
         console.log('data', {data})
-        @putFieldsExternalActivityArea(elementRow, data.model, attribute)
+        @putFieldsExternalActivityArea(elementRow, data.model, name, meta)
     )
 
-  @putFieldsExternalActivityArea: (elementRow, model, attribute) ->
+  @putFieldsExternalActivityArea: (elementRow, model, name, meta) ->
     # popolamento della view per i parametri della perform sulla external activity
     extActAreaElement = $( App.view('generic/ticket_perform_action/external_activity')(
+      prefixName: name
       fields: Object.values(model)
     ))
 
     elementRow.find('.js-setExternalActivityContent').html(extActAreaElement).removeClass('hide')
-    @buildSelectFieldsExtActArea(elementRow, model, attribute)
+    @buildSelectFieldsExtActArea(elementRow, model, name, meta)
 
   # metodo per popolare con le options corrette i campi di tipo 'select'
   # presenti all'interno della External Activity Area
-  @buildSelectFieldsExtActArea: (elementRow, model, attribute) =>
+  @buildSelectFieldsExtActArea: (elementRow, model, name, meta) =>
 
     instance = @
     $.each model, (key, field) ->
       if field["select"] == undefined
         return
 
-      selectField = elementRow.find('select[name="perform::external_activity::' + field["name"] + '"]')
+      fldName = "#{name}::" + field['name']
+      selectField = elementRow.find('select[name="' + fldName + '"]')
 
       # ciclo sulle options per quella select presenti nel modello
       # e popolamento della select corrispondente 
@@ -617,27 +635,27 @@ class App.UiElement.ticket_perform_action
         for key, option of field["select"]["options"]
           instance.addOption(selectField, option)
 
-        instance.setOptionValue(selectField, attribute, field["name"])
+        instance.setOptionValue(selectField, meta, field["name"])
 
       # popolamento delle select di tipo service (tre livelli di categorizzazione)
       # che non dipendono da un parent
       if field["select"]["service"] != undefined
         if field["select"]["parent"] != undefined
           # field["select"]["parent"] coincide con il campo 'name' del parent
-          jqSelect = 'select[name="perform::external_activity::' + field["select"]["parent"] + '"]'
+          jqSelect = 'select[name="' + name + '::' + field["select"]["parent"] + '"]'
           parentSelectFld = $(jqSelect)
 
           parentSelectFld.change ->
             parentSelectOptSelVal = $(jqSelect + ' option:selected').val()
             if (parentSelectOptSelVal != '')
-              instance.fetchOptionValues(field, selectField, parentSelectOptSelVal, attribute)
+              instance.fetchOptionValues(field, selectField, parentSelectOptSelVal, meta)
             else
               selectField.val('')
         else
-          instance.fetchOptionValues(field, selectField, null, attribute)
-          instance.setOptionValue(selectField, attribute, field["name"])
+          instance.fetchOptionValues(field, selectField, null, meta)
+          instance.setOptionValue(selectField, meta, field["name"])
 
-  @fetchOptionValues: (field, selectField, parentValue, attribute) =>
+  @fetchOptionValues: (field, selectField, parentValue, meta) =>
     instance = @
     apiPath = App.Config.get('api_path')
     url = "#{apiPath}/" + field["select"]["service"]
@@ -651,7 +669,7 @@ class App.UiElement.ticket_perform_action
         selectField.empty().append('<option value="">-</option>')
         data.forEach (option) =>
           instance.addOption(selectField, option)
-        @setOptionValue(selectField, attribute, field["name"])
+        @setOptionValue(selectField, meta, field["name"])
     )
 
   @addOption: (selectField, option) =>
@@ -659,13 +677,9 @@ class App.UiElement.ticket_perform_action
     $(o).html(option["name"]);
     selectField.append(o);
 
-  @setOptionValue: (selectField, attribute, paramName) =>
-    if attribute.value == undefined
-      return
-    if attribute.value.external_activity == undefined
-      return
-    if attribute.value.external_activity[paramName]
-      selectField.val(attribute.value.external_activity[paramName])
+  @setOptionValue: (selectField, meta, paramName) =>
+    if meta[paramName] != undefined
+      selectField.val(meta[paramName])
 
   @humanText: (condition) ->
     none = App.i18n.translateContent('No filter.')
