@@ -32,7 +32,6 @@ class VirtualAgentTicketsController < TicketsController
   private
 
   def include_external_activities (visibility,ticket)
-
     ticket["external_activities"] = {}
     ExternalTicketingSystem.all.each do |system|
       if visibility[system.name]["virtual_agent_"+current_user.id.to_s] == true

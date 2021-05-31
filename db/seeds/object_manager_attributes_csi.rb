@@ -412,5 +412,3 @@ ObjectManager::Attribute.add(
   to_delete:   false,
   position:    20,
 )
-
-

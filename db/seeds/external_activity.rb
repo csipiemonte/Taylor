@@ -14,6 +14,7 @@ remedy_model = {
     },
   '1' => {
       'required': true,
+      'type':'text',
       'name':'riepilogo',
       'label':'riepilogo',
       'core_field':'title'
@@ -73,7 +74,11 @@ remedy_model = {
       'name':'richiedente',
       'label':'richiedente',
       'type':'text',
+<<<<<<< HEAD
       'default':'PPL000000429692',
+=======
+      'default':'PPL000000018476',
+>>>>>>> feature/external-activity-trigger
       'read_only': true,
       'visible': false
   },
@@ -149,11 +154,14 @@ create_translation('it-it','New external activity on','Nuova attività esterna s
 create_translation('it-it','crm operator','operatore crm')
 create_translation('it-it','external operator','operatore esterno')
 
+<<<<<<< HEAD
 create_translation('it-it','Update on an external activity related to Ticket |%s|','C\'è un aggiornamento su un\'attività esterna legata al Ticket |%s|')
 create_translation('it-it','⚠ There are new changes on this activity','⚠ Ci sono aggiornamenti su questa attività')
 create_translation('it-it','Needs Attention','Richiede Attenzione')
 
 
+=======
+>>>>>>> feature/external-activity-trigger
 
 Setting.create_if_not_exists(
   title:       'External Activity Public Visibility',

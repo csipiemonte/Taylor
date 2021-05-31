@@ -16,6 +16,13 @@ class App.UiElement.ticket_perform_action
         name: 'Notification'
         model: 'Notification'
 
+    # Aggiunta voce e sottovoce nel menu perform
+    # cfr zammad/app/assets/javascripts/app/models/trigger.coffee parametro 'perform'
+    if attribute.external_activity
+      groups.external_activity =
+        name: 'External Activity'
+        model: 'ExternalActivity'
+
     # merge config
     elements = {}
     for groupKey, groupMeta of groups
@@ -25,6 +32,8 @@ class App.UiElement.ticket_perform_action
           elements["#{groupKey}.sms"] = { name: 'sms', display: 'SMS' }
         else if groupKey is 'article'
           elements["#{groupKey}.note"] = { name: 'note', display: 'Note' }
+        else if groupKey is 'external_activity'
+          elements["#{groupKey}.new_activity"] = { name: 'new_activity', display: 'New Activity' }
       else
 
         for row in App[groupMeta.model].configure_attributes
@@ -60,6 +69,8 @@ class App.UiElement.ticket_perform_action
 
   @render: (attribute, params = {}) ->
 
+    console.log(' RENDER  - attribute', {attribute})
+    console.log(' RENDER  - params', {params})
     [defaults, groups, elements] = @defaults(attribute)
 
     # return item
@@ -85,9 +96,12 @@ class App.UiElement.ticket_perform_action
     )
 
     # change attribute selector
+    # Al 'change' sulla select presente nel div con class="js-attributeSelector" si popola a cascata l'area con i campi richiesti dall'attributo selezionato
+    # Si tratta della select presente sotto l'etichetta "Esegui modifica sull'oggetto"
     item.on('change', '.js-attributeSelector select', (e) =>
       elementRow = $(e.target).closest('.js-filterElement')
       groupAndAttribute = elementRow.find('.js-attributeSelector option:selected').attr('value')
+      console.log('groupAndAttribute', groupAndAttribute)
       @rebuildAttributeSelectors(item, elementRow, groupAndAttribute, elements, {}, attribute)
       @updateAttributeSelectors(item)
     )
@@ -104,6 +118,7 @@ class App.UiElement.ticket_perform_action
 
       for groupAndAttribute in defaults
 
+        console.log('groupAndAttribute if', groupAndAttribute)
         # build and append
         element = @placeholder(item, attribute, params, groups, elements)
         item.append(element)
@@ -113,6 +128,8 @@ class App.UiElement.ticket_perform_action
 
       for groupAndAttribute, meta of params[attribute.name]
 
+        console.log('groupAndAttribute else', groupAndAttribute)
+        console.log('meta else', meta)
         # build and append
         element = @placeholder(item, attribute, params, groups, elements)
         @rebuildAttributeSelectors(item, element, groupAndAttribute, elements, meta, attribute)
@@ -168,6 +185,8 @@ class App.UiElement.ticket_perform_action
     # disable - if we only have one attribute
     @disableRemoveForOneAttribute(elementFull)
 
+  # Metodo per ricreare l'area con i campi di input conseguenti all'attributo selezionato
+  # in "Esegui modifica sull'oggetto"
   @rebuildAttributeSelectors: (elementFull, elementRow, groupAndAttribute, elements, meta, attribute) ->
 
     # set attribute
@@ -176,18 +195,34 @@ class App.UiElement.ticket_perform_action
 
     notificationTypeMatch = groupAndAttribute.match(/^notification.([\w]+)$/)
     articleTypeMatch = groupAndAttribute.match(/^article.([\w]+)$/)
+    # custom CSI
+    externalActivityTypeMatch = groupAndAttribute.match(/^external_activity.([\w]+)$/)
 
     if _.isArray(notificationTypeMatch) && notificationType = notificationTypeMatch[1]
       elementRow.find('.js-setAttribute').html('').addClass('hide')
       elementRow.find('.js-setArticle').html('').addClass('hide')
+      elementRow.find('.js-setExternalActivity').addClass('hide')
+      elementRow.find('.js-setExternalActivityContent').html('').addClass('hide')
       @buildNotificationArea(notificationType, elementFull, elementRow, groupAndAttribute, elements, meta, attribute)
     else if _.isArray(articleTypeMatch) && articleType = articleTypeMatch[1]
       elementRow.find('.js-setAttribute').html('').addClass('hide')
       elementRow.find('.js-setNotification').html('').addClass('hide')
+      elementRow.find('.js-setExternalActivity').addClass('hide')
+      elementRow.find('.js-setExternalActivityContent').html('').addClass('hide')
       @buildArticleArea(articleType, elementFull, elementRow, groupAndAttribute, elements, meta, attribute)
+    else if _.isArray(externalActivityTypeMatch) && externalActivityType = externalActivityTypeMatch[1]
+      # custom CSI -> popolamento dell'area con i parametri per l'external activity
+      console.log('meta', {meta})
+      console.log('attribute', {attribute})
+      elementRow.find('.js-setAttribute').html('').addClass('hide')
+      elementRow.find('.js-setNotification').html('').addClass('hide')
+      elementRow.find('.js-setArticle').html('').addClass('hide')
+      @buildExternalActivityArea(externalActivityType, elementRow, meta, attribute)
     else
       elementRow.find('.js-setNotification').html('').addClass('hide')
       elementRow.find('.js-setArticle').html('').addClass('hide')
+      elementRow.find('.js-setExternalActivity').addClass('hide')
+      elementRow.find('.js-setExternalActivityContent').html('').addClass('hide')
       if !elementRow.find('.js-setAttribute div').get(0)
         attributeSelectorElement = $( App.view('generic/ticket_perform_action/attribute_selector')(
           attribute: attribute
@@ -245,14 +280,17 @@ class App.UiElement.ticket_perform_action
 
     name = "#{attribute.name}::#{groupAndAttribute}::value"
     attributeSelected = elements[groupAndAttribute]
+    console.log('attributeSelected', {attributeSelected})
 
     preCondition = false
+
     if attributeSelected.relation is 'User'
       preCondition = 'user'
       attribute.tag = 'user_autocompletion'
     if attributeSelected.relation is 'Organization'
       preCondition = 'org'
       attribute.tag = 'autocompletion_ajax'
+
     if !preCondition
       elementRow.find('.js-preCondition select').html('')
       elementRow.find('.js-preCondition').addClass('hide')
@@ -508,6 +546,199 @@ class App.UiElement.ticket_perform_action
     )
 
     elementRow.find('.js-setArticle').html(articleElement).removeClass('hide')
+
+  # custom CSI
+  # External Activity Area dove inserire i campi di input previsti nel model
+  # associato all'external activity system selezionato nella select con name 'perform::external_activity::system::value'
+  # ATTENZIONE: per far funzionare il tutto con la logica zammad e' necessario che i parametri
+  # della perform inizino tutti con 'perform::external_activity'
+  # meta: contiene - in edit - i dati inseriti in precedenza nei parametri di input
+  @buildExternalActivityArea: (externalActivityType, elementRow, meta, attribute) ->
+
+    return if elementRow.find(".js-setExternalActivity .js-body-#{externalActivityType}").get(0)
+
+    instance = @
+
+    # #{attribute.name} valorizzato a perform -> name="perform::external_activity.new_activity"
+    name = "#{attribute.name}::external_activity.#{externalActivityType}"
+
+    apiPath = App.Config.get('api_path')
+    App.Ajax.request(
+      type:  'GET'
+      url:   "#{apiPath}/external_ticketing_system"
+      async: false
+      success: (data, status, xhr) =>
+        console.log('external_ticketing_system', {data})
+
+        systemFirstOption = ''
+        systemOptions = {}
+        data.forEach (option) =>
+          systemOptions[option["id"]] = option["name"]
+          if (systemFirstOption == '')
+            systemFirstOption = option["id"]
+
+        systemSelectionValue = meta.system || systemFirstOption
+        systemSelection = App.UiElement.select.render(
+          name: "#{name}::system"
+          multiple: false
+          null: false
+          options: systemOptions
+          value: systemSelectionValue
+          translate: false
+        )
+        console.log('systemSelection', {systemSelection})
+        elementRow.find('.js-external-activity-system').html(systemSelection)
+
+        elementRow.find('.js-setExternalActivity').removeClass('hide')
+
+        @fetchExternalSystemModel(elementRow, systemSelectionValue, name, meta)
+
+        systemSelection.change ->
+          extSysSel = elementRow.find('[name="' + name + '::system"] option:selected').val()
+          instance.fetchExternalSystemModel(elementRow, extSysSel, name, meta)
+    )
+
+  # extActSystemId: id del external activity system selezionato
+  # name: prefisso del parametro, tipo 'perform::external_activity.new_activity'
+  # meta: contiene - in edit - i dati inseriti in precedenza nei parametri di input
+  @fetchExternalSystemModel: (elementRow, extActSystemId, name, meta) =>
+    apiPath = App.Config.get('api_path')
+    App.Ajax.request(
+      type:  'GET'
+      url:   "#{apiPath}/external_ticketing_system/#{extActSystemId}"
+      async: false
+      success: (data, status, xhr) =>
+        console.log('data', {data})
+        @buildFieldsExtActArea(elementRow, data.model, name, meta)
+    )   
+
+  # metodo per popolare con le options corrette i campi di tipo 'select'
+  # presenti all'interno della External Activity Area
+  @buildFieldsExtActArea: (elementRow, model, name, meta) =>
+
+    apiPath = App.Config.get('api_path')
+    extActContentHtml = ''
+    selectParentsValue = {}
+
+    $.each model, (key, field) ->
+      console.log('key', key)
+      requiredFld = false
+      if field['required'] != undefined && field['required'] == true
+        requiredFld = true
+
+      visibleFld = true
+      if field['visible'] != undefined && field['visible'] == false
+        visibleFld = false
+
+      fldName = "#{name}::" + field['name']
+      labelDiv = '<div class="formGroup-label"><label for="' + fldName + '">' + field['label']
+      if requiredFld
+        labelDiv += ' <span>*</span>'
+      labelDiv += '</label></div>'
+
+      if (field['receive_only'] != undefined && field['receive_only'] == true)
+        return true
+
+      if (field['type'] != undefined && field['type'] == 'text')
+        typeFld = field['type']
+        valueFld = meta[field['name']] || field['default'] || ''
+        if field['core_field'] != undefined
+          typeFld = 'hidden'
+          valueFld = 'core_field::' + field['core_field']
+          visibleFld = false
+
+        textFld = App.UiElement.input.render(
+          id: fldName
+          name: fldName
+          type: typeFld
+          value: valueFld
+          required: requiredFld
+          disabled: field['read_only'] || false
+        )
+        extActContentHtml += '<div class="form-group"'
+        if !visibleFld
+          extActContentHtml += ' style="display: none;"'
+        extActContentHtml += '>' + labelDiv + textFld.prop('outerHTML') + '</div>'
+        return true
+
+      # Modello di select con options statiche
+      # nel model corrisponde a select->options
+      if field["select"] != undefined && field["select"]["options"] != undefined
+        selOptions = {}
+        for key, option of field["select"]["options"]
+          selOptions[option["id"]] = option["name"]
+
+        selectField = App.UiElement.select.render(
+          name: fldName
+          multiple: false
+          null: true
+          options: selOptions
+          value: meta[field['name']] || ''
+          required: requiredFld
+          translate: false
+        )
+        extActContentHtml += '<div class="form-group">' + labelDiv + selectField.prop('outerHTML') + '</div>'
+        return true
+
+      # Modello di select con options dinamiche che sono censite su database
+      # nel model corrisponde a select->service
+      if (field["select"] != undefined && field["select"]["service"] != undefined)
+        url = "#{apiPath}/" + field["select"]["service"]
+        if field["select"]["parent"] != undefined
+          parentId = meta[field["select"]["parent"]] || selectParentsValue[field["select"]["parent"]]
+          url += "?parent_id=" + parentId
+
+        App.Ajax.request(
+          type:  'GET'
+          url:   url
+          async: false
+          success: (data, status, xhr) =>
+            selOptions = {}
+            firstOpt = ''
+            data.forEach (option) =>
+              selOptions[option["id"]] = option["name"]
+              if firstOpt == ''
+                firstOpt = option["id"]
+                if field["select"]["parent"] == undefined
+                  # parent == undefined => genitore => tengo traccia del valore
+                  selectParentsValue[field["name"]] = firstOpt
+
+            selectField = App.UiElement.select.render(
+              name: fldName
+              multiple: false
+              null: true
+              options: selOptions
+              value: meta[field['name']] || firstOpt
+              translate: false
+              required: requiredFld
+            )
+            extActContentHtml += '<div class="form-group">' + labelDiv + selectField.prop('outerHTML') + '</div>'
+            return
+        )
+
+    elementRow.find('.js-setExternalActivityContent').html(extActContentHtml).removeClass('hide')
+
+    $.each model, (key, field) ->
+      if field["select"] == undefined || field["select"]["service"] == undefined
+        return true
+
+      if field["select"]["parent"] != undefined
+        parentFldName = "#{name}::" + field["select"]["parent"]
+
+        elementRow.find('[name="' + parentFldName + '"]').change ->
+          parentFldValue = elementRow.find('[name="' + parentFldName + '"] option:selected').val()
+          App.Ajax.request(
+            type:  'GET'
+            url:   url = "#{apiPath}/" + field["select"]["service"] + "?parent_id=" + parentFldValue
+            async: false
+            success: (data, status, xhr) =>
+              selectChildFld = elementRow.find('[name="' + "#{name}::" + field["name"] + '"]')
+              selectChildFld.empty()
+              data.forEach (option) =>
+                o = new Option(option["name"], option["id"]);
+                $(o).html(option["name"]);
+                selectChildFld.append(o);
+          )
 
   @humanText: (condition) ->
     none = App.i18n.translateContent('No filter.')
