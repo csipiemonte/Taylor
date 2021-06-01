@@ -2,7 +2,7 @@ module Api::Nextcrm::V1::Concerns::ReadesApiManagerJwt
   extend ActiveSupport::Concern
 
   included do
-    before_action :check_apiman_jwt
+    prepend_before_action :check_apiman_jwt
   end
 
 
