@@ -101,7 +101,6 @@ class App.UiElement.ticket_perform_action
     item.on('change', '.js-attributeSelector select', (e) =>
       elementRow = $(e.target).closest('.js-filterElement')
       groupAndAttribute = elementRow.find('.js-attributeSelector option:selected').attr('value')
-      console.log('groupAndAttribute', groupAndAttribute)
       @rebuildAttributeSelectors(item, elementRow, groupAndAttribute, elements, {}, attribute)
       @updateAttributeSelectors(item)
     )
@@ -118,7 +117,6 @@ class App.UiElement.ticket_perform_action
 
       for groupAndAttribute in defaults
 
-        console.log('groupAndAttribute if', groupAndAttribute)
         # build and append
         element = @placeholder(item, attribute, params, groups, elements)
         item.append(element)
@@ -128,8 +126,6 @@ class App.UiElement.ticket_perform_action
 
       for groupAndAttribute, meta of params[attribute.name]
 
-        console.log('groupAndAttribute else', groupAndAttribute)
-        console.log('meta else', meta)
         # build and append
         element = @placeholder(item, attribute, params, groups, elements)
         @rebuildAttributeSelectors(item, element, groupAndAttribute, elements, meta, attribute)
@@ -280,7 +276,6 @@ class App.UiElement.ticket_perform_action
 
     name = "#{attribute.name}::#{groupAndAttribute}::value"
     attributeSelected = elements[groupAndAttribute]
-    console.log('attributeSelected', {attributeSelected})
 
     preCondition = false
 
@@ -549,7 +544,7 @@ class App.UiElement.ticket_perform_action
 
   # custom CSI
   # External Activity Area dove inserire i campi di input previsti nel model
-  # associato all'external activity system selezionato nella select con name 'perform::external_activity::system::value'
+  # associato all'external activity system selezionato nella select con name 'perform::external_activity.new_activity::system'
   # ATTENZIONE: per far funzionare il tutto con la logica zammad e' necessario che i parametri
   # della perform inizino tutti con 'perform::external_activity'
   # meta: contiene - in edit - i dati inseriti in precedenza nei parametri di input
@@ -568,8 +563,6 @@ class App.UiElement.ticket_perform_action
       url:   "#{apiPath}/external_ticketing_system"
       async: false
       success: (data, status, xhr) =>
-        console.log('external_ticketing_system', {data})
-
         systemFirstOption = ''
         systemOptions = {}
         data.forEach (option) =>
@@ -608,7 +601,6 @@ class App.UiElement.ticket_perform_action
       url:   "#{apiPath}/external_ticketing_system/#{extActSystemId}"
       async: false
       success: (data, status, xhr) =>
-        console.log('data', {data})
         @buildFieldsExtActArea(elementRow, data.model, name, meta)
     )   
 
@@ -646,6 +638,9 @@ class App.UiElement.ticket_perform_action
           typeFld = 'hidden'
           valueFld = 'core_field::' + field['core_field']
           visibleFld = false
+
+        if !visibleFld
+          typeFld = 'hidden'
 
         textFld = App.UiElement.input.render(
           id: fldName
@@ -715,8 +710,16 @@ class App.UiElement.ticket_perform_action
             extActContentHtml += '<div class="form-group">' + labelDiv + selectField.prop('outerHTML') + '</div>'
             return
         )
-
+    # inserimento nel div del codice HTML contenente i parametri del model
     elementRow.find('.js-setExternalActivityContent').html(extActContentHtml).removeClass('hide')
+
+    @changeListenerOnSelectParent(elementRow, model, name)
+
+  # metodo per aggiungere il listener "on change" alle select del model che sono
+  # genitori di altre select: le opzioni delle select figlie dipendono dal valore "selected"
+  # presente sulla select genitore.
+  @changeListenerOnSelectParent: (elementRow, model, name) =>
+    apiPath = App.Config.get('api_path')
 
     $.each model, (key, field) ->
       if field["select"] == undefined || field["select"]["service"] == undefined
