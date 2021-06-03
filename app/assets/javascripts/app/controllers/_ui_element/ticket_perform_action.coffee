@@ -565,10 +565,10 @@ class App.UiElement.ticket_perform_action
       success: (data, status, xhr) =>
         systemFirstOption = ''
         systemOptions = {}
-        data.forEach (option) =>
-          systemOptions[option["id"]] = option["name"]
+        data.forEach (option) ->
+          systemOptions[option['id']] = option['name']
           if (systemFirstOption == '')
-            systemFirstOption = option["id"]
+            systemFirstOption = option['id']
 
         systemSelectionValue = meta.system || systemFirstOption
         systemSelection = App.UiElement.select.render(
@@ -602,7 +602,7 @@ class App.UiElement.ticket_perform_action
       async: false
       success: (data, status, xhr) =>
         @buildFieldsExtActArea(elementRow, data.model, name, meta)
-    )   
+    )
 
   # metodo per popolare con le options corrette i campi di tipo 'select'
   # presenti all'interno della External Activity Area
@@ -658,10 +658,10 @@ class App.UiElement.ticket_perform_action
 
       # Modello di select con options statiche
       # nel model corrisponde a select->options
-      if field["select"] != undefined && field["select"]["options"] != undefined
+      if field['select'] != undefined && field['select']['options'] != undefined
         selOptions = {}
-        for key, option of field["select"]["options"]
-          selOptions[option["id"]] = option["name"]
+        for key, option of field['select']['options']
+          selOptions[option['id']] = option['name']
 
         selectField = App.UiElement.select.render(
           name: fldName
@@ -677,26 +677,26 @@ class App.UiElement.ticket_perform_action
 
       # Modello di select con options dinamiche che sono censite su database
       # nel model corrisponde a select->service
-      if (field["select"] != undefined && field["select"]["service"] != undefined)
-        url = "#{apiPath}/" + field["select"]["service"]
-        if field["select"]["parent"] != undefined
-          parentId = meta[field["select"]["parent"]] || selectParentsValue[field["select"]["parent"]]
-          url += "?parent_id=" + parentId
+      if (field['select'] != undefined && field['select']['service'] != undefined)
+        url = "#{apiPath}/" + field['select']['service']
+        if field['select']['parent'] != undefined
+          parentId = meta[field['select']['parent']] || selectParentsValue[field['select']['parent']]
+          url += "?parent_id=#{parentId}"
 
         App.Ajax.request(
           type:  'GET'
           url:   url
           async: false
-          success: (data, status, xhr) =>
+          success: (data, status, xhr) ->
             selOptions = {}
             firstOpt = ''
-            data.forEach (option) =>
-              selOptions[option["id"]] = option["name"]
+            data.forEach (option) ->
+              selOptions[option['id']] = option['name']
               if firstOpt == ''
-                firstOpt = option["id"]
-                if field["select"]["parent"] == undefined
+                firstOpt = option['id']
+                if field['select']['parent'] == undefined
                   # parent == undefined => genitore => tengo traccia del valore
-                  selectParentsValue[field["name"]] = firstOpt
+                  selectParentsValue[field['name']] = firstOpt
 
             selectField = App.UiElement.select.render(
               name: fldName
@@ -718,29 +718,30 @@ class App.UiElement.ticket_perform_action
   # metodo per aggiungere il listener "on change" alle select del model che sono
   # genitori di altre select: le opzioni delle select figlie dipendono dal valore "selected"
   # presente sulla select genitore.
-  @changeListenerOnSelectParent: (elementRow, model, name) =>
+  @changeListenerOnSelectParent: (elementRow, model, name) ->
+
     apiPath = App.Config.get('api_path')
 
     $.each model, (key, field) ->
-      if field["select"] == undefined || field["select"]["service"] == undefined
+      if field['select'] == undefined || field['select']['service'] == undefined
         return true
 
-      if field["select"]["parent"] != undefined
-        parentFldName = "#{name}::" + field["select"]["parent"]
+      if field['select']['parent'] != undefined
+        parentFldName = "#{name}::" + field['select']['parent']
 
         elementRow.find('[name="' + parentFldName + '"]').change ->
           parentFldValue = elementRow.find('[name="' + parentFldName + '"] option:selected').val()
           App.Ajax.request(
             type:  'GET'
-            url:   url = "#{apiPath}/" + field["select"]["service"] + "?parent_id=" + parentFldValue
+            url:   url = "#{apiPath}/" + field['select']['service'] + '?parent_id=' + parentFldValue
             async: false
-            success: (data, status, xhr) =>
-              selectChildFld = elementRow.find('[name="' + "#{name}::" + field["name"] + '"]')
+            success: (data, status, xhr) ->
+              selectChildFld = elementRow.find('[name="' + "#{name}::" + field['name'] + '"]')
               selectChildFld.empty()
-              data.forEach (option) =>
-                o = new Option(option["name"], option["id"]);
-                $(o).html(option["name"]);
-                selectChildFld.append(o);
+              data.forEach (option) ->
+                o = new Option(option['name'], option['id'])
+                $(o).html(option['name'])
+                selectChildFld.append(o)
           )
 
   @humanText: (condition) ->

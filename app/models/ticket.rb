@@ -1715,6 +1715,10 @@ result
   def create_external_activity(ext_act_perform)
     logger.info { "create_external_activity - Perform external activity #{ext_act_perform.inspect} on Ticket.find(#{id})" }
 
+    # verifica che non ci sia gia' una external activity associata al tk in questione
+    extActivity = ExternalActivity.find_by(ticket_id: id)
+    return if extActivity
+
     core_field_prefix = 'core_field::'
     core_field_values = {}
 
