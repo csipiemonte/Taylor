@@ -72,7 +72,7 @@ class Api::Nextcrm::V1::TicketArticlesController < ::TicketArticlesController
 
     if articleObj["from"] && !articleObj["from"].empty?
       article_creator = User.where(email: articleObj["created_by"]).take
-      if !article_creator || (!article_creator.role?('Virtual Agent') && article_creator.role?('Agent'))
+      if !article_creator || (!article_creator.permissions?("virtual_agent") && article_creator.role?('Agent'))
         # se il commento e' creato da un Virtual Agent allora è creato per conto di un customer via api, 
         # se e' creato da un Agent allora si tratta di un operatore rale e bisogna nasconderne l'identita
         articleObj["from"] = "Operatore"
