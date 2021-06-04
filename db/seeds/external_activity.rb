@@ -65,7 +65,7 @@ remedy_model = {
       'label':'tipologia',
       'select' => {
           'options' => {
-              '1' => {'id':'Ripristino di servizio utente', 'name':'Ripristino di servizio utente'}
+              '1' => {'id':'Ripristino di servizio utente', 'name':'Ripristino di servizio utente'},
               '2' => {'id':'Richiesta utente', 'name':'Richiesta utente'}
           }
       }
