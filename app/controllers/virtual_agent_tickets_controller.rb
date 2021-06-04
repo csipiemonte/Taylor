@@ -6,30 +6,35 @@ class VirtualAgentTicketsController < TicketsController
 
   def index
     super
-    visibility = Setting.find_by(name:'external_activity_public_visibility').state_current[:value]
-    # optimized json parse
-    obj_resp = Oj.load(response.body)
-    if obj_resp.is_a? Array
-      obj_resp.each do |ticket|
-        include_external_activities visibility, ticket
-      end
-    else
-      include_external_activities visibility, obj_resp
-    end
-    str_resp = Oj.dump(obj_resp)
-    response.body = str_resp
+    extend_response response
+  end
+
+  def search
+    super
+    extend_response response
   end
 
   def show
     super
-    visibility = Setting.find_by(name:'external_activity_public_visibility').state_current[:value]
-    ticket = Oj.load(response.body)
-    include_external_activities visibility, ticket
-    str_resp = Oj.dump(ticket)
-    response.body = str_resp
+    extend_response response
   end
 
   private
+
+  def extend_response (response)
+      visibility = Setting.find_by(name:'external_activity_public_visibility').state_current[:value]
+      # optimized json parse
+      obj_resp = Oj.load(response.body)
+      if obj_resp.is_a? Array
+        obj_resp.each do |ticket|
+          include_external_activities visibility, ticket
+        end
+      else
+        include_external_activities visibility, obj_resp
+      end
+      str_resp = Oj.dump(obj_resp)
+      response.body = str_resp
+  end
 
   def include_external_activities (visibility,ticket)
 
