@@ -3,7 +3,7 @@
 class UsersController < ApplicationController
   include ChecksUserAttributesByCurrentUserPermission
 
-  prepend_before_action -> { authorize! unless current_user.permissions?("virtual_agent") }, only: %i[import_example import_start search history]
+  prepend_before_action -> { authorize! unless current_user.permissions?("api_manager") }, only: %i[import_example import_start search history]
   prepend_before_action :authentication_check, except: %i[create password_reset_send password_reset_verify image email_verify email_verify_send]
   prepend_before_action :authentication_check_only, only: [:create]
 
