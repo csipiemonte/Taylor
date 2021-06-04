@@ -76,7 +76,9 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
   end
 
   def show
+    params[:expand] = true
     super
+    alterTicketAttributesInResponse()
   end
 
   def create
@@ -86,6 +88,17 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
 
     params.delete :state
     params[:state_id] = 1 # new 
+
+    if params[:utente_riconosciuto] && params[:utente_riconosciuto].is_a?(String)
+      # TODO togliere una volta implementata tabella lookup. modificare per mantenere retrocompatibilità con si / no per CSP
+      if params[:utente_riconosciuto].underscore == 'no'
+        params[:utente_riconosciuto] = 0
+      elsif params[:utente_riconosciuto].underscore == 'si'
+        params[:utente_riconosciuto] = 1
+      else
+        params.delete :utente_riconosciuto 
+      end
+    end
     
     
     if params[:article] 
@@ -107,6 +120,17 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
     params[:expand] = true
     params.delete :owner_id
     params.delete :owner
+
+    if params[:utente_riconosciuto] && params[:utente_riconosciuto].is_a?(String)
+      # TODO togliere una volta implementata tabella lookup. modificare per mantenere retrocompatibilità con si / no per CSP
+      if params[:utente_riconosciuto].underscore == 'no'
+        params[:utente_riconosciuto] = 0
+      elsif params[:utente_riconosciuto].underscore == 'si'
+        params[:utente_riconosciuto] = 1
+      else
+        params.delete :utente_riconosciuto 
+      end
+    end
 
     params.delete :state
     if params[:state_id] 
@@ -176,6 +200,7 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
       number 
       title 
       customer_id 
+      customer 
       note 
       article_count  
       type 
@@ -183,10 +208,8 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
       utente_riconosciuto 
       asset_id 
       asset
-      customer 
       created_at 
       updated_at 
-      create_article_type_id 
       create_article_type 
       create_article_sender
     ].to_set
@@ -203,6 +226,10 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
     ticket["state"] = states_traslations[ticket["state"]] if ticket["state"]
     # asset name
     ticket["asset"] ||= nil
+
+    # TODO rimuovere quando implementata tabella lookup
+    ticket["utente_riconosciuto"] = ticket["utente_riconosciuto"].to_i
+
     if ticket["asset_id"] 
       ticket["asset"] = all_assets[ticket["asset_id"]]
     end

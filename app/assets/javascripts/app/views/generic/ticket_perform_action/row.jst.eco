@@ -8,6 +8,12 @@
     <div class="js-setAttribute"></div>
     <div class="horizontal-filter-group js-setNotification flex"></div>
     <div class="horizontal-filter-group js-setArticle flex"></div>
+    <div class="js-setExternalActivity flex">
+      <div class="form-group">
+        <div class="js-external-activity-system"></div>
+      </div>
+    </div>
+    <div class="horizontal-filter-group js-setExternalActivityContent flex"></div>
   </div>
   <div class="filter-controls js-rowActions">
     <div class="filter-control filter-control-remove js-remove" title="<%- @Ti('Remote') %>">

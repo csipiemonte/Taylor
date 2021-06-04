@@ -871,8 +871,9 @@ perform changes on ticket
 
 =end
 
+  # perform: attributo perform della tabella trigger
   def perform_changes(perform, perform_origin, item = nil, current_user_id = nil)
-    logger.debug { "Perform #{perform_origin} #{perform.inspect} on Ticket.find(#{id})" }
+    logger.info { "perform_changes - Perform #{perform_origin} #{perform.inspect} on Ticket.find(#{id})" }
 
     article = begin
                 Ticket::Article.find_by(id: item.try(:dig, :article_id))
@@ -893,11 +894,14 @@ perform changes on ticket
     end
 
     perform_notification = {}
+    perform_external_activity = {} # CSI custom external activity
     perform_article = {}
     changed = false
+
+    # ciclo su ogni chiave valore presente nell'hash memorizzata nella colonna 'perform'
     perform.each do |key, value|
       (object_name, attribute) = key.split('.', 2)
-      raise "Unable to update object #{object_name}.#{attribute}, only can update tickets, send notifications and create articles!" if object_name != 'ticket' && object_name != 'article' && object_name != 'notification'
+      raise "Unable to update object #{object_name}.#{attribute}, only can update tickets, send notifications, create articles and external activities!" if object_name != 'ticket' && object_name != 'article' && object_name != 'notification' && object_name != 'external_activity'
 
       # send notification/create article (after changes are done)
       if object_name == 'article'
@@ -906,6 +910,12 @@ perform changes on ticket
       end
       if object_name == 'notification'
         perform_notification[key] = value
+        next
+      end
+
+      # external activity
+      if object_name == 'external_activity'
+        perform_external_activity[key] = value
         next
       end
 
@@ -993,6 +1003,17 @@ perform changes on ticket
       end
     end
 
+    # custom CSI external activity -- start
+    perform_external_activity.each do |key, value|
+
+      case key
+      when 'external_activity.new_activity'
+        create_external_activity(value)
+        # create_external_activity(perform)
+      end
+    end
+    # custom CSI external activity -- end
+
     true
   end
 
@@ -1005,6 +1026,7 @@ perform active triggers on ticket
 =end
 
   def self.perform_triggers(ticket, article, item, options = {})
+    logger.info { "perform_triggers - ticket #{ticket}, article #{article}, item #{item}), #{options} #{options}" }
     recursive = Setting.get('ticket_trigger_recursive')
     type = options[:type] || item[:type]
     local_options = options.clone
@@ -1685,5 +1707,50 @@ result
       created_by_id: 1,
     )
 
+  end
+
+  # CSI custom external activity
+  # A fronte di una determinata condizione sul ticket si procede con la
+  # creazione di una external activity
+  def create_external_activity(ext_act_perform)
+    logger.info { "create_external_activity - Perform external activity #{ext_act_perform.inspect} on Ticket.find(#{id})" }
+
+    # verifica che non ci sia gia' una external activity associata al tk in questione
+    extActivity = ExternalActivity.find_by(ticket_id: id)
+    return if extActivity
+
+    core_field_prefix = 'core_field::'
+    core_field_values = {}
+
+    # identificazione dei core_field::
+    ext_act_perform.each do |key, value|
+      next if !value.start_with?(core_field_prefix)
+
+      logger.info { "create_external_activity - value #{value}" }
+      core_field_value = value.slice!(core_field_prefix.length, value.length)
+      logger.info { "create_external_activity - core_field_value #{core_field_value}" }
+
+      case core_field_value
+      when 'title'
+        core_field_values[key] = title # campo 'title' di ticket
+        next
+      when 'body'
+        core_field_values[key] = articles.first.body
+      end
+    end
+
+    core_field_values.each do |key, value|
+      ext_act_perform[key] = value
+    end
+
+    ext_act_system = ext_act_perform['system']
+    ext_act_perform.delete('system')
+
+    ExternalActivity.create(
+      external_ticketing_system_id: ext_act_system,
+      ticket_id:                    id,
+      data:                         ext_act_perform,
+      bidirectional_alignment:      true,
+    )
   end
 end
