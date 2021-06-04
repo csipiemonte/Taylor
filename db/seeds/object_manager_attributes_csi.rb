@@ -178,7 +178,17 @@ ObjectManager::Attribute.add(
 
 
 
+UtenteRiconosciutoLookup.create_if_not_exists(
+  id:            1,
+  value:         0,
+  name:         "no"
+)
 
+UtenteRiconosciutoLookup.create_if_not_exists(
+  id:            2,
+  value:         1,
+  name:         "si"
+)
 ObjectManager::Attribute.add(
   force:       true,
   object:      'Ticket',
@@ -186,10 +196,10 @@ ObjectManager::Attribute.add(
   display:     'Utente Riconosciuto',
   data_type:   'select',
   data_option: {
-    default:    'No',
+    default:    0,
     options:    {
-      'no'           => 'No',
-      'si'            => 'Si',
+      0           => UtenteRiconosciutoLookup.find_by(value: 0).name,
+      1            => UtenteRiconosciutoLookup.find_by(value: 1).name,
     },
     nulloption: false,
     multiple:   false,
