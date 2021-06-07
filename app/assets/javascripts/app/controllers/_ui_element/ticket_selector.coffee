@@ -21,6 +21,12 @@ class App.UiElement.ticket_selector
       groups.execution_time =
         name: 'Execution Time'
 
+    # Aggiunta voce e sottovoce nel menu condition
+    # cfr zammad/app/assets/javascripts/app/models/trigger.coffee parametro 'condition'
+    if attribute.externalActivity
+      groups.external_activity =
+        name: 'External Activity'
+
     operators_type =
       '^datetime$': ['before (absolute)', 'after (absolute)', 'before (relative)', 'after (relative)', 'within next (relative)', 'within last (relative)']
       '^timestamp$': ['before (absolute)', 'after (absolute)', 'before (relative)', 'after (relative)', 'within next (relative)', 'within last (relative)']
@@ -85,6 +91,28 @@ class App.UiElement.ticket_selector
             null: false
             translate: false
             operator: ['is in working time', 'is not in working time']
+
+      else if groupKey is 'external_activity'
+        if attribute.externalActivity
+          apiPath = App.Config.get('api_path')
+          App.Ajax.request(
+            type:  'GET'
+            url:   "#{apiPath}/external_ticketing_system"
+            async: false
+            success: (data, status, xhr) ->
+              systemOptions = {}
+              data.forEach (option) ->
+                systemOptions[option['id']] = option['name']
+
+              elements['external_activity.system'] =
+                name: 'external_activity_system_id'
+                display: 'System'
+                tag: 'select'
+                options: systemOptions
+                null: false
+                translate: false
+                operator: ['is']
+          )
 
       else
         for row in App[groupMeta.model].configure_attributes
@@ -280,6 +308,10 @@ class App.UiElement.ticket_selector
 
 
   @rebuildAttributeSelectors: (elementFull, elementRow, groupAndAttribute, elements, meta, attribute) ->
+
+    console.log('groupAndAttribute', {groupAndAttribute})
+    console.log('attribute', {attribute})
+    console.log('meta', {meta})
 
     # set attribute
     if groupAndAttribute

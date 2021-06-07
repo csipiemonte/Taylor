@@ -18,7 +18,7 @@ class App.UiElement.ticket_perform_action
 
     # Aggiunta voce e sottovoce nel menu perform
     # cfr zammad/app/assets/javascripts/app/models/trigger.coffee parametro 'perform'
-    if attribute.external_activity
+    if attribute.externalActivity
       groups.external_activity =
         name: 'External Activity'
         model: 'ExternalActivity'
