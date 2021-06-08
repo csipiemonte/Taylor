@@ -1009,7 +1009,6 @@ perform changes on ticket
       case key
       when 'external_activity.new_activity'
         create_external_activity(value)
-        # create_external_activity(perform)
       end
     end
     # custom CSI external activity -- end
@@ -1025,8 +1024,14 @@ perform active triggers on ticket
 
 =end
 
-  def self.perform_triggers(ticket, article, item, options = {})
-    logger.info { "perform_triggers - ticket #{ticket}, article #{article}, item #{item}), #{options} #{options}" }
+  def self.perform_triggers(ticket, article, item, options = {}, external_activity)
+    logger.info { "perform_triggers - item #{item}), options #{options}" }
+    # per ExternalActivity la riga di log produce (ad esempio)
+    # item : {:object=>"ExternalActivity", :object_id=>1, :user_id=>1, :created_at=>Mon, 07 Jun 2021 09:36:27 UTC +00:00,
+    # :type=>"update", :changes=>{"bidirectional_alignment"=>[true, false]}
+    # },
+    # options: {:interface_handle=>"application_server", :type=>"update", :reset_user_id=>true, :disable=>["Transaction::Notification"], :trigger_ids=>{4=>[8]}, :loop_count=>1}
+
     recursive = Setting.get('ticket_trigger_recursive')
     type = options[:type] || item[:type]
     local_options = options.clone
@@ -1086,6 +1091,24 @@ perform active triggers on ticket
           one_has_changed_done = true
         end
 
+        # custom csi - check if one external_activity attribute is used
+        # nel loop sottostante si verifica che:
+        # 1. la condition del trigger i-esimo abbia una 'external_activity'
+        # 2. l'oggetto sulla quale e' stata osservata la transaction e' una External A
+        external_activity_selector = false
+        trigger.condition.each_key do |key|
+          (object_name, attribute) = key.split('.', 2)
+          next if object_name != 'external_activity'
+
+          external_activity_selector = true
+        end
+        if external_activity && external_activity_selector
+          one_has_changed_done = true
+        end
+        if external_activity && type == 'update'
+          one_has_changed_done = true
+        end
+
         # check ticket "has changed" options
         has_changed_done = true
         condition.each do |key, value|
@@ -1129,11 +1152,11 @@ perform active triggers on ticket
           # verify if ticket condition exists
           condition.each_key do |key|
             (object_name, attribute) = key.split('.', 2)
-            next if object_name != 'ticket'
+            next if object_name != 'ticket' && object_name != 'external_activity' # CSI custom
 
             one_has_changed_condition = true
             next if item[:changes].blank?
-            next if !item[:changes].key?(attribute)
+            next if !item[:changes].key?(attribute) # item[:changes] contiene i cambiamenti sul record, ad esempio item[:changes] => {"bidirectional_alignment"=>[true, false]
 
             one_has_changed_done = true
             break
@@ -1165,12 +1188,28 @@ perform active triggers on ticket
                  User.lookup(id: user_id)
                end
 
-        # verify is condition is matching
-        ticket_count, tickets = Ticket.selectors(condition, limit: 1, execution_time: true, current_user: user, access: 'ignore')
+        if item[:object] == 'ExternalActivity'
+          next if item[:changes] != 'data'
+          next if condition['external_activity.system'].value != external_activity.external_ticketing_system_id
 
-        next if ticket_count.blank?
-        next if ticket_count.zero?
-        next if tickets.first.id != ticket.id
+          # TODO
+          # - verifica che external_ticketing_system_id sia uguale a quella presente nel condition
+          # - prelievo delle altre condition (state, etc)
+          # - verifica presenza degli altri parametri di condition in external_activity.data
+          # - verifica che il valore presente in condition coincida con il valore del parametro corrispondente in external_activity.data
+
+          # se i prerequisiti sono soddisfatti si chiama il trigger perform ()
+
+        else
+          next if condition.key?('external_activity.system') # CSI custom
+
+          # verify is condition is matching
+          ticket_count, tickets = Ticket.selectors(condition, limit: 1, execution_time: true, current_user: user, access: 'ignore')
+
+          next if ticket_count.blank?
+          next if ticket_count.zero?
+          next if tickets.first.id != ticket.id
+        end
 
         if recursive == false && local_options[:loop_count] > 1
           message = "Do not execute recursive triggers per default until Zammad 3.0. With Zammad 3.0 and higher the following trigger is executed '#{trigger.name}' on Ticket:#{ticket.id}. Please review your current triggers and change them if needed."
@@ -1713,11 +1752,23 @@ result
   # A fronte di una determinata condizione sul ticket si procede con la
   # creazione di una external activity
   def create_external_activity(ext_act_perform)
+    # provvisorio inizio - far fare scattare l'observer su external activity
+    # tmp_ext_act = ExternalActivity.find_by(id: 1)
+    # tmp_data = tmp_ext_act.data
+    # tmp_data['state'] = 'closedd'
+    # tmp_ext_act.data = tmp_data
+    # tmp_ext_act.save!
+    # provvisorio fine - far fare scattare l'observer su external activity
+
     logger.info { "create_external_activity - Perform external activity #{ext_act_perform.inspect} on Ticket.find(#{id})" }
 
-    # verifica che non ci sia gia' una external activity associata al tk in questione
-    extActivity = ExternalActivity.find_by(ticket_id: id)
-    return if extActivity
+    ext_act_system = ext_act_perform['system']
+    ext_act_perform.delete('system')
+
+    # verifica che non ci sia gia' una external activity associata al tk in questione per l'activity system 'ext_act_system'
+    # ATTENZIONE: ad un certo tk possono corrispondere piu' external activity di system differenti
+    ext_activity = ExternalActivity.find_by(external_ticketing_system_id: ext_act_system, ticket_id: id)
+    return if ext_activity
 
     core_field_prefix = 'core_field::'
     core_field_values = {}
@@ -1743,14 +1794,13 @@ result
       ext_act_perform[key] = value
     end
 
-    ext_act_system = ext_act_perform['system']
-    ext_act_perform.delete('system')
-
     ExternalActivity.create(
       external_ticketing_system_id: ext_act_system,
       ticket_id:                    id,
       data:                         ext_act_perform,
       bidirectional_alignment:      true,
+      updated_by_id: 1,
+      created_by_id: 1,
     )
   end
 end
