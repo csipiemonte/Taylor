@@ -1,4 +1,4 @@
-class Api::Nextcrm::V1::TicketsController < ::TicketsController
+class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
   include Api::Nextcrm::V1::Concerns::ReadesApiManagerJwt
   include Api::Nextcrm::V1::Concerns::Filterable
 
@@ -212,6 +212,7 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
       updated_at 
       create_article_type 
       create_article_sender
+      external_activities
     ].to_set
 
     # whitelist
