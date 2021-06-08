@@ -66,7 +66,6 @@ remedy_model = {
       'select' => {
           'options' => {
               '1' => {'id':'Ripristino di servizio utente', 'name':'Ripristino di servizio utente'},
-              '2' => {'id':'Richiesta utente', 'name':'Richiesta utente'}
           }
       }
   },
@@ -75,7 +74,7 @@ remedy_model = {
     'name':      'richiedente',
     'label':     'richiedente',
     'type':      'text',
-    'default':   'PPL000000018476',
+    'default':   'PPL000000429692',
     'read_only': true,
     'visible':   false
   },
