@@ -33,7 +33,10 @@ class Transaction::Trigger
     # return if we run import mode
     return if Setting.get('import_mode')
 
-    return if @item[:object] != 'Ticket' && @item[:object] != 'ExternalActivity' # CSI custom, aggiunta condizione su 'ExternalActivity'
+    # CSI custom, aggiunta condizione su 'ExternalActivity'
+    # alla verifica presente (prosecuzione consentita solo per oggetto di tipo Ticket)
+    # si aggiunge la verifica che sia oggetto di tipo 'ExternalActivity'
+    return if @item[:object] != 'Ticket' && @item[:object] != 'ExternalActivity'
 
     if @item[:object] == 'Ticket'
       ticket = Ticket.find_by(id: @item[:object_id])
@@ -41,6 +44,10 @@ class Transaction::Trigger
 
     # CSI custom
     if @item[:object] == 'ExternalActivity'
+      # Attenzione: per oggetto 'ExternalActivity' la prosecuzione e l'innesco dei trigger
+      # e' consentito solo qualora ci sia un aggiornamento della tabella external_activities
+      return if @item[:type] != 'update'
+
       external_activity = ExternalActivity.find_by(id: @item[:object_id])
       ticket = Ticket.find_by(id: external_activity.ticket_id)
     end
