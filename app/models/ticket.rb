@@ -1187,11 +1187,12 @@ perform active triggers on ticket
 
           ext_act_data = external_activity.data
 
-          # TODO, codice provvisorio da sostituire con il prelievo degli altri campi dalla condition
-          # - verifica presenza degli altri parametri di condition in external_activity.data
-          # - verifica che il valore presente in condition coincida con il valore del parametro corrispondente in external_activity.data
-          next if !ext_act_data.key?('state')
-          next if ext_act_data['state'] != 'closed'
+          # prelievo dei campi dalla condition
+          model_param_name = ext_act_system['model_param_name'] # nome del parametro del model inserito nella condition
+          model_param_value = ext_act_system['model_param_value'] # valore di confronto inserito nella condition
+
+          next if !ext_act_data.key?(model_param_name) # skip se i data della external activity non contengono il parametro della condition
+          next if ext_act_data[model_param_name] != model_param_value # skip se il parametro in data non coincide con il valore di confronto presente nella condition
 
           logger.info { "Satisfied external_activity condition (#{condition}) for this object (ExternalActivity:#{external_activity}), perform action on (Ticket:#{ticket.id})" }
         else

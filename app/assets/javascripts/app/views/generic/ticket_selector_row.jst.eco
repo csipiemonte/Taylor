@@ -18,6 +18,8 @@
       </div>
     </div>
     <div class="controls js-value horizontal horizontal-filter-value"></div>
+    <div class="controls js-external-activity-condition-param"></div>
+    <div class="controls js-external-activity-condition-value"></div>
   </div>
   <div class="filter-controls">
     <div class="filter-control filter-control-remove js-remove" title="<%- @Ti('Remove') %>">

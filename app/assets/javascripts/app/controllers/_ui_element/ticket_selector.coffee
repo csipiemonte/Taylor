@@ -319,6 +319,61 @@ class App.UiElement.ticket_selector
 
     @buildOperator(elementFull, elementRow, groupAndAttribute, elements, meta, attribute)
 
+    # custom CSI
+    elementRow.find('.js-external-activity-condition-param').addClass('hide')
+    elementRow.find('.js-external-activity-condition-value').addClass('hide')
+    instance = @
+    if groupAndAttribute == 'external_activity.system'
+      name = 'condition::external_activity.system'
+      extActSysName = name + '::value'
+      extActSysValue = elementRow.find('[name="' + extActSysName + '"] option:selected').val()
+      @fetchExternalSystemModel(elementRow, extActSysValue, name, meta)
+
+      elementRow.find('[name="' + extActSysName + '"]').change ->
+        extActSysId = elementRow.find('[name="' + extActSysName + '"] option:selected').val()
+        instance.fetchExternalSystemModel(elementRow, extActSysId, name, meta)
+
+  # extActSystemId: id del external activity system selezionato
+  # name: prefisso del parametro, tipo 'condition::external_activity.system'
+  # meta: contiene - in edit - i dati inseriti in precedenza nei parametri di input
+  @fetchExternalSystemModel: (elementRow, extActSystemId, name, meta) =>
+    apiPath = App.Config.get('api_path')
+    App.Ajax.request(
+      type:  'GET'
+      url:   "#{apiPath}/external_ticketing_system/#{extActSystemId}"
+      async: false
+      success: (data, status, xhr) =>
+        @buildFieldsExtActArea(elementRow, data.model, name, meta)
+    )
+
+  # metodo per popolare con l'External Activity Condition Area
+  @buildFieldsExtActArea: (elementRow, model, name, meta) ->
+    paramOptions = {}
+    $.each model, (key, field) ->
+      paramOptions[field['name']] = field['label']
+
+    selectName = name + '::model_param_name'
+    selectField = App.UiElement.select.render(
+      name: selectName
+      multiple: false
+      null: true
+      options: paramOptions
+      value: meta['model_param_name'] || ''
+      translate: false
+      required: true
+    )
+    elementRow.find('.js-external-activity-condition-param').html(selectField).removeClass('hide')
+
+    inputName = name + '::model_param_value'
+    inputFld = App.UiElement.input.render(
+      id: inputName
+      name: inputName
+      type: 'text'
+      value: meta['model_param_value'] || ''
+      required: true
+    )
+    elementRow.find('.js-external-activity-condition-value').html(inputFld).removeClass('hide')
+
   @buildOperator: (elementFull, elementRow, groupAndAttribute, elements, meta, attribute) ->
     currentOperator = elementRow.find('.js-operator option:selected').attr('value')
 
