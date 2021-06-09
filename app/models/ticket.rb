@@ -1780,6 +1780,27 @@ result
       ext_act_perform[key] = value
     end
 
+    # Campi utilizzati per la categorizzazione su sistemi esterni (ad esempio, Remedy)
+    # non e' possibile usare l'id come value perche' e' riferito al DB,
+    # si deve impiegare il name
+    ext_act_system_model = ExternalTicketingSystem.find_by(id: ext_act_system).model
+    ext_act_system_model.each_value do |value|
+      next if !value.key?('select')
+      next if !value['select'].key?('service')
+
+      fld_name = value['name']
+      upd_value = nil
+      if fld_name == 'service_catalog'
+        upd_value = ServiceCatalogItem.find_by(id: ext_act_perform[fld_name]).name
+      elsif fld_name == 'service_catalog_sub_item'
+        upd_value = ServiceCatalogSubItem.find_by(id: ext_act_perform[fld_name]).name
+      elsif fld_name == 'asset'
+        upd_value = Asset.find_by(id: ext_act_perform[fld_name]).name
+      end
+
+      ext_act_perform[fld_name] = upd_value if !upd_value.nil?
+    end
+
     ExternalActivity.create(
       external_ticketing_system_id: ext_act_system,
       ticket_id:                    id,
