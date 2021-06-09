@@ -30,8 +30,22 @@ remedy_model = {
     'name':                'stato',
     'label':               'stato',
     'type':                'text',
-    'receive_only':        true,
-    'external_visibility': true
+    'receive_only':         true,
+    'external_visibility':  true,
+    'editable_aftwerwards': true,
+    'closes_activity':      ['Risolto','Chiuso'],
+    'stop_monitoring':      ['Chiuso'],
+      'select' => {
+        'options' => {
+          '1' => { 'id': 'Nuovo', 'name': 'Nuovo', 'disabled':true},
+          '2' => { 'id': 'Assegnato', 'name': 'Assegnato', 'disabled':true},
+          '3' => { 'id': 'In Corso', 'name': 'In Corso', 'disabled':true},
+          '4' => { 'id': 'Pendente', 'name': 'Pendente', 'disabled':true},
+          '5' => { 'id': 'Risolto', 'name': 'Risolto'},
+          '6' => { 'id': 'Chiuso', 'name': 'Chiuso' , 'disabled':true},
+          '7' => { 'id': 'Annullato', 'name': 'Annullato', 'disabled':true},
+        }
+      }
   },
   '4'  => {
     'required':  true,

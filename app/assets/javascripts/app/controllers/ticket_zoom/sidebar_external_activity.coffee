@@ -56,6 +56,7 @@ class ExternalActivity extends App.Controller
 
   displayExternalActivity: (activity) =>
     externalActivityId = Math.floor(Math.random() * 10000) + 10000
+    closed = @isClosed(activity)
     @$('.dispatch-box').append App.view('ticket_zoom/sidebar_external_activity_form')(
            system: @system
            externalActivityId : externalActivityId
@@ -63,6 +64,7 @@ class ExternalActivity extends App.Controller
            isAgent: @permissionCheck('ticket.agent')
            fields: Object.values(@system.model)
            dispatched: true
+           closed : closed
            needs_attention: activity.needs_attention
            values: activity.data
            activity: activity
@@ -71,6 +73,14 @@ class ExternalActivity extends App.Controller
     @buildCommentFields(externalActivityId,activity)
     @buildNeedsAttentionField(externalActivityId,activity)
 
+  isClosed: (activity) =>
+    closed = false
+    $.each @system.model, (key,field) ->
+      if field["closes_activity"]
+        if field["closes_activity"].includes(activity.data[field["name"]])
+          closed = true
+          return
+    return closed
 
   buildNeedsAttentionField: (externalActivityId,activity) =>
     needsAttentionButtonWrapper =
@@ -169,7 +179,7 @@ class ExternalActivity extends App.Controller
           instance.addComment(commentField, comment, selector)
         for key, comment of commentList
           instance.addComment(commentField, comment)
-        commentButton = instance.$('#External_Activity_'+externalActivityId+'_'+field["name"]+'_comment_button')
+        commentButton = instance.$('#External_Activity_'+externalActivityId+'_'+field["name"]+'_update_button')
         commentButton.on('click', (e) =>
           e.preventDefault()
           index = Object.keys(commentList).length+1
@@ -221,9 +231,11 @@ class ExternalActivity extends App.Controller
     )
 
   addOption: (selectField, option) =>
-    o = new Option(option["name"], option["name"]);
-    $(o).html(option["name"]);
-    selectField.append(o);
+    o = new Option(option["name"], option["name"])
+    $(o).html(option["name"])
+    selectField.append(o)
+    if option["disabled"]
+      $(o).addClass('text-muted').attr('disabled',true)
 
   createExternalActivity: (externalActivityId) =>
     new_activity_fields = {}

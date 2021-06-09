@@ -14,7 +14,6 @@
      <% end %>
     <p class="text-muted"><%- @T('Created at') %> <%= @activity.created_at %>:</p>
   <% else: %>
-
     <p id="External_Activity_<%= @externalActivityId %>_import-from-ticket" style="color: #429ed7;cursor: pointer;"><%- @T('✎ Import data from user\'s ticket') %></p>
   <% end %>
   <form>
@@ -26,36 +25,37 @@
         </div>
         <div class="controls "><div class="controls controls--select">
           <% if field.select: %>
-            <select id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="<%= field.type %>" class="<% if field.type!="checkbox": %>form-control<% end %>" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @dispatched || field.read_only: %>readonly disabled<% end %> <% if @dispatched && @values[field.name]: %>value="<%= @values[field.name] %>" <% else if field.default: %>value="<%= field.default %>"<% end %>>>
-              <option value>-</option>
+            <select id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="<%= field.type %>" class="<% if field.type!="checkbox": %>form-control<% end %>" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @closed || @dispatched && !field.editable_aftwerwards || field.read_only: %>readonly disabled<% end %> <% if @dispatched && @values[field.name]: %>value="<%= @values[field.name] %>" <% else if field.default: %>value="<%= field.default %>"<% end %>>>
+              <option value >-</option>
             </select>
             <svg class="icon icon-arrow-down "><use xlink:href="assets/images/icons.svg#icon-arrow-down"></use></svg>
           <% else if field.type=='comment': %>
-            <textarea id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="text" class="form-control" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if field.read_only: %>readonly <% else if field.default: %>value="<%= field.default %>"<% end %>></textarea>
-            <% if @dispatched: %>
-              <button id="External_Activity_<%= @externalActivityId %>_<%= field.name %>_comment_button" class="btn btn--primary" style="display: block;margin: 0.5em 0 1em auto;">✉ <%- @T('Send') %></button>
-            <% end %>
+            <textarea id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="text" class="form-control" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @closed || field.read_only: %>readonly disabled<% else if field.default: %>value="<%= field.default %>"<% end %>></textarea>
           <% else: %>
-            <input id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="<%= field.type %>" class="<% if field.type!="checkbox": %>form-control<% end %>" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @dispatched || field.read_only: %>readonly disabled<% end %> <% if @dispatched && @values[field.name]: %>value="<%= @values[field.name] %>" <% else if field.default: %>value="<%= field.default %>"<% end %>>
+            <input id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="<%= field.type %>" class="<% if field.type!="checkbox": %>form-control<% end %>" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @closed || @dispatched && !field.editable_aftwerwards || field.read_only: %>readonly disabled<% end %> <% if @dispatched && @values[field.name]: %>value="<%= @values[field.name] %>" <% else if field.default: %>value="<%= field.default %>"<% end %>>
           <% end %>
         </div>
         </div>
       </div>
     <% end %>
   <% end %>
-  <% if !@dispatched: %>
-    <div class="">
-        <div class="page-header-title">
-          <div class="zammad-switch zammad-switch--small">
-             <input name="External_Activity_<%= @externalActivityId %>_bidirectional_alignment" type="checkbox" id="External_Activity_<%= @externalActivityId %>_bidirectional_alignment" checked>
-             <label for="External_Activity_<%= @externalActivityId %>_bidirectional_alignment"></label>
+  <% if !@closed: %>
+    <% if @dispatched: %>
+      <button id="External_Activity_<%= @externalActivityId %>_<%= field.name %>_update_button" class="btn btn--primary" style="display: block;margin: 1em 0 1em auto;"><%- @T('Update') %></button>
+    <% else: %>
+      <div class="">
+          <div class="page-header-title">
+            <div class="zammad-switch zammad-switch--small">
+               <input name="External_Activity_<%= @externalActivityId %>_bidirectional_alignment" type="checkbox" id="External_Activity_<%= @externalActivityId %>_bidirectional_alignment" checked>
+               <label for="External_Activity_<%= @externalActivityId %>_bidirectional_alignment"></label>
+            </div>
+            <h4><%- @T('Get Updates') %></h4>
           </div>
-          <h4><%- @T('Get Updates') %></h4>
-        </div>
-      <div class="text-muted" style="margin-bottom: 1em;"><%- @T('Get activity updates from the external system') %></div>
-    </div>
-    <button id="External_Activity_<%= @externalActivityId %>_submit" class="btn btn--primary"><%- @T('Create') %></button>
-    <button id="External_Activity_<%= @externalActivityId %>_hidden_submit" class="btn btn--primary" style="display: none;"><%- @T('Create') %></button>
+        <div class="text-muted" style="margin-bottom: 1em;"><%- @T('Get activity updates from the external system') %></div>
+      </div>
+      <button id="External_Activity_<%= @externalActivityId %>_submit" class="btn btn--primary"><%- @T('Create') %></button>
+      <button id="External_Activity_<%= @externalActivityId %>_hidden_submit" class="btn btn--primary" style="display: none;"><%- @T('Create') %></button>
+    <% end %>
   <% end %>
   </form>
   <hr>
