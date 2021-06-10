@@ -158,8 +158,6 @@ class ExternalActivity extends App.Controller
   buildSelectFields: (externalActivityId,activity=null) =>
     instance = @
     $.each @system.model, (key, field) ->
-      while !document.querySelector('#External_Activity_'+externalActivityId+'_'+field["name"])
-        await new Promise(r => setTimeout(r, 500))
       selectField = $('#External_Activity_'+externalActivityId+'_'+field["name"])
       if field["select"] != undefined
         for key, option of field["select"]["options"]
