@@ -26,7 +26,7 @@
         <div class="controls "><div class="controls controls--select">
           <% if field.select: %>
             <select id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="<%= field.type %>" class="<% if field.type!="checkbox": %>form-control<% end %>" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @closed || @dispatched && !field.editable_aftwerwards || field.read_only: %>readonly disabled<% end %> <% if @dispatched && @values[field.name]: %>value="<%= @values[field.name] %>" <% else if field.default: %>value="<%= field.default %>"<% end %>>>
-              <option value >-</option>
+              <option value <% if field.select.not_null: %>disabled class="text-muted"<% end %>>-</option>
             </select>
             <svg class="icon icon-arrow-down "><use xlink:href="assets/images/icons.svg#icon-arrow-down"></use></svg>
           <% else if field.type=='comment': %>

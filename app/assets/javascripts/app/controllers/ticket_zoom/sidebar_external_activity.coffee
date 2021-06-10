@@ -116,7 +116,6 @@ class ExternalActivity extends App.Controller
     submitButton = @$('#External_Activity_'+externalActivityId+'_submit')
     submitButton.on('click', (e) =>
       e.preventDefault()
-      submitButton.prop("disabled",true)
       @createExternalActivity(externalActivityId)
     )
 
@@ -254,7 +253,7 @@ class ExternalActivity extends App.Controller
           "text":value
         }}
     if !validated
-      @$('#External_Activity_'+externalActivityId+'_hidden_submit').on 'click'
+      @$('#External_Activity_'+externalActivityId+'_hidden_submit').click()
       return
     bidirectional_alignment = $('#External_Activity_'+externalActivityId+'_bidirectional_alignment:checkbox:checked').length > 0
     data = JSON.stringify(
@@ -263,6 +262,7 @@ class ExternalActivity extends App.Controller
       "data": new_activity_fields,
       "bidirectional_alignment":bidirectional_alignment
     )
+    @$('#External_Activity_'+externalActivityId+'_submit').prop("disabled",true)
     @ajax(
       id:    'create_external_activity'
       type:  'POST'

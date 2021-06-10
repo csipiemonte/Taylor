@@ -36,6 +36,7 @@ remedy_model = {
     'closes_activity':      ['Risolto','Chiuso'],
     'stop_monitoring':      ['Chiuso'],
       'select' => {
+        'not_null': true,
         'options' => {
           '1' => { 'id': 'Nuovo', 'name': 'Nuovo', 'disabled':true},
           '2' => { 'id': 'Assegnato', 'name': 'Assegnato', 'disabled':true},
