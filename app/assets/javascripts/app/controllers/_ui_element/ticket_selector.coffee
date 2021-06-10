@@ -106,7 +106,7 @@ class App.UiElement.ticket_selector
 
               elements['external_activity.system'] =
                 name: 'external_activity_system_id'
-                display: 'System'
+                display: 'Ticketing System'
                 tag: 'select'
                 options: systemOptions
                 null: false

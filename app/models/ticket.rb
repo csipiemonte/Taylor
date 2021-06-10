@@ -1009,6 +1009,9 @@ perform changes on ticket
       case key
       when 'external_activity.new_activity'
         create_external_activity(value)
+        next
+      when 'external_activity.upd_activity'
+        update_external_activity(value)
       end
     end
     # custom CSI external activity -- end
@@ -1810,5 +1813,50 @@ result
       updated_by_id:                1,
       created_by_id:                1,
     )
+  end
+
+  # CSI custom external activity
+  # A fronte di una determinata condizione sul ticket si procede con
+  # l'aggiornamento di una external activity
+  def update_external_activity(ext_act_perform)
+    logger.info { "create_external_activity - Perform external activity #{ext_act_perform.inspect} on Ticket.find(#{id})" }
+
+    ext_act_system = ext_act_perform['system']
+
+    # verifica che ci sia gia' una external activity associata al tk in questione per l'activity system 'ext_act_system'
+    ext_activity = ExternalActivity.find_by(external_ticketing_system_id: ext_act_system, ticket_id: id)
+    return if !ext_activity
+
+    comment_field = nil
+    ext_act_system_model = ExternalTicketingSystem.find_by(id: ext_act_system).model
+    ext_act_system_model.each_value do |value|
+      next if !value.key?('type')
+      next if value['type'] != 'comment'
+
+      comment_field = value
+      break
+    end
+    return if comment_field.nil?
+
+    comment_text = if !ext_act_perform.key?('comment_from_article')
+                     ext_act_perform['static_comment']
+                   else
+                     articles.last.body
+                   end
+
+    ext_activity_data = ext_activity.data
+    if ext_activity_data.key?(comment_field['name'])
+      comment_hash = ext_activity_data[comment_field['name']]
+      new_comment_key = comment_hash.keys.length.to_s
+    else
+      comment_hash = {}
+      new_comment_key = '0'
+    end
+
+    comment_hash[new_comment_key] = { 'external': false, 'text': comment_text }
+    ext_activity_data[comment_field['name']] = comment_hash
+
+    ext_activity.data = ext_activity_data
+    ext_activity.save!
   end
 end
