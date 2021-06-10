@@ -69,6 +69,12 @@ class ExternalActivity extends App.Controller
            values: activity.data
            activity: activity
          )
+    instance = @
+    callback = () -> instance.buildActivityElements(externalActivityId,activity)
+    setTimeout callback,1500
+
+
+  buildActivityElements: (externalActivityId,activity) =>
     @buildSelectFields(externalActivityId,activity)
     @buildCommentFields(externalActivityId,activity)
     @buildNeedsAttentionField(externalActivityId,activity)
@@ -152,15 +158,17 @@ class ExternalActivity extends App.Controller
   buildSelectFields: (externalActivityId,activity=null) =>
     instance = @
     $.each @system.model, (key, field) ->
+      while !document.querySelector('#External_Activity_'+externalActivityId+'_'+field["name"])
+        await new Promise(r => setTimeout(r, 500))
       selectField = $('#External_Activity_'+externalActivityId+'_'+field["name"])
       if field["select"] != undefined
         for key, option of field["select"]["options"]
           instance.addOption(selectField, option)
         if field["select"]["service"] != undefined
           instance.fetchOptionValues(field,selectField,null,activity)
-        else if activity != null && activity.data[field["name"]]
+        if activity != null && activity.data[field["name"]]
           instance.setOptionValue(selectField,activity.data[field["name"]])
-        if activity==null && field["select"]["parent"] != undefined
+        if field["select"]["parent"] != undefined
           parent = $('#External_Activity_'+externalActivityId+'_'+field["select"]["parent"])
           parent.change ->
             instance.fetchOptionValues(field,selectField,@.value)
