@@ -803,7 +803,7 @@ ObjectManager::Attribute.add(
     rows:      8,
     null:       true,
   },
-  editable:    true,
+  editable:    false,
   active:      true,
   screens:     {
     'create_middle' => {
