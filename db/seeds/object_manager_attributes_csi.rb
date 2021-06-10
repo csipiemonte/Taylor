@@ -581,7 +581,7 @@ ObjectManager::Attribute.add(
     null:       true,
     # item_class: 'formGroup--halfSize'
   },
-  editable:    false,
+  editable:    true,
   active:      true,
   screens: {
     'create_middle' => {
@@ -626,7 +626,7 @@ ObjectManager::Attribute.add(
     null:       true,
     # item_class: 'formGroup--halfSize'
   },
-  editable:    false,
+  editable:    true,
   active:      true,
   screens: {
     'create_middle' => {
@@ -671,7 +671,7 @@ ObjectManager::Attribute.add(
     null:       true,
     # item_class: 'formGroup--halfSize'
   },
-  editable:    false,
+  editable:    true,
   active:      true,
   screens: {
     'create_middle' => {
@@ -715,7 +715,7 @@ ObjectManager::Attribute.add(
     null:       true,
     # item_class: 'formGroup--halfSize'
   },
-  editable:    false,
+  editable:    true,
   active:      true,
   screens: {
     'create_middle' => {
@@ -759,7 +759,7 @@ ObjectManager::Attribute.add(
     null:       true,
     # item_class: 'formGroup--halfSize'
   },
-  editable:    false,
+  editable:    true,
   active:      true,
   screens: {
     'create_middle' => {
@@ -803,7 +803,7 @@ ObjectManager::Attribute.add(
     rows:      8,
     null:       true,
   },
-  editable:    false,
+  editable:    true,
   active:      true,
   screens:     {
     'create_middle' => {
