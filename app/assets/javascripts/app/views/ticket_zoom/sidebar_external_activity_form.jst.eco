@@ -41,7 +41,7 @@
   <% end %>
   <% if !@closed: %>
     <% if @dispatched: %>
-      <button id="External_Activity_<%= @externalActivityId %>_<%= field.name %>_update_button" class="btn btn--primary" style="display: block;margin: 1em 0 1em auto;"><%- @T('Update') %></button>
+      <button id="External_Activity_<%= @externalActivityId %>_update_button" class="btn btn--primary" style="display: block;margin: 1em 0 1em auto;"><%- @T('Update') %></button>
     <% else: %>
       <div class="">
           <div class="page-header-title">

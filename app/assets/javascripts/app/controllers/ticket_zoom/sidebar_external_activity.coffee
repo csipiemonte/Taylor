@@ -72,6 +72,7 @@ class ExternalActivity extends App.Controller
     @buildSelectFields(externalActivityId,activity)
     @buildCommentFields(externalActivityId,activity)
     @buildNeedsAttentionField(externalActivityId,activity)
+    @buildUpdateButton(externalActivityId,activity)
 
   isClosed: (activity) =>
     closed = false
@@ -112,7 +113,6 @@ class ExternalActivity extends App.Controller
     @$('#External_Activity_'+externalActivityId+'_import-from-ticket').on('click', =>
       @importFieldsFromTicket(externalActivityId)
     )
-
     submitButton = @$('#External_Activity_'+externalActivityId+'_submit')
     submitButton.on('click', (e) =>
       e.preventDefault()
@@ -168,38 +168,36 @@ class ExternalActivity extends App.Controller
   buildCommentFields: (externalActivityId,activity=null) =>
     instance = @
     $.each @system.model, (key, field) ->
-      commentField = instance.$('#External_Activity_'+externalActivityId+'_'+field["name"])
       if field["type"] == "comment" && activity!=null
+        commentField = instance.$('#External_Activity_'+externalActivityId+'_'+field["name"])
         commentList = activity["data"][field["name"]]
         if !commentList
           commentList = {}
         selector = 'div[data-attribute-name="External_Activity_'+externalActivityId+'_'+field["name"]+'"]'
         jQuery.each commentList, (i, comment) ->
           instance.addComment(commentField, comment, selector)
-        for key, comment of commentList
-          instance.addComment(commentField, comment)
-        commentButton = instance.$('#External_Activity_'+externalActivityId+'_'+field["name"]+'_update_button')
-        commentButton.on('click', (e) =>
-          e.preventDefault()
-          index = Object.keys(commentList).length+1
-          commentList[""+index] = {
-            "external":false,
-            "text":commentField.val()
-          }
-          commentField.attr('disabled',true)
-          commentButton.hide()
-          activity["data"][field["name"]] = commentList
-          instance.update_external_activity(activity)
-        )
+
+  buildUpdateButton: (externalActivityId,activity) =>
+    instance = @
+    @$('#External_Activity_'+externalActivityId+'_update_button').on('click', (e) =>
+      e.preventDefault()
+      [data,validated] = instance.readActivityValues externalActivityId, activity
+      if !validated
+        instance.$('#External_Activity_'+externalActivityId+'_hidden_submit').click()
+        return
+      activity["data"] = data
+      @updateExternalActivity activity
+    )
 
 
-  update_external_activity: (activity) =>
+  updateExternalActivity: (activity) =>
     @ajax(
       id:    'update_external_activity'
       type:  'PUT'
       url:   "#{@apiPath}/external_activity/"+activity["id"]
       data: JSON.stringify({data:activity["data"]})
       success: (data, status, xhr) =>
+        @loadSystem(@system)
     )
 
 
@@ -237,21 +235,7 @@ class ExternalActivity extends App.Controller
       $(o).addClass('text-muted').attr('disabled',true)
 
   createExternalActivity: (externalActivityId) =>
-    new_activity_fields = {}
-    validated = true
-    Object.values(@system.model).forEach (field) ->
-      dom_field = @$('#External_Activity_'+externalActivityId+'_'+field.name)
-      value = dom_field.val()
-      if dom_field.prop('required') && value == ""
-        validated = false
-        return
-      if field.type!='comment'
-        new_activity_fields[field.name] = value
-      else
-        new_activity_fields[field.name] = {1:{
-          "external": false,
-          "text":value
-        }}
+    [new_activity_fields,validated] = @readActivityValues externalActivityId
     if !validated
       @$('#External_Activity_'+externalActivityId+'_hidden_submit').click()
       return
@@ -271,6 +255,28 @@ class ExternalActivity extends App.Controller
       success: (data, status, xhr) =>
         @loadSystem(@system)
     )
+
+  readActivityValues: (externalActivityId, activity=null) =>
+    instance = @
+    new_activity_fields = if activity then activity.data else {}
+    validated = true
+    $.each @system.model, (key,field) ->
+      dom_field = instance.$('#External_Activity_'+externalActivityId+'_'+field.name)
+      value = dom_field.val()
+      if dom_field.prop('required') && value == ""
+        validated = false
+        return
+      if field.type!='comment'
+        new_activity_fields[field.name] = value
+      else
+        index = if activity then Object.keys(new_activity_fields[field.name]).length+1 else 1
+        new_activity_fields[field.name] = if activity then new_activity_fields[field.name] else []
+        if value && value!=""
+          new_activity_fields[field.name][""+index] = {
+            "external": false,
+            "text":value
+          }
+    return [new_activity_fields, validated]
 
   showObjects: (el) =>
     @el = el
