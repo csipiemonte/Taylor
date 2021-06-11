@@ -6,6 +6,7 @@ class ExternalActivityController < ApplicationController
   def index_external_activity
     return if not params[:ticketing_system_id]
     external_activities = ExternalActivity.where(external_ticketing_system_id:params[:ticketing_system_id])
+    external_activities = external_activities.where(archived: params[:archived]) if params[:archived].present? && params[:archived] != ""
     external_activities = external_activities.where(delivered: params[:delivered]) if params[:delivered].present? && params[:delivered] != ""
     external_activities = external_activities.where(ticket_id: params[:ticket_id]) if params[:ticket_id].present? && params[:ticket_id] != ""
     render json: external_activities
