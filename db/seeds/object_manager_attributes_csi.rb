@@ -1,12 +1,24 @@
-# CSI attribute
+
+################
+#### User ####
+################
+
 ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
   name:        'birthdate',
   display:     'Data di Nascita',
   data_type:   'date',
-  data_option:  {    future:      false,
-    past:        true, "diff"=>24, "default"=>nil, "null"=>true, "options"=>{}, "relation"=>""},
+  data_option:  {    
+    future:      false,
+    past:        true, 
+    "diff"=>24, 
+    "default"=>nil, 
+    "null"=>true, 
+    "options"=>{}, 
+    "relation"=>"",
+    item_class: 'formGroup--halfSize',
+  },
   data_option_new: {},
   editable:    false,
   active:      true,
@@ -50,6 +62,7 @@ ObjectManager::Attribute.add(
     type:       'text',
     maxlength:  16,
     null:       true,
+    item_class: 'formGroup--halfSize',
   },
   editable:    false,
   active:      true,
@@ -84,6 +97,7 @@ ObjectManager::Attribute.add(
     type:       'text',
     maxlength:  20,
     null:       true,
+    item_class: 'formGroup--halfSize',
   },
   editable:    false,
   active:      true,
@@ -118,6 +132,7 @@ ObjectManager::Attribute.add(
     type:       'text',
     maxlength:  16,
     null:       true,
+    item_class: 'formGroup--halfSize',
   },
   editable:    false,
   active:      true,
@@ -152,6 +167,7 @@ ObjectManager::Attribute.add(
     type:       'text',
     maxlength:  16,
     null:       true,
+    item_class: 'formGroup--halfSize',
   },
   editable:    false,
   active:      true,
@@ -176,7 +192,47 @@ ObjectManager::Attribute.add(
   position:    1564,
 )
 
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'User',
+  name:        'verified_data',
+  display:     'Verified data',
+  data_type:   'boolean',
+  data_option: {
+    null:       true,
+    default:    false,
+    item_class: 'formGroup--halfSize',
+    options:    {
+      false: 'no',
+      true:  'yes',
+    },
+    translate:  true,
+    permission: ['admin.user', 'ticket.agent'],
+  },
+  editable:    false,
+  active:      true,
+  screens:     {
+    edit: {
+      '-all-' => {
+        null: true,
+      },
+    },
+    view: {
+      '-all-' => {
+        shown: false,
+      },
+    },
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    1491,
+)
 
+
+################
+#### Ticket ####
+################
 
 UtenteRiconosciutoLookup.create_if_not_exists(
   id:            1,
@@ -206,7 +262,7 @@ ObjectManager::Attribute.add(
     null:       false,
     # translate:  true,
   },
-  editable:    true,
+  editable:    false,
   active:      true,
   screens: {
     'create_middle' => {
@@ -422,3 +478,387 @@ ObjectManager::Attribute.add(
   to_delete:   false,
   position:    20,
 )
+
+
+
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'Ticket',
+  name:        'notification_email',
+  display:     'Notification email address',
+  data_type:   'input',
+  data_option: {
+    type:       'text',
+    maxlength:  150,
+    null:       true,
+    # item_class: 'formGroup--halfSize'
+  },
+  editable:    false,
+  active:      true,
+  screens:     {
+    'create_middle' => {
+      'ticket.customer' => {
+        'shown' => true,
+        'required' => false,
+        'item_class' => 'column'
+      },
+      'ticket.agent'    => {
+        'shown' => true,
+        'required' => false,
+        'item_class' => 'column'
+      }
+    },
+    'edit' => {
+      'ticket.customer' => {
+        'shown' => true,
+        'required' => false
+      },
+      'ticket.agent' => {
+        'shown' => true,
+        'required' => false
+      }
+    }
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    2010,
+)
+
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'Ticket',
+  name:        'recall_phone',
+  display:     'Contact telephone number',
+  data_type:   'input',
+  data_option: {
+    type:       'text',
+    maxlength:  100,
+    null:       true,
+    # item_class: 'formGroup--halfSize'
+  },
+  editable:    false,
+  active:      true,
+  screens:     {
+    'create_middle' => {
+      'ticket.customer' => {
+        'shown' => true,
+        'required' => false,
+        'item_class' => 'column'
+      },
+      'ticket.agent'    => {
+        'shown' => true,
+        'required' => false,
+        'item_class' => 'column'
+      }
+    },
+    'edit' => {
+      'ticket.customer' => {
+        'shown' => true,
+        'required' => false
+      },
+      'ticket.agent' => {
+        'shown' => true,
+        'required' => false
+      }
+    }
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    2020,
+)
+
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'Ticket',
+  name:        'not_verified_user_firstname',
+  display:     'Name',
+  data_type:   'input',
+  data_option: {
+    type:       'text',
+    maxlength:  100,
+    null:       true,
+    # item_class: 'formGroup--halfSize'
+  },
+  editable:    true,
+  active:      true,
+  screens: {
+    'create_middle' => {
+      'ticket.customer' => {
+        'shown' => false,
+        'required' => false,
+        'item_class' => 'column'
+      },
+      'ticket.agent'    => {
+        'shown' => false,
+        'required' => false,
+        'item_class' => 'column'
+      }
+    },
+    'edit' => {
+      'ticket.customer' => {
+        'shown' => false,
+        'required' => false
+      },
+      'ticket.agent' => {
+        'shown' => false,
+        'required' => false
+      }
+    }
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    2005,
+)
+
+
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'Ticket',
+  name:        'not_verified_user_lastname',
+  display:     'Surname',
+  data_type:   'input',
+  data_option: {
+    type:       'text',
+    maxlength:  100,
+    null:       true,
+    # item_class: 'formGroup--halfSize'
+  },
+  editable:    true,
+  active:      true,
+  screens: {
+    'create_middle' => {
+      'ticket.customer' => {
+        'shown' => false,
+        'required' => false,
+        'item_class' => 'column'
+      },
+      'ticket.agent'    => {
+        'shown' => false,
+        'required' => false,
+        'item_class' => 'column'
+      }
+    },
+    'edit' => {
+      'ticket.customer' => {
+        'shown' => false,
+        'required' => false
+      },
+      'ticket.agent' => {
+        'shown' => false,
+        'required' => false
+      }
+    }
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    2006,
+)
+
+
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'Ticket',
+  name:        'not_verified_user_codice_fiscale',
+  display:     'Codice Fiscale',
+  data_type:   'input',
+  data_option: {
+    type:       'text',
+    maxlength:  16,
+    null:       true,
+    # item_class: 'formGroup--halfSize'
+  },
+  editable:    true,
+  active:      true,
+  screens: {
+    'create_middle' => {
+      'ticket.customer' => {
+        'shown' => false,
+        'required' => false,
+        'item_class' => 'column'
+      },
+      'ticket.agent'    => {
+        'shown' => false,
+        'required' => false,
+        'item_class' => 'column'
+      }
+    },
+    'edit' => {
+      'ticket.customer' => {
+        'shown' => false,
+        'required' => false
+      },
+      'ticket.agent' => {
+        'shown' => false,
+        'required' => false
+      }
+    }
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    2030,
+)
+
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'Ticket',
+  name:        'not_verified_user_mobile',
+  display:     'Mobile number',
+  data_type:   'input',
+  data_option: {
+    type:       'text',
+    maxlength:  100,
+    null:       true,
+    # item_class: 'formGroup--halfSize'
+  },
+  editable:    true,
+  active:      true,
+  screens: {
+    'create_middle' => {
+      'ticket.customer' => {
+        'shown' => false,
+        'required' => false,
+        'item_class' => 'column'
+      },
+      'ticket.agent'    => {
+        'shown' => false,
+        'required' => false,
+        'item_class' => 'column'
+      }
+    },
+    'edit' => {
+      'ticket.customer' => {
+        'shown' => false,
+        'required' => false
+      },
+      'ticket.agent' => {
+        'shown' => false,
+        'required' => false
+      }
+    }
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    2040,
+)
+
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'Ticket',
+  name:        'not_verified_user_phone',
+  display:     'Landline number',
+  data_type:   'input',
+  data_option: {
+    type:       'text',
+    maxlength:  100,
+    null:       true,
+    # item_class: 'formGroup--halfSize'
+  },
+  editable:    true,
+  active:      true,
+  screens: {
+    'create_middle' => {
+      'ticket.customer' => {
+        'shown' => false,
+        'required' => false,
+        'item_class' => 'column'
+      },
+      'ticket.agent'    => {
+        'shown' => false,
+        'required' => false,
+        'item_class' => 'column'
+      }
+    },
+    'edit' => {
+      'ticket.customer' => {
+        'shown' => false,
+        'required' => false
+      },
+      'ticket.agent' => {
+        'shown' => false,
+        'required' => false
+      }
+    }
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    2050,
+)
+
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'Ticket',
+  name:        'additional_info',
+  display:     'Additional info',
+  data_type:   'richtext',
+  data_option: {
+    type:       'richtext',
+    maxlength: 150_000,
+    rows:      8,
+    null:       true,
+  },
+  editable:    false,
+  active:      true,
+  screens:     {
+    'create_middle' => {
+      'ticket.customer' => {
+        'shown' => true,
+        'required' => false,
+        'item_class' => 'column'
+      },
+      'ticket.agent'    => {
+        'shown' => true,
+        'required' => false,
+        'item_class' => 'column'
+      }
+    },
+    'edit' => {
+      'ticket.customer' => {
+        'shown' => true,
+        'required' => false
+      },
+      'ticket.agent' => {
+        'shown' => true,
+        'required' => false
+      }
+    }
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    3000,
+)
+
+
+######################
+#### Translations ####
+######################
+
+def create_translation(locale, source, target)
+  Translation.create_if_not_exists(
+    locale:         locale,
+    source:         source,
+    target:         target,
+    target_initial: target,
+    format:         'string',
+    created_by_id:  '1',
+    updated_by_id:  '1',
+  )
+end
+
+create_translation('it-it', 'Verified data', 'Dati certificati')
+create_translation('it-it', 'Additional info', 'Informazioni aggiuntive')
+create_translation('it-it', 'Surname', 'Cognome')
+create_translation('it-it', 'Notification email address', 'Email per notifiche')
+create_translation('it-it', 'Contact telephone number', 'Numero telefonico di contatto')
+create_translation('it-it', 'Mobile number', 'Numero di cellulare')
+create_translation('it-it', 'Landline number', 'Numero di telefono fisso')
+
+
+

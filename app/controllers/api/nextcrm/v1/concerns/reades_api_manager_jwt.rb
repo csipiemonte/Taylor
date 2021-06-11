@@ -2,12 +2,36 @@ module Api::Nextcrm::V1::Concerns::ReadesApiManagerJwt
   extend ActiveSupport::Concern
 
   included do
-    before_action :check_apiman_jwt
+    # normalmente sarebbe una basic_auth, che non scatenerebbe il controllo del csfr
+    # facendo set del current_user (virtual operator) l'autenticazione sembra provenire da sessione, e da errore il CSFR
+    skip_before_action  :verify_csrf_token
+    # prepend mette in cima alla lista di azioni
+    prepend_before_action :check_apiman_jwt
   end
 
 
 
   def check_apiman_jwt
+    # check_apiman_jwt viene eseguito come prima action, facendo autenticazione api manager user
+    # e sostituzione con utente virtual operator. le successive chiamate di autenticazione e autorizzqzione
+    # saranno effettuate sul virtual operator
+
+
+    # check http basic based authentication
+    authenticate_with_http_basic do |username, password|
+      request.session_options[:skip] = true # do not send a session cookie
+      logger.debug { "http basic auth check '#{username}'" }
+      if Setting.get('api_password_access') == false
+        raise Exceptions::NotAuthorized, 'API password access disabled!'
+      end
+
+      user = User.authenticate(username, password)
+      # return authentication_check_prerequesits(user, 'basic_auth', auth_param) if user
+      unless user.permissions?("api_manager")
+        raise Exceptions::NotAuthorized, "user #{username} must have permission 'api_manager'"
+      end
+    end
+
     logger.debug " api apimanager jwt ---->  #{request.headers["X-JWT-Assertion"]} "
 
     # return if params[:debug]
@@ -50,6 +74,7 @@ module Api::Nextcrm::V1::Concerns::ReadesApiManagerJwt
     app_user = User.find_by(email: "#{application_name}@csi.it")
     if app_user
       current_user_set(app_user, "basic_auth")
+      user_device_log(app_user, "basic_auth")
       logger.debug { "current user setted to #{current_user.email} " }
     else
       Rails.logger.error{"user not found with X-JWT-Assertion http://wso2.org/claims/applicationname: #{application_name}"}

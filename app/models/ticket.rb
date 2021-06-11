@@ -1009,6 +1009,9 @@ perform changes on ticket
       case key
       when 'external_activity.new_activity'
         create_external_activity(value)
+        next
+      when 'external_activity.upd_activity'
+        update_external_activity(value)
       end
     end
     # custom CSI external activity -- end
@@ -1025,7 +1028,7 @@ perform active triggers on ticket
 =end
 
   def self.perform_triggers(ticket, article, item, options = {}, external_activity)
-    logger.info { "perform_triggers - item #{item}), options #{options}" }
+    logger.info { "perform_triggers - item #{item}), options #{options}, external_activity #{external_activity}" }
     # per ExternalActivity la riga di log produce (ad esempio)
     # item : {:object=>"ExternalActivity", :object_id=>1, :user_id=>1, :created_at=>Mon, 07 Jun 2021 09:36:27 UTC +00:00,
     # :type=>"update", :changes=>{"bidirectional_alignment"=>[true, false]}
@@ -1091,24 +1094,6 @@ perform active triggers on ticket
           one_has_changed_done = true
         end
 
-        # custom csi - check if one external_activity attribute is used
-        # nel loop sottostante si verifica che:
-        # 1. la condition del trigger i-esimo abbia una 'external_activity'
-        # 2. l'oggetto sulla quale e' stata osservata la transaction e' una External A
-        external_activity_selector = false
-        trigger.condition.each_key do |key|
-          (object_name, attribute) = key.split('.', 2)
-          next if object_name != 'external_activity'
-
-          external_activity_selector = true
-        end
-        if external_activity && external_activity_selector
-          one_has_changed_done = true
-        end
-        if external_activity && type == 'update'
-          one_has_changed_done = true
-        end
-
         # check ticket "has changed" options
         has_changed_done = true
         condition.each do |key, value|
@@ -1156,8 +1141,16 @@ perform active triggers on ticket
 
             one_has_changed_condition = true
             next if item[:changes].blank?
-            next if !item[:changes].key?(attribute) # item[:changes] contiene i cambiamenti sul record, ad esempio item[:changes] => {"bidirectional_alignment"=>[true, false]
 
+            # item[:changes] contiene i cambiamenti sul record
+            # ad esempio item[:changes] => {"bidirectional_alignment"=>[true, false]
+            # quindi per ticket l'attributo della condition deve coincidere con il valore della chiave presente in changes
+            if object_name == 'ticket'
+              next if !item[:changes].key?(attribute)
+            elsif object_name == 'external_activity'
+              # per external_activity si prendono in considerazione solo le variazioni su colonna 'data'
+              next if !item[:changes].key?('data')
+            end
             one_has_changed_done = true
             break
           end
@@ -1189,17 +1182,22 @@ perform active triggers on ticket
                end
 
         if item[:object] == 'ExternalActivity'
-          next if item[:changes] != 'data'
-          next if condition['external_activity.system'].value != external_activity.external_ticketing_system_id
+          next if !condition.key?('external_activity.system') # CSI custom
 
-          # TODO
-          # - verifica che external_ticketing_system_id sia uguale a quella presente nel condition
-          # - prelievo delle altre condition (state, etc)
-          # - verifica presenza degli altri parametri di condition in external_activity.data
-          # - verifica che il valore presente in condition coincida con il valore del parametro corrispondente in external_activity.data
+          ext_act_system = condition['external_activity.system']
+          ext_act_system_id = ext_act_system['value'].to_i
+          next if ext_act_system_id != external_activity.external_ticketing_system_id
 
-          # se i prerequisiti sono soddisfatti si chiama il trigger perform ()
+          ext_act_data = external_activity.data
 
+          # prelievo dei campi dalla condition
+          model_param_name = ext_act_system['model_param_name'] # nome del parametro del model inserito nella condition
+          model_param_value = ext_act_system['model_param_value'] # valore di confronto inserito nella condition
+
+          next if !ext_act_data.key?(model_param_name) # skip se i data della external activity non contengono il parametro della condition
+          next if ext_act_data[model_param_name] != model_param_value # skip se il parametro in data non coincide con il valore di confronto presente nella condition
+
+          logger.info { "Satisfied external_activity condition (#{condition}) for this object (ExternalActivity:#{external_activity}), perform action on (Ticket:#{ticket.id})" }
         else
           next if condition.key?('external_activity.system') # CSI custom
 
@@ -1752,14 +1750,6 @@ result
   # A fronte di una determinata condizione sul ticket si procede con la
   # creazione di una external activity
   def create_external_activity(ext_act_perform)
-    # provvisorio inizio - far fare scattare l'observer su external activity
-    # tmp_ext_act = ExternalActivity.find_by(id: 1)
-    # tmp_data = tmp_ext_act.data
-    # tmp_data['state'] = 'closedd'
-    # tmp_ext_act.data = tmp_data
-    # tmp_ext_act.save!
-    # provvisorio fine - far fare scattare l'observer su external activity
-
     logger.info { "create_external_activity - Perform external activity #{ext_act_perform.inspect} on Ticket.find(#{id})" }
 
     ext_act_system = ext_act_perform['system']
@@ -1786,7 +1776,7 @@ result
         core_field_values[key] = title # campo 'title' di ticket
         next
       when 'body'
-        core_field_values[key] = articles.first.body
+        core_field_values[key] = ActionController::Base.helpers.strip_tags(articles.first.body)
       end
     end
 
@@ -1794,13 +1784,79 @@ result
       ext_act_perform[key] = value
     end
 
+    # Campi utilizzati per la categorizzazione su sistemi esterni (ad esempio, Remedy)
+    # non e' possibile usare l'id come value perche' e' riferito al DB,
+    # si deve impiegare il name
+    ext_act_system_model = ExternalTicketingSystem.find_by(id: ext_act_system).model
+    ext_act_system_model.each_value do |value|
+      next if !value.key?('select')
+      next if !value['select'].key?('service')
+
+      fld_name = value['name']
+      upd_value = nil
+      if fld_name == 'service_catalog'
+        upd_value = ServiceCatalogItem.find_by(id: ext_act_perform[fld_name]).name
+      elsif fld_name == 'service_catalog_sub_item'
+        upd_value = ServiceCatalogSubItem.find_by(id: ext_act_perform[fld_name]).name
+      elsif fld_name == 'asset'
+        upd_value = Asset.find_by(id: ext_act_perform[fld_name]).name
+      end
+
+      ext_act_perform[fld_name] = upd_value if !upd_value.nil?
+    end
+
     ExternalActivity.create(
       external_ticketing_system_id: ext_act_system,
       ticket_id:                    id,
       data:                         ext_act_perform,
       bidirectional_alignment:      true,
-      updated_by_id: 1,
-      created_by_id: 1,
+      updated_by_id:                1,
+      created_by_id:                1,
     )
+  end
+
+  # CSI custom external activity
+  # A fronte di una determinata condizione sul ticket si procede con
+  # l'aggiornamento di una external activity
+  def update_external_activity(ext_act_perform)
+    logger.info { "update_external_activity - Perform external activity #{ext_act_perform.inspect} on Ticket.find(#{id})" }
+
+    ext_act_system = ext_act_perform['system']
+
+    # verifica che ci sia gia' una external activity associata al tk in questione per l'activity system 'ext_act_system'
+    ext_activity = ExternalActivity.find_by(external_ticketing_system_id: ext_act_system, ticket_id: id)
+    return if !ext_activity
+
+    comment_field = nil
+    ext_act_system_model = ExternalTicketingSystem.find_by(id: ext_act_system).model
+    ext_act_system_model.each_value do |value|
+      next if !value.key?('type')
+      next if value['type'] != 'comment'
+
+      comment_field = value
+      break
+    end
+    return if comment_field.nil?
+
+    comment_text = if !ext_act_perform.key?('comment_from_article')
+                     ext_act_perform['static_comment']
+                   else
+                     ActionController::Base.helpers.strip_tags(articles.last.body)
+                   end
+
+    ext_activity_data = ext_activity.data
+    if ext_activity_data.key?(comment_field['name'])
+      comment_hash = ext_activity_data[comment_field['name']]
+      new_comment_key = comment_hash.keys.length.to_s
+    else
+      comment_hash = {}
+      new_comment_key = '0'
+    end
+
+    comment_hash[new_comment_key] = { 'external': false, 'text': comment_text }
+    ext_activity_data[comment_field['name']] = comment_hash
+
+    ext_activity.data = ext_activity_data
+    ext_activity.save!
   end
 end

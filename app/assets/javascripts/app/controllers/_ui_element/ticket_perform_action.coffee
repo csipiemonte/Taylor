@@ -33,7 +33,8 @@ class App.UiElement.ticket_perform_action
         else if groupKey is 'article'
           elements["#{groupKey}.note"] = { name: 'note', display: 'Note' }
         else if groupKey is 'external_activity'
-          elements["#{groupKey}.new_activity"] = { name: 'new_activity', display: 'New Activity' }
+          elements["#{groupKey}.new_activity"] = { name: 'new_activity', display: 'Nuova attività' }
+          elements["#{groupKey}.upd_activity"] = { name: 'upd_activity', display: 'Aggiorna attività' }
       else
 
         for row in App[groupMeta.model].configure_attributes
@@ -584,24 +585,28 @@ class App.UiElement.ticket_perform_action
 
         elementRow.find('.js-setExternalActivity').removeClass('hide')
 
-        @fetchExternalSystemModel(elementRow, systemSelectionValue, name, meta)
+        @fetchExternalSystemModel(elementRow, systemSelectionValue, externalActivityType, name, meta)
 
         systemSelection.change ->
           extSysSel = elementRow.find('[name="' + name + '::system"] option:selected').val()
-          instance.fetchExternalSystemModel(elementRow, extSysSel, name, meta)
+          instance.fetchExternalSystemModel(elementRow, extSysSel, externalActivityType, name, meta)
     )
 
   # extActSystemId: id del external activity system selezionato
   # name: prefisso del parametro, tipo 'perform::external_activity.new_activity'
   # meta: contiene - in edit - i dati inseriti in precedenza nei parametri di input
-  @fetchExternalSystemModel: (elementRow, extActSystemId, name, meta) =>
+  @fetchExternalSystemModel: (elementRow, extActSystemId, externalActivityType, name, meta) =>
     apiPath = App.Config.get('api_path')
     App.Ajax.request(
       type:  'GET'
       url:   "#{apiPath}/external_ticketing_system/#{extActSystemId}"
       async: false
       success: (data, status, xhr) =>
-        @buildFieldsExtActArea(elementRow, data.model, name, meta)
+        elementRow.find('.js-setExternalActivityContent').html('').addClass('hide')
+        if externalActivityType == 'new_activity'
+          @buildFieldsExtActArea(elementRow, data.model, name, meta)
+        else
+          @buildFieldsExtActComment(elementRow, data.model, name, meta)
     )
 
   # metodo per popolare con le options corrette i campi di tipo 'select'
@@ -613,7 +618,17 @@ class App.UiElement.ticket_perform_action
     selectParentsValue = {}
 
     $.each model, (key, field) ->
-      console.log('key', key)
+      console.log('model key', key)
+      console.log('model field', field)
+      # Attenzione: per la perform new_activity di trigger, a fronte del prelievo del
+      # model associato all'i-esimo tickenting system, il form è popolato solo con i
+      # parametri con "send_only=true" e "receive_only=false" perché per new_activity il flusso
+      # è di sola spedizione da zammad verso l'external ticketing system.
+      if (field['send_only'] != undefined && field['send_only'] == false)
+        return true
+      if (field['receive_only'] != undefined && field['receive_only'] == true)
+        return true
+
       requiredFld = false
       if field['required'] != undefined && field['required'] == true
         requiredFld = true
@@ -627,9 +642,6 @@ class App.UiElement.ticket_perform_action
       if requiredFld
         labelDiv += ' <span>*</span>'
       labelDiv += '</label></div>'
-
-      if (field['receive_only'] != undefined && field['receive_only'] == true)
-        return true
 
       if (field['type'] != undefined && field['type'] == 'text')
         typeFld = field['type']
@@ -743,6 +755,56 @@ class App.UiElement.ticket_perform_action
                 $(o).html(option['name'])
                 selectChildFld.append(o)
           )
+
+  @buildFieldsExtActComment: (elementRow, model, name, meta) ->
+    commentModelField = undefined
+
+    $.each model, (key, field) ->
+      if field['type'] != 'comment'
+        return true
+
+      commentModelField = field
+      return false # break
+
+    if commentModelField == undefined
+      return
+
+    commentFldName = "#{name}::static_comment"
+    labelDiv = '<div class="formGroup-label"><label for="' + commentFldName + '">Testo commento</label></div>'
+
+    commentFld = App.UiElement.input.render(
+      id: commentFldName
+      name: commentFldName
+      type: 'text'
+      value: meta['static_comment'] || ''
+      required: true
+      disabled: meta['comment_from_article'] || false
+    )
+    extActContentHtml = '<div class="form-group">' + labelDiv + commentFld.prop('outerHTML') + '</div>'
+
+    checked = false
+    if meta['comment_from_article'] != undefined
+      checked = true
+    checkboxFldName = "#{name}::comment_from_article"
+    checkboxField = '<input type="checkbox" name="' + checkboxFldName + '" value="true"'
+    if checked
+      checkboxField += ' checked'
+    checkboxField += '/>'
+
+    extActContentHtml += '<div class="form-group">' + checkboxField + ' Importa dato da richiesta</div>'
+
+    # inserimento nel div del codice HTML contenente i parametri del model
+    elementRow.find('.js-setExternalActivityContent').html(extActContentHtml).removeClass('hide')
+
+    @clickListenerOnCommentCheckBox(elementRow, commentFldName, checkboxFldName)
+
+  @clickListenerOnCommentCheckBox: (elementRow, commentFldName, checkboxFldName) ->
+    elementRow.find('[name="' + checkboxFldName + '"]').click ->
+      commentFldElem = elementRow.find('[name="' + commentFldName + '"]')
+      if elementRow.find('[name="' + checkboxFldName + '"]').prop('checked') == true
+        commentFldElem.attr('disabled', true)
+      else
+        commentFldElem.attr('disabled', false)
 
   @humanText: (condition) ->
     none = App.i18n.translateContent('No filter.')

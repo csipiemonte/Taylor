@@ -1,4 +1,4 @@
-class Api::Nextcrm::V1::TicketsController < ::TicketsController
+class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
   include Api::Nextcrm::V1::Concerns::ReadesApiManagerJwt
   include Api::Nextcrm::V1::Concerns::Filterable
 
@@ -212,6 +212,12 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
       updated_at 
       create_article_type 
       create_article_sender
+      external_activities
+
+      additional_info
+      notification_email
+      recall_phone
+
     ].to_set
 
     # whitelist
@@ -233,6 +239,14 @@ class Api::Nextcrm::V1::TicketsController < ::TicketsController
     if ticket["asset_id"] 
       ticket["asset"] = all_assets[ticket["asset_id"]]
     end
+  end
+
+  def handle_user_on_create
+    customer = params[:customer]
+    return false unless customer.is_a? Hash
+    raise Exceptions::UnprocessableEntity, "Need at least customer: { email: \"<string>\"} " unless customer.email
+
+    
   end
 
   
