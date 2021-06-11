@@ -1776,7 +1776,7 @@ result
         core_field_values[key] = title # campo 'title' di ticket
         next
       when 'body'
-        core_field_values[key] = articles.first.body
+        core_field_values[key] = ActionController::Base.helpers.strip_tags(articles.first.body)
       end
     end
 
@@ -1819,7 +1819,7 @@ result
   # A fronte di una determinata condizione sul ticket si procede con
   # l'aggiornamento di una external activity
   def update_external_activity(ext_act_perform)
-    logger.info { "create_external_activity - Perform external activity #{ext_act_perform.inspect} on Ticket.find(#{id})" }
+    logger.info { "update_external_activity - Perform external activity #{ext_act_perform.inspect} on Ticket.find(#{id})" }
 
     ext_act_system = ext_act_perform['system']
 
@@ -1841,7 +1841,7 @@ result
     comment_text = if !ext_act_perform.key?('comment_from_article')
                      ext_act_perform['static_comment']
                    else
-                     articles.last.body
+                     ActionController::Base.helpers.strip_tags(articles.last.body)
                    end
 
     ext_activity_data = ext_activity.data
