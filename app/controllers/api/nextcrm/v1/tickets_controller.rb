@@ -108,10 +108,7 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
       # sender_id di default viene valorizzato a 1 (Agent) e in questo caso app/models/observer/reset_new_state.rb setta lo state_id a 2 (aperto)
       params[:article][:sender_id] = 2 # indica che il testo del ticket (article) e'stato creato da un Customer
     end
-    if params[:ticket] and params[:ticket][:customer]
-      # "guess" for autocreate works only in customer_id field 
-      params[:ticket][:customer_id] = "guess:#{params[:ticket][:customer_id]}"
-    end
+    handle_user_on_create()
     super
     alterTicketAttributesInResponse()
   end
@@ -243,10 +240,39 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
 
   def handle_user_on_create
     customer = params[:customer]
-    return false unless customer.is_a? Hash
-    raise Exceptions::UnprocessableEntity, "Need at least customer: { email: \"<string>\"} " unless customer.email
+    raise Exceptions::UnprocessableEntity, "Need at least customer: { email: \"<string>\"} " unless customer && customer['email']
 
-    
+    # se utente verificato
+    if params[:utente_riconosciuto] == 1
+      # controllo esistenza utente
+      user = User.find_by(codice_fiscale: customer['codice_fiscale']) if customer['codice_fiscale']
+      #### TODO linked email
+      user = User.find_by(email: customer['email']) unless user
+
+      # se utente esiste
+      if user
+        # aggiorno "dati verificati" sul db. zammad lo riconoscerà come utente destinatario del ticket
+        user.verified_data = true
+        user.firstname = customer[:firstname]
+        user.lastname = customer[:lastname]
+        user.phone = customer[:phone]
+        user.email = customer[:email]
+        user.save! # scatta exception se non va a buon fine
+
+
+      # se utente non esiste
+      else
+        # aggiorno i params in modo che lo user venga creato con flag "dati verificati"
+        customer['verified_data'] = true
+
+      end
+
+      
+    # se utente aninimo / non verificato
+    else
+      # TODO
+    end
+
   end
 
   
