@@ -164,6 +164,8 @@ class ExternalActivity extends App.Controller
           instance.addOption(selectField, option)
         if field["select"]["service"] != undefined
           instance.fetchOptionValues(field,selectField,null,activity)
+        if field["default"] != undefined
+          instance.setOptionValue(selectField,field["default"])
         if activity != null && activity.data[field["name"]]
           instance.setOptionValue(selectField,activity.data[field["name"]])
         if field["select"]["parent"] != undefined
@@ -229,6 +231,8 @@ class ExternalActivity extends App.Controller
         selectField.empty().append('<option value>-</option>')
         data.forEach (option) =>
           cb(selectField,option)
+        if field["default"] != undefined
+          @.setOptionValue(selectField,field["default"])
         if activity != null && activity.data[field["name"]]
           @.setOptionValue(selectField,activity.data[field["name"]])
     )

@@ -52,6 +52,7 @@ remedy_model = {
     'required':  true,
     'name':     'impatto',
     'label':    'impatto',
+    'default':  'Moderato/Limitato',
     'select' => {
       'options' => {
         '1' => { 'id': 'Minimo/Localizzato', 'name': 'Minimo/Localizzato' },
@@ -65,6 +66,7 @@ remedy_model = {
     'required': true,
     'name':     'urgenza',
     'label':    'urgenza',
+    'default':  'Media',
     'select' => {
       'options' => {
         '1' => { 'id': 'Bassa', 'name': 'Bassa' },
@@ -78,9 +80,11 @@ remedy_model = {
       'required': true,
       'name':'tipologia',
       'label':'tipologia',
+      'default':'Ripristino di servizio utente',
       'select' => {
           'options' => {
               '1' => {'id':'Ripristino di servizio utente', 'name':'Ripristino di servizio utente'},
+              '2' => {'id':'Richiesta utente', 'name':'Richiesta utente'},
           }
       }
   },
