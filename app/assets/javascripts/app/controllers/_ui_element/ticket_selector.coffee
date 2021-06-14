@@ -374,6 +374,23 @@ class App.UiElement.ticket_selector
     )
     elementRow.find('.js-external-activity-condition-value').html(inputFld).removeClass('hide')
 
+    # da qui in poi logica per nascondere il campo '::model_param_value' in caso di parametro di tipo 'comment' selezionato
+    commentFldName = undefined
+    $.each model, (key, field) ->
+      if field['type'] == 'comment'
+        commentFldName = field['name']
+        return false
+
+    if commentFldName == undefined
+      return
+
+    selectField.change ->
+      selectFieldValue = elementRow.find('[name="' + selectName + '"] option:selected').val()
+      if (selectFieldValue == commentFldName)
+        elementRow.find('.js-external-activity-condition-value').html('Aggiornato')
+      else
+        elementRow.find('.js-external-activity-condition-value').html(inputFld)
+
   @buildOperator: (elementFull, elementRow, groupAndAttribute, elements, meta, attribute) ->
     currentOperator = elementRow.find('.js-operator option:selected').attr('value')
 
