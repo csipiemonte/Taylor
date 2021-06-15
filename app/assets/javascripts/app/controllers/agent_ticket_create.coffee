@@ -406,34 +406,7 @@ class App.TicketCreate extends App.Controller
     # update taskbar with new meta data
     App.TaskManager.touch(@taskKey)
 
-    setTimeout @setCategorizationValues, 500
-
     @tokanice()
-
-  setCategorizationValues: =>
-    categories = App.Config.get("categories")
-
-    sc_selector = @$('select[name="service_catalog_item_id"]')
-    scs_selector = @$('select[name="service_catalog_sub_item_id"]')
-    as_selector = @$('select[name="asset_id"]')
-
-    @fillOptions(sc_selector,categories.service_catalog_items)
-    @fillOptions(scs_selector,categories.service_catalog_sub_items)
-    @fillOptions(as_selector,categories.assets)
-    callback = @fillOptions
-
-    sc_selector.change ->
-      selected = @.value
-      children = categories.service_catalog_sub_items.filter (value) -> not selected || parseInt(value["parent_service"]) == parseInt(selected)
-      callback(scs_selector,children)
-
-  fillOptions: (elem, array) ->
-    elem.empty().append('<option value>-</option>')
-    $.each array, (index,value) ->
-      o = new Option(value["name"], value["id"])
-      $(o).html(value["name"])
-      elem.append(o)
-
 
   toggleButton: (event) ->
     @$(event.currentTarget).toggleClass('btn--active')

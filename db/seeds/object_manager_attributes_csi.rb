@@ -9,13 +9,13 @@ ObjectManager::Attribute.add(
   name:        'birthdate',
   display:     'Data di Nascita',
   data_type:   'date',
-  data_option:  {    
+  data_option:  {
     future:      false,
-    past:        true, 
-    "diff"=>24, 
-    "default"=>nil, 
-    "null"=>true, 
-    "options"=>{}, 
+    past:        true,
+    "diff"=>24,
+    "default"=>nil,
+    "null"=>true,
+    "options"=>{},
     "relation"=>"",
     item_class: 'formGroup--halfSize',
   },
@@ -302,8 +302,8 @@ ObjectManager::Attribute.add(
   display:     'Service Catalog',
   data_type:   'select',
   data_option: {
-    default:        '',
-    options: {},
+    default:    nil,
+    options: ServiceCatalogItem.all.map { |sc| [sc.id, sc.name] }.to_h,
     autocapitalize: false,
     multiple:       false,
     guess:          true,
@@ -324,7 +324,7 @@ ObjectManager::Attribute.add(
     },
     'edit' => {
       'ticket.agent' => {
-        'shown' => false,
+        'shown' => true,
         'required' => false
       }
     }
@@ -342,8 +342,8 @@ ObjectManager::Attribute.add(
   display:     'Service Catalog Sub Item',
   data_type:   'select',
   data_option: {
-    default:        '',
-    options: {},
+    default:    nil,
+    options: ServiceCatalogSubItem.all.map { |scs| [scs.id, scs.name] }.to_h,
     autocapitalize: false,
     multiple:       false,
     guess:          true,
@@ -364,7 +364,7 @@ ObjectManager::Attribute.add(
     },
     'edit' => {
       'ticket.agent' => {
-        'shown' => false,
+        'shown' => true,
         'required' => false
       }
     }
@@ -382,8 +382,8 @@ ObjectManager::Attribute.add(
   display:     'Asset',
   data_type:   'select',
   data_option: {
-    default:        '',
-    options: {},
+    default:    nil,
+    options: Asset.all.map { |a| [a.id, a.name] }.to_h,
     autocapitalize: false,
     multiple:       false,
     guess:          true,
@@ -404,7 +404,7 @@ ObjectManager::Attribute.add(
     },
     'edit' => {
       'ticket.agent' => {
-        'shown' => false,
+        'shown' => true,
         'required' => false
       }
     }

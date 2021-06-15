@@ -35,7 +35,6 @@ class App.TicketZoomSidebar extends App.ObserverController
           markForm: @markForm
           tags:     @tags
           links:    @links
-          categorization: @categorization
         )
       else
         @sidebarBackends[key].reload(
@@ -45,7 +44,6 @@ class App.TicketZoomSidebar extends App.ObserverController
           markForm: @markForm
           tags:     @tags
           links:    @links
-          categorization: @categorization
         )
       @sidebarItems.push @sidebarBackends[key]
 
@@ -54,4 +52,3 @@ class App.TicketZoomSidebar extends App.ObserverController
       sidebarState: @sidebarState
       items:        @sidebarItems
     )
-
