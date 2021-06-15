@@ -1195,7 +1195,34 @@ perform active triggers on ticket
           model_param_value = ext_act_system['model_param_value'] # valore di confronto inserito nella condition
 
           next if !ext_act_data.key?(model_param_name) # skip se i data della external activity non contengono il parametro della condition
-          next if ext_act_data[model_param_name] != model_param_value # skip se il parametro in data non coincide con il valore di confronto presente nella condition
+
+          model_field_type = nil
+          ext_act_system_model = ExternalTicketingSystem.find_by(id: external_activity.external_ticketing_system_id).model
+          ext_act_system_model.each_value do |value|
+            next if !value.key?('name') || !value.key?('type')
+            next if value['name'] != model_param_name
+
+            model_field_type = value['type']
+            break
+          end
+
+          next if model_field_type.nil?
+
+          if model_field_type != 'comment'
+            next if ext_act_data[model_param_name] != model_param_value # skip se il parametro in data non coincide con il valore di confronto presente nella condition
+          else
+            # il campo ':changes di item e' cosi' composto
+            # :changes=>{ "data"=>[ { "commento"=>{"0"=>{"external"=>false, "text"=>"upupa"}, "1"=>{"external"=>false, "text"=>"upupa"}, "2"=>{"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, "3"=>{"external"=>false, "text"=>"nuova nota per strip_tags"}}
+            # }, { "commento"=>{"0"=>{"external"=>false, "text"=>"upupa"}, "1"=>{"external"=>false, "text"=>"upupa"}, "2"=>{"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, "3"=>{"external"=>false, "text"=>"nuova nota per strip_tags"}, "4"=>"commento_264"}}], "updated_by_id"=>[1, 5]}}
+            # cioe' la chiave 'data' corrisponde ad un array nella cui posizione 0 ci sono gli elementi prima della modifica
+            # mentre nella posizione 1 c'e' un hash dopo la modifica
+            item_changes_data = item[:changes]['data']
+            comment_pre = item_changes_data[0][model_param_name]
+            comment_post = item_changes_data[1][model_param_name]
+            next if comment_pre.keys.length == comment_post.keys.length # il campo modificato in 'data' e' un altro perche' le due hash di commento hanno lo stesso numero di chiavi
+
+            next if comment_post[(comment_post.keys.length - 1).to_s]['external'] == false # passo oltre se l'ultimo commento inserito non e' esterno a zammad
+          end
 
           logger.info { "Satisfied external_activity condition (#{condition}) for this object (ExternalActivity:#{external_activity}), perform action on (Ticket:#{ticket.id})" }
         else

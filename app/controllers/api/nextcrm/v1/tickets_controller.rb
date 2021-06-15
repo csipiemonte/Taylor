@@ -246,8 +246,17 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
     if params[:utente_riconosciuto] == 1
       # controllo esistenza utente
       user = User.find_by(codice_fiscale: customer['codice_fiscale']) if customer['codice_fiscale']
-      #### TODO linked email
-      user = User.find_by(email: customer['email']) unless user
+
+      if not user
+        linked_authorization = Authorization.where(email: value).last
+        if linked_authorization
+          user = User.where(id: linked_authorization.user_id).last
+        end
+      end
+
+      if not user 
+        user = User.find_by(email: customer['email']) 
+      end
 
       # se utente esiste
       if user
@@ -258,19 +267,21 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
         user.phone = customer[:phone]
         user.email = customer[:email]
         user.save! # scatta exception se non va a buon fine
-
-
       # se utente non esiste
       else
         # aggiorno i params in modo che lo user venga creato con flag "dati verificati"
         customer['verified_data'] = true
-
       end
-
       
     # se utente aninimo / non verificato
     else
-      # TODO
+      customer['verified_data'] = false
+      
+      params[:not_verified_user_firstname] = customer[:firstname]
+      params[:not_verified_user_lastname] = customer[:lastname]
+      params[:not_verified_user_codice_fiscale] = customer[:codice_fiscale]
+      params[:not_verified_user_mobile] = customer[:mobile]
+      params[:not_verified_user_phone] = customer[:phone]
     end
 
   end

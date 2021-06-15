@@ -2,13 +2,13 @@ class ExternalActivityController < ApplicationController
 
   prepend_before_action { authentication_check && authorize! }
 
-
   def index_external_activity
-    return if not params[:ticketing_system_id]
-    external_activities = ExternalActivity.where(external_ticketing_system_id:params[:ticketing_system_id])
-    external_activities = external_activities.where(archived: params[:archived]) if params[:archived].present? && params[:archived] != ""
-    external_activities = external_activities.where(delivered: params[:delivered]) if params[:delivered].present? && params[:delivered] != ""
-    external_activities = external_activities.where(ticket_id: params[:ticket_id]) if params[:ticket_id].present? && params[:ticket_id] != ""
+    return if !params[:ticketing_system_id]
+
+    external_activities = ExternalActivity.where(external_ticketing_system_id: params[:ticketing_system_id])
+    external_activities = external_activities.where(archived: params[:archived]) if params[:archived].present? && params[:archived] != ''
+    external_activities = external_activities.where(delivered: params[:delivered]) if params[:delivered].present? && params[:delivered] != ''
+    external_activities = external_activities.where(ticket_id: params[:ticket_id]) if params[:ticket_id].present? && params[:ticket_id] != ''
     render json: external_activities
   end
 
@@ -37,9 +37,10 @@ class ExternalActivityController < ApplicationController
     external_activity = ExternalActivity.find_by(id: params[:id])
     external_activity.data = params[:data] if params[:data].present? && external_activity.data != params[:data]
     external_activity.archived = stop_monitoring? external_activity
-    external_activity.delivered = params[:delivered] if params[:delivered]!=nil
-    if params[:needs_attention]!=nil
     external_activity.delivered = params[:delivered] if !params[:delivered].nil?
+    if !params[:needs_attention].nil?
+      external_activity.delivered = params[:delivered] if !params[:delivered].nil?
+    end
 
     if !params[:needs_attention].nil?
       external_activity.needs_attention = params[:needs_attention]
@@ -62,9 +63,11 @@ class ExternalActivityController < ApplicationController
 
   def stop_monitoring? (external_activity)
     stop_monitoring = false
-    system = ExternalTicketingSystem.find_by(id:external_activity.external_ticketing_system_id)
-    system.model.each do |index,field|
-      if field["stop_monitoring"] && field["stop_monitoring"].include?(external_activity.data[field["name"]])
+    system = ExternalTicketingSystem.find_by(id: external_activity.external_ticketing_system_id)
+    system.model.each do |_index, field|
+      next if !field['stop_monitoring']
+
+      if field['stop_monitoring'].include?(external_activity.data[field['name']])
         stop_monitoring = true
       end
     end
@@ -90,5 +93,4 @@ class ExternalActivityController < ApplicationController
     external_ticketing_system.save!
     render json: external_ticketing_system
   end
-
 end
