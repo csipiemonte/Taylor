@@ -103,7 +103,10 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
     
     if params[:article] 
       if not params[:article][:type_id]
-        raise Exceptions::UnprocessableEntity, "Need at least article: { type_id: \"<id>\" "
+        raise Exceptions::UnprocessableEntity, "Need at least article: { type_id: \"<integer>\"} "
+      end
+      if not params[:article][:from]
+        raise Exceptions::UnprocessableEntity, "Need at least article: { from: \"<string>\"} "
       end
       # sender_id di default viene valorizzato a 1 (Agent) e in questo caso app/models/observer/reset_new_state.rb setta lo state_id a 2 (aperto)
       params[:article][:sender_id] = 2 # indica che il testo del ticket (article) e'stato creato da un Customer
@@ -248,7 +251,7 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
       user = User.find_by(codice_fiscale: customer['codice_fiscale']) if customer['codice_fiscale']
 
       if not user
-        linked_authorization = Authorization.where(email: value).last
+        linked_authorization = Authorization.where(email: customer['email']).last
         if linked_authorization
           user = User.where(id: linked_authorization.user_id).last
         end
@@ -262,10 +265,20 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
       if user
         # aggiorno "dati verificati" sul db. zammad lo riconoscerà come utente destinatario del ticket
         user.verified_data = true
-        user.firstname = customer[:firstname]
-        user.lastname = customer[:lastname]
-        user.phone = customer[:phone]
-        user.email = customer[:email]
+        user.firstname = customer[:firstname] if customer[:firstname]
+        user.lastname = customer[:lastname] if customer[:lastname]
+        user.phone = customer[:phone] if customer[:phone]
+        user.email = customer[:email] if customer[:email]
+        user.fax = customer[:fax] if customer[:fax]
+        user.mobile = customer[:mobile] if customer[:mobile]
+        user.note = customer[:note] if customer[:note]
+        user.codice_fiscale = customer[:codice_fiscale] if customer[:codice_fiscale]
+        user.codice_fiscale = customer[:birthdate] if customer[:birthdate]
+        user.codice_fiscale = customer[:city] if customer[:city]
+        user.codice_fiscale = customer[:country] if customer[:country]
+        user.codice_fiscale = customer[:street] if customer[:street]
+        user.codice_fiscale = customer[:zip] if customer[:zip]
+
         user.save! # scatta exception se non va a buon fine
       # se utente non esiste
       else

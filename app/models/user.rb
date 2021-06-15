@@ -34,9 +34,6 @@ class User < ApplicationModel
 
   # CSI validations
   before_validation -> { ensure_uniq_attribute('codice_fiscale','Codice Fiscale') }
-  before_validation -> { ensure_uniq_attribute('tessera_team','Tessera TEAM') }
-  before_validation -> { ensure_uniq_attribute('tessera_stp','Tessera STP') }
-  before_validation -> { ensure_uniq_attribute('tessera_eni','Tessera ENI') }
 
   store :preferences
 
@@ -1281,7 +1278,7 @@ raise 'Minimum one user need to have admin permissions'
     return true if self[attribute_name].blank?
     return true if !changes
     return true if !changes[attribute_name]
-    return true if !User.exists?(tessera_eni: self[attribute_name].strip)
+    return true if !User.exists?("#{attribute_name}": self[attribute_name].strip)
     raise Exceptions::UnprocessableEntity, "#{attribute_display_name} '#{self[attribute_name].strip}' is already used for other user."
   end
 
