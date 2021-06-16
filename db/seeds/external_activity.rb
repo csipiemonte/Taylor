@@ -21,7 +21,7 @@ remedy_model = {
   },
   '2'  => {
     'required':   true,
-    'type':       'text',
+    'type':       'textarea',
     'name':       'dettaglio',
     'label':      'dettaglio',
     'core_field': 'body'
