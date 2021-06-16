@@ -872,7 +872,7 @@ perform changes on ticket
 =end
 
   # perform: attributo perform della tabella trigger
-  def perform_changes(perform, perform_origin, item = nil, current_user_id = nil)
+  def perform_changes(perform, perform_origin, item = nil, current_user_id = nil, ext_activity_comment = nil)
     logger.info { "perform_changes - Perform #{perform_origin} #{perform.inspect} on Ticket.find(#{id})" }
 
     article = begin
@@ -973,22 +973,42 @@ perform changes on ticket
     end
 
     perform_article.each do |key, value|
-      raise 'Unable to create article, we only support article.note' if key != 'article.note'
+      raise 'Unable to create article, we only support article.note and article.note_ext_act' if key != 'article.note' && key != 'article.note_ext_act'
 
-      Ticket::Article.create!(
-        ticket_id:     id,
-        subject:       value[:subject],
-        content_type:  'text/html',
-        body:          value[:body],
-        internal:      value[:internal],
-        sender:        Ticket::Article::Sender.find_by(name: 'System'),
-        type:          Ticket::Article::Type.find_by(name: 'note'),
-        preferences:   {
-          perform_origin: perform_origin,
-        },
-        updated_by_id: 1,
-        created_by_id: 1,
-      )
+      if key == 'article.note'
+        Ticket::Article.create!(
+          ticket_id:     id,
+          subject:       value[:subject],
+          content_type:  'text/html',
+          body:          value[:body],
+          internal:      value[:internal],
+          sender:        Ticket::Article::Sender.find_by(name: 'System'),
+          type:          Ticket::Article::Type.find_by(name: 'note'),
+          preferences:   {
+            perform_origin: perform_origin,
+          },
+          updated_by_id: 1,
+          created_by_id: 1,
+        )
+      else
+        # CSI custom, key = article.note_ext_act
+        next if ext_activity_comment.nil?
+
+        Ticket::Article.create!(
+          ticket_id:     id,
+          subject:       value[:subject],
+          content_type:  'text/html',
+          body:          ext_activity_comment,
+          internal:      value[:internal],
+          sender:        Ticket::Article::Sender.find_by(name: 'System'),
+          type:          Ticket::Article::Type.find_by(name: 'note'),
+          preferences:   {
+            perform_origin: perform_origin,
+          },
+          updated_by_id: 1,
+          created_by_id: 1,
+        )
+      end
     end
 
     perform_notification.each do |key, value|
@@ -1222,6 +1242,8 @@ perform active triggers on ticket
             next if comment_pre.keys.length == comment_post.keys.length # il campo modificato in 'data' e' un altro perche' le due hash di commento hanno lo stesso numero di chiavi
 
             next if comment_post[(comment_post.keys.length - 1).to_s]['external'] == false # passo oltre se l'ultimo commento inserito non e' esterno a zammad
+
+            ext_act_last_comment = comment_post[(comment_post.keys.length - 1).to_s]['text']
           end
 
           logger.info { "Satisfied external_activity condition (#{condition}) for this object (ExternalActivity:#{external_activity}), perform action on (Ticket:#{ticket.id})" }
@@ -1258,7 +1280,7 @@ perform active triggers on ticket
         local_options[:trigger_ids][ticket.id].push trigger.id
         logger.info { "Execute trigger (#{trigger.name}/#{trigger.id}) for this object (Ticket:#{ticket.id}/Loop:#{local_options[:loop_count]})" }
 
-        ticket.perform_changes(trigger.perform, 'trigger', item, user_id)
+        ticket.perform_changes(trigger.perform, 'trigger', item, user_id, ext_act_last_comment)
 
         if recursive == true
           Observer::Transaction.commit(local_options)
