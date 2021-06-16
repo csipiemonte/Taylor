@@ -242,24 +242,14 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
   end
 
   def handle_user_on_create
+
     customer = params[:customer]
     raise Exceptions::UnprocessableEntity, "Need at least customer: { email: \"<string>\"} " unless customer && customer['email']
 
     # se utente verificato
     if params[:utente_riconosciuto] == 1
       # controllo esistenza utente
-      user = User.find_by(codice_fiscale: customer['codice_fiscale']) if customer['codice_fiscale']
-
-      if not user
-        linked_authorization = Authorization.where(email: customer['email']).last
-        if linked_authorization
-          user = User.where(id: linked_authorization.user_id).last
-        end
-      end
-
-      if not user 
-        user = User.find_by(email: customer['email']) 
-      end
+      user = check_user_exists(customer)
 
       # se utente esiste
       if user
@@ -289,14 +279,45 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
     # se utente aninimo / non verificato
     else
       customer['verified_data'] = false
-      
+      # utente non riconosciuto: compilo i campi sul ticket
       params[:not_verified_user_firstname] = customer[:firstname]
       params[:not_verified_user_lastname] = customer[:lastname]
       params[:not_verified_user_codice_fiscale] = customer[:codice_fiscale]
       params[:not_verified_user_mobile] = customer[:mobile]
       params[:not_verified_user_phone] = customer[:phone]
+
+      # elimino il codice fiscale per evitare ricerca utente esistente su codice fiscale
+      # per evitare di associarlo ad altri utenti aventi quel codice fiscale, e ricevere comunque risposta sulla e-mail di un impostore che ha usato il mio codfisc
+      # e per evitare , se è cambiata la mail, che venga creato uno user con stesso cod fisc  (darebbe errore unique) 
+      customer.delete :codice_fiscale
+
+      # controllo esistenza utente
+      user = check_user_exists(customer)
+
+      if user
+        # associo il ticket all'utente trovato. la mail potrebbe non corrispondere se è una linked email
+        params.delete :customer
+        params[:customer_id] = user.id
+      end
+    
     end
 
+  end
+
+  def check_user_exists(customer)
+    user = User.find_by(codice_fiscale: customer['codice_fiscale']) if customer['codice_fiscale']
+
+    if not user
+      linked_authorization = Authorization.where(email: customer['email']).last
+      if linked_authorization
+        user = User.where(id: linked_authorization.user_id).last
+      end
+    end
+
+    if not user 
+      user = User.find_by(email: customer['email']) 
+    end
+    return user
   end
 
   
