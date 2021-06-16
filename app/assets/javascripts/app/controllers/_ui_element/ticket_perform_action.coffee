@@ -32,6 +32,7 @@ class App.UiElement.ticket_perform_action
           elements["#{groupKey}.sms"] = { name: 'sms', display: 'SMS' }
         else if groupKey is 'article'
           elements["#{groupKey}.note"] = { name: 'note', display: 'Note' }
+          elements["#{groupKey}.note_ext_act"] = { name: 'note_ext_act', display: 'Nota External Activity' }
         else if groupKey is 'external_activity'
           elements["#{groupKey}.new_activity"] = { name: 'new_activity', display: 'Nuova attività' }
           elements["#{groupKey}.upd_activity"] = { name: 'upd_activity', display: 'Aggiorna attività' }
@@ -498,16 +499,16 @@ class App.UiElement.ticket_perform_action
     elementRow.find('.js-setArticle').empty()
 
     name = "#{attribute.name}::article.#{articleType}"
-    console.log('meta', meta)
+
     selection = App.UiElement.select.render(
       name: "#{name}::internal"
       multiple: false
       null: false
-      label: 'Visibility'
       options: { true: 'internal', false: 'public' }
       value: meta.internal
-      translate: true
+      translate: false
     )
+
     articleElement = $( App.view('generic/ticket_perform_action/article')(
       attribute: attribute
       name: name
@@ -515,6 +516,7 @@ class App.UiElement.ticket_perform_action
       meta: meta || {}
     ))
     articleElement.find('.js-internal').html(selection)
+
     articleElement.find('.js-body div[contenteditable="true"]').ce(
       mode: 'richtext'
       placeholder: 'message'
@@ -542,6 +544,13 @@ class App.UiElement.ticket_perform_action
     )
 
     elementRow.find('.js-setArticle').html(articleElement).removeClass('hide')
+
+    # CSI custom, per gestire la creazione di note a partirte da un commento dell'external activity
+    if articleType == 'note'
+      articleElement.find('.js-body div[contenteditable="true"]').parent().parent().parent().removeClass('hide')
+    else
+      # per note da external activity si nascode il campo
+      articleElement.find('.js-body div[contenteditable="true"]').parent().parent().parent().addClass('hide')
 
   # custom CSI
   # External Activity Area dove inserire i campi di input previsti nel model
@@ -580,7 +589,6 @@ class App.UiElement.ticket_perform_action
           value: systemSelectionValue
           translate: false
         )
-        console.log('systemSelection', {systemSelection})
         elementRow.find('.js-external-activity-system').html(systemSelection)
 
         elementRow.find('.js-setExternalActivity').removeClass('hide')
