@@ -124,11 +124,14 @@ remedy_model = {
     }
   },
   '11' => {
-    'name':  'commento',
-    'label': 'commento',
-    'type':  'comment'
-  }
-}
+     'name':  'commento',
+     'label': 'commento',
+     'type':  'comment',
+     'attachments' => {
+       'enabled':true
+     }
+   }
+ }
 
 remedy_ticketing_system = ExternalTicketingSystem.find_by(name: 'Remedy')
 remedy_current_model = remedy_ticketing_system['model']
