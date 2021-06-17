@@ -244,7 +244,10 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
   def handle_user_on_create
 
     customer = params[:customer]
-    raise Exceptions::UnprocessableEntity, "Need at least customer: { email: \"<string>\"} " unless customer && customer['email']
+    if customer.nil? or customer[:email].nil? or customer[:email].blank?
+      Rails.logger.error {"[API] create ticket without customer email.. customer: #{customer.to_s}"}
+      raise Exceptions::UnprocessableEntity, "Need at least customer: { email: \"<string>\"} "
+    end
 
     # se utente verificato
     if params[:utente_riconosciuto] == 1
