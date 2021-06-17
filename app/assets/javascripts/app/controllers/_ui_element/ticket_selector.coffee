@@ -350,7 +350,7 @@ class App.UiElement.ticket_selector
   @buildFieldsExtActArea: (elementRow, model, name, meta) ->
     paramOptions = {}
     $.each model, (key, field) ->
-      paramOptions[field['name']] = field['label']
+      paramOptions[field['name']] = App.i18n.translateContent(field['label'])
 
     selectName = name + '::model_param_name'
     selectField = App.UiElement.select.render(
