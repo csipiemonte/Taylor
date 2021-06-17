@@ -646,7 +646,7 @@ class App.UiElement.ticket_perform_action
         visibleFld = false
 
       fldName = "#{name}::" + field['name']
-      labelDiv = '<div class="formGroup-label"><label for="' + fldName + '">' + field['label']
+      labelDiv = '<div class="formGroup-label"><label for="' + fldName + '">' + App.i18n.translateContent(field['label'])
       if requiredFld
         labelDiv += ' <span>*</span>'
       labelDiv += '</label></div>'
