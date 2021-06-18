@@ -31,6 +31,37 @@
             <svg class="icon icon-arrow-down "><use xlink:href="assets/images/icons.svg#icon-arrow-down"></use></svg>
           <% else if field.type=='comment': %>
             <textarea id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="text" class="form-control" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @closed || field.read_only: %>readonly disabled<% else if field.default: %>value="<%= field.default %>"<% end %>></textarea>
+            <% if field.attachments && @closed : %>
+                <div class="attachments"></div>
+                <div class="article-attachment" style="font-size: smaller;">
+                  <div class="attachmentPlaceholder">
+                    <span class="attachmentPlaceholder-hint"><%- @T('Enter Note or') %></span>
+                    <span class="attachmentPlaceholder-inputHolder fileUpload">
+                      <input multiple="multiple" type="file" name="file" id="External_Activity_<%= @externalActivityId %>_<%= field.name %>_fileUpload">
+                      <label class="attachmentPlaceholder-label" for="<%- uid %>">
+                        <%- @T('select attachment...') %>
+                      </label>
+                    </span>
+                  </div>
+                  <div class="attachmentUpload hide">
+                    <div class="horizontal">
+                      <div class="u-highlight">
+                        <%- @T('Uploading') %> (<span class="js-percentage">0</span>%) ...
+                      </div>
+                      <div class="attachmentUpload-cancel js-cancel">
+                        <%- @Icon('diagonal-cross') %><%- @T('Cancel Upload') %>
+                      </div>
+                    </div>
+                    <div class="attachmentUpload-progressBar" style="width: 0%"></div>
+                  </div>
+                </div>
+                <div class="dropArea">
+                  <div class="dropArea-inner">
+                    <%- @T('Drop files here') %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
           <% else if field.type=='textarea': %>
             <textarea id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="text" class="form-control" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @closed || @dispatched && !field.editable_aftwerwards || field.read_only: %>readonly disabled<% end %>><% if @dispatched && @values[field.name]: %><%= @values[field.name] %><% else if field.default: %><%= field.default %><% end %></textarea>
           <% else: %>

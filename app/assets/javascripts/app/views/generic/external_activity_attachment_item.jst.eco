@@ -1,0 +1,4 @@
+<div class="attachment attachment--row" style="cursor:pointer;">
+  <div class="attachment-name"><%= @name %></div>
+  <div class="attachment-size"><%= @humanFileSize(@size) %></div>
+</div>
