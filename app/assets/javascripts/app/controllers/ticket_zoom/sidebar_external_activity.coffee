@@ -115,6 +115,7 @@ class ExternalActivity extends App.Controller
     )
 
     @buildSelectFields(externalActivityId)
+    @buildCommentFields(externalActivityId)
 
     @$('#External_Activity_'+externalActivityId+'_import-from-ticket').on('click', =>
       @importFieldsFromTicket(externalActivityId)
@@ -176,23 +177,51 @@ class ExternalActivity extends App.Controller
   buildCommentFields: (externalActivityId,activity=null) =>
     instance = @
     $.each @system.model, (key, field) ->
-      if field["type"] == "comment" && activity!=null
-        commentField = instance.$('#External_Activity_'+externalActivityId+'_'+field["name"])
-        commentList = activity["data"][field["name"]]
-        if !commentList
-          commentList = {}
-        selector = 'div[data-attribute-name="External_Activity_'+externalActivityId+'_'+field["name"]+'"]'
-        jQuery.each commentList, (i, comment) ->
-          instance.addComment(commentField, comment, selector)
-        #if field["attachments"]
-          #set handler
-          #1 - capture file upload
-          #2 - set attachment in  activity["data"][field["name"]][size-1]
+      if field["type"] == "comment"
+        if activity!=null
+          commentField = instance.$('#External_Activity_'+externalActivityId+'_'+field["name"])
+          commentList = activity["data"][field["name"]]
+          if !commentList
+            commentList = {}
+          selector = 'div[data-attribute-name="External_Activity_'+externalActivityId+'_'+field["name"]+'"]'
+          jQuery.each commentList, (i, comment) ->
+            instance.addComment(commentField, comment, selector)
+        if field["attachments"] && field["attachments"]["enabled"]
+          instance.attachments = {}
+          instance.buildAttachmentButton(externalActivityId,field,activity)
 
-
-  showAttachments: (externalActivityId,activity) =>
-    return if !activity
-
+  buildAttachmentButton: (externalActivityId,field,activity=null) =>
+    instance = @
+    @attachments[field["name"]] = {}
+    uploadAttachment = @$('#External_Activity_'+externalActivityId+'_'+field["name"]+'_fileUpload')
+    comment_view = uploadAttachment.parents().eq(4);
+    uploadAttachment.on('change', () =>
+      files = uploadAttachment.prop("files")
+      names = $.map(files, (val) -> return val.name )
+      $.each(files, (i, file) =>
+        attachment_view = $(App.view('generic/attachment_item')(
+          filename:file.name
+          size:file.size
+        ))
+        index = 0
+        $.each(@attachments[field["name"]],(i) ->
+          if i > index
+            index = i
+        )
+        fileReader = new FileReader();
+        fileReader.onload = (event) =>
+          instance.attachments[field["name"]][parseInt(index)+1] = {
+            "file":fileReader.result
+            "name":file.name
+          }
+        fileReader.readAsText(file)
+        comment_view.append(attachment_view)
+        attachment_view.find('.attachment-delete.js-delete').on('click', () =>
+          delete instance.attachments[field["name"]][index]
+          attachment_view.remove()
+        )
+      )
+    )
 
   buildUpdateButton: (externalActivityId,activity) =>
     instance = @
@@ -312,7 +341,9 @@ class ExternalActivity extends App.Controller
             "external": false,
             "text":value
           }
-        #insert attachments
+        if field["attachments"] && field["attachments"]["enabled"]
+          new_activity_fields[field.name][""+index]["attachments"] = if instance.attachments[field["name"]].length>0 then instance.attachments[field["name"]]
+
     return [new_activity_fields, validated]
 
   showObjects: (el) =>
