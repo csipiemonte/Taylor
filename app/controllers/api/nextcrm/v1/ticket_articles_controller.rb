@@ -7,11 +7,18 @@ class Api::Nextcrm::V1::TicketArticlesController < ::TicketArticlesController
   end
 
   def create
-    params[:internal] = false # articles via api are always public
-    params[:sender_id] = 2 # indica che  article e'stato creato da un Customer
     if not params[:type_id]
       raise Exceptions::UnprocessableEntity, "Need at least article: { type_id: \"<id>\" "
     end
+    if not params[:from]
+      raise Exceptions::UnprocessableEntity, "Need at least article: { from: \"<string>\"} "
+    end
+    if not params[:from].match(URI::MailTo::EMAIL_REGEXP)
+      raise Exceptions::UnprocessableEntity, "Must be a valid email:  article: { from: \"<string>\"} "
+    end
+    params[:internal] = false # articles via api are always public
+    params[:sender_id] = 2 # indica che  article e'stato creato da un Customer
+
     super
     alterArticleAttributesInResponse()
   end

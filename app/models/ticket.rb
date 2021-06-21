@@ -1,4 +1,5 @@
 # Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+require 'base64'
 
 class Ticket < ApplicationModel
   include CanBeImported
@@ -1854,6 +1855,37 @@ result
       ext_act_perform[fld_name] = upd_value if !upd_value.nil?
     end
 
+    # aggiunta degli allegati sotto forma di commento
+    comment_field = nil
+    ext_act_system_model = ExternalTicketingSystem.find_by(id: ext_act_system).model
+    ext_act_system_model.each_value do |value|
+      next if !value.key?('type')
+      next if value['type'] != 'comment'
+
+      comment_field = value
+      break
+    end
+    if !comment_field.nil? && !comment_field['attachments'].nil? && comment_field['attachments']['enabled']
+      list = articles.first.attachments || []
+      if !list.empty?
+        attach_idx = 0
+        attach_hash = {}
+        list.each do |item|
+          file = Store.find(item.id.to_i)
+
+          file_content = file.content
+          if !comment_field['attachments']['encoding'].nil?
+            # TODO, eseguire la codifica del contenuto del file (per remedy nessuna codifica)
+          end
+          attach_hash[attach_idx.to_s] = { 'name': file.filename, 'file': Base64.encode64(file_content) }
+          attach_idx = attach_idx + 1
+        end
+        comment_hash = {}
+        comment_hash['0'] = { 'external': false, 'text': 'Allegati presenti.', 'attachments': attach_hash }
+        ext_act_perform[comment_field['name']] = comment_hash
+      end
+    end
+
     ExternalActivity.create(
       external_ticketing_system_id: ext_act_system,
       ticket_id:                    id,
@@ -1902,9 +1934,32 @@ result
       new_comment_key = '0'
     end
 
-    comment_hash[new_comment_key] = { 'external': false, 'text': comment_text }
-    ext_activity_data[comment_field['name']] = comment_hash
+    attach_hash = {}
+    if !comment_field['attachments'].nil? && comment_field['attachments']['enabled']
+      list = []
+      if ext_act_perform.key?('comment_from_article')
+        list = articles.last.attachments || []
+      end
+      if !list.empty?
+        attach_idx = 0
+        list.each do |item|
+          file = Store.find(item.id.to_i)
 
+          file_content = file.content
+          if !comment_field['attachments']['encoding'].nil?
+            # TODO, eseguire la codifica del contenuto del file (per remedy nessuna codifica)
+          end
+          attach_hash[attach_idx.to_s] = { 'name': file.filename, 'file': Base64.encode64(file_content) }
+          attach_idx = attach_idx + 1
+        end
+      end
+    end
+
+    comment_hash[new_comment_key] = { 'external': false, 'text': comment_text }
+    if !attach_hash.empty?
+      comment_hash[new_comment_key]['attachments'] = attach_hash
+    end
+    ext_activity_data[comment_field['name']] = comment_hash
     ext_activity.data = ext_activity_data
     ext_activity.save!
   end

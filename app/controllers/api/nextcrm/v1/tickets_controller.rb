@@ -108,6 +108,9 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
       if not params[:article][:from]
         raise Exceptions::UnprocessableEntity, "Need at least article: { from: \"<string>\"} "
       end
+      if not params[:article][:from].match(URI::MailTo::EMAIL_REGEXP)
+        raise Exceptions::UnprocessableEntity, "Must be a valid email:  article: { from: \"<string>\"} "
+      end
       # sender_id di default viene valorizzato a 1 (Agent) e in questo caso app/models/observer/reset_new_state.rb setta lo state_id a 2 (aperto)
       params[:article][:sender_id] = 2 # indica che il testo del ticket (article) e'stato creato da un Customer
     end
