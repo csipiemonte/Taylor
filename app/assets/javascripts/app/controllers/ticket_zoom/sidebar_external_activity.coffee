@@ -136,13 +136,14 @@ class ExternalActivity extends App.Controller
         $.each @system.model, (key, field) ->
           if field["core_field"]
             value = data[field["core_field"]]
-            if field["select"] && field["select"]["service"]
-              $.each instance.fetchedOptions[field["name"]], (index,option) ->
-                if option["id"] == value
-                  $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(option["name"])
-                  return
-            else
-              $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(value.replace(/<[^>]*>?/gm, ''))
+            if value
+              if field["select"] && field["select"]["service"]
+                $.each instance.fetchedOptions[field["name"]], (index,option) ->
+                  if option["id"] == value
+                    $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(option["name"])
+                    return
+              else
+                $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(value.replace(/<[^>]*>?/gm, ''))
 
     )
     @ajax(
