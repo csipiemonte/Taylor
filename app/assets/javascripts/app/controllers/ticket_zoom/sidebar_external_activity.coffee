@@ -135,7 +135,7 @@ class ExternalActivity extends App.Controller
       success: (data, status, xhr) =>
         $.each @system.model, (key, field) ->
           if field["core_field"]
-            value = data[field["core_field"]]
+            value = data[field["core_field"]].replace(/<[^>]*>?/gm, '')
             if field["select"] && field["select"]["service"]
               $.each instance.fetchedOptions[field["name"]], (index,option) ->
                 if option["id"] == value
@@ -151,7 +151,7 @@ class ExternalActivity extends App.Controller
       url:   "#{@apiPath}/ticket_articles/by_ticket/"+@ticket.id
       success: (data, status, xhr) =>
         $.each @system.model, (key, field) ->
-          value = data[0][field["core_field"]]
+          value = data[0][field["core_field"]].replace(/<[^>]*>?/gm, '')
           if field["core_field"] && value
             $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(value)
     )
