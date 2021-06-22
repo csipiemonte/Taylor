@@ -335,8 +335,8 @@ class ExternalActivity extends App.Controller
       if field.type!='comment'
         new_activity_fields[field.name] = value
       else
-        index = if activity && activity[data][field.name] then new_activity_fields[field.name].length else 0
-        new_activity_fields[field.name] = if activity && activity[data][field.name] then new_activity_fields[field.name] else []
+        index = if activity && activity["data"][field.name] then new_activity_fields[field.name].length else 0
+        new_activity_fields[field.name] = if activity && activity["data"][field.name] then new_activity_fields[field.name] else []
         if value && value!=""
           new_activity_fields[field.name][""+index] = {
             "external": false,
