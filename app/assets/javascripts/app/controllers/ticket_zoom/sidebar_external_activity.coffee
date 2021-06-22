@@ -142,7 +142,7 @@ class ExternalActivity extends App.Controller
                   $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(option["name"])
                   return
             else
-              $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(value)
+              $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(value.replace(/<[^>]*>?/gm, ''))
 
     )
     @ajax(
@@ -153,7 +153,7 @@ class ExternalActivity extends App.Controller
         $.each @system.model, (key, field) ->
           value = data[0][field["core_field"]]
           if field["core_field"] && value
-            $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(value)
+            $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(value.replace(/<[^>]*>?/gm, ''))
     )
 
   buildSelectFields: (externalActivityId,activity=null) =>
