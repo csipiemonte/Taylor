@@ -211,14 +211,14 @@ class ExternalActivity extends App.Controller
         )
         fileReader = new FileReader();
         fileReader.onload = (event) =>
-          instance.attachments[field["name"]][parseInt(index)+1] = {
+          instance.attachments[field["name"]][parseInt(index)+1+i] = {
             "file":fileReader.result
             "name":file.name
           }
         fileReader.readAsText(file)
         comment_view.append(attachment_view)
         attachment_view.find('.attachment-delete.js-delete').on('click', () =>
-          delete instance.attachments[field["name"]][index]
+          delete instance.attachments[field["name"]][parseInt(index)+1+i]
           attachment_view.remove()
         )
       )
@@ -337,13 +337,14 @@ class ExternalActivity extends App.Controller
       else
         index = if activity && activity["data"][field.name] then new_activity_fields[field.name].length else 0
         new_activity_fields[field.name] = if activity && activity["data"][field.name] then new_activity_fields[field.name] else []
-        if value && value!=""
-          new_activity_fields[field.name][""+index] = {
+        has_attachments = Object.keys(instance.attachments[field["name"]]).length>0
+        if value && value!="" || has_attachments
+          new_activity_fields[field.name][index] = {
             "external": false,
-            "text":value
+            "text": if value then value else ""
           }
-        if field["attachments"] && field["attachments"]["enabled"]
-          new_activity_fields[field.name][""+index]["attachments"] = if instance.attachments[field["name"]].length>0 then instance.attachments[field["name"]]
+          if has_attachments
+            new_activity_fields[field.name][index]["attachments"] = if has_attachments then instance.attachments[field["name"]]
 
     return [new_activity_fields, validated]
 
