@@ -651,7 +651,7 @@ class App.UiElement.ticket_perform_action
         labelDiv += ' <span>*</span>'
       labelDiv += '</label></div>'
 
-      if (field['type'] != undefined && field['type'] == 'text')
+      if (field['type'] != undefined && (field['type'] == 'text' || field['type'] == 'textarea'))
         typeFld = field['type']
         valueFld = meta[field['name']] || field['default'] || ''
         if field['core_field'] != undefined

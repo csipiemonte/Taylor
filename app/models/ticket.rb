@@ -1233,18 +1233,18 @@ perform active triggers on ticket
             next if ext_act_data[model_param_name] != model_param_value # skip se il parametro in data non coincide con il valore di confronto presente nella condition
           else
             # il campo ':changes di item e' cosi' composto
-            # :changes=>{ "data"=>[ { "commento"=>{"0"=>{"external"=>false, "text"=>"upupa"}, "1"=>{"external"=>false, "text"=>"upupa"}, "2"=>{"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, "3"=>{"external"=>false, "text"=>"nuova nota per strip_tags"}}
-            # }, { "commento"=>{"0"=>{"external"=>false, "text"=>"upupa"}, "1"=>{"external"=>false, "text"=>"upupa"}, "2"=>{"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, "3"=>{"external"=>false, "text"=>"nuova nota per strip_tags"}, "4"=>"commento_264"}}], "updated_by_id"=>[1, 5]}}
+            # :changes=>{ "data"=>[ { "commento" => [{"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, {"external"=>false, "text"=>"nuova nota per strip_tags"}]
+            # }, { "commento" => [{"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"upupa"}, "{"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, {"external"=>false, "text"=>"nuova nota per strip_tags"}, {"external"=>false, "text"=>"nuova nota per strip_tags_2"}]}], "updated_by_id"=>[1, 5]}}
             # cioe' la chiave 'data' corrisponde ad un array nella cui posizione 0 ci sono gli elementi prima della modifica
             # mentre nella posizione 1 c'e' un hash dopo la modifica
             item_changes_data = item[:changes]['data']
             comment_pre = item_changes_data[0][model_param_name]
             comment_post = item_changes_data[1][model_param_name]
-            next if comment_pre.keys.length == comment_post.keys.length # il campo modificato in 'data' e' un altro perche' le due hash di commento hanno lo stesso numero di chiavi
+            next if comment_pre.length == comment_post.length # il campo modificato in 'data' e' un altro perche' i due array di commento hanno la stessa lunghezza
 
-            next if comment_post[(comment_post.keys.length - 1).to_s]['external'] == false # passo oltre se l'ultimo commento inserito non e' esterno a zammad
+            next if comment_post[comment_post.length - 1]['external'] == false # passo oltre se l'ultimo commento inserito (ultimo elemento dell'array) non e' esterno a zammad
 
-            ext_act_last_comment = comment_post[(comment_post.keys.length - 1).to_s]['text']
+            ext_act_last_comment = comment_post[comment_post.length - 1]['text']
           end
 
           logger.info { "Satisfied external_activity condition (#{condition}) for this object (ExternalActivity:#{external_activity}), perform action on (Ticket:#{ticket.id})" }
@@ -1880,9 +1880,7 @@ result
           attach_hash[attach_idx.to_s] = { 'name': file.filename, 'file': Base64.encode64(file_content) }
           attach_idx = attach_idx + 1
         end
-        comment_hash = {}
-        comment_hash['0'] = { 'external': false, 'text': 'Allegati presenti.', 'attachments': attach_hash }
-        ext_act_perform[comment_field['name']] = comment_hash
+        ext_act_perform[comment_field['name']] = [{ 'external': false, 'text': 'Allegati presenti.', 'attachments': attach_hash }]
       end
     end
 
@@ -1924,14 +1922,12 @@ result
                    else
                      ActionController::Base.helpers.strip_tags(articles.last.body)
                    end
+    comment_to_add = { 'external': false, 'text': comment_text }
 
     ext_activity_data = ext_activity.data
+    comments = []
     if ext_activity_data.key?(comment_field['name'])
-      comment_hash = ext_activity_data[comment_field['name']]
-      new_comment_key = comment_hash.keys.length.to_s
-    else
-      comment_hash = {}
-      new_comment_key = '0'
+      comments = ext_activity_data[comment_field['name']]
     end
 
     attach_hash = {}
@@ -1954,12 +1950,12 @@ result
         end
       end
     end
-
-    comment_hash[new_comment_key] = { 'external': false, 'text': comment_text }
     if !attach_hash.empty?
-      comment_hash[new_comment_key]['attachments'] = attach_hash
+      comment_to_add['attachments'] = attach_hash
     end
-    ext_activity_data[comment_field['name']] = comment_hash
+
+    comments.push(comment_to_add)
+    ext_activity_data[comment_field['name']] = comments
     ext_activity.data = ext_activity_data
     ext_activity.save!
   end
