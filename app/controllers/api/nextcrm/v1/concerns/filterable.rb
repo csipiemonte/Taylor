@@ -10,6 +10,9 @@ module Api::Nextcrm::V1::Concerns::Filterable
     attributes.each do |att|
       operator = filter[att].keys[0]
       value = filter[att][operator] 
+      if !value.empty? and value.include?("OR")
+        value = "(#{value})"
+      end
 
       if att.include? "email"
         # check if email in filter is a linked email
