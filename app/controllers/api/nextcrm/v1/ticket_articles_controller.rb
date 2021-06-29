@@ -23,6 +23,10 @@ class Api::Nextcrm::V1::TicketArticlesController < ::TicketArticlesController
     alterArticleAttributesInResponse()
   end
 
+  def attachment
+    super
+  end
+
   # def update
   #   super
   # end
