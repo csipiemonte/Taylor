@@ -41,7 +41,10 @@ class ExternalActivity extends App.Controller
       url:   "#{@apiPath}/external_activity/system/"+@system.id+"?ticket_id="+@ticket.id
       success: (data, status, xhr) =>
         cb = @displayExternalActivity
-        if data.length > 0
+        console.debug("--->",@ticket)
+        if @ticket.state.id == 4 #closed
+          @$('.js-newExternalActivityLabel').hide()
+        if data.length > 0 
           @$('.js-newExternalActivityLabel').hide()
           data.forEach (activity) ->
             cb(activity)
@@ -57,6 +60,8 @@ class ExternalActivity extends App.Controller
   displayExternalActivity: (activity) =>
     externalActivityId = Math.floor(Math.random() * 10000) + 10000
     closed = @isClosed(activity)
+    if @ticket.state.id == 4 # if ticket is closed, prevent changes on external activity
+      closed = true
     @$('.dispatch-box').append App.view('ticket_zoom/sidebar_external_activity_form')(
            system: @system
            externalActivityId : externalActivityId
