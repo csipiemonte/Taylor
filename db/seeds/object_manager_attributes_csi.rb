@@ -754,6 +754,8 @@ create_translation('it-it', 'Notification email address', 'Email per notifiche')
 create_translation('it-it', 'Contact telephone number', 'Numero telefonico di contatto')
 create_translation('it-it', 'Mobile number', 'Numero di cellulare')
 create_translation('it-it', 'Landline number', 'Numero di telefono fisso')
+create_translation('it-it', 'Not verified customer\'s information', 'Informazioni richiedente non verificate')
+
 
 
 

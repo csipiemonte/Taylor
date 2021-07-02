@@ -27,23 +27,25 @@ class App.TicketZoomSidebar extends App.ObserverController
     for key in keys
       if !@sidebarBackends[key] || !@sidebarBackends[key].reload
         @sidebarBackends[key] = new sidebarBackends[key](
-          ticket:   ticket
-          query:    @query
-          taskGet:  @taskGet
-          taskKey:  @taskKey
-          formMeta: @formMeta
-          markForm: @markForm
-          tags:     @tags
-          links:    @links
+          ticket:                   ticket
+          query:                    @query
+          taskGet:                  @taskGet
+          taskKey:                  @taskKey
+          formMeta:                 @formMeta
+          markForm:                 @markForm
+          tags:                     @tags
+          links:                    @links
+          not_verified_info:        @not_verified_info
         )
       else
         @sidebarBackends[key].reload(
-          params:   @params
-          query:    @query
-          formMeta: @formMeta
-          markForm: @markForm
-          tags:     @tags
-          links:    @links
+          params:                   @params
+          query:                    @query
+          formMeta:                 @formMeta
+          markForm:                 @markForm
+          tags:                     @tags
+          links:                    @links
+          not_verified_info:        @not_verified_info
         )
       @sidebarItems.push @sidebarBackends[key]
 

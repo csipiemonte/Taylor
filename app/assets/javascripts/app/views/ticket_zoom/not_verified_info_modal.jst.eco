@@ -1,0 +1,33 @@
+<fieldset>
+
+
+  <% if @object.not_verified_user_firstname: %>
+    <h4><%- @T('Firstname') %></h4>
+    <div><%= @object.not_verified_user_firstname %></div>
+  <% end %>
+
+  <% if @object.not_verified_user_lastname: %>
+    <hr>
+    <h4><%- @T('Lastname') %></h4>
+    <div><%= @object.not_verified_user_lastname %></div>
+  <% end %>
+
+  <% if @object.not_verified_codice_fiscale: %>
+    <hr>
+    <h4><%- @T('Codice Fiscale') %></h4>
+    <div><%= @object.not_verified_user_codice_fiscale %></div>
+  <% end %>
+
+  <% if @object.not_verified_user_mobile: %>
+   <hr>
+   <h4><%- @T('Mobile') %></h4>
+   <div><%= @object.not_verified_user_mobile %></div>
+  <% end %>
+
+  <% if @object.not_verified_user_phone: %>
+    <hr>
+    <h4><%- @T('Phone') %></h4>
+    <div><%= @object.not_verified_user_phone %></div>
+  <% end %>
+
+</fieldset>

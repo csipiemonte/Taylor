@@ -141,6 +141,15 @@ class SidebarTicket extends App.Controller
         links:       @links
       )
 
+      for key, value of @not_verified_info
+        if value
+          @notVerifiedInfoWidget = new App.WidgetNotVerifiedInfo(
+            el:          localEl.filter('.not_verified_info')
+            object:      @not_verified_info
+          )
+          break
+
+
       if @permissionCheck('knowledge_base.*') and App.Config.get('kb_active')
         @linkKbAnswerWidget = new App.WidgetLinkKbAnswer(
           el:          localEl.filter('.link_kb_answers')
