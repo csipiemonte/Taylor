@@ -1,5 +1,7 @@
 class App.TicketNotVerifiedInfo extends App.ControllerModal
   buttonClose: true
+  buttonCancel: false
+  buttonSubmit: false
   head: 'Not verified customer\'s information'
   shown: false
 
