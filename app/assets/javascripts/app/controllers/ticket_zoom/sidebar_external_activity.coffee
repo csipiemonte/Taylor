@@ -44,7 +44,7 @@ class ExternalActivity extends App.Controller
         console.debug("--->",@ticket)
         if @ticket.state.id == 4 #closed
           @$('.js-newExternalActivityLabel').hide()
-        if data.length > 0 
+        if data.length > 0
           @$('.js-newExternalActivityLabel').hide()
           data.forEach (activity) ->
             cb(activity)
@@ -72,7 +72,7 @@ class ExternalActivity extends App.Controller
            closed : closed
            needs_attention: activity.needs_attention
            values: activity.data
-           activity: activity
+           activity: @humanizeDate(activity)
          )
     instance = @
     callback = () -> instance.buildActivityElements(externalActivityId,activity)
@@ -255,7 +255,7 @@ class ExternalActivity extends App.Controller
 
   addComment: (commentField,comment,selector) =>
     comment_view = $(App.view('ticket_zoom/sidebar_external_activity_comment')(
-      comment:comment
+      comment: @humanizeDate(comment)
     ))
     if comment["attachments"]
       attachments = []
@@ -274,6 +274,10 @@ class ExternalActivity extends App.Controller
         )
     comment_view.insertBefore(selector)
 
+  humanizeDate: (data) =>
+    data["timestamp"] = App.i18n.translateTimestamp(data["created_at"])
+    data["humanTime"] = App.PrettyDate.humanTime(data["created_at"], false)
+    data
 
   setOptionValue: (selectField,value) =>
      selectField.val(value)
@@ -346,7 +350,8 @@ class ExternalActivity extends App.Controller
         if value && value!="" || has_attachments
           new_activity_fields[field.name][index] = {
             "external": false,
-            "text": if value then value else ""
+            "text": if value then value else "",
+            "created_at": new Date()
           }
           if has_attachments
             new_activity_fields[field.name][index]["attachments"] = if has_attachments then instance.attachments[field["name"]]

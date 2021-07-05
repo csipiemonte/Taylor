@@ -12,7 +12,9 @@
         <div class="text-muted" style="margin-bottom: 1em;"><%- @T('⚠ There are new changes on this activity') %></div>
       </div>
      <% end %>
-    <p class="text-muted"><%- @T('Created at') %> <%= @activity.created_at %>:</p>
+    <p class="text-muted">
+      <time class="humanTimeFromNow" datetime="<%= @activity.created_at %>" title="<%= @activity.timestamp %>"><%- @T('Created at') %>: <%= @activity.humanTime %></time>
+    </p>
   <% else: %>
     <p id="External_Activity_<%= @externalActivityId %>_import-from-ticket" style="color: #429ed7;cursor: pointer;"><%- @T('✎ Import data from user\'s ticket') %></p>
   <% end %>

@@ -10,6 +10,11 @@
     <textarea class="form-control" readonly disabled oninput='this.style.height = "";this.style.height = this.scrollHeight + "px"'><%= @comment.text %></textarea>
   </div>
 </div>
+<% if @comment.created_at: %>
+  <div class="text-muted" style="margin-top: 5px;">
+    <time class="humanTimeFromNow" datetime="<%= @comment.created_at %>" title="<%= @comment.timestamp %>"><%= @comment.humanTime %></time>
+  </div>
+<% end %>
 
 
 
