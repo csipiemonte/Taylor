@@ -27,7 +27,9 @@ virtual_agent.permission_grant('chat.agent')
 virtual_agent.permission_grant('cti.agent')
 virtual_agent.permission_grant('knowledge_base.reader')
 
-####
+############
+# TRANSLATIONS
+
 
 api_management = Role.create_if_not_exists(
   id:                6,
@@ -65,6 +67,15 @@ Translation.create_if_not_exists(
   source:         "Login Account for external Api Manager",
   target:         "Login Account per Api Manager",
   target_initial: "Login Account per Api Manager",
+  format:         'string',
+  created_by_id:  '1',
+  updated_by_id:  '1',
+)
+Translation.create_if_not_exists(
+  locale:         "it-it",
+  source:         "Virtual Agent",
+  target:         "Operatore Virtuale",
+  target_initial: "Operatore Virtuale",
   format:         'string',
   created_by_id:  '1',
   updated_by_id:  '1',
