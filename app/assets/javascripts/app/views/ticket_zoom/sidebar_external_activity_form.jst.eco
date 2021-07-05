@@ -13,7 +13,7 @@
       </div>
      <% end %>
     <p class="text-muted">
-      <time class="humanTimeFromNow" datetime="<%= @activity.created_at %>" title="<%= @activity.timestamp %>"><%- @T('Created at') %>: <%= @activity.humanTime %></time>
+      <%- @T('Created at') %>: <time class="humanTimeFromNow" datetime="<%= @activity.created_at %>" title="<%= @activity.timestamp %>"><%= @activity.humanTime %></time>
     </p>
   <% else: %>
     <p id="External_Activity_<%= @externalActivityId %>_import-from-ticket" style="color: #429ed7;cursor: pointer;"><%- @T('✎ Import data from user\'s ticket') %></p>
