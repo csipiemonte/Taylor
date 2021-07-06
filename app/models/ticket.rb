@@ -1288,6 +1288,8 @@ perform active triggers on ticket
               ticket.perform_changes(trigger.perform, 'trigger', item, user_id, comment['text'])
             end
           end
+        else
+          ticket.perform_changes(trigger.perform, 'trigger', item, user_id)
         end
 
         if recursive == true
