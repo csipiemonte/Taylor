@@ -1282,9 +1282,11 @@ perform active triggers on ticket
         local_options[:trigger_ids][ticket.id].push trigger.id
         logger.info { "Execute trigger (#{trigger.name}/#{trigger.id}) for this object (Ticket:#{ticket.id}/Loop:#{local_options[:loop_count]})" }
 
-        ext_act_last_comments.each do |comment|
-          if comment['external']==true
-            ticket.perform_changes(trigger.perform, 'trigger', item, user_id, comment['text'])
+        if ext_act_last_comments
+          ext_act_last_comments.each do |comment|
+            if comment['external']==true
+              ticket.perform_changes(trigger.perform, 'trigger', item, user_id, comment['text'])
+            end
           end
         end
 
