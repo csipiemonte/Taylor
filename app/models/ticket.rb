@@ -1240,11 +1240,12 @@ perform active triggers on ticket
             item_changes_data = item[:changes]['data']
             comment_pre = item_changes_data[0][model_param_name]
             comment_post = item_changes_data[1][model_param_name]
-            next if comment_pre.length == comment_post.length # il campo modificato in 'data' e' un altro perche' i due array di commento hanno la stessa lunghezza
 
-            next if comment_post[comment_post.length - 1]['external'] == false # passo oltre se l'ultimo commento inserito (ultimo elemento dell'array) non e' esterno a zammad
+            delta = comment_post.length - comment_pre.length
 
-            ext_act_last_comment = comment_post[comment_post.length - 1]['text']
+            next if delta==0 # il campo modificato in 'data' e' un altro perche' i due array di commento hanno la stessa lunghezza
+
+            ext_act_last_comments = comment_post[comment_post.length-delta-1, comment_post.length-1]
           end
 
           logger.info { "Satisfied external_activity condition (#{condition}) for this object (ExternalActivity:#{external_activity}), perform action on (Ticket:#{ticket.id})" }
@@ -1281,7 +1282,11 @@ perform active triggers on ticket
         local_options[:trigger_ids][ticket.id].push trigger.id
         logger.info { "Execute trigger (#{trigger.name}/#{trigger.id}) for this object (Ticket:#{ticket.id}/Loop:#{local_options[:loop_count]})" }
 
-        ticket.perform_changes(trigger.perform, 'trigger', item, user_id, ext_act_last_comment)
+        ext_act_last_comments.each do |comment|
+          if comment['external']==true
+            ticket.perform_changes(trigger.perform, 'trigger', item, user_id, comment['text'])
+          end
+        end
 
         if recursive == true
           Observer::Transaction.commit(local_options)
