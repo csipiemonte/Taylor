@@ -1245,7 +1245,7 @@ perform active triggers on ticket
 
             next if delta==0 # il campo modificato in 'data' e' un altro perche' i due array di commento hanno la stessa lunghezza
 
-            ext_act_last_comments = comment_post[comment_post.length-delta-1, comment_post.length-1]
+            ext_act_last_comments = delta==1 ? comment_post : comment_post[comment_post.length-delta-1, comment_post.length-1]
           end
 
           logger.info { "Satisfied external_activity condition (#{condition}) for this object (ExternalActivity:#{external_activity}), perform action on (Ticket:#{ticket.id})" }
