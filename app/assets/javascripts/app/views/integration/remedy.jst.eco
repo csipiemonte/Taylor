@@ -33,7 +33,38 @@
         <td><%= virtual_agent.firstname %> <%= virtual_agent.lastname %></td>
         <td>
           <label class="inline-label checkbox-replacement">
-            <input type="checkbox" value="read" id="remedy_visibility_for_<%= virtual_agent.id %>">
+            <input type="checkbox" value="read" id="remedy_visibility_for_<%= virtual_agent.id %>" <% if @visibility["Remedy"]["virtual_agent_"+virtual_agent.id]: %>checked<%end%> >
+            <svg class="icon icon-checkbox icon-unchecked"><use xlink:href="assets/images/icons.svg#icon-checkbox"></use></svg>
+            <svg class="icon icon-checkbox-checked icon-checked"><use xlink:href="assets/images/icons.svg#icon-checkbox-checked"></use></svg>
+          </label>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<table class="settings-list">
+  <thead>
+    <tr>
+      <th><%- @T('Group') %></th>
+      <th><%- @T('Read Only')%></th>
+      <th><%- @T('Read & Write')%></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% for group in @groups: %>
+      <tr>
+        <td><%= group.name %></td>
+        <td>
+          <label class="inline-label checkbox-replacement">
+            <input type="checkbox" value="read" id="remedy_read_only_for_<%= group.id %>" <% if @group_access["Remedy"]["group_"+group.id]=="r": %>checked<%end%>>
+            <svg class="icon icon-checkbox icon-unchecked"><use xlink:href="assets/images/icons.svg#icon-checkbox"></use></svg>
+            <svg class="icon icon-checkbox-checked icon-checked"><use xlink:href="assets/images/icons.svg#icon-checkbox-checked"></use></svg>
+          </label>
+        </td>
+        <td>
+          <label class="inline-label checkbox-replacement">
+            <input type="checkbox" value="read" id="remedy_read_write_for_<%= group.id %>" <% if @group_access["Remedy"]["group_"+group.id]=="rw": %>checked<%end%>>
             <svg class="icon icon-checkbox icon-unchecked"><use xlink:href="assets/images/icons.svg#icon-checkbox"></use></svg>
             <svg class="icon icon-checkbox-checked icon-checked"><use xlink:href="assets/images/icons.svg#icon-checkbox-checked"></use></svg>
           </label>

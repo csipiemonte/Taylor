@@ -187,5 +187,14 @@ Setting.create_if_not_exists(
   frontend:    false
 )
 
+Setting.create_if_not_exists(
+  title:       'External Activity Group Access',
+  name:        'external_activity_group_access',
+  area:        'Integration::Remedy',
+  description: 'For each external ticketing system specifies read/write permissions for groups on activities',
+  options:     {},
+  state:       {},
+  frontend:    false
+)
 
 

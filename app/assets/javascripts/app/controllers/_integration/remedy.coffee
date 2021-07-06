@@ -29,13 +29,23 @@ class Form extends App.Controller
       success: (data) =>
         @virtual_agents = data
         @html App.view('integration/remedy')(
+          groups: App.Group.all()
           virtual_agents: @virtual_agents
+          visibility : App.Setting.get('external_activity_public_visibility')
+          group_access : App.Setting.get('external_activity_group_access')
           remedy_base_url: App.Setting.get('remedy_base_url')
           remedy_token: App.Setting.get('remedy_token')
           remedy_state_alignment: App.Setting.get('remedy_state_alignment')
         )
+        @groupTableHandlers()
     )
 
+  groupTableHandlers: () =>
+    App.Group.all().forEach (group) ->
+      $('#remedy_read_write_for_'+group.id).click ->
+        $('#remedy_read_only_for_'+group.id).prop("checked", false)
+      $('#remedy_read_only_for_'+group.id).click ->
+        $('#remedy_read_write_for_'+group.id).prop("checked", false)
 
   update: (e) =>
     e.preventDefault()
@@ -50,13 +60,23 @@ class Form extends App.Controller
         visibility["Remedy"]["virtual_agent_"+virtual_agent.id] = true
       else
         visibility["Remedy"]["virtual_agent_"+virtual_agent.id] = false
-    App.Setting.set('external_activity_public_visibility', visibility)
+    visibility = App.Setting.set('external_activity_public_visibility',visibility)
+
+    group_access = App.Setting.get('external_activity_group_access')
+    if !group_access["Remedy"]
+      group_access["Remedy"] = {}
+    App.Group.all().forEach (group) ->
+      if $('#remedy_read_write_for_'+group.id+':checkbox:checked').length > 0
+        group_access["Remedy"]["group_"+group.id] = "rw"
+      else if $('#remedy_read_only_for_'+group.id+':checkbox:checked').length > 0
+        group_access["Remedy"]["group_"+group.id] = "r"
+      else
+        group_access["Remedy"]["group_"+group.id] = null
+    App.Setting.set('external_activity_group_access', group_access)
+
     App.Setting.set('remedy_state_alignment', state_alignment)
     App.Setting.set('remedy_base_url', base_url)
     App.Setting.set('remedy_token', token, {notify: true})
-
-
-
 
 class State
   @current: ->
