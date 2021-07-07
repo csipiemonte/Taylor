@@ -8,6 +8,12 @@
     <% else: %>
       <%= @object.displayName() %>
     <% end %>
+    <% if @object.email: %>
+      <span class="recipientList-detail">, <%= @object.email %></span>
+    <% end %>
+    <% if @object.phone: %>
+      <span class="recipientList-detail">, <%= @object.phone %></span>
+    <% end %>
     <% if @object.organization: %>
       <span class="recipientList-detail">- <%= @object.organization.displayName() %></span>
     <% end %>
