@@ -1243,11 +1243,13 @@ perform active triggers on ticket
             next if param_value_pre == param_value_post # skip se il valore e' identico (condizione aggiunta per evitare che il trigger sullo stato scatti quando sono aggiunti commenti sull'external activity)
             next if ext_act_data[model_param_name] != model_param_value # skip se il parametro in data non coincide con il valore di confronto presente nella condition
           else
-            delta = param_value_post.length - param_value_pre.length
+
+            #misuro la differenza di lunghezza tra i due array (se il primo è null, la lunghezza è pari al secondo)
             delta = !comment_pre ? comment_post.length : comment_post.length - comment_pre.length
 
             next if delta.zero? # il campo modificato in 'data' e' un altro perche' i due array di commento hanno la stessa lunghezza
 
+            #ricavo un array "differenza" tra gli array pre e post. Se essi differivano in lunghezza di un solo elemento prendo direttamente l'ultimo elemento del secondo.
             ext_act_last_comments = delta==1 ? [comment_post[comment_post.length-1]] : comment_post[comment_post.length-delta-1, comment_post.length-1]
           end
 
@@ -1285,12 +1287,17 @@ perform active triggers on ticket
         local_options[:trigger_ids][ticket.id].push trigger.id
         logger.info { "Execute trigger (#{trigger.name}/#{trigger.id}) for this object (Ticket:#{ticket.id}/Loop:#{local_options[:loop_count]})" }
 
+        #se è definito l'array con i nuovi commenti
         if ext_act_last_comments
+          #ciclo su tale array
           ext_act_last_comments.each do |comment|
+            #se trovo un commento originato sul sistema esterno
             if comment['external'] == true
+              #scateno l'action del trigger passando quel commento
               ticket.perform_changes(trigger.perform, 'trigger', item, user_id, comment['text'])
             end
           end
+        #scateno l'action del trigger in modo "standard" (senza passare il commento)
         else
           ticket.perform_changes(trigger.perform, 'trigger', item, user_id)
         end
