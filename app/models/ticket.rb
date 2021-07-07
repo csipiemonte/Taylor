@@ -1237,15 +1237,17 @@ perform active triggers on ticket
             # }, { "commento" => [{"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"upupa"}, "{"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, {"external"=>false, "text"=>"nuova nota per strip_tags"}, {"external"=>false, "text"=>"nuova nota per strip_tags_2"}]}], "updated_by_id"=>[1, 5]}}
             # cioe' la chiave 'data' corrisponde ad un array nella cui posizione 0 ci sono gli elementi prima della modifica
             # mentre nella posizione 1 c'e' un hash dopo la modifica
+
             item_changes_data = item[:changes]['data']
+
             comment_pre = item_changes_data[0][model_param_name]
             comment_post = item_changes_data[1][model_param_name]
 
-            delta = comment_post.length - comment_pre.length
+            delta = !comment_pre ? comment_post.length : comment_post.length - comment_pre.length
 
             next if delta==0 # il campo modificato in 'data' e' un altro perche' i due array di commento hanno la stessa lunghezza
 
-            ext_act_last_comments = delta==1 ? comment_post : comment_post[comment_post.length-delta-1, comment_post.length-1]
+            ext_act_last_comments = delta==1 ? [comment_post[comment_post.length-1]] : comment_post[comment_post.length-delta-1, comment_post.length-1]
           end
 
           logger.info { "Satisfied external_activity condition (#{condition}) for this object (ExternalActivity:#{external_activity}), perform action on (Ticket:#{ticket.id})" }
