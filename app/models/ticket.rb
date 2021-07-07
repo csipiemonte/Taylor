@@ -1229,23 +1229,24 @@ perform active triggers on ticket
 
           next if model_field_type.nil?
 
+          # il campo ':changes di item e' cosi' composto
+          # :changes=>{ "data"=>[ { "commento" => [{"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, {"external"=>false, "text"=>"nuova nota per strip_tags"}]
+          # }, { "commento" => [{"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"upupa"}, "{"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, {"external"=>false, "text"=>"nuova nota per strip_tags"}, {"external"=>false, "text"=>"nuova nota per strip_tags_2"}]}], "updated_by_id"=>[1, 5]}}
+          # cioe' la chiave 'data' corrisponde ad un array nella cui posizione 0 ci sono gli elementi prima della modifica
+          # mentre nella posizione 1 c'e' un hash dopo la modifica
+          item_changes_data = item[:changes]['data']
+          param_value_pre = item_changes_data[0][model_param_name]
+          param_value_post = item_changes_data[1][model_param_name]
+
           if model_field_type != 'comment'
+            # campi non di tipo 'comment'
+            next if param_value_pre == param_value_post # skip se il valore e' identico (condizione aggiunta per evitare che il trigger sullo stato scatti quando sono aggiunti commenti sull'external activity)
             next if ext_act_data[model_param_name] != model_param_value # skip se il parametro in data non coincide con il valore di confronto presente nella condition
           else
-            # il campo ':changes di item e' cosi' composto
-            # :changes=>{ "data"=>[ { "commento" => [{"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, {"external"=>false, "text"=>"nuova nota per strip_tags"}]
-            # }, { "commento" => [{"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"upupa"}, "{"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, {"external"=>false, "text"=>"nuova nota per strip_tags"}, {"external"=>false, "text"=>"nuova nota per strip_tags_2"}]}], "updated_by_id"=>[1, 5]}}
-            # cioe' la chiave 'data' corrisponde ad un array nella cui posizione 0 ci sono gli elementi prima della modifica
-            # mentre nella posizione 1 c'e' un hash dopo la modifica
-
-            item_changes_data = item[:changes]['data']
-
-            comment_pre = item_changes_data[0][model_param_name]
-            comment_post = item_changes_data[1][model_param_name]
-
+            delta = param_value_post.length - param_value_pre.length
             delta = !comment_pre ? comment_post.length : comment_post.length - comment_pre.length
 
-            next if delta==0 # il campo modificato in 'data' e' un altro perche' i due array di commento hanno la stessa lunghezza
+            next if delta.zero? # il campo modificato in 'data' e' un altro perche' i due array di commento hanno la stessa lunghezza
 
             ext_act_last_comments = delta==1 ? [comment_post[comment_post.length-1]] : comment_post[comment_post.length-delta-1, comment_post.length-1]
           end
@@ -1286,7 +1287,7 @@ perform active triggers on ticket
 
         if ext_act_last_comments
           ext_act_last_comments.each do |comment|
-            if comment['external']==true
+            if comment['external'] == true
               ticket.perform_changes(trigger.perform, 'trigger', item, user_id, comment['text'])
             end
           end

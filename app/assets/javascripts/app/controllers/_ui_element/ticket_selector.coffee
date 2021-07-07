@@ -384,6 +384,10 @@ class App.UiElement.ticket_selector
     if commentFldName == undefined
       return
 
+    selectFieldValue = elementRow.find('[name="' + selectName + '"] option:selected').val()
+    if (selectFieldValue == commentFldName)
+      elementRow.find('.js-external-activity-condition-value').html('Aggiornato')
+
     selectField.change ->
       selectFieldValue = elementRow.find('[name="' + selectName + '"] option:selected').val()
       if (selectFieldValue == commentFldName)
