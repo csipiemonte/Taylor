@@ -20,11 +20,6 @@
     </label>
   </td>
 <% end %>
-<% if @object.needs_attention: %>
-  <td class="table-radio">
-    <svg class="icon icon-important "><use xlink:href="assets/images/icons.svg#icon-important"></use></svg>
-  </td>
-<% end %>
 <% for header in @headers: %>
   <% value = @P(@object, header.name, @attributes, true) %>
   <% if @callbacks: %>
