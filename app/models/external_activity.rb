@@ -5,17 +5,22 @@ class ExternalActivity < ApplicationModel
   store :data
 
   def check_needs_attention
-    ticket = self.ticket
-    if saved_change_to_attribute?(:needs_attention)==true
-      ticket.needs_attention = true
-      ticket.save!
-    elsif saved_change_to_attribute?(:needs_attention)==false
-      ExternalActivity.where(ticket_id: ticket.id).each do |activity|
-        return if activity.needs_attention==true
+
+    if saved_change_to_needs_attention?  # e'cambiato needs_attention?
+      ticket = self.ticket
+      needs_attention_new_value = saved_changes["needs_attention"][1]
+      if needs_attention_new_value==true or needs_attention_new_value=="true"
+        ticket.needs_attention = true
+        ticket.save!
+      else
+        ExternalActivity.where(ticket_id: ticket.id).each do |activity|
+          return if activity.needs_attention==true
+        end
+        ticket.needs_attention = false
+        ticket.save!
       end
-      ticket.needs_attention = false
-      ticket.save!
     end
+    
   end
 
 end
