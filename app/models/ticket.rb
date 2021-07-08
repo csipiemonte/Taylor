@@ -1229,22 +1229,28 @@ perform active triggers on ticket
 
           next if model_field_type.nil?
 
+          # il campo ':changes di item e' cosi' composto
+          # :changes=>{ "data"=>[ { "commento" => [{"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, {"external"=>false, "text"=>"nuova nota per strip_tags"}]
+          # }, { "commento" => [{"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"upupa"}, "{"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, {"external"=>false, "text"=>"nuova nota per strip_tags"}, {"external"=>false, "text"=>"nuova nota per strip_tags_2"}]}], "updated_by_id"=>[1, 5]}}
+          # cioe' la chiave 'data' corrisponde ad un array nella cui posizione 0 ci sono gli elementi prima della modifica
+          # mentre nella posizione 1 c'e' un hash dopo la modifica
+          item_changes_data = item[:changes]['data']
+          param_value_pre = item_changes_data[0][model_param_name]
+          param_value_post = item_changes_data[1][model_param_name]
+
           if model_field_type != 'comment'
+            # campi non di tipo 'comment'
+            next if param_value_pre == param_value_post # skip se il valore e' identico (condizione aggiunta per evitare che il trigger sullo stato scatti quando sono aggiunti commenti sull'external activity)
             next if ext_act_data[model_param_name] != model_param_value # skip se il parametro in data non coincide con il valore di confronto presente nella condition
           else
-            # il campo ':changes di item e' cosi' composto
-            # :changes=>{ "data"=>[ { "commento" => [{"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, {"external"=>false, "text"=>"nuova nota per strip_tags"}]
-            # }, { "commento" => [{"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"upupa"}, "{"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, {"external"=>false, "text"=>"nuova nota per strip_tags"}, {"external"=>false, "text"=>"nuova nota per strip_tags_2"}]}], "updated_by_id"=>[1, 5]}}
-            # cioe' la chiave 'data' corrisponde ad un array nella cui posizione 0 ci sono gli elementi prima della modifica
-            # mentre nella posizione 1 c'e' un hash dopo la modifica
-            item_changes_data = item[:changes]['data']
-            comment_pre = item_changes_data[0][model_param_name]
-            comment_post = item_changes_data[1][model_param_name]
-            next if comment_pre.length == comment_post.length # il campo modificato in 'data' e' un altro perche' i due array di commento hanno la stessa lunghezza
 
-            next if comment_post[comment_post.length - 1]['external'] == false # passo oltre se l'ultimo commento inserito (ultimo elemento dell'array) non e' esterno a zammad
+            #misuro la differenza di lunghezza tra i due array (se il primo è null, la lunghezza è pari al secondo)
+            delta = !comment_pre ? comment_post.length : comment_post.length - comment_pre.length
 
-            ext_act_last_comment = comment_post[comment_post.length - 1]['text']
+            next if delta.zero? # il campo modificato in 'data' e' un altro perche' i due array di commento hanno la stessa lunghezza
+
+            #ricavo un array "differenza" tra gli array pre e post. Se essi differivano in lunghezza di un solo elemento prendo direttamente l'ultimo elemento del secondo.
+            ext_act_last_comments = delta==1 ? [comment_post[comment_post.length-1]] : comment_post[comment_post.length-delta-1, comment_post.length-1]
           end
 
           logger.info { "Satisfied external_activity condition (#{condition}) for this object (ExternalActivity:#{external_activity}), perform action on (Ticket:#{ticket.id})" }
@@ -1281,7 +1287,20 @@ perform active triggers on ticket
         local_options[:trigger_ids][ticket.id].push trigger.id
         logger.info { "Execute trigger (#{trigger.name}/#{trigger.id}) for this object (Ticket:#{ticket.id}/Loop:#{local_options[:loop_count]})" }
 
-        ticket.perform_changes(trigger.perform, 'trigger', item, user_id, ext_act_last_comment)
+        #se è definito l'array con i nuovi commenti
+        if ext_act_last_comments
+          #ciclo su tale array
+          ext_act_last_comments.each do |comment|
+            #se trovo un commento originato sul sistema esterno
+            if comment['external'] == true
+              #scateno l'action del trigger passando quel commento
+              ticket.perform_changes(trigger.perform, 'trigger', item, user_id, comment['text'])
+            end
+          end
+        #scateno l'action del trigger in modo "standard" (senza passare il commento)
+        else
+          ticket.perform_changes(trigger.perform, 'trigger', item, user_id)
+        end
 
         if recursive == true
           Observer::Transaction.commit(local_options)
