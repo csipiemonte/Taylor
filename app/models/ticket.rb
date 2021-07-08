@@ -1245,12 +1245,12 @@ perform active triggers on ticket
           else
 
             #misuro la differenza di lunghezza tra i due array (se il primo è null, la lunghezza è pari al secondo)
-            delta = !comment_pre ? comment_post.length : comment_post.length - comment_pre.length
+            delta = !param_value_pre ? param_value_post.length : param_value_post.length - param_value_pre.length
 
             next if delta.zero? # il campo modificato in 'data' e' un altro perche' i due array di commento hanno la stessa lunghezza
 
             #ricavo un array "differenza" tra gli array pre e post. Se essi differivano in lunghezza di un solo elemento prendo direttamente l'ultimo elemento del secondo.
-            ext_act_last_comments = delta==1 ? [comment_post[comment_post.length-1]] : comment_post[comment_post.length-delta-1, comment_post.length-1]
+            ext_act_last_comments = delta==1 ? [param_value_post[param_value_post.length-1]] : param_value_post[param_value_post.length-delta-1, param_value_post.length-1]
           end
 
           logger.info { "Satisfied external_activity condition (#{condition}) for this object (ExternalActivity:#{external_activity}), perform action on (Ticket:#{ticket.id})" }
