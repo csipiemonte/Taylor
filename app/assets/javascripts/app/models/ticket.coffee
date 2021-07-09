@@ -4,7 +4,7 @@ class App.Ticket extends App.Model
   @url: @apiPath + '/tickets'
   @configure_attributes = [
       { name: 'number',                   display: '#',                 tag: 'input',    type: 'text', limit: 100, null: true, readonly: 1, width: '68px' },
-      #{ name: 'needs_attention',          display: 'Needs Attention',   tag: 'input',    type: 'text', limit: 100, null: true, readonly: 1, width: '48px' },
+      { name: 'needs_attention',          display: 'Needs Attention',   tag: 'input',    type: 'text', limit: 100, null: true, readonly: 1, width: '48px' },
       { name: 'title',                    display: 'Title',             tag: 'input',    type: 'text', limit: 100, null: false },
       { name: 'customer_id',              display: 'Customer',          tag: 'input',    type: 'text', limit: 100, null: false, autocapitalize: false, relation: 'User' },
       { name: 'organization_id',          display: 'Organization',      tag: 'select',   relation: 'Organization', readonly: 1 },

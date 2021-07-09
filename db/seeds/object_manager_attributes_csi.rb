@@ -731,6 +731,54 @@ ObjectManager::Attribute.add(
 )
 
 
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'Ticket',
+  name:        'needs_attention',
+  display:     'Needs Attention',
+  data_type:   'boolean',
+  data_option: {
+    null:       false,
+    default:    false,
+    options:    {
+      false: ' ',
+      true:  '🚩',
+    },
+    translate:  true,
+    permission: ['admin.user', 'ticket.agent'],
+  },
+  editable:    false,
+  active:      true,
+  screens:     {
+    'create_middle' => {
+      'ticket.customer' => {
+        'shown' => false,
+        'required' => false,
+        'item_class' => 'column'
+      },
+      'ticket.agent'    => {
+        'shown' => false,
+        'required' => false,
+        'item_class' => 'column'
+      }
+    },
+    'edit' => {
+      'ticket.customer' => {
+        'shown' => false,
+        'required' => false
+      },
+      'ticket.agent' => {
+        'shown' => false,
+        'required' => false
+      }
+    }
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    5000,
+)
+
 ######################
 #### Translations ####
 ######################
