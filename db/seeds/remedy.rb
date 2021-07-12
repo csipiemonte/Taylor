@@ -22,7 +22,7 @@ Setting.create_if_not_exists(
      },
   frontend:    false
 )
-Ticket::Article::Type.create_if_not_exists(id: 13, name: 'remedy', communication: true)
+
 Setting.create_if_not_exists(
   title:       'Remedy Integration',
   name:        'remedy_integration',
