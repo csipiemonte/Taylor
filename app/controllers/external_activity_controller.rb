@@ -35,6 +35,22 @@ class ExternalActivityController < ApplicationController
     return if !params[:id]
 
     external_activity = ExternalActivity.find_by(id: params[:id])
+
+    #checking update grants for current user
+    can_update = false
+    system = ExternalTicketingSystem.find_by(id:external_activity.external_ticketing_system_id)
+    access = Setting.find_by(name:"external_activity_group_access").state_current[:value]
+    current_user.groups.each do |group|
+      if access[system.name]
+        permission = access[system.name]["group_"+group.id.to_s]
+        if permission == "rw"
+          can_update = true
+          break
+        end
+      end
+    end
+    return if !can_update
+
     external_activity.data = params[:data] if params[:data].present? && external_activity.data != params[:data]
     external_activity.archived = stop_monitoring? external_activity
     external_activity.delivered = params[:delivered] if !params[:delivered].nil?
@@ -87,6 +103,7 @@ class ExternalActivityController < ApplicationController
             json_system = system.as_json
             json_system[:permission] = permission
             systems_with_permissions << json_system
+            break
           end
         end
       end
