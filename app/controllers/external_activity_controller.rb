@@ -35,6 +35,7 @@ class ExternalActivityController < ApplicationController
     return if !params[:id]
 
     external_activity = ExternalActivity.find_by(id: params[:id])
+    return if !external_activity
 
     #checking update grants for current user
     can_update = false
