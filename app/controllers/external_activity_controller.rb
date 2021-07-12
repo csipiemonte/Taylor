@@ -77,7 +77,21 @@ class ExternalActivityController < ApplicationController
   def index_external_ticketing_system
     systems = ExternalTicketingSystem.all
     systems = systems.find_by(name: params[:name]) if params[:name].present? && params[:name] != ''
-    render json: systems
+    access = Setting.find_by(name:"external_activity_group_access").state_current[:value]
+    systems_with_permissions = []
+    systems.each do |system|
+      current_user.groups.each do |group|
+        if access[system.name]
+          permission = access[system.name]["group_"+group.id.to_s]
+          if permission == "r" || permission == "rw"
+            json_system = system.as_json
+            json_system[:permission] = permission
+            systems_with_permissions << json_system
+          end
+        end
+      end
+    end
+    render json: systems_with_permissions
   end
 
   def show_external_ticketing_system
