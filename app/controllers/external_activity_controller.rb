@@ -93,7 +93,7 @@ class ExternalActivityController < ApplicationController
 
   def index_external_ticketing_system
     systems = ExternalTicketingSystem.all
-    systems = systems.find_by(name: params[:name]) if params[:name].present? && params[:name] != ''
+    systems = systems.where(name: params[:name]) if params[:name].present? && params[:name] != ''
     access = Setting.find_by(name:"external_activity_group_access").state_current[:value]
     systems_with_permissions = []
     systems.each do |system|
