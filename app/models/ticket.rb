@@ -1254,7 +1254,9 @@ perform active triggers on ticket
           end
 
           logger.info { "Satisfied external_activity condition (#{condition}) for this object (ExternalActivity:#{external_activity}), perform action on (Ticket:#{ticket.id})" }
+        end
 
+        if condition.key?('external_activity.system')
           condition.delete('external_activity.system')
         end
 
