@@ -3,6 +3,8 @@ ExternalTicketingSystem.create_if_not_exists(
   name: 'Remedy'
 )
 
+person_id = Rails.env.downcase == "production" ? "PPL000000697192" : "PPL000000426377"
+
 # to update model just edit the following variable, then seed the database :)
 remedy_model = {
   '0'  => {
@@ -84,7 +86,6 @@ remedy_model = {
       'select' => {
           'options' => {
               '1' => {'id':'Ripristino di servizio utente', 'name':'Ripristino di servizio utente'},
-              '2' => {'id':'Richiesta utente', 'name':'Richiesta utente'},
           }
       }
   },
@@ -93,7 +94,7 @@ remedy_model = {
     'name':      'richiedente',
     'label':     'richiedente',
     'type':      'text',
-    'default':   'PPL000000429692',
+    'default':   person_id,
     'read_only': true,
     'visible':   false
   },
