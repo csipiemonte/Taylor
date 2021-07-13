@@ -28,8 +28,8 @@
     }
   },
   "endpointSecurity": {
-    "username": "apiman-nextcrm",
-    "password": "h3euB]9@",
+    "username": "",
+    "password": "",
     "type": "basic"
   },
   "gatewayEnvironments": "Production Gateway",

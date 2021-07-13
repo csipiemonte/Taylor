@@ -42,7 +42,6 @@ Setting.create_if_not_exists(
   },
   frontend:    true
 )
-Ticket::Article::Type.create_if_not_exists(id: 13, name: 'remedy', communication: true)
 Setting.create_if_not_exists(
   title:       'Classification Engine Enabled',
   name:        'classification_engine_enabled',
