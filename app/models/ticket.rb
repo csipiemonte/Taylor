@@ -1202,7 +1202,7 @@ perform active triggers on ticket
                  User.lookup(id: user_id)
                end
 
-        if item[:object] == 'ExternalActivity'
+        if item[:object] == 'ExternalActivity' # check che l'oggetto modificato sia 'ExternalActivity' ossia che sia stata modificata la tabella external_activities
           next if !condition.key?('external_activity.system') # CSI custom
 
           ext_act_system = condition['external_activity.system']
@@ -1249,15 +1249,17 @@ perform active triggers on ticket
 
             next if delta.zero? # il campo modificato in 'data' e' un altro perche' i due array di commento hanno la stessa lunghezza
 
-            #ricavo un array "differenza" tra gli array pre e post. Se essi differivano in lunghezza di un solo elemento prendo direttamente l'ultimo elemento del secondo.
+            # ricavo un array "differenza" tra gli array pre e post. Se essi differivano in lunghezza di un solo elemento prendo direttamente l'ultimo elemento del secondo.
             ext_act_last_comments = delta == 1 ? [param_value_post[param_value_post.length - 1]] : param_value_post[param_value_post.length - delta - 1, param_value_post.length - 1]
           end
 
           logger.info { "Satisfied external_activity condition (#{condition}) for this object (ExternalActivity:#{external_activity}), perform action on (Ticket:#{ticket.id})" }
-        else
-          next if condition.key?('external_activity.system') # CSI custom
 
-          # verify is condition is matching
+          condition.delete('external_activity.system')
+        end
+
+        if !condition.empty? # altre condizioni in AND con la chiave 'external_activity.system'
+          # verify is condition (without 'external_activity.system' key) is matching
           ticket_count, tickets = Ticket.selectors(condition, limit: 1, execution_time: true, current_user: user, access: 'ignore')
 
           next if ticket_count.blank?
@@ -1289,15 +1291,15 @@ perform active triggers on ticket
 
         # se e' definito l'array con i nuovi commenti
         if ext_act_last_comments
-          #ciclo su tale array
+          # ciclo su tale array
           ext_act_last_comments.each do |comment|
-            #se trovo un commento originato sul sistema esterno
+            # se trovo un commento originato sul sistema esterno
             if comment['external'] == true
-              #scateno l'action del trigger passando quel commento
+              # scateno l'action del trigger passando quel commento
               ticket.perform_changes(trigger.perform, 'trigger', item, user_id, comment['text'])
             end
           end
-        #scateno l'action del trigger in modo "standard" (senza passare il commento)
+        # scateno l'action del trigger in modo "standard" (senza passare il commento)
         else
           ticket.perform_changes(trigger.perform, 'trigger', item, user_id)
         end
