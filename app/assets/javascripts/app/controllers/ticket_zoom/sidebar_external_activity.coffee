@@ -41,7 +41,9 @@ class ExternalActivity extends App.Controller
       url:   "#{@apiPath}/external_activity/system/"+@system.id+"?ticket_id="+@ticket.id
       success: (data, status, xhr) =>
         cb = @displayExternalActivity
-        if @ticket.state.id == 4 #closed
+        # se uso actual_ticket_state_id = @ticket.state.id la variabile @ticket non e'aggiornata col nuovo valore se avviene update del ticket
+        actual_ticket_state_id = $("form div[data-attribute-name=state_id] select option:selected").val()
+        if actual_ticket_state_id == 4 or actual_ticket_state_id == "4" 
           @$('.js-newExternalActivityLabel').hide()
         if data.length > 0
           @$('.js-newExternalActivityLabel').hide()
@@ -59,7 +61,9 @@ class ExternalActivity extends App.Controller
   displayExternalActivity: (activity) =>
     externalActivityId = Math.floor(Math.random() * 10000) + 10000
     # if activity is closed or ticket is closed or user doesn't have rights for editing, prevent changes on external activity
-    closed = @isClosed(activity) || @ticket.state.id == 4 || @system.permission != "rw"
+    # se uso actual_ticket_state_id = @ticket.state.id la variabile @ticket non e'aggiornata col nuovo valore se avviene update del ticket
+    actual_ticket_state_id = $("form div[data-attribute-name=state_id] select option:selected").val()
+    closed = @isClosed(activity) || actual_ticket_state_id == "4" || actual_ticket_state_id == 4 || @system.permission != "rw"
     @$('.dispatch-box').append App.view('ticket_zoom/sidebar_external_activity_form')(
            system: @system
            externalActivityId : externalActivityId
