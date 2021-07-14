@@ -1092,6 +1092,11 @@ perform active triggers on ticket
       end
     end
 
+    # cfr zammad/app/models/observer/transaction.rb
+    # a fronte di una modifica sugli oggetti osservati che sono
+    # observe :ticket, 'ticket::_article', :user, :organization, :tag, :external_activity
+    # sono prelevato tutti i trigger presenti sul database.
+    # Sono eseguiti solo quelli che soddisfano le condizioni
     Transaction.execute(local_options) do
       triggers.each do |trigger|
         logger.debug { "Probe trigger (#{trigger.name}/#{trigger.id}) for this object (Ticket:#{ticket.id}/Loop:#{local_options[:loop_count]})" }
@@ -1202,11 +1207,15 @@ perform active triggers on ticket
                  User.lookup(id: user_id)
                end
 
-        if item[:object] == 'ExternalActivity' # check che l'oggetto modificato sia 'ExternalActivity' ossia che sia stata modificata la tabella external_activities
-          next if !condition.key?('external_activity.system') # CSI custom
-
+        if condition.key?('external_activity.system')
           ext_act_system = condition['external_activity.system']
           ext_act_system_id = ext_act_system['value'].to_i
+
+          if item[:object] != 'ExternalActivity' # se l'oggetto modificato non e' 'ExternalActivity' (ossia che sia stata modificata la tabella external_activities) verifico che ci sia una external activity per quel ticket e l'external ticketing system specificato nella condition
+            external_activity = ExternalActivity.find_by(external_ticketing_system_id: ext_act_system_id, ticket_id: ticket.id)
+            next if !external_activity
+          end
+
           next if ext_act_system_id != external_activity.external_ticketing_system_id
 
           ext_act_data = external_activity.data
@@ -1252,9 +1261,7 @@ perform active triggers on ticket
           end
 
           logger.info { "Satisfied external_activity condition (#{condition}) for this object (ExternalActivity:#{external_activity}), perform action on (Ticket:#{ticket.id})" }
-        end
 
-        if condition.key?('external_activity.system')
           condition.delete('external_activity.system')
         end
 
