@@ -1092,6 +1092,11 @@ perform active triggers on ticket
       end
     end
 
+    # cfr zammad/app/models/observer/transaction.rb
+    # a fronte di una modifica sugli oggetti osservati che sono
+    # observe :ticket, 'ticket::_article', :user, :organization, :tag, :external_activity
+    # sono prelevato tutti i trigger presenti sul database.
+    # Sono eseguiti solo quelli che soddisfano le condizioni
     Transaction.execute(local_options) do
       triggers.each do |trigger|
         logger.debug { "Probe trigger (#{trigger.name}/#{trigger.id}) for this object (Ticket:#{ticket.id}/Loop:#{local_options[:loop_count]})" }
@@ -1202,11 +1207,15 @@ perform active triggers on ticket
                  User.lookup(id: user_id)
                end
 
-        if item[:object] == 'ExternalActivity'
-          next if !condition.key?('external_activity.system') # CSI custom
-
+        if condition.key?('external_activity.system')
           ext_act_system = condition['external_activity.system']
           ext_act_system_id = ext_act_system['value'].to_i
+
+          if item[:object] != 'ExternalActivity' # se l'oggetto modificato non e' 'ExternalActivity' (ossia che sia stata modificata la tabella external_activities) verifico che ci sia una external activity per quel ticket e l'external ticketing system specificato nella condition
+            external_activity = ExternalActivity.find_by(external_ticketing_system_id: ext_act_system_id, ticket_id: ticket.id)
+            next if !external_activity
+          end
+
           next if ext_act_system_id != external_activity.external_ticketing_system_id
 
           ext_act_data = external_activity.data
@@ -1229,35 +1238,35 @@ perform active triggers on ticket
 
           next if model_field_type.nil?
 
-          # il campo ':changes di item e' cosi' composto
-          # :changes=>{ "data"=>[ { "commento" => [{"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, {"external"=>false, "text"=>"nuova nota per strip_tags"}]
-          # }, { "commento" => [{"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"upupa"}, "{"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, {"external"=>false, "text"=>"nuova nota per strip_tags"}, {"external"=>false, "text"=>"nuova nota per strip_tags_2"}]}], "updated_by_id"=>[1, 5]}}
-          # cioe' la chiave 'data' corrisponde ad un array nella cui posizione 0 ci sono gli elementi prima della modifica
-          # mentre nella posizione 1 c'e' un hash dopo la modifica
-          item_changes_data = item[:changes]['data']
-          param_value_pre = item_changes_data[0][model_param_name]
-          param_value_post = item_changes_data[1][model_param_name]
-
           if model_field_type != 'comment'
             # campi non di tipo 'comment'
-            next if param_value_pre == param_value_post # skip se il valore e' identico (condizione aggiunta per evitare che il trigger sullo stato scatti quando sono aggiunti commenti sull'external activity)
             next if ext_act_data[model_param_name] != model_param_value # skip se il parametro in data non coincide con il valore di confronto presente nella condition
           else
+            # il campo ':changes di item e' cosi' composto
+            # :changes=>{ "data"=>[ { "commento" => [{"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, {"external"=>false, "text"=>"nuova nota per strip_tags"}]
+            # }, { "commento" => [{"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"upupa"}, "{"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, {"external"=>false, "text"=>"nuova nota per strip_tags"}, {"external"=>false, "text"=>"nuova nota per strip_tags_2"}]}], "updated_by_id"=>[1, 5]}}
+            # cioe' la chiave 'data' corrisponde ad un array nella cui posizione 0 ci sono gli elementi prima della modifica
+            # mentre nella posizione 1 c'e' un hash dopo la modifica
+            item_changes_data = item[:changes]['data']
+            comment_value_pre = item_changes_data[0][model_param_name]
+            comment_value_post = item_changes_data[1][model_param_name]
 
             # misuro la differenza di lunghezza tra i due array (se il primo e' null, la lunghezza e' pari al secondo)
-            delta = !param_value_pre ? param_value_post.length : param_value_post.length - param_value_pre.length
+            delta = !comment_value_pre ? comment_value_post.length : comment_value_post.length - comment_value_pre.length
 
             next if delta.zero? # il campo modificato in 'data' e' un altro perche' i due array di commento hanno la stessa lunghezza
 
-            #ricavo un array "differenza" tra gli array pre e post. Se essi differivano in lunghezza di un solo elemento prendo direttamente l'ultimo elemento del secondo.
-            ext_act_last_comments = delta == 1 ? [param_value_post[param_value_post.length - 1]] : param_value_post[param_value_post.length - delta - 1, param_value_post.length - 1]
+            # ricavo un array "differenza" tra gli array pre e post. Se essi differivano in lunghezza di un solo elemento prendo direttamente l'ultimo elemento del secondo.
+            ext_act_last_comments = delta == 1 ? [comment_value_post[comment_value_post.length - 1]] : comment_value_post[comment_value_post.length - delta - 1, comment_value_post.length - 1]
           end
 
           logger.info { "Satisfied external_activity condition (#{condition}) for this object (ExternalActivity:#{external_activity}), perform action on (Ticket:#{ticket.id})" }
-        else
-          next if condition.key?('external_activity.system') # CSI custom
 
-          # verify is condition is matching
+          condition.delete('external_activity.system')
+        end
+
+        if !condition.empty? # altre condizioni in AND con la chiave 'external_activity.system'
+          # verify is condition (without 'external_activity.system' key) is matching
           ticket_count, tickets = Ticket.selectors(condition, limit: 1, execution_time: true, current_user: user, access: 'ignore')
 
           next if ticket_count.blank?
@@ -1289,15 +1298,15 @@ perform active triggers on ticket
 
         # se e' definito l'array con i nuovi commenti
         if ext_act_last_comments
-          #ciclo su tale array
+          # ciclo su tale array
           ext_act_last_comments.each do |comment|
-            #se trovo un commento originato sul sistema esterno
+            # se trovo un commento originato sul sistema esterno
             if comment['external'] == true
-              #scateno l'action del trigger passando quel commento
+              # scateno l'action del trigger passando quel commento
               ticket.perform_changes(trigger.perform, 'trigger', item, user_id, comment['text'])
             end
           end
-        #scateno l'action del trigger in modo "standard" (senza passare il commento)
+        # scateno l'action del trigger in modo "standard" (senza passare il commento)
         else
           ticket.perform_changes(trigger.perform, 'trigger', item, user_id)
         end
