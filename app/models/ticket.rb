@@ -1211,7 +1211,7 @@ perform active triggers on ticket
           ext_act_system = condition['external_activity.system']
           ext_act_system_id = ext_act_system['value'].to_i
 
-          if item[:object] != 'ExternalActivity' # se l'oggetto modificato non e' 'ExternalActivity' (ossia che sia stata modificata la tabella external_activities) verifico che ci sia una external activity per quel ticket e l'external ticketing system specificato nella condition
+          if item[:object] != 'ExternalActivity' # se l'oggetto modificato non e' 'ExternalActivity' (ossia che NON sia stata modificata la tabella external_activities) verifico che ci sia una external activity per quel ticket e l'external ticketing system specificato nella condition
             external_activity = ExternalActivity.find_by(external_ticketing_system_id: ext_act_system_id, ticket_id: ticket.id)
             next if !external_activity
           end
@@ -1247,6 +1247,9 @@ perform active triggers on ticket
             # }, { "commento" => [{"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"upupa"}, "{"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, {"external"=>false, "text"=>"nuova nota per strip_tags"}, {"external"=>false, "text"=>"nuova nota per strip_tags_2"}]}], "updated_by_id"=>[1, 5]}}
             # cioe' la chiave 'data' corrisponde ad un array nella cui posizione 0 ci sono gli elementi prima della modifica
             # mentre nella posizione 1 c'e' un hash dopo la modifica
+            next if item[:object] != 'ExternalActivity' # la condition sull'aggiornamento del commento vale solo se e' stata aggiornata la tabella external_activities
+            next if !item[:changes].key?('data')
+
             item_changes_data = item[:changes]['data']
             comment_value_pre = item_changes_data[0][model_param_name]
             comment_value_post = item_changes_data[1][model_param_name]
@@ -1893,23 +1896,30 @@ result
       comment_field = value
       break
     end
-    if !comment_field.nil? && !comment_field['attachments'].nil? && comment_field['attachments']['enabled']
-      list = articles.first.attachments || []
-      if !list.empty?
-        attach_idx = 0
-        attach_hash = {}
-        list.each do |item|
-          file = Store.find(item.id.to_i)
+    if !comment_field.nil?
+      # creazione del primo commento necessaria per far funzionare la condition sull'aggiornamento del commento
+      comment = { 'external': false, 'text': 'External activity creata automaticamente.', 'created_at': Time.zone.now.to_s() }
 
-          file_content = file.content
-          if !comment_field['attachments']['encoding'].nil?
-            # TODO, eseguire la codifica del contenuto del file (per remedy nessuna codifica)
+      if !comment_field['attachments'].nil? && comment_field['attachments']['enabled']
+        list = articles.first.attachments || []
+        if !list.empty?
+          attach_idx = 0
+          attach_hash = {}
+          list.each do |item|
+            file = Store.find(item.id.to_i)
+
+            file_content = file.content
+            if !comment_field['attachments']['encoding'].nil?
+              # TODO, eseguire la codifica del contenuto del file (per remedy nessuna codifica)
+            end
+            attach_hash[attach_idx.to_s] = { 'name': file.filename, 'file': Base64.encode64(file_content) }
+            attach_idx = attach_idx + 1
           end
-          attach_hash[attach_idx.to_s] = { 'name': file.filename, 'file': Base64.encode64(file_content) }
-          attach_idx = attach_idx + 1
+          comment['text'] = 'External activity (allegati presenti) creata automaticamente.'
+          comment['attachments'] = attach_hash
         end
-        ext_act_perform[comment_field['name']] = [{ 'external': false, 'text': 'Allegati presenti.', 'attachments': attach_hash }]
       end
+      ext_act_perform[comment_field['name']] = [comment]
     end
 
     ExternalActivity.create(
@@ -1950,7 +1960,7 @@ result
                    else
                      ActionController::Base.helpers.strip_tags(articles.last.body)
                    end
-    comment_to_add = { 'external': false, 'text': comment_text }
+    comment_to_add = { 'external': false, 'text': comment_text, 'created_at': Time.zone.now.to_s() }
 
     ext_activity_data = ext_activity.data
     comments = []
