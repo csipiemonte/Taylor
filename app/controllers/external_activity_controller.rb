@@ -96,8 +96,12 @@ class ExternalActivityController < ApplicationController
     systems = systems.where(name: params[:name]) if params[:name].present? && params[:name] != ''
     access = Setting.find_by(name:"external_activity_group_access").state_current[:value]
     systems_with_permissions = []
+    groups = current_user.groups
+    current_user.roles.each do |role|
+      groups += role.groups
+    end
     systems.each do |system|
-      current_user.groups.each do |group|
+      groups.each do |group|
         if access[system.name]
           permission = access[system.name]["group_"+group.id.to_s]
           if permission == "r" || permission == "rw"
