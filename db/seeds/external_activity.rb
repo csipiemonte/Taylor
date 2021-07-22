@@ -176,6 +176,9 @@ create_translation('it-it','Update on an external activity related to Ticket |%s
 create_translation('it-it','⚠ There are new changes on this activity','⚠ Ci sono aggiornamenti su questa attività')
 create_translation('it-it','Needs Attention','Richiede Attenzione')
 
+create_translation('it-it','No ticketing systems available','Nessun ticketing system esterno disponibile')
+
+
 
 
 Setting.create_if_not_exists(

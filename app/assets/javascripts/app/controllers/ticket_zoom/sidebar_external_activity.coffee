@@ -8,12 +8,14 @@ class ExternalActivity extends App.Controller
       async: false
       success: (data, status, xhr) =>
         @systems = data
-        cb = @loadSystem
+        if data.length==0
+          @showNoSystemsMessage()
+        instance = @
         data.forEach (system) ->
           systems.push {
             title:    system.name
             name:     system.name
-            callback: () -> cb(system)
+            callback: () -> instance.loadSystem(system)
           }
     )
     @item = {
@@ -24,6 +26,9 @@ class ExternalActivity extends App.Controller
       sidebarActions: systems
     }
     @item
+
+  showNoSystemsMessage: =>
+    @html App.view('ticket_zoom/no_ticketing_systems_available')()
 
   loadSystem: (system) =>
     @system = system
@@ -43,7 +48,7 @@ class ExternalActivity extends App.Controller
         cb = @displayExternalActivity
         # se uso actual_ticket_state_id = @ticket.state.id la variabile @ticket non e'aggiornata col nuovo valore se avviene update del ticket
         actual_ticket_state_id = $("form div[data-attribute-name=state_id] select option:selected").val()
-        if actual_ticket_state_id == 4 or actual_ticket_state_id == "4" 
+        if actual_ticket_state_id == 4 or actual_ticket_state_id == "4"
           @$('.js-newExternalActivityLabel').hide()
         if data.length > 0
           @$('.js-newExternalActivityLabel').hide()
@@ -368,6 +373,8 @@ class ExternalActivity extends App.Controller
   showObjectsContent: (objectIds) =>
     if @systems.length > 0
       @loadSystem(@systems[0])
+    else
+      @showNoSystemsMessage()
     return
 
   showError: (message) =>
