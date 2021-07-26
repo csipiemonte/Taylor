@@ -4,28 +4,48 @@ class ExternalActivity extends App.Controller
     @ajax(
       id:    'ticketing_system_selector'
       type:  'GET'
-      url:   "#{@apiPath}/external_ticketing_system"
+      url:   "#{@apiPath}/external_ticketing_system?ticket="+@ticket.id
       async: false
       success: (data, status, xhr) =>
         @systems = data
         if data.length==0
           @showNoSystemsMessage()
         instance = @
+        @activities_needing_attention = 0
         data.forEach (system) ->
+          if system.activities_needing_attention
+            instance.activities_needing_attention += system.activities_needing_attention
           systems.push {
-            title:    system.name
+            title:    system.name + " (" + system.activities_needing_attention + ")"
             name:     system.name
             callback: () -> instance.loadSystem(system)
           }
     )
     @item = {
       name: 'external_activity'
-      badgeIcon: 'external'
+      badgeCallback: @badgeRender
       sidebarHead: 'Ticketing System'
       sidebarCallback: @showObjects
       sidebarActions: systems
     }
     @item
+
+  badgeRender: (el) =>
+    @badgeEl = el
+    @badgeRenderLocal()
+
+  badgeRenderLocal: (user) =>
+    @badgeEl.html(App.view('generic/sidebar_tabs_item')(@metaBadge()))
+
+  metaBadge: () =>
+    cssClass = ''
+    {
+      name: 'external_activities'
+      icon: 'external'
+      counterPossible: true
+      counter: @activities_needing_attention
+      cssClass: cssClass
+    }
 
   showNoSystemsMessage: =>
     @html App.view('ticket_zoom/no_ticketing_systems_available')()
