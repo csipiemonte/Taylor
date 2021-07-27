@@ -101,12 +101,17 @@ class ExternalActivityController < ApplicationController
       groups += role.groups
     end
     systems.each do |system|
+
       groups.each do |group|
         if access[system.name]
           permission = access[system.name]["group_"+group.id.to_s]
           if permission == "r" || permission == "rw"
             json_system = system.as_json
             json_system[:permission] = permission
+            if params[:ticket]
+              activities = ExternalActivity.where(ticket_id: params[:ticket], external_ticketing_system_id: system.id)
+              json_system[:activities_needing_attention] = activities.select {|activity| activity.needs_attention}.length
+            end
             systems_with_permissions << json_system
             break
           end
