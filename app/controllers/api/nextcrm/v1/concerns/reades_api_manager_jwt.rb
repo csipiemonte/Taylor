@@ -60,6 +60,8 @@ module Api::Nextcrm::V1::Concerns::ReadesApiManagerJwt
       #   'http://wso2.org/claims/apicontext' => '/tecno/nextcrm/v1' 
       # }
       # apimanager_raw_jwt = JWT.encode test_payload, nil, 'none', { typ: 'JWT' }
+      # one line minimal jwt:
+      # apimanager_raw_jwt  = JWT.encode( {'http://wso2.org/claims/applicationname' => 'poc_NextCRM'}, nil, 'none', {typ:'JWT'} )
       ###
 
 
