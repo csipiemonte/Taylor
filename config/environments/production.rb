@@ -86,7 +86,7 @@ Rails.application.configure do
   # require 'syslog/logger'
   # config.logger = ActiveSupport::TaggedLogging.new(Syslog::Logger.new 'app-name')
 
-  config.logger = Logger.new("#{Rails.root}/log/production.log", 5, 20*1048576)
+  config.logger = Logger.new("#{Rails.root}/log/production.log", 30, 100*1048576)
 
   if ENV['RAILS_LOG_TO_STDOUT'].present?
     logger           = ActiveSupport::Logger.new(STDOUT)

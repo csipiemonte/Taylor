@@ -57,7 +57,9 @@ class Observer::Transaction < ActiveRecord::Observer
   end
 
   def self.execute_singel_backend(backend, item, params)
-    Rails.logger.info { "Execute singel backend backend: #{backend}, item: #{item}, params: #{params}" }
+    Rails.logger.info { "Execute singel backend: #{backend}, item: #{item.slice(:object,:object_id,:user_id,:type, :created_at)}" }
+     # l'oggetto item contiene a volte nei :changes il file in attachment che viene stampato interamente nei log, non mettere a livello info
+    Rails.logger.debug { "Execute singel backend item and params: #{backend}, item: #{item}, params: #{params}" }
     begin
       UserInfo.current_user_id = nil
       integration = backend.new(item, params)
