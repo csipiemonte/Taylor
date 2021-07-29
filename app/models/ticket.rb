@@ -1833,7 +1833,7 @@ result
   def create_external_activity(ext_act_perform)
     logger.info { "create_external_activity - Perform external activity #{ext_act_perform.inspect} on Ticket.find(#{id})" }
 
-    ext_act_system = ext_act_perform['system']
+    ext_act_system = ext_act_perform['system'].to_i
     ext_act_perform.delete('system')
 
     # verifica che non ci sia gia' una external activity associata al tk in questione per l'activity system 'ext_act_system'
@@ -1938,7 +1938,7 @@ result
   def update_external_activity(ext_act_perform)
     logger.info { "update_external_activity - Perform external activity #{ext_act_perform.inspect} on Ticket.find(#{id})" }
 
-    ext_act_system = ext_act_perform['system']
+    ext_act_system = ext_act_perform['system'].to_i
 
     # verifica che ci sia gia' una external activity associata al tk in questione per l'activity system 'ext_act_system'
     ext_activity = ExternalActivity.find_by(external_ticketing_system_id: ext_act_system, ticket_id: id)
