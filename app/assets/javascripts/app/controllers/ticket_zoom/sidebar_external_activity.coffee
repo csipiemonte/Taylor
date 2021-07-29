@@ -1,6 +1,7 @@
 class ExternalActivity extends App.Controller
   sidebarItem: =>
     systems = []
+    instance = @
     @ajax(
       id:    'ticketing_system_selector'
       type:  'GET'
@@ -10,17 +11,17 @@ class ExternalActivity extends App.Controller
         @systems = data
         if data.length==0
           @showNoSystemsMessage()
-        instance = @
         @activities_needing_attention = 0
         data.forEach (system) ->
           if system.activities_needing_attention
             instance.activities_needing_attention += system.activities_needing_attention
           systems.push {
-            title:    system.name + " (" + system.activities_needing_attention + ")"
+            title:    system.name
             name:     system.name
             callback: () -> instance.loadSystem(system)
           }
     )
+
     @item = {
       name: 'external_activity'
       badgeCallback: @badgeRender
@@ -102,8 +103,7 @@ class ExternalActivity extends App.Controller
            activity: @humanizeDate(activity)
          )
     instance = @
-    callback = () -> instance.buildActivityElements(externalActivityId,activity)
-    setTimeout callback,1500
+    @buildActivityElements(externalActivityId,activity)
 
 
   buildActivityElements: (externalActivityId,activity) =>
@@ -192,8 +192,8 @@ class ExternalActivity extends App.Controller
   buildSelectFields: (externalActivityId,activity=null) =>
     instance = @
     $.each @system.model, (key, field) ->
-      selectField = $('#External_Activity_'+externalActivityId+'_'+field["name"])
       if field["select"] != undefined
+        selectField = instance.$('#External_Activity_'+externalActivityId+'_'+field["name"])
         for key, option of field["select"]["options"]
           instance.addOption(selectField, option)
         if field["select"]["service"] != undefined
