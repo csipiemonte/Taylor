@@ -615,6 +615,29 @@ class TicketsController < ApplicationController
     }
   end
 
+  # GET /ticket_admissible_transitions/1
+  def admissible_transitions
+    actual_state = Ticket::State.find(params[:state_id]).name
+    logger.info { "admissible_transitions - actual_state = #{actual_state}" }
+
+    case actual_state.to_sym
+    when :new
+      admissible_states = ['new', 'open']
+    when :open
+      admissible_states = ['open', 'pending user feedback', 'pending external activity', 'resolved']
+    when :pending_user_feedback
+      admissible_states = ['pending user feedback', 'open']
+    when :pending_external_activity
+      admissible_states = ['pending external activity', 'open']
+    when :resolved
+      admissible_states = %w[resolved open closed]
+    end
+
+    raise "Unknown actual_state '#{actual_state}'" if admissible_states.blank?
+
+    render json: Ticket::State.where(name: admissible_states).pluck(:id)
+  end
+
   # @path    [GET] /tickets/import_example
   #
   # @summary          Download of example CSV file.
