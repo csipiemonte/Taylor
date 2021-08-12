@@ -31,7 +31,7 @@ class Observer::Ticket::Article::CommunicateWhatsapp::BackgroundJob
     begin
 
       from_number = ticket.preferences['whatsapp']['bot_phone']
-      # to_number = 'whatsapp:+393490541958'
+      # to_number = 'whatsapp:+3936717898'
       to_number = ticket.preferences['whatsapp']['customer_phone']
       if not to_number.include?('whatsapp:')
         to_number = "whatsapp:#{to_number}"

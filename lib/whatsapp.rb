@@ -2,9 +2,9 @@ class Whatsapp
 
     # # text of the message 
     # body = params["Body"]
-    # # example: "whatsapp:+393490541958"
+    # # example: "whatsapp:+3934350548"
     # from = params["From"] 
-    # # example "393490541958"
+    # # example "393546456546"
     # waid = params["WaId"]
 
     def self.bot_by_account_sid(account_sid)

@@ -9,7 +9,7 @@
       <label for="phone"><%- @T('%s Phone Number', 'Whatsapp Twilio') %> <span>*</span></label>
     </div>
     <div class="controls">
-      <input id="phone" type="text" name="phone" value="" class="form-control" required autocomplete="off" placeholder="example: +393490541958">
+      <input id="phone" type="text" name="phone" value="" class="form-control" required autocomplete="off" placeholder="example: +14155238886">
     </div>
   </div>
   <div class="input form-group">
