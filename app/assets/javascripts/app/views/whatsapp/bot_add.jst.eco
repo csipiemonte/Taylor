@@ -1,0 +1,55 @@
+<div class="alert alert--danger hidden" role="alert"></div>
+<p>
+  <%#- @T('The tutorial on how to manage a %s is hosted on our online documentation %l.', 'Whatsapp Bot', 'https://admin-docs.zammad.org/en/latest/channels/telegram.html') %>
+</p>
+<fieldset>
+  <h2><%- @T('Enter your %s App Keys', 'Whatsapp Twilio') %></h2>
+  <div class="input form-group">
+    <div class="formGroup-label">
+      <label for="phone"><%- @T('%s Phone Number', 'Whatsapp Twilio') %> <span>*</span></label>
+    </div>
+    <div class="controls">
+      <input id="phone" type="text" name="phone" value="" class="form-control" required autocomplete="off" placeholder="example: +393490541958">
+    </div>
+  </div>
+  <div class="input form-group">
+    <div class="formGroup-label">
+      <label for="auth_token"><%- @T('%s Auth Token', 'Whatsapp Twilio') %> <span>*</span></label>
+    </div>
+    <div class="controls">
+      <input id="api_tauth_tokenoken" type="text" name="auth_token" value="" class="form-control" required autocomplete="off">
+    </div>
+  </div>
+  <div class="input form-group">
+    <div class="formGroup-label">
+      <label for="account_sid"><%- @T('%s Account SID', 'Whatsapp Twilio') %> <span>*</span></label>
+    </div>
+    <div class="controls">
+      <input id="account_sid" type="text" name="account_sid" value="" class="form-control" required autocomplete="off">
+    </div>
+  </div>
+  <h2><%- @T('Settings') %></h2>
+  <div class="input form-group">
+    <div class="formGroup-label">
+      <label for="bot_name"><%- @T('Name') %> <span>*</span></label>
+    </div>
+    <div class="controls">
+      <input id="bot_name" type="text" name="bot_name" value="" placeholder="<%- @Ti('Bot name (internal)') %>" class="form-control" required autocomplete="off">
+    </div>
+  </div>
+  <div class="input form-group">
+    <div class="formGroup-label">
+      <label for=""><%- @T('Choose the group in which messages will get added to.') %> <span>*</span></label>
+    </div>
+    <div class="controls">
+      <div class="js-messagesGroup"></div>
+    </div>
+  </div>
+  <h2><%- @T('Your callback URL') %></h2>
+  <div class="input form-group">
+    <div class="controls">
+      <!-- <input class="form-control js-select" readonly value="<%= @callbackUrl %>"> -->
+      <input class="form-control js-select" readonly value="<%= window.location.origin %>/api/v1/channels_whatsapp_webhook/callback">
+    </div>
+  </div>
+</fieldset>
