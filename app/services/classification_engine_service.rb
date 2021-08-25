@@ -17,6 +17,8 @@ class ClassificationEngineService
     Rails.logger.info{"performing GET request to: #{path}"}
     uri = URI.parse(path)
     http = Net::HTTP.new(uri.host, uri.port)
+    http.read_timeout = 5
+    http.open_timeout = 5
     request = Net::HTTP::Get.new(uri.request_uri)
     BASE_HEADERS.each do |key, value|
       request[key] = value
@@ -50,6 +52,8 @@ class ClassificationEngineService
     Rails.logger.info{"performing POST request to: #{path}"}
     uri = URI.parse(path)
     http = Net::HTTP.new(uri.host, uri.port)
+    http.read_timeout = 5
+    http.open_timeout = 5
     request = Net::HTTP::Post.new(uri.request_uri)
     BASE_HEADERS.each do |key, value|
       request[key] = value

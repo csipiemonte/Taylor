@@ -24,7 +24,7 @@ module Channel::Filter::ClassificationFilter
           end
         end
       rescue => e
-        Rails.logger.info "ERROR WHILE TRYING TO CLASSIFY TICKET WITH ID #{ticket.id}\n#{e.backtrace}"
+        Rails.logger.info "A problem occured during ticket classification.\n#{e.backtrace}"
       ensure
         true
       end
