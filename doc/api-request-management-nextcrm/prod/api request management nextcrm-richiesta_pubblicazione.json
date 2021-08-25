@@ -1,0 +1,57 @@
+{
+  "provider": "admin",
+  "destinationStatsEnabled": null,
+  "isDefaultVersion": false,
+  "type": "HTTP",
+  "transport": [
+    "http"
+  ],
+  "tiers": [
+    "Gold",
+    "Silver",
+    "Bronze"
+  ],
+  "maxTps": null,
+  "visibility": "PUBLIC",
+  "visibleRoles": [],
+  "visibleTenants": [],
+  "accessControl": "NONE",
+  "accessControlRoles": [],
+  "apiLevelPolicy": null,
+  "authorizationHeader": null,
+  "apiSecurity": "oauth2",
+  "endpointConfig": {
+    "endpoint_type": "http",
+    "production_endpoints": {
+      "url": "http://apibe-nextcrm.nivolapiemonte.it/api/nextcrm/v1/",
+      "config": null
+    }
+  },
+  "endpointSecurity": {
+    "username": "",
+    "password": "",
+    "type": "basic"
+  },
+  "gatewayEnvironments": "Production Gateway",
+  "sequences": [],
+  "subscriptionAvailability": null,
+  "subscriptionAvailableTenants": [],
+  "businessInformation": {
+    "businessOwner": "Stefano Moro",
+    "businessOwnerEmail": "stefano.moro@csi.it",
+    "technicalOwner": "Riccardo Franco",
+    "technicalOwnerEmail": "riccardo.franco@csi.it"
+  },
+  "additionalProperties": {
+    "institution": "CSI-Piemonte",
+    "api_product_id": "nextcrm-zammad-CSI-01"
+  },
+  "tags": [
+    "csi",
+    "cittadino",
+    "a2a",
+    "a2b",
+    "a2c",
+    "Tecno-group"
+  ]
+}

@@ -10,6 +10,21 @@ module Api::Nextcrm::V1::Concerns::Filterable
     attributes.each do |att|
       operator = filter[att].keys[0]
       value = filter[att][operator] 
+      if !value.empty? and value.include?("OR")
+        value = "(#{value})"
+      end
+
+      if att.include? "email"
+        # check if email in filter is a linked email
+        linked_authorization = Authorization.where(email: value).last
+        if linked_authorization
+          user = User.where(id: linked_authorization.user_id).last
+          if user and user.email
+            value = user.email
+          end
+        end
+      end
+
       case operator
         when "eq"
           ret_query += "#{att}:#{value} AND "

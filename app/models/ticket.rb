@@ -1,4 +1,5 @@
 # Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+require 'base64'
 
 class Ticket < ApplicationModel
   include CanBeImported
@@ -71,6 +72,8 @@ class Ticket < ApplicationModel
   belongs_to    :updated_by,             class_name: 'User', optional: true
   belongs_to    :create_article_type,    class_name: 'Ticket::Article::Type', optional: true
   belongs_to    :create_article_sender,  class_name: 'Ticket::Article::Sender', optional: true
+
+  belongs_to    :type,                  class_name: 'Ticket::Type', optional: true
 
   self.inheritance_column = nil
 
@@ -869,8 +872,9 @@ perform changes on ticket
 
 =end
 
-  def perform_changes(perform, perform_origin, item = nil, current_user_id = nil)
-    logger.debug { "Perform #{perform_origin} #{perform.inspect} on Ticket.find(#{id})" }
+  # perform: attributo perform della tabella trigger
+  def perform_changes(perform, perform_origin, item = nil, current_user_id = nil, ext_activity_comment = nil)
+    logger.info { "perform_changes - Perform #{perform_origin} #{perform.inspect} on Ticket.find(#{id})" }
 
     article = begin
                 Ticket::Article.find_by(id: item.try(:dig, :article_id))
@@ -891,11 +895,14 @@ perform changes on ticket
     end
 
     perform_notification = {}
+    perform_external_activity = {} # CSI custom external activity
     perform_article = {}
     changed = false
+
+    # ciclo su ogni chiave valore presente nell'hash memorizzata nella colonna 'perform'
     perform.each do |key, value|
       (object_name, attribute) = key.split('.', 2)
-      raise "Unable to update object #{object_name}.#{attribute}, only can update tickets, send notifications and create articles!" if object_name != 'ticket' && object_name != 'article' && object_name != 'notification'
+      raise "Unable to update object #{object_name}.#{attribute}, only can update tickets, send notifications, create articles and external activities!" if object_name != 'ticket' && object_name != 'article' && object_name != 'notification' && object_name != 'external_activity'
 
       # send notification/create article (after changes are done)
       if object_name == 'article'
@@ -904,6 +911,12 @@ perform changes on ticket
       end
       if object_name == 'notification'
         perform_notification[key] = value
+        next
+      end
+
+      # external activity
+      if object_name == 'external_activity'
+        perform_external_activity[key] = value
         next
       end
 
@@ -961,22 +974,42 @@ perform changes on ticket
     end
 
     perform_article.each do |key, value|
-      raise 'Unable to create article, we only support article.note' if key != 'article.note'
+      raise 'Unable to create article, we only support article.note and article.note_ext_act' if key != 'article.note' && key != 'article.note_ext_act'
 
-      Ticket::Article.create!(
-        ticket_id:     id,
-        subject:       value[:subject],
-        content_type:  'text/html',
-        body:          value[:body],
-        internal:      value[:internal],
-        sender:        Ticket::Article::Sender.find_by(name: 'System'),
-        type:          Ticket::Article::Type.find_by(name: 'note'),
-        preferences:   {
-          perform_origin: perform_origin,
-        },
-        updated_by_id: 1,
-        created_by_id: 1,
-      )
+      if key == 'article.note'
+        Ticket::Article.create!(
+          ticket_id:     id,
+          subject:       value[:subject],
+          content_type:  'text/html',
+          body:          value[:body],
+          internal:      value[:internal],
+          sender:        Ticket::Article::Sender.find_by(name: 'System'),
+          type:          Ticket::Article::Type.find_by(name: 'note'),
+          preferences:   {
+            perform_origin: perform_origin,
+          },
+          updated_by_id: 1,
+          created_by_id: 1,
+        )
+      else
+        # CSI custom, key = article.note_ext_act
+        next if ext_activity_comment.nil?
+
+        Ticket::Article.create!(
+          ticket_id:     id,
+          subject:       value[:subject],
+          content_type:  'text/html',
+          body:          ext_activity_comment,
+          internal:      value[:internal],
+          sender:        Ticket::Article::Sender.find_by(name: 'System'),
+          type:          Ticket::Article::Type.find_by(name: 'note'),
+          preferences:   {
+            perform_origin: perform_origin,
+          },
+          updated_by_id: 1,
+          created_by_id: 1,
+        )
+      end
     end
 
     perform_notification.each do |key, value|
@@ -991,6 +1024,19 @@ perform changes on ticket
       end
     end
 
+    # custom CSI external activity -- start
+    perform_external_activity.each do |key, value|
+
+      case key
+      when 'external_activity.new_activity'
+        create_external_activity(value)
+        next
+      when 'external_activity.upd_activity'
+        update_external_activity(value)
+      end
+    end
+    # custom CSI external activity -- end
+
     true
   end
 
@@ -1002,7 +1048,14 @@ perform active triggers on ticket
 
 =end
 
-  def self.perform_triggers(ticket, article, item, options = {})
+  def self.perform_triggers(ticket, article, item, options = {}, external_activity)
+    logger.info { "perform_triggers - item #{item}), options #{options}, external_activity #{external_activity}" }
+    # per ExternalActivity la riga di log produce (ad esempio)
+    # item : {:object=>"ExternalActivity", :object_id=>1, :user_id=>1, :created_at=>Mon, 07 Jun 2021 09:36:27 UTC +00:00,
+    # :type=>"update", :changes=>{"bidirectional_alignment"=>[true, false]}
+    # },
+    # options: {:interface_handle=>"application_server", :type=>"update", :reset_user_id=>true, :disable=>["Transaction::Notification"], :trigger_ids=>{4=>[8]}, :loop_count=>1}
+
     recursive = Setting.get('ticket_trigger_recursive')
     type = options[:type] || item[:type]
     local_options = options.clone
@@ -1039,6 +1092,11 @@ perform active triggers on ticket
       end
     end
 
+    # cfr zammad/app/models/observer/transaction.rb
+    # a fronte di una modifica sugli oggetti osservati che sono
+    # observe :ticket, 'ticket::_article', :user, :organization, :tag, :external_activity
+    # sono prelevato tutti i trigger presenti sul database.
+    # Sono eseguiti solo quelli che soddisfano le condizioni
     Transaction.execute(local_options) do
       triggers.each do |trigger|
         logger.debug { "Probe trigger (#{trigger.name}/#{trigger.id}) for this object (Ticket:#{ticket.id}/Loop:#{local_options[:loop_count]})" }
@@ -1105,12 +1163,20 @@ perform active triggers on ticket
           # verify if ticket condition exists
           condition.each_key do |key|
             (object_name, attribute) = key.split('.', 2)
-            next if object_name != 'ticket'
+            next if object_name != 'ticket' && object_name != 'external_activity' # CSI custom
 
             one_has_changed_condition = true
             next if item[:changes].blank?
-            next if !item[:changes].key?(attribute)
 
+            # item[:changes] contiene i cambiamenti sul record
+            # ad esempio item[:changes] => {"bidirectional_alignment"=>[true, false]
+            # quindi per ticket l'attributo della condition deve coincidere con il valore della chiave presente in changes
+            if object_name == 'ticket'
+              next if !item[:changes].key?(attribute)
+            elsif object_name == 'external_activity'
+              # per external_activity si prendono in considerazione solo le variazioni su colonna 'data'
+              next if !item[:changes].key?('data')
+            end
             one_has_changed_done = true
             break
           end
@@ -1141,12 +1207,75 @@ perform active triggers on ticket
                  User.lookup(id: user_id)
                end
 
-        # verify is condition is matching
-        ticket_count, tickets = Ticket.selectors(condition, limit: 1, execution_time: true, current_user: user, access: 'ignore')
+        if condition.key?('external_activity.system')
+          ext_act_system = condition['external_activity.system']
+          ext_act_system_id = ext_act_system['value'].to_i
 
-        next if ticket_count.blank?
-        next if ticket_count.zero?
-        next if tickets.first.id != ticket.id
+          if item[:object] != 'ExternalActivity' # se l'oggetto modificato non e' 'ExternalActivity' (ossia che NON sia stata modificata la tabella external_activities) verifico che ci sia una external activity per quel ticket e l'external ticketing system specificato nella condition
+            external_activity = ExternalActivity.find_by(external_ticketing_system_id: ext_act_system_id, ticket_id: ticket.id)
+            next if !external_activity
+          end
+
+          next if ext_act_system_id != external_activity.external_ticketing_system_id
+
+          ext_act_data = external_activity.data
+
+          # prelievo dei campi dalla condition
+          model_param_name = ext_act_system['model_param_name'] # nome del parametro del model inserito nella condition
+          model_param_value = ext_act_system['model_param_value'] # valore di confronto inserito nella condition
+
+          next if !ext_act_data.key?(model_param_name) # skip se i data della external activity non contengono il parametro della condition
+
+          model_field_type = nil
+          ext_act_system_model = ExternalTicketingSystem.find_by(id: external_activity.external_ticketing_system_id).model
+          ext_act_system_model.each_value do |value|
+            next if !value.key?('name') || !value.key?('type')
+            next if value['name'] != model_param_name
+
+            model_field_type = value['type']
+            break
+          end
+
+          next if model_field_type.nil?
+
+          if model_field_type != 'comment'
+            # campi non di tipo 'comment'
+            next if ext_act_data[model_param_name] != model_param_value # skip se il parametro in data non coincide con il valore di confronto presente nella condition
+          else
+            # il campo ':changes di item e' cosi' composto
+            # :changes=>{ "data"=>[ { "commento" => [{"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, {"external"=>false, "text"=>"nuova nota per strip_tags"}]
+            # }, { "commento" => [{"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"upupa"}, "{"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, {"external"=>false, "text"=>"nuova nota per strip_tags"}, {"external"=>false, "text"=>"nuova nota per strip_tags_2"}]}], "updated_by_id"=>[1, 5]}}
+            # cioe' la chiave 'data' corrisponde ad un array nella cui posizione 0 ci sono gli elementi prima della modifica
+            # mentre nella posizione 1 c'e' un hash dopo la modifica
+            next if item[:object] != 'ExternalActivity' # la condition sull'aggiornamento del commento vale solo se e' stata aggiornata la tabella external_activities
+            next if !item[:changes].key?('data')
+
+            item_changes_data = item[:changes]['data']
+            comment_value_pre = item_changes_data[0][model_param_name]
+            comment_value_post = item_changes_data[1][model_param_name]
+
+            # misuro la differenza di lunghezza tra i due array (se il primo e' null, la lunghezza e' pari al secondo)
+            delta = !comment_value_pre ? comment_value_post.length : comment_value_post.length - comment_value_pre.length
+
+            next if delta.zero? # il campo modificato in 'data' e' un altro perche' i due array di commento hanno la stessa lunghezza
+
+            # ricavo un array "differenza" tra gli array pre e post. Se essi differivano in lunghezza di un solo elemento prendo direttamente l'ultimo elemento del secondo.
+            ext_act_last_comments = delta == 1 ? [comment_value_post[comment_value_post.length - 1]] : comment_value_post[comment_value_post.length - delta - 1, comment_value_post.length - 1]
+          end
+
+          logger.info { "Satisfied external_activity condition (#{condition}) for this object (ExternalActivity:#{external_activity}), perform action on (Ticket:#{ticket.id})" }
+
+          condition.delete('external_activity.system')
+        end
+
+        if !condition.empty? # altre condizioni in AND con la chiave 'external_activity.system'
+          # verify is condition (without 'external_activity.system' key) is matching
+          ticket_count, tickets = Ticket.selectors(condition, limit: 1, execution_time: true, current_user: user, access: 'ignore')
+
+          next if ticket_count.blank?
+          next if ticket_count.zero?
+          next if tickets.first.id != ticket.id
+        end
 
         if recursive == false && local_options[:loop_count] > 1
           message = "Do not execute recursive triggers per default until Zammad 3.0. With Zammad 3.0 and higher the following trigger is executed '#{trigger.name}' on Ticket:#{ticket.id}. Please review your current triggers and change them if needed."
@@ -1170,7 +1299,20 @@ perform active triggers on ticket
         local_options[:trigger_ids][ticket.id].push trigger.id
         logger.info { "Execute trigger (#{trigger.name}/#{trigger.id}) for this object (Ticket:#{ticket.id}/Loop:#{local_options[:loop_count]})" }
 
-        ticket.perform_changes(trigger.perform, 'trigger', item, user_id)
+        # se e' definito l'array con i nuovi commenti
+        if ext_act_last_comments
+          # ciclo su tale array
+          ext_act_last_comments.each do |comment|
+            # se trovo un commento originato sul sistema esterno
+            if comment['external'] == true
+              # scateno l'action del trigger passando quel commento
+              ticket.perform_changes(trigger.perform, 'trigger', item, user_id, comment['text'])
+            end
+          end
+        # scateno l'action del trigger in modo "standard" (senza passare il commento)
+        else
+          ticket.perform_changes(trigger.perform, 'trigger', item, user_id)
+        end
 
         if recursive == true
           Observer::Transaction.commit(local_options)
@@ -1683,5 +1825,176 @@ result
       created_by_id: 1,
     )
 
+  end
+
+  # CSI custom external activity
+  # A fronte di una determinata condizione sul ticket si procede con la
+  # creazione di una external activity
+  def create_external_activity(ext_act_perform)
+    logger.info { "create_external_activity - Perform external activity #{ext_act_perform.inspect} on Ticket.find(#{id})" }
+
+    ext_act_system = ext_act_perform['system'].to_i
+    ext_act_perform.delete('system')
+
+    # verifica che non ci sia gia' una external activity associata al tk in questione per l'activity system 'ext_act_system'
+    # ATTENZIONE: ad un certo tk possono corrispondere piu' external activity di system differenti
+    ext_activity = ExternalActivity.find_by(external_ticketing_system_id: ext_act_system, ticket_id: id)
+    return if ext_activity
+
+    core_field_prefix = 'core_field::'
+    core_field_values = {}
+
+    # identificazione dei core_field::
+    ext_act_perform.each do |key, value|
+      next if !value.start_with?(core_field_prefix)
+
+      logger.info { "create_external_activity - value #{value}" }
+      core_field_value = value.slice!(core_field_prefix.length, value.length)
+      logger.info { "create_external_activity - core_field_value #{core_field_value}" }
+
+      case core_field_value
+      when 'title'
+        core_field_values[key] = title # campo 'title' di ticket
+        next
+      when 'body'
+        core_field_values[key] = ActionController::Base.helpers.strip_tags(articles.first.body)
+      end
+    end
+
+    core_field_values.each do |key, value|
+      ext_act_perform[key] = value
+    end
+
+    # Campi utilizzati per la categorizzazione su sistemi esterni (ad esempio, Remedy)
+    # non e' possibile usare l'id come value perche' e' riferito al DB,
+    # si deve impiegare il name
+    ext_act_system_model = ExternalTicketingSystem.find_by(id: ext_act_system).model
+    ext_act_system_model.each_value do |value|
+      next if !value.key?('select')
+      next if !value['select'].key?('service')
+
+      fld_name = value['name']
+      upd_value = nil
+      if fld_name == 'service_catalog'
+        upd_value = ServiceCatalogItem.find_by(id: ext_act_perform[fld_name]).name
+      elsif fld_name == 'service_catalog_sub_item'
+        upd_value = ServiceCatalogSubItem.find_by(id: ext_act_perform[fld_name]).name
+      elsif fld_name == 'asset'
+        upd_value = Asset.find_by(id: ext_act_perform[fld_name]).name
+      end
+
+      ext_act_perform[fld_name] = upd_value if !upd_value.nil?
+    end
+
+    # aggiunta degli allegati sotto forma di commento
+    comment_field = nil
+    ext_act_system_model = ExternalTicketingSystem.find_by(id: ext_act_system).model
+    ext_act_system_model.each_value do |value|
+      next if !value.key?('type')
+      next if value['type'] != 'comment'
+
+      comment_field = value
+      break
+    end
+    if !comment_field.nil?
+      # creazione del primo commento necessaria per far funzionare la condition sull'aggiornamento del commento
+      comment = { 'external': false, 'text': 'External activity creata automaticamente.', 'created_at': Time.zone.now.to_s() }
+
+      if !comment_field['attachments'].nil? && comment_field['attachments']['enabled']
+        list = articles.first.attachments || []
+        if !list.empty?
+          attach_idx = 0
+          attach_hash = {}
+          list.each do |item|
+            file = Store.find(item.id.to_i)
+
+            file_content = file.content
+            if !comment_field['attachments']['encoding'].nil?
+              # TODO, eseguire la codifica del contenuto del file (per remedy nessuna codifica)
+            end
+            attach_hash[attach_idx.to_s] = { 'name': file.filename, 'file': Base64.encode64(file_content) }
+            attach_idx = attach_idx + 1
+          end
+          comment['text'] = 'External activity (allegati presenti) creata automaticamente.'
+          comment['attachments'] = attach_hash
+        end
+      end
+      ext_act_perform[comment_field['name']] = [comment]
+    end
+
+    ExternalActivity.create(
+      external_ticketing_system_id: ext_act_system,
+      ticket_id:                    id,
+      data:                         ext_act_perform,
+      bidirectional_alignment:      true,
+      updated_by_id:                1,
+      created_by_id:                1,
+    )
+  end
+
+  # CSI custom external activity
+  # A fronte di una determinata condizione sul ticket si procede con
+  # l'aggiornamento di una external activity
+  def update_external_activity(ext_act_perform)
+    logger.info { "update_external_activity - Perform external activity #{ext_act_perform.inspect} on Ticket.find(#{id})" }
+
+    ext_act_system = ext_act_perform['system'].to_i
+
+    # verifica che ci sia gia' una external activity associata al tk in questione per l'activity system 'ext_act_system'
+    ext_activity = ExternalActivity.find_by(external_ticketing_system_id: ext_act_system, ticket_id: id)
+    return if !ext_activity
+
+    comment_field = nil
+    ext_act_system_model = ExternalTicketingSystem.find_by(id: ext_act_system).model
+    ext_act_system_model.each_value do |value|
+      next if !value.key?('type')
+      next if value['type'] != 'comment'
+
+      comment_field = value
+      break
+    end
+    return if comment_field.nil?
+
+    comment_text = if !ext_act_perform.key?('comment_from_article')
+                     ext_act_perform['static_comment']
+                   else
+                     ActionController::Base.helpers.strip_tags(articles.last.body)
+                   end
+    comment_to_add = { 'external': false, 'text': comment_text, 'created_at': Time.zone.now.to_s() }
+
+    ext_activity_data = ext_activity.data
+    comments = []
+    if ext_activity_data.key?(comment_field['name'])
+      comments = ext_activity_data[comment_field['name']]
+    end
+
+    attach_hash = {}
+    if !comment_field['attachments'].nil? && comment_field['attachments']['enabled']
+      list = []
+      if ext_act_perform.key?('comment_from_article')
+        list = articles.last.attachments || []
+      end
+      if !list.empty?
+        attach_idx = 0
+        list.each do |item|
+          file = Store.find(item.id.to_i)
+
+          file_content = file.content
+          if !comment_field['attachments']['encoding'].nil?
+            # TODO, eseguire la codifica del contenuto del file (per remedy nessuna codifica)
+          end
+          attach_hash[attach_idx.to_s] = { 'name': file.filename, 'file': Base64.encode64(file_content) }
+          attach_idx = attach_idx + 1
+        end
+      end
+    end
+    if !attach_hash.empty?
+      comment_to_add['attachments'] = attach_hash
+    end
+
+    comments.push(comment_to_add)
+    ext_activity_data[comment_field['name']] = comments
+    ext_activity.data = ext_activity_data
+    ext_activity.save!
   end
 end

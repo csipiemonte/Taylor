@@ -1,4 +1,5 @@
 Rails.application.configure do
+  
   # Settings specified here will take precedence over those in config/application.rb.
 
   # In the development environment your application's code is reloaded on
@@ -68,6 +69,9 @@ Rails.application.configure do
   # Raises error for missing translations
   # config.action_view.raise_on_missing_translations = true
 
+
+  config.logger = Logger.new("#{Rails.root}/log/development.log", 3, 5*1048576)
+
   # Automatically inject JavaScript needed for LiveReload
   if ENV['RAKE_LIVE_RELOAD'].present?
     require 'rack-livereload'
@@ -81,3 +85,4 @@ Rails.application.configure do
     )
   end
 end
+

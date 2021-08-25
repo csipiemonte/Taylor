@@ -177,6 +177,16 @@ class App.TicketZoom extends App.Controller
     # remember link
     @links = data.links
 
+    ticket = data.assets.Ticket[data.ticket_id]
+    # remember not verified customer's data
+    @not_verified_info = {
+      not_verified_user_firstname : ticket.not_verified_user_firstname
+      not_verified_user_lastname : ticket.not_verified_user_lastname
+      not_verified_user_codice_fiscale : ticket.not_verified_user_codice_fiscale
+      not_verified_user_mobile : ticket.not_verified_user_mobile
+      not_verified_user_phone : ticket.not_verified_user_phone
+    }
+
     # remember tags
     @tags = data.tags
 
@@ -483,17 +493,18 @@ class App.TicketZoom extends App.Controller
       )
 
       @sidebarWidget = new App.TicketZoomSidebar(
-        el:           elLocal
-        sidebarState: @sidebarState
-        object_id:    @ticket_id
-        model:        'Ticket'
-        query:        @query
-        taskGet:      @taskGet
-        taskKey:      @taskKey
-        formMeta:     @formMeta
-        markForm:     @markForm
-        tags:         @tags
-        links:        @links
+        el:                       elLocal
+        sidebarState:             @sidebarState
+        object_id:                @ticket_id
+        model:                    'Ticket'
+        query:                    @query
+        taskGet:                  @taskGet
+        taskKey:                  @taskKey
+        formMeta:                 @formMeta
+        markForm:                 @markForm
+        tags:                     @tags
+        links:                    @links
+        not_verified_info:        @not_verified_info
       )
 
       # check if autolock is needed

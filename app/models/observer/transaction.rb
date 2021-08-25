@@ -1,7 +1,8 @@
 # Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
 
 class Observer::Transaction < ActiveRecord::Observer
-  observe :ticket, 'ticket::_article', :user, :organization, :tag
+  observe :ticket, 'ticket::_article', :user, :organization, :tag, :external_activity
+  # CSI custom observe anche class ExternalActivity
 
   def self.reset
     EventBuffer.reset('transaction')
@@ -19,6 +20,7 @@ class Observer::Transaction < ActiveRecord::Observer
   end
 
   def self.perform(params)
+    Rails.logger.info { "observer/transaction.rb - perform Execute singel backend #{params}" }
 
     # return if we run import mode
     return if Setting.get('import_mode')
@@ -55,7 +57,9 @@ class Observer::Transaction < ActiveRecord::Observer
   end
 
   def self.execute_singel_backend(backend, item, params)
-    Rails.logger.debug { "Execute singel backend #{backend}" }
+    Rails.logger.info { "Execute singel backend: #{backend}, item: #{item.slice(:object,:object_id,:user_id,:type, :created_at)}" }
+     # l'oggetto item contiene a volte nei :changes il file in attachment che viene stampato interamente nei log, non mettere a livello info
+    Rails.logger.debug { "Execute singel backend item and params: #{backend}, item: #{item}, params: #{params}" }
     begin
       UserInfo.current_user_id = nil
       integration = backend.new(item, params)

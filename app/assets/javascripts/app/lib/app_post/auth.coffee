@@ -76,6 +76,9 @@ class App.Auth
   @_login: (data, type) ->
     App.Log.debug 'Auth', '_login:success', data
 
+    if data.categories
+      App.Config.set("categories",data.categories)
+
     # if session is not valid
     if data.error
 
@@ -102,6 +105,8 @@ class App.Auth
       App.Event.trigger('ui:rerender')
       App.TaskManager.tasksInitial()
       return false
+
+
 
     # clear local store
     if type isnt 'check'

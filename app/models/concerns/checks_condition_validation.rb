@@ -14,6 +14,10 @@ module ChecksConditionValidation
     # check if a valid condition got inserted.
     validate_condition.delete('ticket.action')
     validate_condition.delete('execution_time.calendar_id')
+
+    # CSI custom,  per non incorrere in un errore di validazione della condition
+    validate_condition.delete('external_activity.system')
+
     validate_condition.each do |key, value|
       next if !value
       next if !value['operator']

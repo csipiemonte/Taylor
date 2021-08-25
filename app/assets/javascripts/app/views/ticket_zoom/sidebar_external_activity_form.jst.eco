@@ -1,0 +1,97 @@
+<% if @isAgent: %>
+  <% if @dispatched: %>
+    <% if @needs_attention: %>
+      <div class="">
+          <div class="page-header-title">
+            <div class="zammad-switch zammad-switch--small">
+               <input name="External_Activity_<%= @externalActivityId %>_needs_attention" type="checkbox" id="External_Activity_<%= @externalActivityId %>_needs_attention" checked>
+               <label for="External_Activity_<%= @externalActivityId %>_needs_attention"></label>
+            </div>
+            <h4><%- @T('Needs Attention') %></h4>
+          </div>
+        <div class="text-muted" style="margin-bottom: 1em;"><%- @T('⚠ There are new changes on this activity') %></div>
+      </div>
+     <% end %>
+    <p class="text-muted">
+      <%- @T('Created at') %>: <time class="humanTimeFromNow" datetime="<%= @activity.created_at %>" title="<%= @activity.timestamp %>"><%= @activity.humanTime %></time>
+    </p>
+  <% else: %>
+    <p id="External_Activity_<%= @externalActivityId %>_import-from-ticket" style="color: #429ed7;cursor: pointer;"><%- @T('✎ Import data from user\'s ticket') %></p>
+  <% end %>
+  <form>
+  <% for field in @fields: %>
+    <% if !((field.send_only && @dispatched) || (field.receive_only && !@dispatched)): %>
+      <div data-attribute-name="External_Activity_<%= @externalActivityId %>_<%= field.name %>" class="select form-group" <% if field.visible == false: %> style="display: none;" <% end %>>
+        <div class="formGroup-label">
+          <label for="<%= field.name %>"><%- @T(field.label) %> <span><% if field.required: %>*<% end %></span></label>
+        </div>
+        <div class="controls "><div class="controls controls--select">
+          <% if field.select: %>
+            <select id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="<%= field.type %>" class="<% if field.type!="checkbox": %>form-control<% end %>" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @closed || @dispatched && !field.editable_aftwerwards || field.read_only: %>readonly disabled<% end %> <% if @dispatched && @values[field.name]: %>value="<%= @values[field.name] %>" <% else if field.default: %>value="<%= field.default %>"<% end %>>>
+              <option value <% if field.select.not_null: %>disabled class="text-muted"<% end %>>-</option>
+            </select>
+            <svg class="icon icon-arrow-down "><use xlink:href="assets/images/icons.svg#icon-arrow-down"></use></svg>
+          <% else if field.type=='comment': %>
+            <textarea id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="text" class="form-control" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @closed || field.read_only: %>readonly disabled<% else if field.default: %>value="<%= field.default %>"<% end %>></textarea>
+            <% if field.attachments && field.attachments.enabled && !@closed : %>
+              <div class="attachments"></div>
+              <div class="article-attachment" style="font-size: smaller;">
+                <div class="attachmentPlaceholder">
+                  <span class="attachmentPlaceholder-hint"><%- @T('Enter Note or') %></span>
+                  <span class="attachmentPlaceholder-inputHolder fileUpload">
+                    <input multiple="multiple" type="file" name="file" id="External_Activity_<%= @externalActivityId %>_<%= field.name %>_fileUpload">
+                    <label class="attachmentPlaceholder-label" for="External_Activity_<%= @externalActivityId %>_<%= field.name %>_fileUpload">
+                      <%- @T('select attachment...') %>
+                    </label>
+                  </span>
+                </div>
+                <div class="attachmentUpload hide">
+                  <div class="horizontal">
+                    <div class="u-highlight">
+                      <%- @T('Uploading') %> (<span class="js-percentage">0</span>%) ...
+                    </div>
+                    <div class="attachmentUpload-cancel js-cancel">
+                      <%- @Icon('diagonal-cross') %><%- @T('Cancel Upload') %>
+                    </div>
+                  </div>
+                  <div class="attachmentUpload-progressBar" style="width: 0%"></div>
+                </div>
+              </div>
+              <div class="dropArea">
+                <div class="dropArea-inner">
+                  <%- @T('Drop files here') %>
+                </div>
+              </div>
+            </div>
+            <% end %>
+          <% else if field.type=='textarea': %>
+            <textarea id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="text" class="form-control" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @closed || @dispatched && !field.editable_aftwerwards || field.read_only: %>readonly disabled<% end %>><% if @dispatched && @values[field.name]: %><%= @values[field.name] %><% else if field.default: %><%= field.default %><% end %></textarea>
+          <% else: %>
+            <input id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="<%= field.type %>" class="<% if field.type!="checkbox": %>form-control<% end %>" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @closed || @dispatched && !field.editable_aftwerwards || field.read_only: %>readonly disabled<% end %> <% if @dispatched && @values[field.name]: %>value="<%= @values[field.name] %>" <% else if field.default: %>value="<%= field.default %>"<% end %>>
+          <% end %>
+        </div>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+  <% if !@closed: %>
+    <% if @dispatched: %>
+      <button id="External_Activity_<%= @externalActivityId %>_update_button" class="btn btn--primary" style="display: block;margin: 1em 0 1em auto;"><%- @T('Update') %></button>
+    <% else: %>
+      <div class="">
+          <div class="page-header-title">
+            <div class="zammad-switch zammad-switch--small">
+               <input name="External_Activity_<%= @externalActivityId %>_bidirectional_alignment" type="checkbox" id="External_Activity_<%= @externalActivityId %>_bidirectional_alignment" checked>
+               <label for="External_Activity_<%= @externalActivityId %>_bidirectional_alignment"></label>
+            </div>
+            <h4><%- @T('Get Updates') %></h4>
+          </div>
+        <div class="text-muted" style="margin-bottom: 1em;"><%- @T('Get activity updates from the external system') %></div>
+      </div>
+      <button id="External_Activity_<%= @externalActivityId %>_submit" class="btn btn--primary"><%- @T('Create') %></button>
+      <button id="External_Activity_<%= @externalActivityId %>_hidden_submit" class="btn btn--primary" style="display: none;"><%- @T('Create') %></button>
+    <% end %>
+  <% end %>
+  </form>
+  <hr>
+<% end %>

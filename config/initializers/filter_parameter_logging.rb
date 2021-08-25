@@ -2,3 +2,6 @@
 
 # Configure sensitive parameters which will be filtered from the log file.
 Rails.application.config.filter_parameters += %i[password bind_pw state.body state.article.body article.body article.attachments.data attachments.data body]
+
+# external activity parameters
+Rails.application.config.filter_parameters += %i[file]

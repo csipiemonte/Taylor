@@ -32,6 +32,9 @@ class User < ApplicationModel
   after_commit      :update_caller_id
   before_destroy    :destroy_longer_required_objects
 
+  # CSI validations
+  before_validation -> { ensure_uniq_attribute('codice_fiscale','Codice Fiscale') }
+
   store :preferences
 
   activity_stream_permission 'admin.user'
@@ -1264,4 +1267,19 @@ raise 'Minimum one user need to have admin permissions'
 
     Cti::CallerId.build(self)
   end
+
+
+
+  def ensure_uniq_attribute(attribute_name, attribute_display_name)
+    # per evitare che stringhe vuote facciano scattare il vincolo unique sul db
+    if !self[attribute_name].nil? and self[attribute_name].strip === ''
+      self[attribute_name] = nil
+    end
+    return true if self[attribute_name].blank?
+    return true if !changes
+    return true if !changes[attribute_name]
+    return true if !User.exists?("#{attribute_name}": self[attribute_name].strip)
+    raise Exceptions::UnprocessableEntity, "#{attribute_display_name} '#{self[attribute_name].strip}' is already used for other user."
+  end
+
 end

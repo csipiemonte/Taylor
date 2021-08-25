@@ -100,6 +100,7 @@ class UsersController < ApplicationController
   # @path      [POST] /users
   #
   # @summary          Creates a User record with the provided attribute values.
+  #                   ATTENZIONE: il valore x sul quale viene fatto il confronto (if count <= x) deve essere incrementato se nei seeds sono aggiunti altri user
   # @notes            TODO.
   #
   # @parameter        User(required,body) [User] The attribute value structure needed to create a User record.
@@ -114,7 +115,7 @@ class UsersController < ApplicationController
     # initial admin account
     count = User.all.count
     admin_account_exists = true
-    if count <= 3
+    if count <= 4 # ATTENZIONE: questo valore deve essere incrementato se nei seeds sono aggiunti altri user
       admin_account_exists = false
     end
 
@@ -157,7 +158,7 @@ class UsersController < ApplicationController
       # add first user as admin/agent and to all groups
       group_ids = []
       role_ids  = []
-      if count <= 3
+      if count <= 4 # ATTENZIONE: questo valore deve essere incrementato se nei seeds sono aggiunti altri user
         Role.where(name: %w[Admin Agent]).each do |role|
           role_ids.push role.id
         end

@@ -83,7 +83,7 @@
 /coverage
 
 # RDoc / YARD
-/doc
+#/doc
 
 # Backup files
 *~

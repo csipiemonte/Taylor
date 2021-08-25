@@ -3,15 +3,16 @@ class App.Ticket extends App.Model
   @extend Spine.Model.Ajax
   @url: @apiPath + '/tickets'
   @configure_attributes = [
-      { name: 'number',                   display: '#',            tag: 'input',    type: 'text', limit: 100, null: true, readonly: 1, width: '68px' },
-      { name: 'title',                    display: 'Title',        tag: 'input',    type: 'text', limit: 100, null: false },
-      { name: 'customer_id',              display: 'Customer',     tag: 'input',    type: 'text', limit: 100, null: false, autocapitalize: false, relation: 'User' },
-      { name: 'organization_id',          display: 'Organization', tag: 'select',   relation: 'Organization', readonly: 1 },
-      { name: 'group_id',                 display: 'Group',        tag: 'select',   multiple: false, limit: 100, null: false, relation: 'Group', width: '10%', edit: true },
-      { name: 'owner_id',                 display: 'Owner',        tag: 'select',   multiple: false, limit: 100, null: true, relation: 'User', width: '12%', edit: true },
-      { name: 'state_id',                 display: 'State',        tag: 'select',   multiple: false, null: false, relation: 'TicketState', default: 'new', width: '12%', edit: true, customer: true },
-      { name: 'pending_time',             display: 'Pending till', tag: 'datetime', null: true, width: '130px' },
-      { name: 'priority_id',              display: 'Priority',     tag: 'select',   multiple: false, null: false, relation: 'TicketPriority', default: '2 normal', width: '54px', edit: true, customer: true },
+      { name: 'number',                   display: '#',                 tag: 'input',    type: 'text', limit: 100, null: true, readonly: 1, width: '68px' },
+      { name: 'needs_attention',          display: 'Needs Attention',   tag: 'input',    type: 'text', limit: 100, null: true, readonly: 1, width: '48px' },
+      { name: 'title',                    display: 'Title',             tag: 'input',    type: 'text', limit: 100, null: false },
+      { name: 'customer_id',              display: 'Customer',          tag: 'input',    type: 'text', limit: 100, null: false, autocapitalize: false, relation: 'User' },
+      { name: 'organization_id',          display: 'Organization',      tag: 'select',   relation: 'Organization', readonly: 1 },
+      { name: 'group_id',                 display: 'Group',             tag: 'select',   multiple: false, limit: 100, null: false, relation: 'Group', width: '10%', edit: true },
+      { name: 'owner_id',                 display: 'Owner',             tag: 'select',   multiple: false, limit: 100, null: true, relation: 'User', width: '12%', edit: true },
+      { name: 'state_id',                 display: 'State',             tag: 'select',   multiple: false, null: false, relation: 'TicketState', default: 'new', width: '12%', edit: true, customer: true },
+      { name: 'pending_time',             display: 'Pending till',      tag: 'datetime', null: true, width: '130px' },
+      { name: 'priority_id',              display: 'Priority',          tag: 'select',   multiple: false, null: false, relation: 'TicketPriority', default: '2 normal', width: '54px', edit: true, customer: true },
       { name: 'article_count',            display: 'Article#',     readonly: 1, width: '12%' },
       { name: 'time_unit',                display: 'Accounted Time',          readonly: 1, width: '12%' },
       { name: 'escalation_at',            display: 'Escalation at',           tag: 'datetime', null: true, readonly: 1, width: '110px', class: 'escalation' },
@@ -108,6 +109,9 @@ class App.Ticket extends App.Model
       return App.i18n.translateContent('Ticket |%s| is escalated!', item.title)
     else if item.type is 'escalation_warning'
       return App.i18n.translateContent('Ticket |%s| will escalate soon!', item.title)
+    else if item.type is 'external_activity'
+      $('#external_activity_reload').click()
+      return App.i18n.translateContent('Update on an external activity related to Ticket |%s|', item.title)
     return "Unknow action for (#{@objectDisplayName()}/#{item.type}), extend activityMessage() of model."
 
   # apply macro

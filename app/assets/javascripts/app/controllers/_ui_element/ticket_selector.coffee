@@ -21,6 +21,12 @@ class App.UiElement.ticket_selector
       groups.execution_time =
         name: 'Execution Time'
 
+    # Aggiunta voce e sottovoce nel menu condition
+    # cfr zammad/app/assets/javascripts/app/models/trigger.coffee parametro 'condition'
+    if attribute.externalActivity
+      groups.external_activity =
+        name: 'External Activity'
+
     operators_type =
       '^datetime$': ['before (absolute)', 'after (absolute)', 'before (relative)', 'after (relative)', 'within next (relative)', 'within last (relative)']
       '^timestamp$': ['before (absolute)', 'after (absolute)', 'before (relative)', 'after (relative)', 'within next (relative)', 'within last (relative)']
@@ -85,6 +91,28 @@ class App.UiElement.ticket_selector
             null: false
             translate: false
             operator: ['is in working time', 'is not in working time']
+
+      else if groupKey is 'external_activity'
+        if attribute.externalActivity
+          apiPath = App.Config.get('api_path')
+          App.Ajax.request(
+            type:  'GET'
+            url:   "#{apiPath}/external_ticketing_system"
+            async: false
+            success: (data, status, xhr) ->
+              systemOptions = {}
+              data.forEach (option) ->
+                systemOptions[option['id']] = option['name']
+
+              elements['external_activity.system'] =
+                name: 'external_activity_system_id'
+                display: 'Ticketing System'
+                tag: 'select'
+                options: systemOptions
+                null: false
+                translate: false
+                operator: ['is']
+          )
 
       else
         for row in App[groupMeta.model].configure_attributes
@@ -281,11 +309,91 @@ class App.UiElement.ticket_selector
 
   @rebuildAttributeSelectors: (elementFull, elementRow, groupAndAttribute, elements, meta, attribute) ->
 
+    console.log('groupAndAttribute', {groupAndAttribute})
+    console.log('attribute', {attribute})
+    console.log('meta', {meta})
+
     # set attribute
     if groupAndAttribute
       elementRow.find('.js-attributeSelector select').val(groupAndAttribute)
 
     @buildOperator(elementFull, elementRow, groupAndAttribute, elements, meta, attribute)
+
+    # custom CSI
+    elementRow.find('.js-external-activity-condition-param').addClass('hide')
+    elementRow.find('.js-external-activity-condition-value').addClass('hide')
+    instance = @
+    if groupAndAttribute == 'external_activity.system'
+      name = 'condition::external_activity.system'
+      extActSysName = name + '::value'
+      extActSysValue = elementRow.find('[name="' + extActSysName + '"] option:selected').val()
+      @fetchExternalSystemModel(elementRow, extActSysValue, name, meta)
+
+      elementRow.find('[name="' + extActSysName + '"]').change ->
+        extActSysId = elementRow.find('[name="' + extActSysName + '"] option:selected').val()
+        instance.fetchExternalSystemModel(elementRow, extActSysId, name, meta)
+
+  # extActSystemId: id del external activity system selezionato
+  # name: prefisso del parametro, tipo 'condition::external_activity.system'
+  # meta: contiene - in edit - i dati inseriti in precedenza nei parametri di input
+  @fetchExternalSystemModel: (elementRow, extActSystemId, name, meta) =>
+    apiPath = App.Config.get('api_path')
+    App.Ajax.request(
+      type:  'GET'
+      url:   "#{apiPath}/external_ticketing_system/#{extActSystemId}"
+      async: false
+      success: (data, status, xhr) =>
+        @buildFieldsExtActArea(elementRow, data.model, name, meta)
+    )
+
+  # metodo per popolare con l'External Activity Condition Area
+  @buildFieldsExtActArea: (elementRow, model, name, meta) ->
+    paramOptions = {}
+    $.each model, (key, field) ->
+      paramOptions[field['name']] = App.i18n.translateContent(field['label'])
+
+    selectName = name + '::model_param_name'
+    selectField = App.UiElement.select.render(
+      name: selectName
+      multiple: false
+      null: true
+      options: paramOptions
+      value: meta['model_param_name'] || ''
+      translate: false
+      required: true
+    )
+    elementRow.find('.js-external-activity-condition-param').html(selectField).removeClass('hide')
+
+    inputName = name + '::model_param_value'
+    inputFld = App.UiElement.input.render(
+      id: inputName
+      name: inputName
+      type: 'text'
+      value: meta['model_param_value'] || ''
+      required: true
+    )
+    elementRow.find('.js-external-activity-condition-value').html(inputFld).removeClass('hide')
+
+    # da qui in poi logica per nascondere il campo '::model_param_value' in caso di parametro di tipo 'comment' selezionato
+    commentFldName = undefined
+    $.each model, (key, field) ->
+      if field['type'] == 'comment'
+        commentFldName = field['name']
+        return false
+
+    if commentFldName == undefined
+      return
+
+    selectFieldValue = elementRow.find('[name="' + selectName + '"] option:selected').val()
+    if (selectFieldValue == commentFldName)
+      elementRow.find('.js-external-activity-condition-value').html('Aggiornato')
+
+    selectField.change ->
+      selectFieldValue = elementRow.find('[name="' + selectName + '"] option:selected').val()
+      if (selectFieldValue == commentFldName)
+        elementRow.find('.js-external-activity-condition-value').html('Aggiornato')
+      else
+        elementRow.find('.js-external-activity-condition-value').html(inputFld)
 
   @buildOperator: (elementFull, elementRow, groupAndAttribute, elements, meta, attribute) ->
     currentOperator = elementRow.find('.js-operator option:selected').attr('value')
