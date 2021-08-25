@@ -620,9 +620,12 @@ class TicketsController < ApplicationController
     actual_state = Ticket::State.find(params[:state_id]).name
     logger.info { "admissible_transitions - actual_state = #{actual_state}" }
 
+    actual_state.tr!(' ', '_')
+    logger.info { "admissible_transitions - actual_state after tr! = #{actual_state}" }
+
     case actual_state.to_sym
     when :new
-      admissible_states = ['new', 'open']
+      admissible_states = %w[new open]
     when :open
       admissible_states = ['open', 'pending user feedback', 'pending external activity', 'resolved']
     when :pending_user_feedback
@@ -631,6 +634,8 @@ class TicketsController < ApplicationController
       admissible_states = ['pending external activity', 'open']
     when :resolved
       admissible_states = %w[resolved open closed]
+    when :closed
+      admissible_states = %w[closed]
     end
 
     raise "Unknown actual_state '#{actual_state}'" if admissible_states.blank?

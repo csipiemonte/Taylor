@@ -543,6 +543,8 @@ class App.TicketZoom extends App.Controller
         links: @links
       )
 
+    @setTicketAdmissibleTransitions(@ticket)
+
     if !@initDone
       if @article_id
         @pagePositionData = @article_id
@@ -947,6 +949,8 @@ class App.TicketZoom extends App.Controller
         @submitEnable(e)
         @scrollToPosition('bottom', 50)
 
+        @setTicketAdmissibleTransitions(ticket)
+
       error: (settings, details) =>
         error = undefined
         if settings && settings.responseJSON && settings.responseJSON.error
@@ -1028,6 +1032,19 @@ class App.TicketZoom extends App.Controller
       ticket:  {}
       article: {}
     App.TaskManager.update(@taskKey, { 'state': @localTaskData })
+
+  # CSI Piemonte custom, issue #175 (https://gitlab.csi.it/prodotti/nextcrm/zammad/issues/175)
+  setTicketAdmissibleTransitions: (ticket) =>
+    App.Ajax.request(
+      type:  'GET'
+      url:   "#{App.Config.get('api_path')}/ticket_admissible_transitions/#{ticket.state_id}"
+      async: false
+      success: (data, status, xhr) =>
+        @$('.sidebar select[name=state_id] option').each(->
+          if !data.includes(parseInt($(@).val()))
+            $(@).remove()
+        )
+    )
 
 class TicketZoomRouter extends App.ControllerPermanent
   requiredPermission: ['ticket.agent', 'ticket.customer']
