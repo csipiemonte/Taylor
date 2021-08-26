@@ -37,7 +37,7 @@ class Transaction::Chatbot
       if !chat_session.stop_chatbot
         created_by = message[:created_by_id]
         reply_text = ChatbotService.answerTo(message.content)
-        if(reply_text['@handoff'])
+        if(!reply_text || reply_text['@handoff'])
           performHandoff(chat_session)
         else
           reply_message = createMessageFromText(reply_text,@chatbot.id,message[:chat_session_id])

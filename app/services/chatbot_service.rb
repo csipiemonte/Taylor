@@ -31,7 +31,13 @@ class ChatbotService
   def self.answerTo(text, user="")
     payload = {"sender":user, "message":text}
     Rails.logger.info "BASE_PATH: #{BASE_PATH}"
-    return self.post(BASE_PATH+"/webhook",payload)[0]["text"]
+    begin
+      return self.post(BASE_PATH+"/webhook",payload)[0]["text"]
+    rescue => e
+      Rails.logger.error "error while trying to contact chatbot service."
+      Rails.logger.error e
+      return false
+    end
   end
 
   private
