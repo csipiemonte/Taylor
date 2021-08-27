@@ -52,17 +52,11 @@ class ExternalActivityController < ApplicationController
     end
     return if !can_update
 
-    external_activity.data = params[:data] if params[:data].present? && external_activity.data != params[:data]
-    external_activity.archived = stop_monitoring? external_activity
-    external_activity.delivered = params[:delivered] if !params[:delivered].nil?
-    if !params[:needs_attention].nil?
-      external_activity.delivered = params[:delivered] if !params[:delivered].nil?
-    end
 
-    if !params[:needs_attention].nil?
-      external_activity.needs_attention = params[:needs_attention]
-      if external_activity.needs_attention
-        old_value = external_activity.data[field["name"]]
+    new_values = params[:data]
+    system.model.each do |_index, field|
+      if field['notify_changes'] && !new_values[field["name"]].eql?(external_activity.data[field["name"]])
+        external_activity.needs_attention = true
         Role.where(name: 'Agent').first.users.where(active: true).each do |agent|
           OnlineNotification.add(
             type:          'external_activity',
@@ -73,8 +67,14 @@ class ExternalActivityController < ApplicationController
             user_id:       agent.id,
           )
         end
+        break
       end
     end
+
+    external_activity.data = params[:data] if params[:data].present? && external_activity.data != params[:data]
+    external_activity.archived = stop_monitoring? external_activity
+    external_activity.delivered = params[:delivered] if !params[:delivered].nil?
+
     external_activity.save!
     render json: external_activity
   end

@@ -35,6 +35,7 @@ remedy_model = {
     'receive_only':         true,
     'external_visibility':  true,
     'editable_aftwerwards': true,
+    'notify_changes': true,
     'closes_activity':      ['Risolto','Chiuso'],
     'stop_monitoring':      ['Chiuso'],
       'select' => {
