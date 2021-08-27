@@ -62,6 +62,7 @@ class ExternalActivityController < ApplicationController
     if !params[:needs_attention].nil?
       external_activity.needs_attention = params[:needs_attention]
       if external_activity.needs_attention
+        old_value = external_activity.data[field["name"]]
         Role.where(name: 'Agent').first.users.where(active: true).each do |agent|
           OnlineNotification.add(
             type:          'external_activity',
