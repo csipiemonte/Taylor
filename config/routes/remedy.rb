@@ -13,7 +13,6 @@ Zammad::Application.routes.draw do
   match api_path + '/remedy_priorities',                             to: 'remedy#priorities',               via: :get
 
   # Integration Settings
-  match api_path + '/remedy_settings',                               to: 'remedy#settings',                 via: :get
   match api_path + '/most_recent_state',                             to: 'remedy#most_recent_state',        via: :post
 
 end
