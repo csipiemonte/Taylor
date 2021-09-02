@@ -104,6 +104,7 @@ remedy_model = {
     'name':     'service_catalog',
     'label':    'Service Catalog',
     'select' => {
+      'string_id': true,
       'service': 'service_catalog'
     }
   },
@@ -112,6 +113,7 @@ remedy_model = {
     'name':     'service_catalog_sub_item',
     'label':    'Service Catalog Sub Item',
     'select' => {
+      'string_id': true,
       'service': 'service_catalog_sub_item',
       'parent':  'service_catalog'
     }
@@ -122,6 +124,7 @@ remedy_model = {
     'label':      'Asset',
     'core_field': 'asset_id',
     'select' =>   {
+      'string_id': true,
       'service': 'asset'
     }
   },
@@ -140,6 +143,108 @@ remedy_current_model = remedy_ticketing_system['model']
 if remedy_model != remedy_current_model
   remedy_ticketing_system['model'] = remedy_model
   remedy_ticketing_system.save!
+end
+
+ExternalTicketingSystem.create_if_not_exists(
+  id:   2,
+  name: 'Zammad Light'
+)
+
+# to update model just edit the following variable, then seed the database :)
+zammad_light_model = {
+  '0'  => {
+    'name':                'zammad_light_id',
+    'label':               'zammad light id',
+    'type':                'text',
+    'receive_only':        true,
+    'external_visibility': true
+  },
+  '1'  => {
+    'required':   true,
+    'type':       'text',
+    'name':       'title',
+    'label':      'titolo',
+    'core_field': 'title'
+  },
+  '2'  => {
+    'type':       'text',
+    'name':       'subject',
+    'label':      'oggetto',
+    'core_field': 'subject'
+  },
+  '3'  => {
+    'name':                'state',
+    'label':               'stato',
+    'type':                'text',
+    'receive_only':         true,
+    'external_visibility':  true,
+    'editable_aftwerwards': true,
+    'notify_changes': true,
+    'closes_activity':      ['4','6'],
+    'stop_monitoring':      ['4','6'],
+      'select' => {
+        'not_null': true,
+        'options' => {
+          '1' => { 'id': 1, 'name': 'Nuovo', 'disabled':true},
+          '2' => { 'id': 2, 'name': 'Aperto', 'disabled':true},
+          '4' => { 'id': 3, 'name': 'In attesa di', 'disabled':true},
+          '6' => { 'id': 4, 'name': 'Chiuso' },
+          '7' => { 'id': 7, 'name': 'In attesa di chiusura', 'disabled':true},
+        }
+      }
+  },
+  '4'  => {
+    'required':  true,
+    'type':         'textarea',
+    'name':         'body',
+    'label':        'richiesta',
+    'core_field':   'body'
+  },
+  '5'  => {
+    'name':     'priority',
+    'label':    'priority',
+    'default':  2,
+    'select' => {
+      'options' => {
+        '1' => { 'id': 1, 'name': 'Bassa' },
+        '2' => { 'id': 2, 'name': 'Normale' },
+        '3' => { 'id': 3, 'name': 'Alta' },
+      }
+    }
+  },
+  '6' => {
+    'required':  true,
+    'name':      'customer',
+    'label':     'customer',
+    'type':      'text',
+    'default':   'nextcrm.agent@csi.it',
+    'read_only': true,
+    'visible':   false
+  },
+  '7'  => {
+    'required':   true,
+    'name':       'group',
+    'label':      'group',
+    'type':       'text',
+    'default':    'ASL Alessandria',
+    'read_only':   true,
+    'visible':     false
+  },
+  '8' => {
+     'name':  'commento',
+     'label': 'commento',
+     'type':  'comment',
+     'attachments' => {
+       'enabled':true
+     }
+   }
+ }
+
+zammad_light_ticketing_system = ExternalTicketingSystem.find_by(name: 'Zammad Light')
+zammad_light_current_model = zammad_light_ticketing_system['model']
+if zammad_light_model != zammad_light_current_model
+  zammad_light_ticketing_system['model'] = zammad_light_model
+  zammad_light_ticketing_system.save!
 end
 
 def create_translation(locale, source, target)

@@ -195,7 +195,7 @@ class ExternalActivity extends App.Controller
       if field["select"] != undefined
         selectField = instance.$('#External_Activity_'+externalActivityId+'_'+field["name"])
         for key, option of field["select"]["options"]
-          instance.addOption(selectField, option)
+          instance.addOption(selectField, option, field["select"]["string_id"])
         if field["select"]["service"] != undefined
           instance.fetchOptionValues(field,selectField,null,activity)
         if field["default"] != undefined
@@ -322,15 +322,18 @@ class ExternalActivity extends App.Controller
         @fetchedOptions[field["name"]] = data
         selectField.empty().append('<option value>-</option>')
         data.forEach (option) =>
-          cb(selectField,option)
+          cb(selectField,option,field["select"]["string_id"])
         if field["default"] != undefined
           @.setOptionValue(selectField,field["default"])
         if activity != null && activity.data[field["name"]]
           @.setOptionValue(selectField,activity.data[field["name"]])
     )
 
-  addOption: (selectField, option) =>
-    o = new Option(option["name"], option["name"])
+  addOption: (selectField, option, string_id=undefined) =>
+    if Number.isInteger(option["id"]) && !string_id
+      o = new Option(option["name"], option["id"])
+    else
+      o = new Option(option["name"], option["name"])
     $(o).html(option["name"])
     selectField.append(o)
     if option["disabled"]

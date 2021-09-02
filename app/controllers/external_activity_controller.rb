@@ -138,7 +138,7 @@ class ExternalActivityController < ApplicationController
 
   def external_ticketing_system_settings
     system = ExternalTicketingSystem.find_by(id: params[:id])
-    system_name = system.name.downcase
+    system_name = system.name.parameterize.underscore.downcase
     render json: {
       integration_enabled: Setting.get(system_name+'_integration'),
       state_alignment: Setting.get(system_name+'_state_alignment'),
