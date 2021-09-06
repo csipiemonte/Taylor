@@ -1,6 +1,6 @@
 <form>
 
-  <h2><%- @T('Zammad Light API') %></h2>
+  <h2><%- @T('ASL API') %></h2>
 
   <div class="settings-entry">
     <table class="settings-list" style="width: 100%;">
@@ -33,7 +33,7 @@
         <td><%= virtual_agent.firstname %> <%= virtual_agent.lastname %></td>
         <td>
           <label class="inline-label checkbox-replacement">
-            <input type="checkbox" value="read" id="zammad_light_visibility_for_<%= virtual_agent.id %>" <% if @visibility["Zammad Light"] && @visibility["Zammad Light"]["virtual_agent_"+virtual_agent.id]: %>checked<%end%> >
+            <input type="checkbox" value="read" id="zammad_light_visibility_for_<%= virtual_agent.id %>" <% if @visibility["ASL"] && @visibility["ASL"]["virtual_agent_"+virtual_agent.id]: %>checked<%end%> >
             <svg class="icon icon-checkbox icon-unchecked"><use xlink:href="assets/images/icons.svg#icon-checkbox"></use></svg>
             <svg class="icon icon-checkbox-checked icon-checked"><use xlink:href="assets/images/icons.svg#icon-checkbox-checked"></use></svg>
           </label>
@@ -57,14 +57,14 @@
         <td><%= group.name %></td>
         <td>
           <label class="inline-label checkbox-replacement">
-            <input type="checkbox" value="read" id="zammad_light_read_only_for_<%= group.id %>" <% if @group_access["Zammad Light"] && @group_access["Zammad Light"]["group_"+group.id]=="r": %>checked<%end%>>
+            <input type="checkbox" value="read" id="zammad_light_read_only_for_<%= group.id %>" <% if @group_access["ASL"] && @group_access["ASL"]["group_"+group.id]=="r": %>checked<%end%>>
             <svg class="icon icon-checkbox icon-unchecked"><use xlink:href="assets/images/icons.svg#icon-checkbox"></use></svg>
             <svg class="icon icon-checkbox-checked icon-checked"><use xlink:href="assets/images/icons.svg#icon-checkbox-checked"></use></svg>
           </label>
         </td>
         <td>
           <label class="inline-label checkbox-replacement">
-            <input type="checkbox" value="read" id="zammad_light_read_write_for_<%= group.id %>" <% if @group_access["Zammad Light"] && @group_access["Zammad Light"]["group_"+group.id]=="rw": %>checked<%end%>>
+            <input type="checkbox" value="read" id="zammad_light_read_write_for_<%= group.id %>" <% if @group_access["ASL"] && @group_access["ASL"]["group_"+group.id]=="rw": %>checked<%end%>>
             <svg class="icon icon-checkbox icon-unchecked"><use xlink:href="assets/images/icons.svg#icon-checkbox"></use></svg>
             <svg class="icon icon-checkbox-checked icon-checked"><use xlink:href="assets/images/icons.svg#icon-checkbox-checked"></use></svg>
           </label>

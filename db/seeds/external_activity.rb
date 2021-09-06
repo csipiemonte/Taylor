@@ -147,7 +147,7 @@ end
 
 ExternalTicketingSystem.create_if_not_exists(
   id:   2,
-  name: 'Zammad Light'
+  name: 'ASL'
 )
 
 # to update model just edit the following variable, then seed the database :)
@@ -240,7 +240,7 @@ zammad_light_model = {
    }
  }
 
-zammad_light_ticketing_system = ExternalTicketingSystem.find_by(name: 'Zammad Light')
+zammad_light_ticketing_system = ExternalTicketingSystem.find_by(name: 'ASL')
 zammad_light_current_model = zammad_light_ticketing_system['model']
 if zammad_light_model != zammad_light_current_model
   zammad_light_ticketing_system['model'] = zammad_light_model

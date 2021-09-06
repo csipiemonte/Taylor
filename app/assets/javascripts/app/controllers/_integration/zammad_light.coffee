@@ -1,9 +1,9 @@
 class Index extends App.ControllerIntegrationBase
   featureIntegration: 'zammad_light_integration'
-  featureName: 'Zammad Light'
+  featureName: 'ASL'
   featureConfig: 'zammad_light_integration'
   description: [
-    ['This service forwards tickets to a Zammad Light instance.']
+    ['This service forwards tickets to a ASL instance.']
   ]
 
   render: =>
@@ -53,25 +53,25 @@ class Form extends App.Controller
     base_url = $('#zammad_light_base_url').val()
     token = $('#zammad_light_token').val()
     visibility = App.Setting.get('external_activity_public_visibility')
-    if !visibility["Zammad Light"]
-      visibility["Zammad Light"] = {}
+    if !visibility["ASL"]
+      visibility["ASL"] = {}
     @virtual_agents.forEach (virtual_agent) ->
       if $('#zammad_light_visibility_for_'+virtual_agent.id+':checkbox:checked').length > 0
-        visibility["Zammad Light"]["virtual_agent_"+virtual_agent.id] = true
+        visibility["ASL"]["virtual_agent_"+virtual_agent.id] = true
       else
-        visibility["Zammad Light"]["virtual_agent_"+virtual_agent.id] = false
+        visibility["ASL"]["virtual_agent_"+virtual_agent.id] = false
     visibility = App.Setting.set('external_activity_public_visibility',visibility)
 
     group_access = App.Setting.get('external_activity_group_access')
-    if !group_access["Zammad Light"]
-      group_access["Zammad Light"] = {}
+    if !group_access["ASL"]
+      group_access["ASL"] = {}
     App.Group.all().forEach (group) ->
       if $('#zammad_light_read_write_for_'+group.id+':checkbox:checked').length > 0
-        group_access["Zammad Light"]["group_"+group.id] = "rw"
+        group_access["ASL"]["group_"+group.id] = "rw"
       else if $('#zammad_light_read_only_for_'+group.id+':checkbox:checked').length > 0
-        group_access["Zammad Light"]["group_"+group.id] = "r"
+        group_access["ASL"]["group_"+group.id] = "r"
       else
-        group_access["Zammad Light"]["group_"+group.id] = null
+        group_access["ASL"]["group_"+group.id] = null
     App.Setting.set('external_activity_group_access', group_access)
 
     App.Setting.set('zammad_light_state_alignment', state_alignment)
@@ -85,7 +85,7 @@ class State
 App.Config.set(
   'IntegrationZammadLight'
   {
-    name: 'Zammad Light'
+    name: 'ASL'
     target: '#system/integration/zammad_light'
     description: 'An external ticket-handling service.'
     controller: Index

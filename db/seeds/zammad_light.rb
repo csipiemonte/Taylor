@@ -91,8 +91,6 @@ Setting.create_if_not_exists(
   frontend:    false
 )
 
-Setting.find_by(name: 'Zammad Light_transaction').try(:destroy)
-
 User.create_if_not_exists(
   id:              5,
   login:           'zammad_light.agent@zammad.org',
