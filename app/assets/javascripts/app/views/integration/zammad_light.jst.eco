@@ -12,10 +12,10 @@
       <tbody>
         <tr>
           <td class="settings-list-row-control"><%- @T('Endpoint') %>
-          <td class="settings-list-control-cell"><input type="url" class="form-control form-control--small js-select" id="zammad_light_base_url" value="<%- @zammad_light_base_url %>">
+          <td class="settings-list-control-cell"><input type="url" class="form-control form-control--small js-select" id="asl_base_url" value="<%- @asl_base_url %>">
         <tr>
           <td class="settings-list-row-control"><%- @T('Token') %>
-          <td class="settings-list-control-cell"><input type="text" class="form-control form-control--small js-select" id="zammad_light_token" value="<%- @zammad_light_token %>">
+          <td class="settings-list-control-cell"><input type="text" class="form-control form-control--small js-select" id="asl_token" value="<%- @asl_token %>">
       </tbody>
     </table>
   </div>
@@ -80,8 +80,8 @@
   <h2><%- @T('Data Alignment') %></h2>
   <div class="page-header-title">
     <div class="zammad-switch zammad-switch--small">
-       <input type="checkbox" id="zammad_light_state_alignment" <% if @zammad_light_state_alignment: %>checked<% end %>>
-       <label for="zammad_light_state_alignment"></label>
+       <input type="checkbox" id="asl_state_alignment" <% if @asl_state_alignment: %>checked<% end %>>
+       <label for="asl_state_alignment"></label>
     </div>
     <p>Enable alignment on ticket's state</p>
   </div>

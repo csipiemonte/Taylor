@@ -1,7 +1,7 @@
 class Index extends App.ControllerIntegrationBase
-  featureIntegration: 'zammad_light_integration'
+  featureIntegration: 'asl_integration'
   featureName: 'ASL'
-  featureConfig: 'zammad_light_integration'
+  featureConfig: 'asl_integration'
   description: [
     ['This service forwards tickets to a ASL instance.']
   ]
@@ -33,9 +33,9 @@ class Form extends App.Controller
           virtual_agents: @virtual_agents
           visibility : App.Setting.get('external_activity_public_visibility')
           group_access : App.Setting.get('external_activity_group_access')
-          zammad_light_base_url: App.Setting.get('zammad_light_base_url')
-          zammad_light_token: App.Setting.get('zammad_light_token')
-          zammad_light_state_alignment: App.Setting.get('zammad_light_state_alignment')
+          asl_base_url: App.Setting.get('asl_base_url')
+          asl_token: App.Setting.get('asl_token')
+          asl_state_alignment: App.Setting.get('asl_state_alignment')
         )
         @groupTableHandlers()
     )
@@ -49,9 +49,9 @@ class Form extends App.Controller
 
   update: (e) =>
     e.preventDefault()
-    state_alignment = $('#zammad_light_state_alignment').prop('checked')
-    base_url = $('#zammad_light_base_url').val()
-    token = $('#zammad_light_token').val()
+    state_alignment = $('#asl_state_alignment').prop('checked')
+    base_url = $('#asl_base_url').val()
+    token = $('#asl_token').val()
     visibility = App.Setting.get('external_activity_public_visibility')
     if !visibility["ASL"]
       visibility["ASL"] = {}
@@ -74,13 +74,13 @@ class Form extends App.Controller
         group_access["ASL"]["group_"+group.id] = null
     App.Setting.set('external_activity_group_access', group_access)
 
-    App.Setting.set('zammad_light_state_alignment', state_alignment)
-    App.Setting.set('zammad_light_base_url', base_url)
-    App.Setting.set('zammad_light_token', token, {notify: true})
+    App.Setting.set('asl_state_alignment', state_alignment)
+    App.Setting.set('asl_base_url', base_url)
+    App.Setting.set('asl_token', token, {notify: true})
 
 class State
   @current: ->
-    App.Setting.get('zammad_light_integration')
+    App.Setting.get('asl_integration')
 
 App.Config.set(
   'IntegrationZammadLight'

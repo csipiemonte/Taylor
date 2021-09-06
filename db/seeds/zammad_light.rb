@@ -8,8 +8,8 @@ Setting.create_if_not_exists(
 )
 
 Setting.create_if_not_exists(
-  title:       'Zammad Light Integration',
-  name:        'zammad_light_integration',
+  title:       'ASL Integration',
+  name:        'asl_integration',
   area:        'Integration::Switch',
   description: 'Defines if Zammad Light integration is enabled or not.',
   options:     {
@@ -17,7 +17,7 @@ Setting.create_if_not_exists(
       {
         display: '',
         null:    true,
-        name:    'zammad_light_integration',
+        name:    'asl_integration',
         tag:     'boolean',
         options: {
           true  => 'yes',
@@ -52,7 +52,7 @@ Setting.create_if_not_exists(
 
 Setting.create_if_not_exists(
   title:       'Zammad Light Token',
-  name:        'zammad_light_token',
+  name:        'asl_token',
   area:        'Integration::ZammadLight',
   description: 'Token for Zammad Light.',
   options:     {
@@ -60,7 +60,7 @@ Setting.create_if_not_exists(
       {
         display: '',
         null:    false,
-        name:    'zammad_light_token',
+        name:    'asl_token',
         tag:     'input',
       },
     ],
@@ -72,7 +72,7 @@ Setting.create_if_not_exists(
 )
 Setting.create_if_not_exists(
   title:       'Zammad Light Base URL',
-  name:        'zammad_light_base_url',
+  name:        'asl_base_url',
   area:        'Integration::ZammadLight',
   description: 'Zammad Light Base URL.',
   options:     {
@@ -104,7 +104,7 @@ User.create_if_not_exists(
 
 Setting.create_if_not_exists(
   title:       'Zammad Light State Alignment',
-  name:        'zammad_light_state_alignment',
+  name:        'asl_state_alignment',
   area:        'Integration::ZammadLight',
   description: 'Defines whether the aligner will align ticket states between Zammad Light and Zammad.',
   options:     {},
