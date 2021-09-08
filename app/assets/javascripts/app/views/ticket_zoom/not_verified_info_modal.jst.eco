@@ -12,7 +12,7 @@
     <div><%= @object.not_verified_user_lastname %></div>
   <% end %>
 
-  <% if @object.not_verified_codice_fiscale: %>
+  <% if @object.not_verified_user_codice_fiscale: %>
     <hr>
     <h4><%- @T('Codice Fiscale') %></h4>
     <div><%= @object.not_verified_user_codice_fiscale %></div>
