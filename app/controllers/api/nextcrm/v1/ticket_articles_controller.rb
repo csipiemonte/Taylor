@@ -1,5 +1,6 @@
 class Api::Nextcrm::V1::TicketArticlesController < ::TicketArticlesController
   include Api::Nextcrm::V1::Concerns::ReadesApiManagerJwt
+  include Api::Nextcrm::V1::Concerns::CustomApiLogger
 
   def index_by_ticket
     super

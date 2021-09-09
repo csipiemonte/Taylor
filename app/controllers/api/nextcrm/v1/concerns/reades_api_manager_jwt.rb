@@ -21,7 +21,7 @@ module Api::Nextcrm::V1::Concerns::ReadesApiManagerJwt
       # check http basic based authentication
       authenticate_with_http_basic do |username, password|
         request.session_options[:skip] = true # do not send a session cookie
-        logger.debug { "http basic auth check '#{username}'" }
+        apilogger.info { "http basic auth check for '#{username}'" }
         if Setting.get('api_password_access') == false
           raise Exceptions::NotAuthorized, 'API password access disabled!'
         end
@@ -33,7 +33,7 @@ module Api::Nextcrm::V1::Concerns::ReadesApiManagerJwt
         end
       end
 
-      logger.debug " api apimanager jwt ---->  #{request.headers["X-JWT-Assertion"]} "
+      apilogger.debug " api apimanager jwt ---->  #{request.headers["X-JWT-Assertion"]} "
 
       # return if params[:debug]
 
@@ -78,14 +78,14 @@ module Api::Nextcrm::V1::Concerns::ReadesApiManagerJwt
       if app_user
         current_user_set(app_user, "basic_auth")
         user_device_log(app_user, "basic_auth")
-        logger.debug { "current user setted to #{current_user.email} " }
+        apilogger.info { "current user setted to #{current_user.email} " }
       else
-        Rails.logger.error{"user not found with X-JWT-Assertion http://wso2.org/claims/applicationname: #{application_name}"}
+        apilogger.error{"user not found with X-JWT-Assertion http://wso2.org/claims/applicationname: #{application_name}"}
         raise Exceptions::NotAuthorized, "user not found with X-JWT-Assertion: #{apimanager_raw_jwt}  -  http://wso2.org/claims/applicationname: #{application_name}"
 
       end
     rescue => e
-      Rails.logger.error e
+      apilogger.error e
       raise Exceptions::NotAuthorized
     end # try catch
   end # check_api_man
