@@ -29,9 +29,9 @@ saml_settings.state = {
 saml_settings.save!
 
 remedy_base_url = Setting.find_by(name: "remedy_base_url")
-remedy_base_url.state = "https://api-piemonte.csi.it/tecno/troubleticketin/"
+remedy_base_url.state = "https://api-piemonte.csi.it/tecno/troubleticketin/v1"
 remedy_base_url.save!
 
 remedy_token = Setting.find_by(name: "remedy_token")
-remedy_token.state = "b85b4df8-6563-3a9e-8bcb-8c8866f64fb9"
+remedy_token.state = "71087ed6-07a0-3628-a0c5-5601aae89ae8"
 remedy_token.save!
