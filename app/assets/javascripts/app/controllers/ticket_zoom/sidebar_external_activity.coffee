@@ -246,8 +246,9 @@ class ExternalActivity extends App.Controller
           instance.attachments[field["name"]][parseInt(index)+1+i] = {
             "file":fileReader.result
             "name":file.name
+            "to_encode":true
           }
-        fileReader.readAsText(file)
+        fileReader.readAsBinaryString(file)
         comment_view.append(attachment_view)
         attachment_view.find('.attachment-delete.js-delete').on('click', () =>
           delete instance.attachments[field["name"]][parseInt(index)+1+i]

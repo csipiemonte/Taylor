@@ -1,29 +1,41 @@
+require 'base64'
+
 class ExternalActivityController < ApplicationController
 
   prepend_before_action { authentication_check && authorize! }
 
   def index_external_activity
     return if !params[:ticketing_system_id]
-
+    system = ExternalTicketingSystem.find_by(id: params[:ticketing_system_id])
     external_activities = ExternalActivity.where(external_ticketing_system_id: params[:ticketing_system_id])
+    external_activities = external_activities.where(ticket_id: params[:ticket_id]) if params[:ticket_id].present? && params[:ticket_id] != ''
     external_activities = external_activities.where(archived: params[:archived]) if params[:archived].present? && params[:archived] != ''
     external_activities = external_activities.where(delivered: params[:delivered]) if params[:delivered].present? && params[:delivered] != ''
-    external_activities = external_activities.where(ticket_id: params[:ticket_id]) if params[:ticket_id].present? && params[:ticket_id] != ''
+    external_activities.each do |external_activity|
+      external_activity.data = process_attachments system.model, external_activity.data, external_activity, true
+    end
     render json: external_activities
   end
 
   def show_external_activity
-    render json: ExternalActivity.find_by(id: params[:id])
+    external_activity = ExternalActivity.find_by(id: params[:id])
+    system = ExternalTicketingSystem.find_by(id: external_activity.external_ticketing_system_id)
+    external_activity.data = process_attachments system.model, external_activity.data, external_activity, true
+    render json: external_activity
   end
 
   def create_external_activity
     return if !params[:ticketing_system_id]
     return if !params[:ticket_id]
 
+
+    system = ExternalTicketingSystem.find_by(id:params[:ticketing_system_id])
+    data = process_attachments system.model, params.permit!.to_h["data"], nil
+
     external_activity = ExternalActivity.create(
       external_ticketing_system_id: params[:ticketing_system_id],
       ticket_id:                    params[:ticket_id],
-      data:                         params[:data],
+      data:                         data,
       bidirectional_alignment:      params[:bidirectional_alignment],
       updated_by_id:                current_user.id,
       created_by_id:                current_user.id,
@@ -71,12 +83,39 @@ class ExternalActivityController < ApplicationController
       end
     end
 
-    external_activity.data = params[:data] if params[:data].present? && external_activity.data != params[:data]
+    data = process_attachments system.model, params.permit!.to_h["data"], external_activity
+
+    external_activity.data = data if data && external_activity.data != data
     external_activity.archived = stop_monitoring? external_activity
     external_activity.delivered = params[:delivered] if !params[:delivered].nil?
 
     external_activity.save!
     render json: external_activity
+  end
+
+  def process_attachments (model, data, external_activity, decode = false)
+    model.each do |index, field|
+      next if !field['type'].eql? 'comment'
+      comment_index = 0
+      data[field['name']].each do |comment|
+        comment['attachments'].each do |index, attachment|
+          if decode
+            attachment["file"] = Base64.decode64(attachment["file"])
+          else
+            if attachment['to_encode']
+              Rails.logger.info "FILE:"
+              Rails.logger.info attachment["file"]
+              attachment["file"] = Base64.encode64(attachment["file"]).force_encoding('utf-8')
+              attachment.delete(:to_encode)
+            elsif external_activity
+              attachment["file"] = external_activity.data[field["name"]][comment_index]["attachments"][index.to_s]["file"]
+            end
+          end
+        end
+        comment_index = comment_index+1
+      end
+    end
+    data
   end
 
   def stop_monitoring? (external_activity)
