@@ -1,6 +1,7 @@
 class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
   include Api::Nextcrm::V1::Concerns::ReadesApiManagerJwt
   include Api::Nextcrm::V1::Concerns::Filterable
+  include Api::Nextcrm::V1::Concerns::CustomApiLogger
 
 
   def index
@@ -82,6 +83,11 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
   end
 
   def create
+    apilogger.info {"init ticket create business logic"}
+    apilogger.info {"raw input params: #{params.filtered}"}
+    
+    # apilogger.info {"input parameters: "} # TODO filtrare campi lunghi/file/password
+
     params[:expand] = true
     params.delete :owner_id
     params.delete :owner
@@ -115,11 +121,18 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
       params[:article][:sender_id] = 2 # indica che il testo del ticket (article) e'stato creato da un Customer
     end
     handle_user_on_create()
+
+    apilogger.info {"business logic end"}
+    apilogger.info {"modified input params, before invoking zammad core controller : #{params.filtered}"}
     super
+    apilogger.info {"zammad core create end. processing output response"}
     alterTicketAttributesInResponse()
+    apilogger.info {"api create method end"}
   end
 
   def update
+    apilogger.info {"init ticket update business logic"}
+    apilogger.info {"raw input params: #{params.filtered}"}
     params[:expand] = true
     params.delete :owner_id
     params.delete :owner
@@ -156,8 +169,11 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
       # autocreate user if not exists with "guess" keywork
       params[:ticket][:customer_id] = "guess:#{value}"
     end
+    apilogger.info {"modified input params, before invoking zammad core controller : #{params.filtered}"}
     super
+    apilogger.info {"zammad core create end. processing output response"}
     alterTicketAttributesInResponse()
+    apilogger.info {"api update method end"}
   end
 
 
@@ -248,17 +264,19 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
 
     customer = params[:customer]
     if customer.nil? or customer[:email].nil? or customer[:email].blank?
-      Rails.logger.error {"[API] create ticket without customer email.. customer: #{customer.to_s}"}
+      apilogger.error {"[API] create ticket without customer email.. customer: #{customer.to_s}"}
       raise Exceptions::UnprocessableEntity, "Need at least customer: { email: \"<string>\"} "
     end
 
     # se utente verificato
     if params[:utente_riconosciuto] == 1
+      apilogger.info{"utente_riconosciuto: true"}
       # controllo esistenza utente
       user = check_user_exists(customer)
 
       # se utente esiste
       if user
+        apilogger.info{"found customer user on db with id: #{user.id}. updating existing db customer with parameters customer data"}
         # aggiorno "dati verificati" sul db. zammad lo riconoscerà come utente destinatario del ticket
         user.verified_data = true
         user.firstname = customer[:firstname] if customer[:firstname]
@@ -276,14 +294,17 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
         user.codice_fiscale = customer[:zip] if customer[:zip]
 
         user.save! # scatta exception se non va a buon fine
+        apilogger.info{"customer data updated"}
       # se utente non esiste
       else
+        apilogger.info{"customer user not found. creating new user with customer input parameters and verified_data: true"}
         # aggiorno i params in modo che lo user venga creato con flag "dati verificati"
         customer['verified_data'] = true
       end
       
     # se utente aninimo / non verificato
     else
+      apilogger.info{"utente_riconosciuto: false updating ticket not_verified_* fields with cusomer input parameters"}
       customer['verified_data'] = false
       # utente non riconosciuto: compilo i campi sul ticket
       params[:not_verified_user_firstname] = customer[:firstname]
@@ -296,14 +317,18 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
       # per evitare di associarlo ad altri utenti aventi quel codice fiscale, e ricevere comunque risposta sulla e-mail di un impostore che ha usato il mio codfisc
       # e per evitare , se è cambiata la mail, che venga creato uno user con stesso cod fisc  (darebbe errore unique) 
       customer.delete :codice_fiscale
+      apilogger.info{"remove 'codice fiscale' from customer input parameters"}
 
       # controllo esistenza utente
       user = check_user_exists(customer)
 
       if user
+        apilogger.info{"found customer user on db with id: #{user.id}"}
         # associo il ticket all'utente trovato. la mail potrebbe non corrispondere se è una linked email
         params.delete :customer
         params[:customer_id] = user.id
+      else
+        apilogger.info{"customer user not found. creating new user (not verified)"}
       end
     
     end
