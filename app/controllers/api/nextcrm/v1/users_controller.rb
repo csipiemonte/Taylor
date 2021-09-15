@@ -1,6 +1,7 @@
 class Api::Nextcrm::V1::UsersController < ::UsersController
   include Api::Nextcrm::V1::Concerns::ReadesApiManagerJwt
   include Api::Nextcrm::V1::Concerns::Filterable
+  include Api::Nextcrm::V1::Concerns::CustomApiLogger
 
   def index
     
