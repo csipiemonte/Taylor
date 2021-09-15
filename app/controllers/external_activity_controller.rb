@@ -66,20 +66,22 @@ class ExternalActivityController < ApplicationController
 
 
     new_values = params[:data]
-    system.model.each do |_index, field|
-      if field['notify_changes'] && !new_values[field["name"]].eql?(external_activity.data[field["name"]])
-        external_activity.needs_attention = true
-        Role.where(name: 'Agent').first.users.where(active: true).each do |agent|
-          OnlineNotification.add(
-            type:          'external_activity',
-            object:        'Ticket',
-            o_id:          external_activity.ticket_id,
-            seen:          false,
-            created_by_id: 1,
-            user_id:       agent.id,
-          )
+    if new_values
+      system.model.each do |_index, field|
+        if field['notify_changes'] && !new_values[field["name"]].eql?(external_activity.data[field["name"]])
+          external_activity.needs_attention = true
+          Role.where(name: 'Agent').first.users.where(active: true).each do |agent|
+            OnlineNotification.add(
+              type:          'external_activity',
+              object:        'Ticket',
+              o_id:          external_activity.ticket_id,
+              seen:          false,
+              created_by_id: 1,
+              user_id:       agent.id,
+            )
+          end
+          break
         end
-        break
       end
     end
 
