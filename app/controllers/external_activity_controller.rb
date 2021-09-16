@@ -97,7 +97,7 @@ class ExternalActivityController < ApplicationController
 
   def process_attachments (model, data, external_activity, decode = false)
     model.each do |index, field|
-      next if !field['type'].eql? 'comment'
+      next if !field['type'].eql? 'comment' || !data[field['name']]
       comment_index = 0
       data[field['name']].each do |comment|
         next if !comment['attachments']
