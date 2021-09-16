@@ -89,6 +89,7 @@ class ExternalActivityController < ApplicationController
     external_activity.data = data if data && external_activity.data != data
     external_activity.archived = stop_monitoring? external_activity
     external_activity.delivered = params[:delivered] if !params[:delivered].nil?
+    external_activity.needs_attention = params[:needs_attention] if !params[:needs_attention].nil?
 
     external_activity.save!
     render json: external_activity
