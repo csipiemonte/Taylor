@@ -103,15 +103,15 @@ class ExternalActivityController < ApplicationController
         next if !comment['attachments']
         comment['attachments'].each do |index, attachment|
           if decode
-            attachment["file"] = Base64.decode64(attachment["file"])
+            #attachment["file"] = Base64.decode64(attachment["file"])
           else
             if attachment['to_encode']
-              Rails.logger.info "FILE:"
-              Rails.logger.info attachment["file"]
-              attachment["file"] = Base64.encode64(attachment["file"]).force_encoding('utf-8')
-              attachment.delete(:to_encode)
+              #Rails.logger.info "FILE:"
+              #Rails.logger.info attachment["file"]
+              #attachment["file"] = Base64.encode64(attachment["file"]).force_encoding('utf-8')
+              #attachment.delete(:to_encode)
             elsif external_activity
-              attachment["file"] = external_activity.data[field["name"]][comment_index]["attachments"][index.to_s]["file"]
+              #attachment["file"] = external_activity.data[field["name"]][comment_index]["attachments"][index.to_s]["file"]
             end
           end
         end
