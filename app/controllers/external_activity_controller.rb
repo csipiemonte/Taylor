@@ -83,9 +83,8 @@ class ExternalActivityController < ApplicationController
           break
         end
       end
+      data = process_attachments system.model, params.permit!.to_h["data"], external_activity
     end
-
-    data = process_attachments system.model, params.permit!.to_h["data"], external_activity
 
     external_activity.data = data if data && external_activity.data != data
     external_activity.archived = stop_monitoring? external_activity
