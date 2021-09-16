@@ -100,6 +100,7 @@ class ExternalActivityController < ApplicationController
       next if !field['type'].eql? 'comment'
       comment_index = 0
       data[field['name']].each do |comment|
+        next if !comment['attachments']
         comment['attachments'].each do |index, attachment|
           if decode
             attachment["file"] = Base64.decode64(attachment["file"])
