@@ -1857,7 +1857,7 @@ result
         core_field_values[key] = title # campo 'title' di ticket
         next
       when 'body'
-        core_field_values[key] = ActionController::Base.helpers.strip_tags(articles.first.body)
+        core_field_values[key] = articles.first.body.html2text
       end
     end
 
@@ -1958,7 +1958,7 @@ result
     comment_text = if !ext_act_perform.key?('comment_from_article')
                      ext_act_perform['static_comment']
                    else
-                     ActionController::Base.helpers.strip_tags(articles.last.body)
+                     articles.last.body.html2text
                    end
     comment_to_add = { 'external': false, 'text': comment_text, 'created_at': Time.zone.now.to_s() }
 
