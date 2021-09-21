@@ -5,7 +5,7 @@ class ExternalActivity extends App.Controller
     @ajax(
       id:    'ticketing_system_selector'
       type:  'GET'
-      url:   "#{@apiPath}/external_ticketing_system?ticket="+@ticket.id
+      url:   "#{@apiPath}/external_ticketing_system?ticket=" + @ticket.id
       async: false
       success: (data, status, xhr) =>
         @systems = data
@@ -18,7 +18,7 @@ class ExternalActivity extends App.Controller
           systems.push {
             title:    system.name
             name:     system.name
-            callback: () -> instance.loadSystem(system)
+            callback: -> instance.loadSystem(system)
           }
     )
 
@@ -38,7 +38,7 @@ class ExternalActivity extends App.Controller
   badgeRenderLocal: (user) =>
     @badgeEl.html(App.view('generic/sidebar_tabs_item')(@metaBadge()))
 
-  metaBadge: () =>
+  metaBadge: =>
     cssClass = ''
     {
       name: 'external_activities'
@@ -57,19 +57,19 @@ class ExternalActivity extends App.Controller
       system: @system
     ))
     @html(addButton)
-    @$('#external_activity_reload').on('click', () =>
+    @$('#external_activity_reload').on('click', =>
       @reload()
       newActivityButton.hide()
     )
     @ajax(
       id:    'external_activities'
       type:  'GET'
-      url:   "#{@apiPath}/external_activity/system/"+@system.id+"?ticket_id="+@ticket.id
+      url:   "#{@apiPath}/external_activity/system/" + @system.id + '?ticket_id=' + @ticket.id
       success: (data, status, xhr) =>
         cb = @displayExternalActivity
         # se uso actual_ticket_state_id = @ticket.state.id la variabile @ticket non e'aggiornata col nuovo valore se avviene update del ticket
-        actual_ticket_state_id = $("form div[data-attribute-name=state_id] select option:selected").val()
-        if actual_ticket_state_id == 4 or actual_ticket_state_id == "4"
+        actual_ticket_state_id = $('form div[data-attribute-name=state_id] select option:selected').val()
+        if actual_ticket_state_id == 4 or actual_ticket_state_id == '4'
           @$('.js-newExternalActivityLabel').hide()
         if data.length > 0
           @$('.js-newExternalActivityLabel').hide()
@@ -79,29 +79,29 @@ class ExternalActivity extends App.Controller
     )
     @fetchedOptions = []
     newActivityButton = @$('.js-newExternalActivityLabel')
-    newActivityButton.on('click', () =>
-       @createDispatchForm()
-       newActivityButton.hide()
+    newActivityButton.on('click', =>
+      @createDispatchForm()
+      newActivityButton.hide()
     )
 
   displayExternalActivity: (activity) =>
     externalActivityId = Math.floor(Math.random() * 10000) + 10000
     # if activity is closed or ticket is closed or user doesn't have rights for editing, prevent changes on external activity
     # se uso actual_ticket_state_id = @ticket.state.id la variabile @ticket non e'aggiornata col nuovo valore se avviene update del ticket
-    actual_ticket_state_id = $("form div[data-attribute-name=state_id] select option:selected").val()
-    closed = @isClosed(activity) || actual_ticket_state_id == "4" || actual_ticket_state_id == 4 || @system.permission != "rw"
+    actual_ticket_state_id = $('form div[data-attribute-name=state_id] select option:selected').val()
+    closed = @isClosed(activity) || actual_ticket_state_id == '4' || actual_ticket_state_id == 4 || @system.permission != 'rw'
     @$('.dispatch-box').append App.view('ticket_zoom/sidebar_external_activity_form')(
-           system: @system
-           externalActivityId : externalActivityId
-           ticket : @ticket
-           isAgent: @permissionCheck('ticket.agent')
-           fields: Object.values(@system.model)
-           dispatched: true
-           closed : closed
-           needs_attention: activity.needs_attention
-           values: activity.data
-           activity: @humanizeDate(activity)
-         )
+      system: @system
+      externalActivityId : externalActivityId
+      ticket : @ticket
+      isAgent: @permissionCheck('ticket.agent')
+      fields: Object.values(@system.model)
+      dispatched: true
+      closed : closed
+      needs_attention: activity.needs_attention
+      values: activity.data
+      activity: @humanizeDate(activity)
+    )
     instance = @
     @buildActivityElements(externalActivityId,activity)
 
@@ -115,8 +115,8 @@ class ExternalActivity extends App.Controller
   isClosed: (activity) =>
     closed = false
     $.each @system.model, (key,field) ->
-      if field["closes_activity"]
-        if field["closes_activity"].includes(activity.data[field["name"]])
+      if field['closes_activity']
+        if field['closes_activity'].includes(activity.data[field['name']])
           closed = true
           return
     return closed
@@ -124,19 +124,18 @@ class ExternalActivity extends App.Controller
   buildNeedsAttentionField: (externalActivityId,activity) =>
     needsAttentionButtonWrapper =
     needsAttentionButton = @$('#External_Activity_'+externalActivityId+'_needs_attention')
-    needsAttentionButton.on('click', () =>
+    needsAttentionButton.on('click', ->
       @ajax(
         id:    'update_external_activity'
         type:  'PUT'
-        url:   "#{@apiPath}/external_activity/"+activity["id"]
+        url:   "#{@apiPath}/external_activity/" + activity['id']
         data: JSON.stringify({needs_attention:false})
-        success: (data, status, xhr) =>
+        success: (data, status, xhr) ->
       )
       needsAttentionButton.closest('.page-header-title').parent().hide()
     )
 
-
-  createDispatchForm: () =>
+  createDispatchForm: ->
     externalActivityId = Math.floor(Math.random() * 10000) + 10000
     @$('.dispatch-box').append App.view('ticket_zoom/sidebar_external_activity_form')(
       system: @system
@@ -163,73 +162,74 @@ class ExternalActivity extends App.Controller
     @ajax(
       id:    'ticket'
       type:  'GET'
-      url:   "#{@apiPath}/tickets/"+@ticket.id
+      url:   "#{@apiPath}/tickets/" + @ticket.id
       success: (data, status, xhr) =>
         $.each @system.model, (key, field) ->
-          if field["core_field"]
-            value = data[field["core_field"]]
+          if field['core_field']
+            value = data[field['core_field']]
             if value
-              if field["select"] && field["select"]["service"]
-                $.each instance.fetchedOptions[field["name"]], (index,option) ->
-                  if option["id"] == value
-                    $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(option["name"])
+              if field['select'] && field['select']['service']
+                $.each instance.fetchedOptions[field['name']], (index,option) ->
+                  if option['id'] == value
+                    $('#External_Activity_' + externalActivityId + '_' + field['name']).val(option['name'])
                     return
               else
-                $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(value.replace(/<[^>]*>?/gm, ''))
+                $('#External_Activity_' + externalActivityId + '_'+field['name']).val(value.replace(/<[^>]*>?/gm, ''))
 
     )
     @ajax(
       id:    'ticket_articles'
       type:  'GET'
-      url:   "#{@apiPath}/ticket_articles/by_ticket/"+@ticket.id
+      url:   "#{@apiPath}/ticket_articles/by_ticket/" + @ticket.id
       success: (data, status, xhr) =>
         $.each @system.model, (key, field) ->
-          value = data[0][field["core_field"]]
-          if field["core_field"] && value
-            $('#External_Activity_'+externalActivityId+'_'+field["name"]).val(value.replace(/<[^>]*>?/gm, ''))
+          value = data[0][field['core_field']]
+          if field['core_field'] && value
+            $('#External_Activity_'+externalActivityId+'_'+field['name']).val(value.replace(/<[^>]*>?/gm, ''))
     )
 
   buildSelectFields: (externalActivityId,activity=null) =>
     instance = @
     $.each @system.model, (key, field) ->
-      if field["select"] != undefined
-        selectField = instance.$('#External_Activity_'+externalActivityId+'_'+field["name"])
-        for key, option of field["select"]["options"]
-          instance.addOption(selectField, option, field["select"]["string_id"])
-        if field["select"]["service"] != undefined
+      if field['select'] != undefined
+        selectField = instance.$('#External_Activity_'+externalActivityId+'_'+field['name'])
+        for key, option of field['select']['options']
+          instance.addOption(selectField, option, field['select']['string_id'])
+        if field['select']['service'] != undefined
           instance.fetchOptionValues(field,selectField,null,activity)
-        if field["default"] != undefined
-          instance.setOptionValue(selectField,field["default"])
-        if activity != null && activity.data[field["name"]]
-          instance.setOptionValue(selectField,activity.data[field["name"]])
-        if field["select"]["parent"] != undefined
-          parent = $('#External_Activity_'+externalActivityId+'_'+field["select"]["parent"])
+        if field['default'] != undefined
+          instance.setOptionValue(selectField,field['default'])
+        if activity != null && activity.data[field['name']]
+          instance.setOptionValue(selectField,activity.data[field['name']])
+        if field['select']['parent'] != undefined
+          parent = $('#External_Activity_'+externalActivityId+'_'+field['select']['parent'])
           parent.change ->
             instance.fetchOptionValues(field,selectField,@.value)
 
   buildCommentFields: (externalActivityId,activity=null) =>
     instance = @
     $.each @system.model, (key, field) ->
-      if field["type"] == "comment"
+      if field['type'] == 'comment'
         if activity!=null
-          commentField = instance.$('#External_Activity_'+externalActivityId+'_'+field["name"])
-          commentList = activity["data"][field["name"]]
+          commentField = instance.$('#External_Activity_'+externalActivityId+'_'+field['name'])
+          commentList = activity['data'][field['name']]
           if !commentList
             commentList = {}
-          selector = 'div[data-attribute-name="External_Activity_'+externalActivityId+'_'+field["name"]+'"]'
+          selector = 'div[data-attribute-name="External_Activity_' + externalActivityId+'_' + field['name'] + '"]'
           jQuery.each commentList, (i, comment) ->
             instance.addComment(commentField, comment, selector)
-        if field["attachments"] && field["attachments"]["enabled"]
+        if field['attachments'] && field['attachments']['enabled']
           instance.attachments = {}
           instance.buildAttachmentButton(externalActivityId,field,activity)
 
   buildAttachmentButton: (externalActivityId,field,activity=null) =>
     instance = @
-    @attachments[field["name"]] = {}
-    uploadAttachment = @$('#External_Activity_'+externalActivityId+'_'+field["name"]+'_fileUpload')
-    comment_view = uploadAttachment.parents().eq(4);
-    uploadAttachment.on('change', () =>
-      files = uploadAttachment.prop("files")
+    @attachments[field['name']] = {}
+    uploadAttachment = @$('#External_Activity_' + externalActivityId + '_' + field['name'] + '_fileUpload')
+    comment_view = uploadAttachment.parents().eq(4)
+
+    uploadAttachment.on('change', =>
+      files = uploadAttachment.prop('files')
       names = $.map(files, (val) -> return val.name )
       $.each(files, (i, file) =>
         attachment_view = $(App.view('generic/attachment_item')(
@@ -237,21 +237,21 @@ class ExternalActivity extends App.Controller
           size:file.size
         ))
         index = 0
-        $.each(@attachments[field["name"]],(i) ->
+        $.each(@attachments[field['name']],(i) ->
           if i > index
             index = i
         )
-        fileReader = new FileReader();
-        fileReader.onload = (event) =>
-          instance.attachments[field["name"]][parseInt(index)+1+i] = {
-            "file":fileReader.result
-            "name":file.name
-            "to_encode":true
+        fileReader = new FileReader()
+        fileReader.onload = (event) ->
+          instance.attachments[field['name']][parseInt(index)+1+i] = {
+            'file':fileReader.result
+            'name':file.name
+            'to_encode':true
           }
         fileReader.readAsDataURL(file)
         comment_view.append(attachment_view)
-        attachment_view.find('.attachment-delete.js-delete').on('click', () =>
-          delete instance.attachments[field["name"]][parseInt(index)+1+i]
+        attachment_view.find('.attachment-delete.js-delete').on('click', ->
+          delete instance.attachments[field['name']][parseInt(index)+1+i]
           attachment_view.remove()
         )
       )
@@ -265,7 +265,7 @@ class ExternalActivity extends App.Controller
       if !validated
         instance.$('#External_Activity_'+externalActivityId+'_hidden_submit').click()
         return
-      activity["data"] = data
+      activity['data'] = data
       @updateExternalActivity activity
     )
 
@@ -274,8 +274,8 @@ class ExternalActivity extends App.Controller
     @ajax(
       id:    'update_external_activity'
       type:  'PUT'
-      url:   "#{@apiPath}/external_activity/"+activity["id"]
-      data: JSON.stringify({data:activity["data"]})
+      url:   "#{@apiPath}/external_activity/" + activity['id']
+      data: JSON.stringify({data:activity['data']})
       success: (data, status, xhr) =>
         @loadSystem(@system)
     )
@@ -285,59 +285,59 @@ class ExternalActivity extends App.Controller
     comment_view = $(App.view('ticket_zoom/sidebar_external_activity_comment')(
       comment: @humanizeDate(comment)
     ))
-    if comment["attachments"]
+    if comment['attachments']
       attachments = []
-      $.each comment["attachments"], (key,attachment) ->
-        file = new File([attachment["file"]], attachment["name"])
+      $.each comment['attachments'], (key,attachment) ->
+        file = new File([attachment['file']], attachment['name'])
         attachment_view = $(App.view('generic/external_activity_attachment_item')(file))
         comment_view.append(attachment_view)
-        attachment_view.on('click', () =>
-          element = document.createElement('a');
-          element.setAttribute('href', attachment["file"] ) ;
-          element.setAttribute('download', attachment["name"]);
-          element.style.display = 'none';
-          document.body.appendChild(element);
-          element.click();
-          document.body.removeChild(element);
+        attachment_view.on('click', ->
+          element = document.createElement('a')
+          element.setAttribute('href', attachment['file'] )
+          element.setAttribute('download', attachment['name'])
+          element.style.display = 'none'
+          document.body.appendChild(element)
+          element.click()
+          document.body.removeChild(element)
         )
     comment_view.insertBefore(selector)
 
-  humanizeDate: (data) =>
-    data["timestamp"] = App.i18n.translateTimestamp(data["created_at"])
-    data["humanTime"] = App.PrettyDate.humanTime(data["created_at"], false)
+  humanizeDate: (data) ->
+    data['timestamp'] = App.i18n.translateTimestamp(data['created_at'])
+    data['humanTime'] = App.PrettyDate.humanTime(data['created_at'], false)
     data
 
-  setOptionValue: (selectField,value) =>
-     selectField.val(value)
+  setOptionValue: (selectField, value) ->
+    selectField.val(value)
 
-  fetchOptionValues: (field,selectField,parentValue=null,activity=null) =>
+  fetchOptionValues: (field, selectField, parentValue=null, activity=null) =>
     cb = @addOption
-    url = "#{@apiPath}/"+field["select"]["service"]
+    url = "#{@apiPath}/" + field['select']['service']
     if parentValue!=null
-      url+="?parent_id="+parentValue
+      url += '?parent_id=' + parentValue
     @.ajax(
-      id:    'options for '+field["name"]
+      id:    'options for ' + field['name']
       type:  'GET'
       url: url
       success: (data, status, xhr) =>
-        @fetchedOptions[field["name"]] = data
+        @fetchedOptions[field['name']] = data
         selectField.empty().append('<option value>-</option>')
-        data.forEach (option) =>
-          cb(selectField,option,field["select"]["string_id"])
-        if field["default"] != undefined
-          @.setOptionValue(selectField,field["default"])
-        if activity != null && activity.data[field["name"]]
-          @.setOptionValue(selectField,activity.data[field["name"]])
+        data.forEach (option) ->
+          cb(selectField,option,field['select']['string_id'])
+        if field['default'] != undefined
+          @.setOptionValue(selectField,field['default'])
+        if activity != null && activity.data[field['name']]
+          @.setOptionValue(selectField,activity.data[field['name']])
     )
 
-  addOption: (selectField, option, string_id=undefined) =>
-    if Number.isInteger(option["id"]) && !string_id
-      o = new Option(option["name"], option["id"])
+  addOption: (selectField, option, string_id=undefined) ->
+    if Number.isInteger(option['id']) && !string_id
+      o = new Option(option['name'], option['id'])
     else
-      o = new Option(option["name"], option["name"])
-    $(o).html(option["name"])
+      o = new Option(option['name'], option['name'])
+    $(o).html(option['name'])
     selectField.append(o)
-    if option["disabled"]
+    if option['disabled']
       $(o).addClass('text-muted').attr('disabled',true)
 
   createExternalActivity: (externalActivityId) =>
@@ -347,12 +347,12 @@ class ExternalActivity extends App.Controller
       return
     bidirectional_alignment = $('#External_Activity_'+externalActivityId+'_bidirectional_alignment:checkbox:checked').length > 0
     data = JSON.stringify(
-      "ticketing_system_id":@system.id,
-      "ticket_id":@ticket.id,
-      "data": new_activity_fields,
-      "bidirectional_alignment":bidirectional_alignment
+      'ticketing_system_id':@system.id,
+      'ticket_id':@ticket.id,
+      'data': new_activity_fields,
+      'bidirectional_alignment':bidirectional_alignment
     )
-    @$('#External_Activity_'+externalActivityId+'_submit').prop("disabled",true)
+    @$('#External_Activity_' + externalActivityId + '_submit').prop('disabled', true)
     @ajax(
       id:    'create_external_activity'
       type:  'POST'
@@ -369,23 +369,23 @@ class ExternalActivity extends App.Controller
     $.each @system.model, (key,field) ->
       dom_field = instance.$('#External_Activity_'+externalActivityId+'_'+field.name)
       value = dom_field.val()
-      if dom_field.prop('required') && value == ""
+      if dom_field.prop('required') && value == ''
         validated = false
         return
       if field.type!='comment'
         new_activity_fields[field.name] = value
       else
-        index = if activity && activity["data"][field.name] then new_activity_fields[field.name].length else 0
-        new_activity_fields[field.name] = if activity && activity["data"][field.name] then new_activity_fields[field.name] else []
-        has_attachments = Object.keys(instance.attachments[field["name"]]).length>0
-        if value && value!="" || has_attachments
+        index = if activity && activity['data'][field.name] then new_activity_fields[field.name].length else 0
+        new_activity_fields[field.name] = if activity && activity['data'][field.name] then new_activity_fields[field.name] else []
+        has_attachments = Object.keys(instance.attachments[field['name']]).length>0
+        if value && value != '' || has_attachments
           new_activity_fields[field.name][index] = {
-            "external": false,
-            "text": if value then value else "",
-            "created_at": new Date()
+            'external': false,
+            'text': if value then value else '',
+            'created_at': new Date()
           }
           if has_attachments
-            new_activity_fields[field.name][index]["attachments"] = if has_attachments then instance.attachments[field["name"]]
+            new_activity_fields[field.name][index]['attachments'] = if has_attachments then instance.attachments[field['name']]
 
     return [new_activity_fields, validated]
 
@@ -407,11 +407,11 @@ class ExternalActivity extends App.Controller
   reload: =>
     @showObjectsContent()
 
-  delete: (objectId) =>
+  delete: (objectId) ->
 
-  postParams: (args) =>
+  postParams: (args) ->
 
-  updateTicket: (ticket_id, objectIds, callback) =>
+  updateTicket: (ticket_id, objectIds, callback) ->
 
 
 App.Config.set('999-ExternalActivity', ExternalActivity, 'TicketZoomSidebar')
