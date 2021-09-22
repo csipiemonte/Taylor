@@ -111,8 +111,10 @@ class ExternalActivityController < ApplicationController
           else
             if attachment['to_encode']
               Rails.logger.debug{ "write FILE" }
-              # il file arriva già codificato dal browser da FileReader.readAsDataURL() in formato <metadata>,<base64(file)>
-              attachment["file"] = attachment["file"].split(';base64,')[1]
+              if attachment["file"].include?(';base64,')
+                # dal browser il file arriva già codificato da FileReader.readAsDataURL() in formato <metadata>,<base64(file)>
+                attachment["file"] = attachment["file"].split(';base64,')[1]
+              end
               Rails.logger.debug{ attachment["file"] }
               attachment.delete(:to_encode)
             elsif external_activity
