@@ -293,7 +293,15 @@ class ExternalActivity extends App.Controller
         comment_view.append(attachment_view)
         attachment_view.on('click', ->
           element = document.createElement('a')
-          element.setAttribute('href', attachment['file'] )
+
+          if (attachment['file'].includes(";base64,") ) 
+            # sono gia presenti metadati del file
+            element.setAttribute('href', attachment['file'] )
+          else
+            #element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(attachment["file"]));
+            # element.setAttribute('href', 'data:application/octet-stream;base64,' + attachment["file"]);
+            element.setAttribute('href', 'data:text/plain;base64,' + attachment["file"]);
+
           element.setAttribute('download', attachment['name'])
           element.style.display = 'none'
           document.body.appendChild(element)
