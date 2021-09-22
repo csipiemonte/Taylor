@@ -868,7 +868,7 @@ condition example
 
 perform changes on ticket
 
-  ticket.perform_changes({}, 'trigger', item, current_user_id)
+  ticket.perform_changes({}, 'trigger', item, current_user_id, ext_activity_comment)
 
 =end
 
@@ -995,11 +995,11 @@ perform changes on ticket
         # CSI custom, key = article.note_ext_act
         next if ext_activity_comment.nil?
 
-        Ticket::Article.create!(
+        note_from_ext_act = Ticket::Article.create!(
           ticket_id:     id,
           subject:       value[:subject],
           content_type:  'text/html',
-          body:          ext_activity_comment,
+          body:          ext_activity_comment['text'],
           internal:      value[:internal],
           sender:        Ticket::Article::Sender.find_by(name: 'System'),
           type:          Ticket::Article::Type.find_by(name: 'note'),
@@ -1009,6 +1009,20 @@ perform changes on ticket
           updated_by_id: 1,
           created_by_id: 1,
         )
+
+        if comment.key?('attachments')
+          comment['attachments'].each do |attachment|
+            Store.add(
+              object:      'Ticket::Article',
+              o_id:        note_from_ext_act.id,
+              data:        Base64.decode64(attachment['file']),
+              filename:    attachment['name'],
+              preferences: {
+                'Content-Type' => MIME::Types.type_for(attachment['name']).first.content_type,
+              },
+            )
+          end
+        end
       end
     end
 
@@ -1304,13 +1318,13 @@ perform active triggers on ticket
           # ciclo su tale array
           ext_act_last_comments.each do |comment|
             # se trovo un commento originato sul sistema esterno
-            if comment['external'] == true
-              # scateno l'action del trigger passando quel commento
-              ticket.perform_changes(trigger.perform, 'trigger', item, user_id, comment['text'])
-            end
+            next if comment['external'] != true
+
+            # scateno l'action del trigger passando quel commento
+            ticket.perform_changes(trigger.perform, 'trigger', item, user_id, comment)
           end
-        # scateno l'action del trigger in modo "standard" (senza passare il commento)
         else
+          # scateno l'action del trigger in modo "standard" (senza passare il commento)
           ticket.perform_changes(trigger.perform, 'trigger', item, user_id)
         end
 
