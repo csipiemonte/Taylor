@@ -104,12 +104,15 @@ class ExternalActivityController < ApplicationController
         next if !comment['attachments']
         comment['attachments'].each do |index, attachment|
           if decode
-            attachment["file"] = Base64.decode64(attachment["file"])
+            Rails.logger.debug{ "read attachment file" }
+            # non e'necessario decodificare il file, 
+            # i metadati prima del file in base64 sono già pronti per il browser per effettuare il download del file, basta mettere il tutto in ,<a href="<metadata>,<base64(file)>">
           else
             if attachment['to_encode']
-              Rails.logger.info "FILE:"
-              Rails.logger.info attachment["file"]
-              attachment["file"] = Base64.encode64(attachment["file"]).force_encoding('utf-8')
+              Rails.logger.debug{ "write FILE:" }
+              Rails.logger.debug{ attachment["file"] }
+              # il file arriva già codificato dal browser da FileReader.readAsDataURL() in formato <metadata>,<base64(file)>
+              # ad esempio: "data:application/pdf;base64,JVBERi0xLjQKJdPr6eEKM..."
               attachment.delete(:to_encode)
             elsif external_activity
               #attachment["file"] = external_activity.data[field["name"]][comment_index]["attachments"][index.to_s]["file"]

@@ -248,7 +248,7 @@ class ExternalActivity extends App.Controller
             'name':file.name
             'to_encode':true
           }
-        fileReader.readAsBinaryString(file)
+        fileReader.readAsDataURL(file)
         comment_view.append(attachment_view)
         attachment_view.find('.attachment-delete.js-delete').on('click', ->
           delete instance.attachments[field['name']][parseInt(index)+1+i]
@@ -291,14 +291,14 @@ class ExternalActivity extends App.Controller
         file = new File([attachment['file']], attachment['name'])
         attachment_view = $(App.view('generic/external_activity_attachment_item')(file))
         comment_view.append(attachment_view)
-        attachment_view.on('click', () =>
-          element = document.createElement('a');
-          element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(attachment["file"]));
-          element.setAttribute('download', attachment["name"]);
-          element.style.display = 'none';
-          document.body.appendChild(element);
-          element.click();
-          document.body.removeChild(element);
+        attachment_view.on('click', ->
+          element = document.createElement('a')
+          element.setAttribute('href', attachment['file'] )
+          element.setAttribute('download', attachment['name'])
+          element.style.display = 'none'
+          document.body.appendChild(element)
+          element.click()
+          document.body.removeChild(element)
         )
     comment_view.insertBefore(selector)
 
