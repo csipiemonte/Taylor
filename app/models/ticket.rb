@@ -1010,8 +1010,8 @@ perform changes on ticket
           created_by_id: 1,
         )
 
-        if comment.key?('attachments')
-          comment['attachments'].each do |attachment|
+        if ext_activity_comment.key?('attachments')
+          ext_activity_comment['attachments'].each do |attachment|
             Store.add(
               object:      'Ticket::Article',
               o_id:        note_from_ext_act.id,
@@ -1926,7 +1926,7 @@ result
             if !comment_field['attachments']['encoding'].nil?
               # TODO, eseguire la codifica del contenuto del file (per remedy nessuna codifica)
             end
-            attach_hash[attach_idx.to_s] = { 'name': file.filename, 'file': Base64.encode64(file_content) }
+            attach_hash[attach_idx.to_s] = { 'name': file.filename, 'file': Base64.strict_encode64(file_content) }
             attach_idx = attach_idx + 1
           end
           comment['text'] = 'External activity (allegati presenti) creata automaticamente.'
@@ -1997,7 +1997,7 @@ result
           if !comment_field['attachments']['encoding'].nil?
             # TODO, eseguire la codifica del contenuto del file (per remedy nessuna codifica)
           end
-          attach_hash[attach_idx.to_s] = { 'name': file.filename, 'file': Base64.encode64(file_content) }
+          attach_hash[attach_idx.to_s] = { 'name': file.filename, 'file': Base64.strict_encode64(file_content) }
           attach_idx = attach_idx + 1
         end
       end
