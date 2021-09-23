@@ -64,19 +64,20 @@ class ExternalActivity extends App.Controller
     @ajax(
       id:    'external_activities'
       type:  'GET'
-      url:   "#{@apiPath}/external_activity/system/" + @system.id + '?ticket_id=' + @ticket.id
+      url:   "#{@apiPath}/external_activity/system/#{@system.id}?ticket_id=#{@ticket.id}"
       success: (data, status, xhr) =>
-        cb = @displayExternalActivity
         # se uso actual_ticket_state_id = @ticket.state.id la variabile @ticket non e'aggiornata col nuovo valore se avviene update del ticket
         actual_ticket_state_id = $('form div[data-attribute-name=state_id] select option:selected').val()
-        if actual_ticket_state_id == 4 or actual_ticket_state_id == '4'
+        if actual_ticket_state_id == 4 or actual_ticket_state_id == '4' # ticket_state_id = 4 corrisponde a ticket 'closed'
           @$('.js-newExternalActivityLabel').hide()
+
         if data.length > 0
+          cb = @displayExternalActivity
           @$('.js-newExternalActivityLabel').hide()
           data.forEach (activity) ->
             cb(activity)
-
     )
+
     @fetchedOptions = []
     newActivityButton = @$('.js-newExternalActivityLabel')
     newActivityButton.on('click', =>
@@ -89,7 +90,12 @@ class ExternalActivity extends App.Controller
     # if activity is closed or ticket is closed or user doesn't have rights for editing, prevent changes on external activity
     # se uso actual_ticket_state_id = @ticket.state.id la variabile @ticket non e'aggiornata col nuovo valore se avviene update del ticket
     actual_ticket_state_id = $('form div[data-attribute-name=state_id] select option:selected').val()
+
+    # ticket_state_id = 4 corrisponde a ticket 'closed'
     closed = @isClosed(activity) || actual_ticket_state_id == '4' || actual_ticket_state_id == 4 || @system.permission != 'rw'
+
+    if @$('.dispatch-box').children().length > 0
+      @$('.dispatch-box').children().last().remove()
     @$('.dispatch-box').append App.view('ticket_zoom/sidebar_external_activity_form')(
       system: @system
       externalActivityId : externalActivityId
@@ -104,7 +110,6 @@ class ExternalActivity extends App.Controller
     )
     instance = @
     @buildActivityElements(externalActivityId,activity)
-
 
   buildActivityElements: (externalActivityId,activity) =>
     @buildSelectFields(externalActivityId,activity)
@@ -137,6 +142,9 @@ class ExternalActivity extends App.Controller
 
   createDispatchForm: ->
     externalActivityId = Math.floor(Math.random() * 10000) + 10000
+
+    if @$('.dispatch-box').children().length > 0
+      @$('.dispatch-box').children().last().remove()
     @$('.dispatch-box').append App.view('ticket_zoom/sidebar_external_activity_form')(
       system: @system
       externalActivityId : externalActivityId
@@ -175,7 +183,6 @@ class ExternalActivity extends App.Controller
                     return
               else
                 $('#External_Activity_' + externalActivityId + '_'+field['name']).val(value.replace(/<[^>]*>?/gm, ''))
-
     )
     @ajax(
       id:    'ticket_articles'
@@ -269,7 +276,6 @@ class ExternalActivity extends App.Controller
       @updateExternalActivity activity
     )
 
-
   updateExternalActivity: (activity) =>
     @ajax(
       id:    'update_external_activity'
@@ -280,8 +286,7 @@ class ExternalActivity extends App.Controller
         @loadSystem(@system)
     )
 
-
-  addComment: (commentField,comment,selector) =>
+  addComment: (commentField, comment, selector) =>
     comment_view = $(App.view('ticket_zoom/sidebar_external_activity_comment')(
       comment: @humanizeDate(comment)
     ))
@@ -294,13 +299,13 @@ class ExternalActivity extends App.Controller
         attachment_view.on('click', ->
           element = document.createElement('a')
 
-          if (attachment['file'].includes(";base64,") ) 
+          if (attachment['file'].includes(';base64,') )
             # sono gia presenti metadati del file
             element.setAttribute('href', attachment['file'] )
           else
             #element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(attachment["file"]));
             # element.setAttribute('href', 'data:application/octet-stream;base64,' + attachment["file"]);
-            element.setAttribute('href', 'data:text/plain;base64,' + attachment["file"]);
+            element.setAttribute('href', 'data:text/plain;base64,' + attachment['file'])
 
           element.setAttribute('download', attachment['name'])
           element.style.display = 'none'
@@ -401,7 +406,6 @@ class ExternalActivity extends App.Controller
     @el = el
     @showObjectsContent()
 
-
   showObjectsContent: (objectIds) =>
     if @systems.length > 0
       @loadSystem(@systems[0])
@@ -420,6 +424,5 @@ class ExternalActivity extends App.Controller
   postParams: (args) ->
 
   updateTicket: (ticket_id, objectIds, callback) ->
-
 
 App.Config.set('999-ExternalActivity', ExternalActivity, 'TicketZoomSidebar')

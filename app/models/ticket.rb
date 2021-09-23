@@ -1324,7 +1324,8 @@ perform active triggers on ticket
             # se trovo un commento originato sul sistema esterno
             next if comment['external'] != true
 
-            # scateno l'action del trigger passando quel commento
+            # scateno l'action del trigger passando il commento i-esimo
+            logger.info { "Invoke ticket.perform_changes, comment text: #{comment['text']}" }
             ticket.perform_changes(trigger.perform, 'trigger', item, user_id, comment)
           end
         else
