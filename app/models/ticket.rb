@@ -1011,11 +1011,12 @@ perform changes on ticket
         )
 
         if ext_activity_comment.key?('attachments')
-          ext_activity_comment['attachments'].each do |attachment|
+          # il campo 'attachments' e' un hash, a ciascun indice corrisponde un oggetto composto dai campi 'name' e 'file'
+          ext_activity_comment['attachments'].each_value do |attachment|
             Store.add(
               object:      'Ticket::Article',
               o_id:        note_from_ext_act.id,
-              data:        Base64.strict_decode64(attachment['file'].to_s),
+              data:        Base64.strict_decode64(attachment['file']),
               filename:    attachment['name'],
               preferences: {
                 'Content-Type' => MIME::Types.type_for(attachment['name']).first.content_type,
