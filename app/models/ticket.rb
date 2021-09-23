@@ -1015,12 +1015,15 @@ perform changes on ticket
             Store.add(
               object:      'Ticket::Article',
               o_id:        note_from_ext_act.id,
-              data:        Base64.decode64(attachment['file']),
+              data:        Base64.strict_decode64(attachment['file'].to_s),
               filename:    attachment['name'],
               preferences: {
                 'Content-Type' => MIME::Types.type_for(attachment['name']).first.content_type,
               },
             )
+          rescue => e
+            logger.error "perform_changes - Save attachment error, filename: #{attachment['name']}"
+            logger.error e
           end
         end
       end
