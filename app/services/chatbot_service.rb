@@ -1,6 +1,5 @@
 class ChatbotService
 
-  BASE_PATH = Setting.get('chat_bot_api_settings')
   BASE_HEADERS = {
     'accept': 'application/json'
   }
@@ -30,9 +29,10 @@ class ChatbotService
 
   def self.answerTo(text, user="")
     payload = {"sender":user, "message":text}
-    Rails.logger.info "BASE_PATH: #{BASE_PATH}"
+    base_path = Setting.get('chat_bot_api_settings')
+    Rails.logger.info "BASE_PATH: #{base_path}"
     begin
-      return self.post(BASE_PATH+"/webhook",payload)[0]["text"]
+      return self.post(base_path + "/webhook", payload)[0]["text"]
     rescue => e
       Rails.logger.error "error while trying to contact chatbot service."
       Rails.logger.error e
@@ -46,7 +46,7 @@ class ChatbotService
     Rails.logger.info{"performing GET request to: #{path}"}
     uri = URI.parse(path)
     http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = true
+    http.use_ssl = false
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE
     request = Net::HTTP::Get.new(uri.request_uri)
     BASE_HEADERS.each do |key, value|
@@ -77,7 +77,7 @@ class ChatbotService
     Rails.logger.info{"performing POST request to: #{path}"}
     uri = URI.parse(path)
     http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = true
+    http.use_ssl = false
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE
     request = Net::HTTP::Post.new(uri.request_uri)
     BASE_HEADERS.each do |key, value|
