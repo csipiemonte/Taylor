@@ -1166,6 +1166,7 @@ perform active triggers on ticket
         end
 
         # check ticket action
+        # 'ticket.action' indica l'azione eseguita sul ticket, ad esempio 'update' (type update)
         if condition['ticket.action']
           next if condition['ticket.action']['operator'] == 'is' && condition['ticket.action']['value'] != type
           next if condition['ticket.action']['operator'] != 'is' && condition['ticket.action']['value'] == type
@@ -1174,58 +1175,9 @@ perform active triggers on ticket
         end
         next if !has_changed_done
 
-        # check in min one attribute of condition has changed on update
-        one_has_changed_condition = false
-        if type == 'update'
-
-          # verify if ticket condition exists
-          condition.each_key do |key|
-            (object_name, attribute) = key.split('.', 2)
-            next if object_name != 'ticket' && object_name != 'external_activity' # CSI custom
-
-            one_has_changed_condition = true
-            next if item[:changes].blank?
-
-            # item[:changes] contiene i cambiamenti sul record
-            # ad esempio item[:changes] => {"bidirectional_alignment"=>[true, false]
-            # quindi per ticket l'attributo della condition deve coincidere con il valore della chiave presente in changes
-            if object_name == 'ticket'
-              next if !item[:changes].key?(attribute)
-            elsif object_name == 'external_activity'
-              # per external_activity si prendono in considerazione solo le variazioni su colonna 'data'
-              next if !item[:changes].key?('data')
-            end
-            one_has_changed_done = true
-            break
-          end
-          next if one_has_changed_condition && !one_has_changed_done
-        end
-
-        # check if ticket selector is matching
-        condition['ticket.id'] = {
-          operator: 'is',
-          value:    ticket.id,
-        }
-        next if article_selector && !article
-
-        # check if article selector is matching
-        if article_selector
-          condition['article.id'] = {
-            operator: 'is',
-            value:    article.id,
-          }
-        end
-
-        user_id = ticket.updated_by_id
-        if article
-          user_id = article.updated_by_id
-        end
-
-        user = if user_id != 1
-                 User.lookup(id: user_id)
-               end
-
-        if condition.key?('external_activity.system')
+        # l'oggetto 'condition' e' un HASH
+        ext_act_last_comments = nil
+        if condition['external_activity.system']
           ext_act_system = condition['external_activity.system']
           ext_act_system_id = ext_act_system['value'].to_i
 
@@ -1286,14 +1238,55 @@ perform active triggers on ticket
           condition.delete('external_activity.system')
         end
 
-        if !condition.empty? # altre condizioni in AND con la chiave 'external_activity.system'
-          # verify is condition (without 'external_activity.system' key) is matching
-          ticket_count, tickets = Ticket.selectors(condition, limit: 1, execution_time: true, current_user: user, access: 'ignore')
+        # check in min one attribute of condition has changed on update
+        one_has_changed_condition = false
+        if type == 'update'
 
-          next if ticket_count.blank?
-          next if ticket_count.zero?
-          next if tickets.first.id != ticket.id
+          # verify if ticket condition exists
+          condition.each_key do |key|
+            (object_name, attribute) = key.split('.', 2)
+            next if object_name != 'ticket'
+
+            one_has_changed_condition = true
+            next if item[:changes].blank?
+            next if !item[:changes].key?(attribute)
+
+            one_has_changed_done = true
+            break
+          end
+          next if one_has_changed_condition && !one_has_changed_done
         end
+
+        # check if ticket selector is matching
+        condition['ticket.id'] = {
+          operator: 'is',
+          value:    ticket.id,
+        }
+        next if article_selector && !article
+
+        # check if article selector is matching
+        if article_selector
+          condition['article.id'] = {
+            operator: 'is',
+            value:    article.id,
+          }
+        end
+
+        user_id = ticket.updated_by_id
+        if article
+          user_id = article.updated_by_id
+        end
+
+        user = if user_id != 1
+                 User.lookup(id: user_id)
+               end
+
+        # verify is condition is matching
+        ticket_count, tickets = Ticket.selectors(condition, limit: 1, execution_time: true, current_user: user, access: 'ignore')
+
+        next if ticket_count.blank?
+        next if ticket_count.zero?
+        next if tickets.first.id != ticket.id
 
         if recursive == false && local_options[:loop_count] > 1
           message = "Do not execute recursive triggers per default until Zammad 3.0. With Zammad 3.0 and higher the following trigger is executed '#{trigger.name}' on Ticket:#{ticket.id}. Please review your current triggers and change them if needed."
@@ -1318,7 +1311,7 @@ perform active triggers on ticket
         logger.info { "Execute trigger (#{trigger.name}/#{trigger.id}) for this object (Ticket:#{ticket.id}/Loop:#{local_options[:loop_count]})" }
 
         # se e' definito l'array con i nuovi commenti
-        if ext_act_last_comments
+        unless ext_act_last_comments.nil?
           # ciclo su tale array
           ext_act_last_comments.each do |comment|
             # se trovo un commento originato sul sistema esterno
@@ -1928,9 +1921,6 @@ result
             file = Store.find(item.id.to_i)
 
             file_content = file.content
-            if !comment_field['attachments']['encoding'].nil?
-              # TODO, eseguire la codifica del contenuto del file (per remedy nessuna codifica)
-            end
             attach_hash[attach_idx.to_s] = { 'name': file.filename, 'file': Base64.strict_encode64(file_content) }
             attach_idx = attach_idx + 1
           end
@@ -1999,9 +1989,6 @@ result
           file = Store.find(item.id.to_i)
 
           file_content = file.content
-          if !comment_field['attachments']['encoding'].nil?
-            # TODO, eseguire la codifica del contenuto del file (per remedy nessuna codifica)
-          end
           attach_hash[attach_idx.to_s] = { 'name': file.filename, 'file': Base64.strict_encode64(file_content) }
           attach_idx = attach_idx + 1
         end
