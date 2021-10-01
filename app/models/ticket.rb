@@ -1175,9 +1175,59 @@ perform active triggers on ticket
         end
         next if !has_changed_done
 
+        # check in min one attribute of condition has changed on update
+        one_has_changed_condition = false
+        if type == 'update'
+
+          # verify if ticket condition exists
+          condition.each_key do |key|
+            (object_name, attribute) = key.split('.', 2)
+            next if object_name != 'ticket' && object_name != 'external_activity' # CSI custom
+
+            one_has_changed_condition = true
+            next if item[:changes].blank?
+
+            # item[:changes] contiene i cambiamenti sul record
+            # ad esempio item[:changes] => {"bidirectional_alignment"=>[true, false]
+            # quindi per ticket l'attributo della condition deve coincidere con il valore della chiave presente in changes
+            if object_name == 'ticket'
+              next if !item[:changes].key?(attribute)
+            elsif object_name == 'external_activity'
+              # per external_activity si prendono in considerazione solo le variazioni su colonna 'data' che contiene tutti i dati dell'external activity
+              next if !item[:changes].key?('data')
+            end
+            one_has_changed_done = true
+            break
+          end
+          next if one_has_changed_condition && !one_has_changed_done
+        end
+
+        # check if ticket selector is matching
+        condition['ticket.id'] = {
+          operator: 'is',
+          value:    ticket.id,
+        }
+        next if article_selector && !article
+
+        # check if article selector is matching
+        if article_selector
+          condition['article.id'] = {
+            operator: 'is',
+            value:    article.id,
+          }
+        end
+
+        user_id = ticket.updated_by_id
+        if article
+          user_id = article.updated_by_id
+        end
+
+        user = if user_id != 1
+                 User.lookup(id: user_id)
+               end
+
         # l'oggetto 'condition' e' un HASH
-        ext_act_last_comments = nil
-        if condition['external_activity.system']
+        if condition.key?('external_activity.system')
           ext_act_system = condition['external_activity.system']
           ext_act_system_id = ext_act_system['value'].to_i
 
@@ -1238,55 +1288,14 @@ perform active triggers on ticket
           condition.delete('external_activity.system')
         end
 
-        # check in min one attribute of condition has changed on update
-        one_has_changed_condition = false
-        if type == 'update'
+        if !condition.empty? # altre condizioni in AND con la chiave 'external_activity.system'
+          # verify is condition (without 'external_activity.system' key) is matching
+          ticket_count, tickets = Ticket.selectors(condition, limit: 1, execution_time: true, current_user: user, access: 'ignore')
 
-          # verify if ticket condition exists
-          condition.each_key do |key|
-            (object_name, attribute) = key.split('.', 2)
-            next if object_name != 'ticket'
-
-            one_has_changed_condition = true
-            next if item[:changes].blank?
-            next if !item[:changes].key?(attribute)
-
-            one_has_changed_done = true
-            break
-          end
-          next if one_has_changed_condition && !one_has_changed_done
+          next if ticket_count.blank?
+          next if ticket_count.zero?
+          next if tickets.first.id != ticket.id
         end
-
-        # check if ticket selector is matching
-        condition['ticket.id'] = {
-          operator: 'is',
-          value:    ticket.id,
-        }
-        next if article_selector && !article
-
-        # check if article selector is matching
-        if article_selector
-          condition['article.id'] = {
-            operator: 'is',
-            value:    article.id,
-          }
-        end
-
-        user_id = ticket.updated_by_id
-        if article
-          user_id = article.updated_by_id
-        end
-
-        user = if user_id != 1
-                 User.lookup(id: user_id)
-               end
-
-        # verify is condition is matching
-        ticket_count, tickets = Ticket.selectors(condition, limit: 1, execution_time: true, current_user: user, access: 'ignore')
-
-        next if ticket_count.blank?
-        next if ticket_count.zero?
-        next if tickets.first.id != ticket.id
 
         if recursive == false && local_options[:loop_count] > 1
           message = "Do not execute recursive triggers per default until Zammad 3.0. With Zammad 3.0 and higher the following trigger is executed '#{trigger.name}' on Ticket:#{ticket.id}. Please review your current triggers and change them if needed."
@@ -1311,7 +1320,7 @@ perform active triggers on ticket
         logger.info { "Execute trigger (#{trigger.name}/#{trigger.id}) for this object (Ticket:#{ticket.id}/Loop:#{local_options[:loop_count]})" }
 
         # se e' definito l'array con i nuovi commenti
-        unless ext_act_last_comments.nil?
+        if ext_act_last_comments
           # ciclo su tale array
           ext_act_last_comments.each do |comment|
             # se trovo un commento originato sul sistema esterno
