@@ -6,22 +6,6 @@ Setting.create_if_not_exists(
   options:     {},
   frontend:    false
 )
-Setting.create_if_not_exists(
-  title:       'Remedy Ticket\'s State Mapping',
-  name:        'remedy_ticket_state_mapping',
-  area:        'Integration::Remedy',
-  description: 'Defines ticket\'s states mappings between Remedy and Zammad',
-  options:     {},
-  state:       {
-      nuovo: 1,
-      assegnato: 2,
-      pendente: 3,
-      risolto: 4,
-      chiuso: 4,
-      annullato: 6,
-     },
-  frontend:    false
-)
 
 Setting.create_if_not_exists(
   title:       'Remedy Integration',
@@ -64,6 +48,7 @@ Setting.create_if_not_exists(
   },
   frontend:    false
 )
+
 Setting.create_if_not_exists(
   title:       'Remedy Ticket\'s Priority Mapping',
   name:        'remedy_ticket_priority_mapping',
@@ -71,12 +56,13 @@ Setting.create_if_not_exists(
   description: 'Defines ticket\'s priorities mappings between Remedy and Zammad',
   options:     {},
   state:       {
-      1 => 'Minimo/Localizzato-Bassa',
-      2 => 'Moderato/Limitato-Media',
-      3 => 'Significativo/Grande-Alta'
-   },
+    1 => 'Minimo/Localizzato-Bassa',
+    2 => 'Moderato/Limitato-Media',
+    3 => 'Significativo/Grande-Alta'
+  },
   frontend:    false
 )
+
 Setting.create_if_not_exists(
   title:       'Remedy Token',
   name:        'remedy_token',
@@ -97,6 +83,7 @@ Setting.create_if_not_exists(
   },
   frontend:    false
 )
+
 Setting.create_if_not_exists(
   title:       'Remedy Base URL',
   name:        'remedy_base_url',
@@ -121,14 +108,14 @@ Setting.create_if_not_exists(
 Setting.find_by(name: 'Remedy_transaction').try(:destroy)
 
 User.create_if_not_exists(
-  id:              4,
-  login:           'remedy.agent@zammad.org',
-  firstname:       'Remedy',
-  lastname:        'Agent',
-  email:           'remedy.agent@zammad.org',
-  password:        '',
-  active:          true,
-  roles:           [ Role.find_by(name: 'Agent') ]
+  id:        4,
+  login:     'remedy.agent@zammad.org',
+  firstname: 'Remedy',
+  lastname:  'Agent',
+  email:     'remedy.agent@zammad.org',
+  password:  '',
+  active:    true,
+  roles:     [ Role.find_by(name: 'Agent') ]
 )
 
 Setting.create_if_not_exists(
@@ -140,10 +127,3 @@ Setting.create_if_not_exists(
   state:       true,
   frontend:    false
 )
-
-
-
-
-
-
-

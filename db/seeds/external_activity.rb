@@ -3,7 +3,7 @@ ExternalTicketingSystem.create_if_not_exists(
   name: 'Remedy'
 )
 
-person_id = Rails.env.downcase == "production" ? "PPL000000697192" : "PPL000000426377"
+person_id = Rails.env.downcase == 'production' ? 'PPL000000697192' : 'PPL000000426377'
 
 # to update model just edit the following variable, then seed the database :)
 remedy_model = {
@@ -36,18 +36,18 @@ remedy_model = {
     'external_visibility':  true,
     'editable_aftwerwards': true,
     'notify_changes': true,
-    'closes_activity':      ['Risolto','Chiuso'],
-    'stop_monitoring':      ['Chiuso'],
+    'closes_activity':      [ 'Risolto', 'Chiuso' ],
+    'stop_monitoring':      [ 'Chiuso' ],
       'select' => {
         'not_null': true,
         'options' => {
-          '1' => { 'id': 'Nuovo', 'name': 'Nuovo', 'disabled':true},
-          '2' => { 'id': 'Assegnato', 'name': 'Assegnato', 'disabled':true},
-          '3' => { 'id': 'In Corso', 'name': 'In Corso', 'disabled':true},
-          '4' => { 'id': 'Pendente', 'name': 'Pendente', 'disabled':true},
-          '5' => { 'id': 'Risolto', 'name': 'Risolto'},
-          '6' => { 'id': 'Chiuso', 'name': 'Chiuso' , 'disabled':true},
-          '7' => { 'id': 'Annullato', 'name': 'Annullato', 'disabled':true},
+          '1' => { 'id': 'Nuovo', 'name': 'Nuovo', 'disabled': true },
+          '2' => { 'id': 'Assegnato', 'name': 'Assegnato', 'disabled': true },
+          '3' => { 'id': 'In corso', 'name': 'In corso', 'disabled': true },
+          '4' => { 'id': 'Pendente', 'name': 'Pendente', 'disabled': true },
+          '5' => { 'id': 'Risolto', 'name': 'Risolto' },
+          '6' => { 'id': 'Chiuso', 'name': 'Chiuso', 'disabled': true },
+          '7' => { 'id': 'Annullato', 'name': 'Annullato', 'disabled': true },
         }
       }
   },
@@ -79,18 +79,18 @@ remedy_model = {
       }
     }
   },
-  '6' => {
-      'required': true,
-      'name':'tipologia',
-      'label':'tipologia',
-      'default':'Ripristino di servizio utente',
-      'select' => {
-          'options' => {
-              '1' => {'id':'Ripristino di servizio utente', 'name':'Ripristino di servizio utente'},
-          }
+  '6'  => {
+    'required': true,
+    'name':     'tipologia',
+    'label':    'tipologia',
+    'default':  'Ripristino di servizio utente',
+    'select' => {
+      'options' => {
+        '1' => { 'id': 'Ripristino di servizio utente', 'name': 'Ripristino di servizio utente' },
       }
+    }
   },
-  '7' => {
+  '7'  => {
     'required':  true,
     'name':      'richiedente',
     'label':     'richiedente',
@@ -105,7 +105,7 @@ remedy_model = {
     'label':    'Service Catalog',
     'select' => {
       'string_id': true,
-      'service': 'service_catalog'
+      'service':   'service_catalog'
     }
   },
   '9'  => {
@@ -114,8 +114,8 @@ remedy_model = {
     'label':    'Service Catalog Sub Item',
     'select' => {
       'string_id': true,
-      'service': 'service_catalog_sub_item',
-      'parent':  'service_catalog'
+      'service':   'service_catalog_sub_item',
+      'parent':    'service_catalog'
     }
   },
   '10' => {
@@ -125,18 +125,18 @@ remedy_model = {
     'core_field': 'asset_id',
     'select' =>   {
       'string_id': true,
-      'service': 'asset'
+      'service':   'asset'
     }
   },
   '11' => {
-     'name':  'commento',
-     'label': 'commento',
-     'type':  'comment',
-     'attachments' => {
-       'enabled':true
-     }
-   }
- }
+    'name':          'commento',
+    'label':         'commento',
+    'type':          'comment',
+    'attachments' => {
+      'enabled': true
+    }
+  }
+}
 
 remedy_ticketing_system = ExternalTicketingSystem.find_by(name: 'Remedy')
 remedy_current_model = remedy_ticketing_system['model']
@@ -152,55 +152,55 @@ ExternalTicketingSystem.create_if_not_exists(
 
 # to update model just edit the following variable, then seed the database :)
 zammad_light_model = {
-  '0'  => {
+  '0' => {
     'name':                'zammad_light_id',
     'label':               'zammad light id',
     'type':                'text',
     'receive_only':        true,
     'external_visibility': true
   },
-  '1'  => {
+  '1' => {
     'required':   true,
     'type':       'text',
     'name':       'title',
     'label':      'titolo',
     'core_field': 'title'
   },
-  '2'  => {
+  '2' => {
     'type':       'text',
     'name':       'subject',
     'label':      'oggetto',
     'core_field': 'subject'
   },
-  '3'  => {
+  '3' => {
     'name':                'state',
     'label':               'stato',
     'type':                'text',
     'receive_only':         true,
     'external_visibility':  true,
     'editable_aftwerwards': true,
-    'notify_changes': true,
-    'closes_activity':      ['4','6'],
-    'stop_monitoring':      ['4','6'],
+    'notify_changes':       true,
+    'closes_activity':      [ '4', '6' ],
+    'stop_monitoring':      [ '4', '6' ],
       'select' => {
         'not_null': true,
         'options' => {
-          '1' => { 'id': 1, 'name': 'Nuovo', 'disabled':true},
-          '2' => { 'id': 2, 'name': 'Aperto', 'disabled':true},
-          '4' => { 'id': 3, 'name': 'In attesa di', 'disabled':true},
+          '1' => { 'id': 1, 'name': 'Nuovo', 'disabled': true },
+          '2' => { 'id': 2, 'name': 'Aperto', 'disabled': true },
+          '4' => { 'id': 3, 'name': 'In attesa di', 'disabled': true },
           '6' => { 'id': 4, 'name': 'Chiuso' },
-          '7' => { 'id': 7, 'name': 'In attesa di chiusura', 'disabled':true},
+          '7' => { 'id': 7, 'name': 'In attesa di chiusura', 'disabled': true },
         }
       }
   },
-  '4'  => {
-    'required':  true,
-    'type':         'textarea',
-    'name':         'body',
-    'label':        'richiesta',
-    'core_field':   'body'
+  '4' => {
+    'required':   true,
+    'type':       'textarea',
+    'name':       'body',
+    'label':      'richiesta',
+    'core_field': 'body'
   },
-  '5'  => {
+  '5' => {
     'name':     'priority',
     'label':    'priority',
     'default':  2,
@@ -221,24 +221,24 @@ zammad_light_model = {
     'read_only': true,
     'visible':   false
   },
-  '7'  => {
-    'required':   true,
-    'name':       'group',
-    'label':      'group',
-    'type':       'text',
-    'default':    'ASL Alessandria',
-    'read_only':   true,
-    'visible':     false
+  '7' => {
+    'required':  true,
+    'name':      'group',
+    'label':     'group',
+    'type':      'text',
+    'default':   'ASL Alessandria',
+    'read_only': true,
+    'visible':   false
   },
   '8' => {
-     'name':  'commento',
-     'label': 'commento',
-     'type':  'comment',
-     'attachments' => {
-       'enabled':true
-     }
-   }
- }
+    'name':  'commento',
+    'label': 'commento',
+    'type':  'comment',
+    'attachments' => {
+      'enabled': true
+    }
+  }
+}
 
 zammad_light_ticketing_system = ExternalTicketingSystem.find_by(name: 'ASL')
 zammad_light_current_model = zammad_light_ticketing_system['model']
@@ -278,14 +278,11 @@ create_translation('it-it', 'New external activity on', 'Nuova attività esterna
 create_translation('it-it', 'crm operator', 'operatore crm')
 create_translation('it-it', 'external operator', 'operatore esterno')
 
-create_translation('it-it','Update on an external activity related to Ticket |%s|','C\'è un aggiornamento su un\'attività esterna legata al Ticket |%s|')
-create_translation('it-it','⚠ There are new changes on this activity','⚠ Ci sono aggiornamenti su questa attività')
-create_translation('it-it','Needs Attention','Richiede Attenzione')
+create_translation('it-it', 'Update on an external activity related to Ticket |%s|', 'C\'è un aggiornamento su un\'attività esterna legata al Ticket |%s|')
+create_translation('it-it', '⚠ There are new changes on this activity', '⚠ Ci sono aggiornamenti su questa attività')
+create_translation('it-it', 'Needs Attention', 'Richiede Attenzione')
 
-create_translation('it-it','No ticketing systems available','Nessun ticketing system esterno disponibile')
-
-
-
+create_translation('it-it', 'No ticketing systems available', 'Nessun ticketing system esterno disponibile')
 
 Setting.create_if_not_exists(
   title:       'External Activity Public Visibility',
@@ -306,5 +303,3 @@ Setting.create_if_not_exists(
   state:       {},
   frontend:    false
 )
-
-

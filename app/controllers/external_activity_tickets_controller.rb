@@ -13,6 +13,8 @@ class ExternalActivityTicketsController < TicketOverviewsController
     response.body = str_resp
   end
 
+  private
+
   def include_external_activity_flag (ticket)
     ExternalActivity.where(ticket_id: ticket['id']).each do |activity|
       next unless activity.needs_attention
