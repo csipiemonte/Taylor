@@ -32,8 +32,8 @@
             </select>
             <svg class="icon icon-arrow-down "><use xlink:href="assets/images/icons.svg#icon-arrow-down"></use></svg>
           <% else if field.type=='comment': %>
-            <textarea id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="text" class="form-control" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if @closed || field.read_only: %>readonly disabled<% else if field.default: %>value="<%= field.default %>"<% end %>></textarea>
-            <% if field.attachments && field.attachments.enabled && !@closed : %>
+            <textarea id="External_Activity_<%= @externalActivityId %>_<%= field.name %>" type="text" class="form-control" name="<%= field.name %>" <% if field.required: %>required<% end %> <% if field.read_only: %>readonly disabled<% else if field.default: %>value="<%= field.default %>"<% end %>></textarea>
+            <% if field.attachments && field.attachments.enabled : %>
               <div class="attachments"></div>
               <div class="article-attachment" style="font-size: smaller;">
                 <div class="attachmentPlaceholder">
@@ -74,23 +74,21 @@
       </div>
     <% end %>
   <% end %>
-  <% if !@closed: %>
-    <% if @dispatched: %>
-      <button id="External_Activity_<%= @externalActivityId %>_update_button" class="btn btn--primary" style="display: block;margin: 1em 0 1em auto;"><%- @T('Update') %></button>
-    <% else: %>
-      <div class="">
-          <div class="page-header-title">
-            <div class="zammad-switch zammad-switch--small">
-               <input name="External_Activity_<%= @externalActivityId %>_bidirectional_alignment" type="checkbox" id="External_Activity_<%= @externalActivityId %>_bidirectional_alignment" checked>
-               <label for="External_Activity_<%= @externalActivityId %>_bidirectional_alignment"></label>
-            </div>
-            <h4><%- @T('Get Updates') %></h4>
+  <% if @dispatched: %>
+    <button id="External_Activity_<%= @externalActivityId %>_update_button" class="btn btn--primary" style="display: block;margin: 1em 0 1em auto;"><%- @T('Update') %></button>
+  <% else: %>
+    <div class="">
+        <div class="page-header-title">
+          <div class="zammad-switch zammad-switch--small">
+              <input name="External_Activity_<%= @externalActivityId %>_bidirectional_alignment" type="checkbox" id="External_Activity_<%= @externalActivityId %>_bidirectional_alignment" checked>
+              <label for="External_Activity_<%= @externalActivityId %>_bidirectional_alignment"></label>
           </div>
-        <div class="text-muted" style="margin-bottom: 1em;"><%- @T('Get activity updates from the external system') %></div>
-      </div>
-      <button id="External_Activity_<%= @externalActivityId %>_submit" class="btn btn--primary"><%- @T('Create') %></button>
-      <button id="External_Activity_<%= @externalActivityId %>_hidden_submit" class="btn btn--primary" style="display: none;"><%- @T('Create') %></button>
-    <% end %>
+          <h4><%- @T('Get Updates') %></h4>
+        </div>
+      <div class="text-muted" style="margin-bottom: 1em;"><%- @T('Get activity updates from the external system') %></div>
+    </div>
+    <button id="External_Activity_<%= @externalActivityId %>_submit" class="btn btn--primary"><%- @T('Create') %></button>
+    <button id="External_Activity_<%= @externalActivityId %>_hidden_submit" class="btn btn--primary" style="display: none;"><%- @T('Create') %></button>
   <% end %>
   </form>
   <hr>
