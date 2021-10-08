@@ -4,6 +4,11 @@ source 'https://rubygems.org'
 ruby '2.6.5'
 gem 'rails', '5.2.4.4'
 
+# fix temporaneneo in attesa di passare a rails 5.2.6: vedi https://gitlab.csi.it/prodotti/nextcrm/nextcrm/issues/84
+gem 'mimemagic', git: 'https://github.com/mimemagicrb/mimemagic', ref: '01f92d86d15d85cfd0f20dabd025dcbd36a8a60f'
+
+
+
 # core - rails additions
 gem 'activerecord-import'
 gem 'activerecord-session_store'
