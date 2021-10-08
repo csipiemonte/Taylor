@@ -753,7 +753,7 @@ class App.UiElement.ticket_perform_action
           parentFldValue = elementRow.find('[name="' + parentFldName + '"] option:selected').val()
           App.Ajax.request(
             type:  'GET'
-            url:   url = "#{apiPath}/" + field['select']['service'] + '?parent_id=' + parentFldValue
+            url:   "#{apiPath}/" + field['select']['service'] + '?parent_id=' + parentFldValue
             async: false
             success: (data, status, xhr) ->
               selectChildFld = elementRow.find('[name="' + "#{name}::" + field['name'] + '"]')

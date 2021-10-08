@@ -126,15 +126,17 @@ class ExternalActivity extends App.Controller
           return
     return closed
 
-  buildNeedsAttentionField: (externalActivityId,activity) =>
-    needsAttentionButtonWrapper =
-    needsAttentionButton = @$('#External_Activity_'+externalActivityId+'_needs_attention')
+  buildNeedsAttentionField: (externalActivityId, activity) =>
+    apiPath = App.Config.get('api_path')
+
+    needsAttentionButton = @$('#External_Activity_' + externalActivityId + '_needs_attention')
     needsAttentionButton.on('click', ->
-      @ajax(
-        id:    'update_external_activity'
+      App.Ajax.request(
+        id:    "update_external_activity_#{activity['id']}"
         type:  'PUT'
-        url:   "#{@apiPath}/external_activity/" + activity['id']
-        data: JSON.stringify({needs_attention:false})
+        url:   "#{apiPath}/external_activity/" + activity['id']
+        async: false
+        data: JSON.stringify({needs_attention: false})
         success: (data, status, xhr) ->
       )
       needsAttentionButton.closest('.page-header-title').parent().hide()
