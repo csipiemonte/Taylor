@@ -1520,6 +1520,10 @@ result
         User.group_access(group_id, 'full').sort_by(&:login).each do |user|
           recipients_raw.push(user.email)
         end
+      elsif recipient == 'notification_email'
+        # CSI Custom
+        email = Ticket.find_by(id: article.ticket_id).notification_email
+        recipients_raw.push(email)
       elsif recipient =~ /\Auserid_(\d+)\z/
         user = User.lookup(id: $1)
         if !user

@@ -372,6 +372,7 @@ class App.UiElement.ticket_perform_action
       'ticket_owner': 'Owner'
       'ticket_customer': 'Customer'
       'ticket_agents': 'All Agents'
+      'notification_email': 'Email per notifiche'
 
     name = "#{attribute.name}::notification.#{notificationType}"
 
