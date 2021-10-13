@@ -56,6 +56,7 @@ class ExternalActivityController < ApplicationController
     render json: external_activity
   end
 
+  # Metodo invocato per aggiornare l'external activity il cui ID e' passato in params[:id]
   def update_external_activity
     return if !params[:id]
 
@@ -67,33 +68,50 @@ class ExternalActivityController < ApplicationController
     system = ExternalTicketingSystem.find_by(id: external_activity.external_ticketing_system_id)
     access = Setting.find_by(name: 'external_activity_group_access').state_current[:value]
     current_user.groups.each do |group|
-      if access[system.name]
-        permission = access[system.name]['group_' + group.id.to_s]
-        if permission == 'rw'
-          can_update = true
-          break
-        end
+      next unless access[system.name]
+
+      permission = access[system.name]['group_' + group.id.to_s]
+      if permission == 'rw'
+        can_update = true
+        break
       end
     end
     return if !can_update
 
     new_values = params[:data]
     if new_values
-      system.model.each do |_index, field|
-        if field['notify_changes'] && !new_values[field['name']].eql?(external_activity.data[field['name']])
-          external_activity.needs_attention = true
-          Role.where(name: 'Agent').first.users.where(active: true).each do |agent|
-            OnlineNotification.add(
-              type:          'external_activity',
-              object:        'Ticket',
-              o_id:          external_activity.ticket_id,
-              seen:          false,
-              created_by_id: 1,
-              user_id:       agent.id,
-            )
-          end
-          break
-        end
+      # system.model e' un hash
+      system.model.each_value do |field|
+        # next se il campo non ha l'attributo 'notify_changes', DI SOLITO ce l'ha
+        # il campo che contiene lo stato, di conseguenza si accende 'Richiede attenzione'
+        # e si manda la notifica online se c'e' stato un cambio di stato nell'external
+        # activity.
+        next unless field['notify_changes']
+
+        next if new_values[field['name']].eql?(external_activity.data[field['name']])
+
+        # attiva 'Richiede attenzione' sulla external activity sidebar
+        external_activity.needs_attention = true
+
+        # send notification
+        Transaction::BackgroundJob.run(
+          object:    'Ticket',
+          type:      'external_activity',
+          object_id: external_activity.ticket_id,
+          user_id:   1,
+        )
+
+        # Role.where(name: 'Agent').first.users.where(active: true).each do |agent|
+        #  OnlineNotification.add(
+        #    type:          'external_activity',
+        #    object:        'Ticket',
+        #    o_id:          external_activity.ticket_id,
+        #    seen:          false,
+        #    created_by_id: 1,
+        #    user_id:       agent.id,
+        #  )
+        # end
+        break # si suppone che l'attributo 'notify_changes' ce l'abbia solo un campo (logica originale)
       end
       data = process_attachments system.model, params.permit!.to_h['data'], external_activity
     end
@@ -119,18 +137,18 @@ class ExternalActivityController < ApplicationController
     systems.each do |system|
 
       groups.each do |group|
-        if access[system.name]
-          permission = access[system.name]['group_' + group.id.to_s]
-          if permission == 'r' || permission == 'rw'
-            json_system = system.as_json
-            json_system[:permission] = permission
-            if params[:ticket]
-              activities = ExternalActivity.where(ticket_id: params[:ticket], external_ticketing_system_id: system.id)
-              json_system[:activities_needing_attention] = activities.select { |activity| activity.needs_attention }.length
-            end
-            systems_with_permissions << json_system
-            break
+        next unless access[system.name]
+
+        permission = access[system.name]['group_' + group.id.to_s]
+        if permission == 'r' || permission == 'rw'
+          json_system = system.as_json
+          json_system[:permission] = permission
+          if params[:ticket]
+            activities = ExternalActivity.where(ticket_id: params[:ticket], external_ticketing_system_id: system.id)
+            json_system[:activities_needing_attention] = activities.select { |activity| activity.needs_attention }.length
           end
+          systems_with_permissions << json_system
+          break
         end
       end
     end
@@ -201,10 +219,16 @@ class ExternalActivityController < ApplicationController
     data
   end
 
+  # Metodo che prende in esame il campo 'stop_monitoring' presente nel model dell'external
+  # ticketing system; 'stop_monitoring' e' un array di string popolato con i nomi degli
+  # stati per i quali si deve interrompere l'allineamento fra le external activities Zammad
+  # ed i ticket dell'external ticketing system.
   def stop_monitoring? (external_activity)
     stop_monitoring = false
     system = ExternalTicketingSystem.find_by(id: external_activity.external_ticketing_system_id)
-    system.model.each do |_index, field|
+
+    # system.model e' un hash
+    system.model.each_value do |field|
       next if !field['stop_monitoring']
 
       if field['stop_monitoring'].include?(external_activity.data[field['name']])
