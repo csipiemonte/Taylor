@@ -93,7 +93,6 @@ class ExternalActivityController < ApplicationController
         # attiva 'Richiede attenzione' sulla external activity sidebar
         external_activity.needs_attention = true
 
-        # Role.where(name: 'Agent').first.users.where(active: true).each do |agent|
         ticket = Ticket.find_by(id: external_activity.ticket_id)
         User.where(active: true).group_access(ticket.group_id, 'full').each do |user|
           OnlineNotification.add(
