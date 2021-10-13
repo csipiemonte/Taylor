@@ -143,10 +143,6 @@ class Transaction::Notification
         # on updates without state changes create unseen messages
         elsif @item[:type] != 'create' && (@item[:changes].blank? || @item[:changes]['state_id'].blank?)
           seen = false
-        elsif @item[:type] == 'external_activity'
-          # CSI custom
-          seen = false
-          created_by_id = 1
         else
           seen = ticket.online_notification_seen_state(user.id)
         end
@@ -184,8 +180,6 @@ class Transaction::Notification
         template = 'ticket_escalation'
       elsif @item[:type] == 'escalation_warning'
         template = 'ticket_escalation_warning'
-      elsif @item[:type] == 'external_activity'
-        template = 'external_activity_update'
       else
         raise "unknown type for notification #{@item[:type]}"
       end
@@ -215,7 +209,7 @@ class Transaction::Notification
         main_object: ticket,
         attachments: attachments,
       )
-      Rails.logger.debug { "sent ticket email notification to agent (#{@item[:type]}/#{ticket.id}/#{user.email})" }
+      Rails.logger.debug { "sent ticket email notifiaction to agent (#{@item[:type]}/#{ticket.id}/#{user.email})" }
     end
 
   end

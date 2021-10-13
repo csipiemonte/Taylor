@@ -93,24 +93,18 @@ class ExternalActivityController < ApplicationController
         # attiva 'Richiede attenzione' sulla external activity sidebar
         external_activity.needs_attention = true
 
-        # send notification
-        Transaction::BackgroundJob.run(
-          object:    'Ticket',
-          type:      'external_activity',
-          object_id: external_activity.ticket_id,
-          user_id:   1,
-        )
-
         # Role.where(name: 'Agent').first.users.where(active: true).each do |agent|
-        #  OnlineNotification.add(
-        #    type:          'external_activity',
-        #    object:        'Ticket',
-        #    o_id:          external_activity.ticket_id,
-        #    seen:          false,
-        #    created_by_id: 1,
-        #    user_id:       agent.id,
-        #  )
-        # end
+        ticket = Ticket.find_by(id: external_activity.ticket_id)
+        User.where(active: true).group_access(ticket.group_id, 'full').each do |user|
+          OnlineNotification.add(
+            type:          'external_activity',
+            object:        'Ticket',
+            o_id:          external_activity.ticket_id,
+            seen:          false,
+            created_by_id: 1,
+            user_id:       user.id,
+          )
+        end
         break # si suppone che l'attributo 'notify_changes' ce l'abbia solo un campo (logica originale)
       end
       data = process_attachments system.model, params.permit!.to_h['data'], external_activity

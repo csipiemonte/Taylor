@@ -67,7 +67,7 @@ module Zammad
       'ticket.agent' => {
         notification_config: {
           matrix: {
-            create:            {
+            create:           {
               criteria: {
                 owned_by_me:     true,
                 owned_by_nobody: true,
@@ -78,7 +78,7 @@ module Zammad
                 online: true,
               }
             },
-            update:            {
+            update:           {
               criteria: {
                 owned_by_me:     true,
                 owned_by_nobody: true,
@@ -89,7 +89,7 @@ module Zammad
                 online: true,
               }
             },
-            reminder_reached:  {
+            reminder_reached: {
               criteria: {
                 owned_by_me:     true,
                 owned_by_nobody: false,
@@ -100,7 +100,7 @@ module Zammad
                 online: true,
               }
             },
-            escalation:        {
+            escalation:       {
               criteria: {
                 owned_by_me:     true,
                 owned_by_nobody: false,
@@ -108,17 +108,6 @@ module Zammad
               },
               channel:  {
                 email:  true,
-                online: true,
-              }
-            },
-            external_activity: {
-              criteria: {
-                owned_by_me:     true,
-                owned_by_nobody: true,
-                no:              false,
-              },
-              channel:  {
-                email:  false,
                 online: true,
               }
             }
