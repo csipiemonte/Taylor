@@ -3,7 +3,7 @@ ExternalTicketingSystem.create_if_not_exists(
   name: 'Remedy'
 )
 
-person_id = Rails.env.downcase == 'production' ? 'PPL000000697192' : 'PPL000000426377'
+person_id = Rails.env.casecmp('production').zero? ? 'PPL000000697192' : 'PPL000000426377'
 
 # to update model just edit the following variable, then seed the database :)
 remedy_model = {
@@ -36,8 +36,8 @@ remedy_model = {
     'external_visibility':  true,
     'editable_aftwerwards': true,
     'notify_changes': true,
-    'closes_activity':      [ 'Risolto', 'Chiuso' ],
-    'stop_monitoring':      [ 'Chiuso' ],
+    'closes_activity':      %w[Risolto Chiuso],
+    'stop_monitoring':      %w[Annullato Chiuso],
       'select' => {
         'not_null': true,
         'options' => {
