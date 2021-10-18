@@ -23,7 +23,7 @@ class Transaction::Trigger
   end
 
   def perform
-    Rails.logger.info { "transaction/trigger.rb - perform @item #{@item}, @params #{@params}" }
+    Rails.logger.debug { "transaction/trigger.rb - perform @item #{@item}, @params #{@params}" }
     # per ExternalActivity la riga di log produce
     # item : {:object=>"ExternalActivity", :object_id=>1, :user_id=>1, :created_at=>Mon, 07 Jun 2021 09:36:27 UTC +00:00,
     # :type=>"update", :changes=>{"bidirectional_alignment"=>[true, false]}

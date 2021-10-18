@@ -874,7 +874,7 @@ perform changes on ticket
 
   # perform: attributo perform della tabella trigger
   def perform_changes(perform, perform_origin, item = nil, current_user_id = nil, ext_activity_comment = nil)
-    logger.info { "perform_changes - Perform #{perform_origin} #{perform.inspect} on Ticket.find(#{id})" }
+    logger.debug { "perform_changes - Perform #{perform_origin} #{perform.inspect} on Ticket.find(#{id})" }
 
     article = begin
                 Ticket::Article.find_by(id: item.try(:dig, :article_id))
@@ -1067,7 +1067,7 @@ perform active triggers on ticket
 =end
 
   def self.perform_triggers(ticket, article, item, options = {}, external_activity)
-    logger.info { "perform_triggers - item #{item}), options #{options}, external_activity #{external_activity}" }
+    logger.debug { "perform_triggers - item #{item}), options #{options}, external_activity #{external_activity}" }
     # per ExternalActivity la riga di log produce (ad esempio)
     # item : {:object=>"ExternalActivity", :object_id=>1, :user_id=>1, :created_at=>Mon, 07 Jun 2021 09:36:27 UTC +00:00,
     # :type=>"update", :changes=>{"bidirectional_alignment"=>[true, false]}
@@ -1283,7 +1283,7 @@ perform active triggers on ticket
             ext_act_last_comments = delta == 1 ? [comment_value_post[comment_value_post.length - 1]] : comment_value_post[comment_value_post.length - delta - 1, comment_value_post.length - 1]
           end
 
-          logger.info { "Satisfied external_activity condition (#{condition}) for this object (ExternalActivity:#{external_activity}), perform action on (Ticket:#{ticket.id})" }
+          logger.debug { "Satisfied external_activity condition (#{condition}) for this object (ExternalActivity:#{external_activity}), perform action on (Ticket:#{ticket.id})" }
 
           condition.delete('external_activity.system')
         end
