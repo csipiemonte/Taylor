@@ -4,6 +4,7 @@
 # e per i metodi 'index', 'search', 'show' aggiunge i dati inerenti le external activities,
 # qualora ci siano le abilitazioni attive
 # cfr: https://gitlab.csi.it/prodotti/nextcrm/zammad/issues/145
+# Tale controller e' invocato sia dalle API 'public' sia dalle API pubblicate su API Manager (api\nextcrm)
 class VirtualAgentTicketsController < TicketsController
 
   before_action :authorize!
