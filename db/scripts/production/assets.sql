@@ -18,4 +18,5 @@ VALUES
 (13, 'sw', 'COVID SOL CITTADINO', NOW(), NOW()),
 (14, 'sw', 'Pagamento ticket via web', NOW(), NOW()),
 (15, 'sw', 'AUTOCERTIFICAZIONE ESENZIONE PER PATOLOGIA CITTADINI', NOW(), NOW()),
-(16, 'sw', 'Trova un', NOW(), NOW())
+(16, 'sw', 'Trova un', NOW(), NOW()),
+(17, 'sw', 'FSE - Taccuino per cittadino', NOW(), NOW())
