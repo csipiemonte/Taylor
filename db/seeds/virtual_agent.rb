@@ -1,16 +1,13 @@
-def assign_permissions_to_virtual_agent (virtual_agent, permission_name)
-  agent = Role.find_by(name:"Agent")
-  virtual_agent.permissions = agent.permissions
-  virtual_agent.permission_grant('virtual_agent')
-  virtual_agent.permission_grant(permission_name)
-end
+# Copyright (C) 2021 CSI Piemonte, https://www.csipiemonte.it/
+#
+# Permissions create per i role di tipo Virtual Agent
 
-# Virtual Agents inherits all permissions from the ordinary Agent role. They also have their own specifici permissions
 Permission.create_if_not_exists(
   name:        'virtual_agent',
   note:        'Virtual Agent Interface',
   preferences: {},
 )
+
 Permission.create_if_not_exists(
   name:        'virtual_agent.chatbot',
   note:        'Handle chats automatically',
@@ -26,9 +23,14 @@ Permission.create_if_not_exists(
   note:        'Simulate agents behaviour',
   preferences: {},
 )
+Permission.create_if_not_exists(
+  name:        'virtual_agent.aligner',
+  note:        'Align external activies and external system tickets',
+  preferences: {},
+)
 
+# Creazione roles di tipo 'virtual_agent*'
 virtual_agent_chatbot = Role.create_if_not_exists(
-  id:                5,
   name:              'Virtual Agent (Chatbot)',
   note:              'To automatically handle incoming chat',
   preferences:       {
@@ -37,22 +39,24 @@ virtual_agent_chatbot = Role.create_if_not_exists(
   default_at_signup: false,
   updated_by_id:     1,
   created_by_id:     1
-) || Role.find_by(name:'Virtual Agent (Chatbot)')
+) || Role.find_by(name: 'Virtual Agent (Chatbot)')
+
+virtual_agent_chatbot.permission_grant('virtual_agent.chatbot')
 
 virtual_agent_api_user = Role.create_if_not_exists(
-  id:                7,
   name:              'Virtual Agent (Api User)',
-  note:              'To perform api calls as an agent',
+  note:              'To perform API calls as an agent',
   preferences:       {
     not: ['Customer'],
   },
   default_at_signup: false,
   updated_by_id:     1,
   created_by_id:     1
-) || Role.find_by(name:'Virtual Agent (Api User)')
+) || Role.find_by(name: 'Virtual Agent (Api User)')
+
+virtual_agent_api_user.permission_grant('virtual_agent.api_user')
 
 virtual_agent_rpa = Role.create_if_not_exists(
-  id:                8,
   name:              'Virtual Agent (RPA)',
   note:              'To simulate agent behaviour on UI',
   preferences:       {
@@ -61,20 +65,51 @@ virtual_agent_rpa = Role.create_if_not_exists(
   default_at_signup: false,
   updated_by_id:     1,
   created_by_id:     1
-) || Role.find_by(name:'Virtual Agent (RPA)')
+) || Role.find_by(name: 'Virtual Agent (RPA)')
 
+virtual_agent_rpa.permission_grant('virtual_agent.rpa')
 
-assign_permissions_to_virtual_agent virtual_agent_chatbot, 'virtual_agent.chatbot'
-assign_permissions_to_virtual_agent virtual_agent_api_user, 'virtual_agent.api_user'
-assign_permissions_to_virtual_agent virtual_agent_rpa, 'virtual_agent.rpa'
+virtual_agent_aligner = Role.create_if_not_exists(
+  name:              'Virtual Agent (Aligner)',
+  note:              'To perform alignement from external tickenting systems to Zammand external activities',
+  preferences:       {
+    not: ['Customer'],
+  },
+  default_at_signup: false,
+  updated_by_id:     1,
+  created_by_id:     1
+) || Role.find_by(name: 'Virtual Agent (Aligner)')
 
+virtual_agent_aligner.permission_grant('virtual_agent.aligner')
 
+Translation.create_if_not_exists(
+  locale:         'it-it',
+  source:         'Virtual Agent %s',
+  target:         'Operatore Virtuale %s',
+  target_initial: 'Operatore Virtuale %s',
+  format:         'string',
+  created_by_id:  '1',
+  updated_by_id:  '1',
+)
+
+# Utente impiegato per eseguire le operazioni di allineamento fra i ticket
+# presenti sugli external ticketing system e le Zammad external activities.
+User.create_if_not_exists(
+  login:     'aligner.agent@csi.it',
+  firstname: 'Aligner',
+  lastname:  'Agent',
+  email:     'aligner.agent@csi.it',
+  password:  'AliP21_ext!',
+  active:    true,
+  roles:     [ Role.find_by(name: 'Virtual Agent (Aligner)') ]
+)
+
+# Api Management
 api_management = Role.create_if_not_exists(
-  id:                6,
   name:              'Api Management',
   note:              'Login Account for external Api Manager',
   preferences:       {
-    not: ['Customer','Agent', 'Admin'],
+    not: ['Customer', 'Agent', 'Admin'],
   },
   default_at_signup: false,
   updated_by_id:     1,
@@ -91,45 +126,23 @@ Permission.create_if_not_exists(
 api_manager_permission = Permission.lookup(name: 'api_manager')
 api_management.permission_ids = [api_manager_permission.id]
 
-
 #creating translations
 Translation.create_if_not_exists(
-  locale:         "it-it",
-  source:         "Access to NextCRM API by external Api Manager",
-  target:         "Accesso alle API NEXTCRM via Api Manager",
-  target_initial: "Accesso alle API NEXTCRM via Api Manager",
+  locale:         'it-it',
+  source:         'Access to NextCRM API by external Api Manager',
+  target:         'Accesso alle API NEXTCRM via Api Manager',
+  target_initial: 'Accesso alle API NEXTCRM via Api Manager',
   format:         'string',
   created_by_id:  '1',
   updated_by_id:  '1',
 )
+
 Translation.create_if_not_exists(
-  locale:         "it-it",
-  source:         "Login Account for external Api Manager",
-  target:         "Login Account per Api Manager",
-  target_initial: "Login Account per Api Manager",
+  locale:         'it-it',
+  source:         'Login Account for external Api Manager',
+  target:         'Login Account per Api Manager',
+  target_initial: 'Login Account per Api Manager',
   format:         'string',
   created_by_id:  '1',
   updated_by_id:  '1',
 )
-Translation.create_if_not_exists(
-  locale:         "it-it",
-  source:         "Virtual Agent",
-  target:         "Operatore Virtuale",
-  target_initial: "Operatore Virtuale",
-  format:         'string',
-  created_by_id:  '1',
-  updated_by_id:  '1',
-)
-Translation.create_if_not_exists(
-  locale:         "it-it",
-  source:         "Virtual Agent %s",
-  target:         "Operatore Virtuale %s",
-  target_initial: "Operatore Virtuale %s",
-  format:         'string',
-  created_by_id:  '1',
-  updated_by_id:  '1',
-)
-
-
-
-

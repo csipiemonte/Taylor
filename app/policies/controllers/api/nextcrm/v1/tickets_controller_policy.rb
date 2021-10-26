@@ -1,3 +1,3 @@
 class Controllers::Api::Nextcrm::V1::TicketsControllerPolicy < Controllers::TicketsControllerPolicy
-    default_permit!(['agent', 'virtual_agent'])
+  default_permit!(['agent', 'virtual_agent.api_user'])
 end

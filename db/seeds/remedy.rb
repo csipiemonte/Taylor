@@ -107,17 +107,6 @@ Setting.create_if_not_exists(
 
 Setting.find_by(name: 'Remedy_transaction').try(:destroy)
 
-User.create_if_not_exists(
-  id:        4,
-  login:     'remedy.agent@zammad.org',
-  firstname: 'Remedy',
-  lastname:  'Agent',
-  email:     'remedy.agent@zammad.org',
-  password:  '',
-  active:    true,
-  roles:     [ Role.find_by(name: 'Agent') ]
-)
-
 Setting.create_if_not_exists(
   title:       'Remedy State Alignment',
   name:        'remedy_state_alignment',
