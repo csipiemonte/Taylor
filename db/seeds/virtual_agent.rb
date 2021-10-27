@@ -23,11 +23,6 @@ Permission.create_if_not_exists(
   note:        'Simulate agents behaviour',
   preferences: {},
 )
-Permission.create_if_not_exists(
-  name:        'virtual_agent.aligner',
-  note:        'Align external activies and external system tickets',
-  preferences: {},
-)
 
 # Creazione roles di tipo 'virtual_agent*'
 virtual_agent_chatbot = Role.create_if_not_exists(
@@ -69,6 +64,8 @@ virtual_agent_rpa = Role.create_if_not_exists(
 
 virtual_agent_rpa.permission_grant('virtual_agent.rpa')
 
+# Il role 'Virtual Agent (Aligner)' deve poter operare su external activities (in lettura ed in scrittura)
+# e sui ticket (in sola lettura).
 virtual_agent_aligner = Role.create_if_not_exists(
   name:              'Virtual Agent (Aligner)',
   note:              'To perform alignement from external tickenting systems to Zammand external activities',
@@ -80,7 +77,7 @@ virtual_agent_aligner = Role.create_if_not_exists(
   created_by_id:     1
 ) || Role.find_by(name: 'Virtual Agent (Aligner)')
 
-virtual_agent_aligner.permission_grant('virtual_agent.aligner')
+virtual_agent_aligner.permission_grant('ticket.agent')
 
 Translation.create_if_not_exists(
   locale:         'it-it',
