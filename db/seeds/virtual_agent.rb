@@ -91,6 +91,8 @@ Translation.create_if_not_exists(
 
 # Utente impiegato per eseguire le operazioni di allineamento fra i ticket
 # presenti sugli external ticketing system e le Zammad external activities.
+# Deve avere come role 'Virtual Agent (Aligner)' e poi
+# deve avere il controllo pieno sui gruppi (abilitazioni date dalla pagina di dettaglio utente)
 User.create_if_not_exists(
   login:     'aligner.agent@csi.it',
   firstname: 'Aligner',
