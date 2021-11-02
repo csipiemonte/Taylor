@@ -223,12 +223,13 @@ zammad_light_model = {
   },
   '7' => {
     'required':  true,
-    'name':      'group',
-    'label':     'group',
-    'type':      'text',
-    'default':   'ASL Alessandria',
-    'read_only': true,
-    'visible':   false
+    'name':      'group_id',
+    'label':     'group_id',
+    'default':  1,
+    'select' => {
+      'options' => Setting.get('asl_external_groups').each_with_index.map { |group, index| ["#{index+1}", group] }.to_h
+    },
+    'visible':   true
   },
   '8' => {
     'name':  'commento',
@@ -303,3 +304,5 @@ Setting.create_if_not_exists(
   state:       {},
   frontend:    false
 )
+
+create_translation('it-it', 'group_id', 'Gruppo')
