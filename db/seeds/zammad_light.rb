@@ -112,15 +112,6 @@ Setting.create_if_not_exists(
   frontend:    false
 )
 
-Setting.create_if_not_exists(
-  title:       'Zammad Light External Groups',
-  name:        'asl_external_groups',
-  area:        'Integration::ZammadLight',
-  description: 'Defines ASL groups configured on ZammadLight. must be an array of hash with group id and name. Id MUST be equal to ZamamdLight group id.',
-  options:     {},
-  state:       [{ 'id': 1, 'name': 'ASL Alessandria' }],
-  frontend:    false
-)
 
 
 
