@@ -53,7 +53,7 @@ module Api::Nextcrm::V1::Concerns::CustomApiLogger
       request_id = @context[:request].uuid
       remote_ip = @context[:request].remote_ip
       current_user_id = @context[:current_user] ? @context[:current_user].id : "null"
-      progname += "[API remmote_ip: #{remote_ip} request_id:#{request_id} user_id:#{current_user_id}]"
+      progname += "[API remote_ip: #{remote_ip} request_id:#{request_id} user_id:#{current_user_id}]"
       # https://github.com/ruby/logger/blob/master/lib/logger.rb#L494
       Rails.logger.add(level, nil, progname, &block)
     end

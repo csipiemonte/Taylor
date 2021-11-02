@@ -23,4 +23,23 @@ class ExternalActivity < ApplicationModel
       ticket.save!
     end
   end
+
+
+    # motodi di log / debug
+    def getFilteredData
+      return_hash =  Marshal.load(Marshal.dump(self.data))
+  
+  
+      return_hash["commento"].each do |c|
+        if c["attachments"] 
+          c["attachments"].keys.each do |key|
+            c["attachments"][key]["file"] = "[FILTERED]"
+          end
+        end
+      end
+  
+      return return_hash
+    end
+
+    
 end

@@ -13,6 +13,7 @@ module Api::Nextcrm::V1::Concerns::ReadesApiManagerJwt
 
   def check_apiman_jwt
     begin
+      log_input_parameters()
       # check_apiman_jwt viene eseguito come prima action, facendo autenticazione api manager user
       # e sostituzione con utente virtual operator. le successive chiamate di autenticazione e autorizzqzione
       # saranno effettuate sul virtual operator
@@ -89,5 +90,25 @@ module Api::Nextcrm::V1::Concerns::ReadesApiManagerJwt
       raise Exceptions::NotAuthorized
     end # try catch
   end # check_api_man
+
+  def log_input_parameters
+    apilogger.info { "called path: #{request.filtered_path}"}
+    apilogger.info { "input parameters: #{request.filtered_parameters}"}
+    # attenzione, RAW_POST_DATA puo' contenere interi file
+    trunc_post_payload = truncate(request.env["RAW_POST_DATA"])
+    apilogger.debug { "raw input parameters: #{trunc_post_payload}"}
+  end
+
+  def truncate(input_text, length = 1000, truncate_string = '...[FILTERED]')
+    return '' unless input_text
+    # TODO, capire come prendere i primi n caratteri di Faraday::CompositeReadIO durante un multipart.
+    # se si esegue #read si ottiene la stringa ma altera il body e remedy non lo recepisce
+    return ' filtered multipart data' if input_text.is_a? Faraday::CompositeReadIO
+
+    text = input_text.to_s
+
+    l = length - truncate_string.chars.length
+    (text.length > length ? text[0...l] + truncate_string : text).to_s
+  end
 
 end
