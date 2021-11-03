@@ -156,7 +156,11 @@ Setting.create_if_not_exists(
   area:        'Integration::ZammadLight',
   description: 'Defines ASL groups configured on ZammadLight. must be an array of hash with group id and name. Id MUST be equal to ZamamdLight group id.',
   options:     {},
-  state:       [{ 'id': 1, 'name': 'ASL Alessandria' }],
+  state:       [
+    { 'id': 2, 'name': 'ASL Alessandria' },
+    { 'id': 3, 'name': 'ASL Biella' },
+    { 'id': 4, 'name': 'ASL Novara' },
+  ],
   frontend:    false
 )
 
