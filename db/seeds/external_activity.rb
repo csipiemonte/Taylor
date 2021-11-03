@@ -150,19 +150,6 @@ ExternalTicketingSystem.create_if_not_exists(
   name: 'ASL'
 )
 
-Setting.create_if_not_exists(
-  title:       'Zammad Light External Groups',
-  name:        'asl_external_groups',
-  area:        'Integration::ZammadLight',
-  description: 'Defines ASL groups configured on ZammadLight. must be an array of hash with group id and name. Id MUST be equal to ZamamdLight group id.',
-  options:     {},
-  state:       [
-    { 'id': 2, 'name': 'ASL Alessandria' },
-    { 'id': 3, 'name': 'ASL Biella' },
-    { 'id': 4, 'name': 'ASL Novara' },
-  ],
-  frontend:    false
-)
 
 # to update model just edit the following variable, then seed the database :)
 zammad_light_model = {
@@ -241,7 +228,11 @@ zammad_light_model = {
     'label':     'group_id',
     'default':  1,
     'select' => {
-      'options' => Setting.get('asl_external_groups').each_with_index.map { |group, index| ["#{index+1}", group] }.to_h
+      'options' => {
+        '1' => { 'id': 2, 'name': 'ASL Alessandria' },
+        '2' => { 'id': 3, 'name': 'ASL Biella' },
+        '3' => { 'id': 4, 'name': 'ASL Novara' },
+      }
     },
     'visible':   true
   },
