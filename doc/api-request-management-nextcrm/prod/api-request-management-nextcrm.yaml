@@ -286,7 +286,7 @@ paths:
                   required: [title, article]
                   properties:
                     article:
-                      $ref: '#/components/schemas/Article'
+                      $ref: '#/components/schemas/ArticleNew'
                 - $ref: '#/components/schemas/NewTicket'
       responses:
         201:
