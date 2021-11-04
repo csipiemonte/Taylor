@@ -168,12 +168,6 @@ zammad_light_model = {
     'core_field': 'title'
   },
   '2' => {
-    'type':       'text',
-    'name':       'subject',
-    'label':      'oggetto',
-    'core_field': 'subject'
-  },
-  '3' => {
     'name':                'state',
     'label':               'stato',
     'type':                'text',
@@ -194,14 +188,14 @@ zammad_light_model = {
         }
       }
   },
-  '4' => {
+  '3' => {
     'required':   true,
     'type':       'textarea',
     'name':       'body',
     'label':      'richiesta',
     'core_field': 'body'
   },
-  '5' => {
+  '4' => {
     'name':     'priority',
     'label':    'priority',
     'default':  2,
@@ -213,7 +207,7 @@ zammad_light_model = {
       }
     }
   },
-  '6' => {
+  '5' => {
     'required':  true,
     'name':      'customer',
     'label':     'customer',
@@ -222,7 +216,7 @@ zammad_light_model = {
     'read_only': true,
     'visible':   false
   },
-  '7' => {
+  '6' => {
     'required':  true,
     'name':      'group_id',
     'label':     'group_id',
@@ -236,7 +230,7 @@ zammad_light_model = {
     },
     'visible':   true
   },
-  '8' => {
+  '7' => {
     'name':  'commento',
     'label': 'commento',
     'type':  'comment',
