@@ -1,10 +1,12 @@
+# AMBIENTE API: PROD
+
 openapi: 3.0.0
 info:
   version: v1
   title: api-request-management-nextcrm
   description: Le API consentono di interfacciarsi con il sistema NextCRM e gestire le richieste dei clienti
 servers:
-  - url: http://tst-api-piemonte.ecosis.csi.it/tecno/nextcrm/v1
+  - url: http://api-piemonte.csi.it/tecno/nextcrm/v1
 security: 
   - OAuth2AuthClient: []
 tags:
@@ -660,12 +662,15 @@ paths:
 
 
 components:
+  # this part will be overwritten by apimanager
   securitySchemes:
     OAuth2AuthClient:
       type: oauth2
       flows: 
         clientCredentials:
           tokenUrl: https://example.com/oauth/token
+          scopes: {}
+
   schemas:
     GeneralError:
       type: object

@@ -1,3 +1,5 @@
+# AMBIENTE API: TEST
+
 openapi: 3.0.0
 info:
   version: v1
@@ -660,12 +662,15 @@ paths:
 
 
 components:
+  # this part will be overwritten by apimanager
   securitySchemes:
     OAuth2AuthClient:
       type: oauth2
       flows: 
         clientCredentials:
           tokenUrl: https://example.com/oauth/token
+          scopes: {}
+          
   schemas:
     GeneralError:
       type: object
