@@ -19,4 +19,5 @@ VALUES
 (17, 'sw', 'Pagamento ticket via web', NOW(), NOW()),
 (33, 'sw', 'AUTOCERTIFICAZIONE ESENZIONE PER PATOLOGIA CITTADINI', NOW(), NOW()),
 (34, 'sw', 'Trova un', NOW(), NOW()),
-(35, 'sw', 'FSE - Taccuino per cittadino', NOW(), NOW())
+(35, 'sw', 'FSE - Taccuino per cittadino', NOW(), NOW()),
+(36, 'sw', 'SOL ESTRATTO CONTO TICKET SANITARI', NOW(), NOW())

@@ -12,6 +12,8 @@ classification_engine_api_url.state = "http://int-sdnet-convplat1.sdp.csi.it:780
 classification_engine_api_url.save!
 
 chat_bot_api_url = Setting.find_by(name: "chat_bot_api_settings")
+# Attenzione per sviluppi su virtual machine Virtual Box, impostare
+# chat_bot_api_url.state = "https://tst-unlockpa.csi.it/botplat/bolloauto"
 chat_bot_api_url.state = "http://ts-ap1-be-bot-nextcrm.site02.nivolapiemonte.it/botplat/example/webhook/rest"
 chat_bot_api_url.save!
 
