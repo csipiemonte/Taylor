@@ -1,0 +1,22 @@
+<% if !@records.length: %>
+<table class="settings-list settings-list--stretch settings-list--placeholder">
+  <thead><tr><th><%- @T('No Entries') %>
+</table>
+<% else: %>
+  <table class="settings-list settings-list--stretch">
+    <thead>
+      <tr>
+        <th width="25%"><%- @T('Scope') %>
+        <th><%- @T('Event') %>
+        <th width="25%"><%- @T('Created at') %>
+    </thead>
+    <tbody>
+<% for record in @records: %>
+      <tr data-id="<%= record.id %>" class="js-record">
+        <td><%= record.scope %> 
+        <td><%= record.name %> 
+        <td><%- App.PrettyDate.humanTime(record.created_at, 0, true, 'timestamp') %>
+<% end %>
+    </tbody>
+  </table>
+<% end %>

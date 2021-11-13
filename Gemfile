@@ -129,8 +129,9 @@ gem 'twilio-ruby'
 # feature - ordering
 gem 'acts_as_list'
 
-# feature (CSI) - fast json parser
-gem 'oj'
+# features (NEXTCRM) 
+gem 'oj' # fast json parser
+gem 'faraday' # http lib wrapper
 
 # integrations
 gem 'clearbit'

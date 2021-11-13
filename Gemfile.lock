@@ -626,6 +626,7 @@ DEPENDENCIES
   execjs
   factory_bot_rails
   faker
+  faraday
   github_changelog_generator
   gmail_xoauth
   guard
