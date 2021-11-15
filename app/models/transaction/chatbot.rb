@@ -1,9 +1,10 @@
 class Transaction::Chatbot
-
+  #transazione tra client e websocket
   def initialize(item, params = {})
     @item = item
     @params = params
     @chatbot = User.find_by(login: 'chatbot@zammad.org')
+    #primo step alla apertura della chat
   end
 
   def perform
@@ -25,7 +26,11 @@ class Transaction::Chatbot
       event = Sessions::Event::ChatSessionStart.new(params)
       result = event.run
       event.destroy
-      welcome_text = ChatbotService.answerTo("/get_started")
+      # invocazione dell'event get_started per avere saluti iniziali
+      welcome_text = ChatbotService.answerTo("/get_started") 
+      # /get_started è un INTENT corrisponde al benvenuto
+      # simuliamo un benvenuto con 'Ciao come stai?' che innesca il /get_started
+      # se non è una stringa di tipo INTENT lo interpreta come domanda
       welcome_message = createMessageFromText(welcome_text,@chatbot.id,@item[:chat_session].id)
       sendMessageToClient(welcome_message,@item[:chat_session].id,clients)
 
@@ -34,12 +39,18 @@ class Transaction::Chatbot
       return if Setting.get('import_mode') || !Setting.get('chatbot_status')
       message = Chat::Message.find_by(id: @item[:object_id])
       chat_session = Chat::Session.find_by(id: message[:chat_session_id])
+      actual_chat = Chat.find_by(id: chat_session.chat_id)
+      active_agent_count = actual_chat.get_active_agent_count  # contiamo gli agenti disponibili
+      Rails.logger.info "active_agent_count #{active_agent_count}"
       if !chat_session.stop_chatbot
         created_by = message[:created_by_id]
         reply_text = ChatbotService.answerTo(message.content)
-        if(!reply_text || reply_text['@handoff'])
+        # stiamo usando Zimmy, se il content è 'vorrei parlare con un operatore' o simili
+        # restistuisce un json con chiave '@handoff' e passa la palla ad un operatore reale
+        if((!reply_text || reply_text['@handoff']) && active_agent_count > 0)
           performHandoff(chat_session)
         else
+          Rails.logger.info "reply_text #{reply_text}"
           reply_message = createMessageFromText(reply_text,@chatbot.id,message[:chat_session_id])
           sendMessageToClient(reply_message,message[:chat_session_id])
         end
@@ -50,6 +61,7 @@ class Transaction::Chatbot
   private
 
   def performHandoff(chat_session)
+    # chat_session.stop_chatbot se è TRUE il chatbot è fermo e si usa l'operatore umano
     chat_session.stop_chatbot = true
     chat_session.save!
     params = {
