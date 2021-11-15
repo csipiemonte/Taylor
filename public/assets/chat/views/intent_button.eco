@@ -1,0 +1,1 @@
+<button type="button" class="zammad-chat-button zammad-chat-intent" intent="<%= @btnintent %>"><%- @btnlabel %></button>

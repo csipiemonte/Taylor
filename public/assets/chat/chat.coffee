@@ -368,6 +368,7 @@ do($ = window.jQuery, window) ->
       @el.find('.js-chat-status').click @stopPropagation
       @el.find('.zammad-chat-controls').on 'submit', @onSubmit
       @el.find('.zammad-chat-body').on 'scroll', @detectScrolledtoBottom
+      @el.find('.zammad-chat-body').on 'click', @invokeIntent
       @el.find('.zammad-scroll-hint').click @onScrollHintClick
       @input.on(
         keydown: @checkForEnter
@@ -1010,6 +1011,42 @@ do($ = window.jQuery, window) ->
       scrollBottom = @el.find('.zammad-chat-body').scrollTop() + @el.find('.zammad-chat-body').outerHeight()
       @scrolledToBottom = Math.abs(scrollBottom - @el.find('.zammad-chat-body').prop('scrollHeight')) <= @scrollSnapTolerance
       @el.find('.zammad-scroll-hint').addClass('is-hidden') if @scrolledToBottom
+
+    # Metodo custom CSI per gestire il click su uno dei bottoni e innescare la chiamata
+    # ad uno degli intent censiti.
+    invokeIntent: (event) ->
+      event.preventDefault()
+      intent = e.target.intent
+      return intent == undefined
+
+      @inactiveTimeout.start()
+
+      sessionStorage.removeItem 'unfinished_message'
+
+      messageElement = @view('message')
+        message: e.target.text
+        from: 'customer'
+        id: @_messageCount++
+        unreadClass: ''
+
+      @maybeAddTimestamp()
+
+      # add message before message typing loader
+      if @el.find('.zammad-chat-message--typing').get(0)
+        @lastAddedType = 'typing-placeholder'
+        @el.find('.zammad-chat-message--typing').before messageElement
+      else
+        @lastAddedType = 'message--customer'
+        @el.find('.zammad-chat-body').append messageElement
+
+      @input.html('')
+      @scrollToBottom()
+
+      # send message event
+      @send 'chat_session_message',
+        content: intent
+        id: @_messageCount
+        session_id: @sessionId
 
     showScrollHint: ->
       @el.find('.zammad-scroll-hint').removeClass('is-hidden')
