@@ -57,19 +57,20 @@ return is sent as message back to peer
       },
     )
 
-
-
     # send broadcast to agents
     Chat.broadcast_agent_state_update([chat_session.chat_id])
 
+    # Codice custom CSI - Inizio
+    # Transazione di background invocata solo se il chatbot e' attivo
     Transaction::BackgroundJob.run(
-        object:     'Chat Session',
-        type:       'chat_session',
-        object_id: chat_session.chat_id,
-        chat_session: chat_session,
-        client_id: @client_id,
-        session: @session
+      object:       'Chat Session',
+      type:         'chat_session',
+      object_id:    chat_session.chat_id,
+      chat_session: chat_session,
+      client_id:    @client_id,
+      session:      @session
     )
+    # Codice custom CSI - Fine
 
     # return new session
     {
