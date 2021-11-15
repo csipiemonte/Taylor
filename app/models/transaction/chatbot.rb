@@ -34,7 +34,7 @@ class Transaction::Chatbot
       get_started_response = ChatbotService.answer_to('/get_started')
       Rails.logger.info "get_started_response #{get_started_response}"
 
-      welcome_message = get_started_event_message(get_started_response, @chatbot.id, @item[:chat_session].id)
+      welcome_message = get_started_message(get_started_response, @chatbot.id, @item[:chat_session].id)
       send_message_to_client(welcome_message, clients)
 
     elsif @item[:object] == 'Chat Message'
@@ -60,7 +60,7 @@ class Transaction::Chatbot
           perform_handoff(chat_session)
         else
           Rails.logger.info "reply_text #{reply_text}"
-          reply_message = create_message_from_text(reply_text, @chatbot.id, message[:chat_session_id])
+          reply_message = create_message_from_text(ai_response[0], @chatbot.id, message[:chat_session_id])
           send_message_to_client(reply_message)
         end
       end
@@ -90,17 +90,17 @@ class Transaction::Chatbot
 
   # Metodo che crea un json di risposta da inviare al client della chat;
   # il json di risposta e' composto da:
-  # - event: evento 'chat_get_started' che dovra' essere intercettato su chat.coffee
+  # - event: evento 'chat_session_message' che dovra' essere intercettato su chat.coffee
   # - data: dati associati all'evento
   # cfr. https://gitlab.csi.it/prodotti/nextcrm/zammad/wikis/rif_channel_chat
-  def get_started_event_message(get_started_resp, user_id, session_id)
+  def get_started_message(get_started_resp, user_id, session_id)
     chat_message = Chat::Message.create(
       chat_session_id: session_id,
       content:         get_started_resp[0]['text'],
       created_by_id:   user_id,
     )
     {
-      event: 'chat_get_started',
+      event: 'chat_session_message',
       data:  {
         session_id:     @item[:chat_session].session_id,
         message:        chat_message,
@@ -114,17 +114,18 @@ class Transaction::Chatbot
   # il json di risposta e' composto da:
   # - event: evento 'chat_session_message' che dovra' essere intercettato su chat.coffee
   # - data: dati associati all'evento
-  def create_message_from_text(text, user_id, session_id)
+  def create_message_from_text(elem_0_resp, user_id, session_id)
     chat_message = Chat::Message.create(
       chat_session_id: session_id,
-      content:         text,
+      content:         elem_0_resp['text'],
       created_by_id:   user_id,
     )
     {
       event: 'chat_session_message',
       data:  {
-        session_id: @item[:chat_session].session_id,
-        message:    chat_message
+        session_id:     @item[:chat_session].session_id,
+        message:        chat_message,
+        intent_buttons: get_started_resp[0]['buttons'] # eventuali btn di intent
       },
     }
   end

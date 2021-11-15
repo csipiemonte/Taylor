@@ -613,9 +613,6 @@ do($ = window.jQuery, window) ->
             @log.notice pipe.data
             if pipe.data && pipe.data.state is 'chat_disabled'
               @destroy(remove: true)
-          when 'chat_get_started'
-            return if pipe.data.self_written
-            @receiveGetStartedMessage pipe.data
           when 'chat_session_message'
             return if pipe.data.self_written
             @receiveMessage pipe.data
@@ -784,37 +781,6 @@ do($ = window.jQuery, window) ->
         id: @_messageCount
         session_id: @sessionId
 
-    # Metodo custom CSI per processare i dati passati al client con l'event 'chat_get_started'
-    receiveGetStartedMessage: (data) =>
-      @inactiveTimeout.start()
-
-      # hide writing indicator
-      @onAgentTypingEnd()
-
-      @maybeAddTimestamp()
-
-      # welcome message
-      @renderMessage
-        message: data.message.content
-        id: data.id
-        from: 'agent'
-
-      # intro message
-      @renderMessage
-        message: data.intro_message
-        id: data.id
-        from: 'agent'
-
-      @lastAddedType = 'message--agent'
-      data.unreadClass = if document.hidden then ' zammad-chat-message--unread' else ''
-
-      for btn in data.intent_buttons
-        @renderIntentButton
-          btnintent: btn.payload
-          btnlabel: btn.title
-
-      @scrollToBottom showHint: true
-
     receiveMessage: (data) =>
       @inactiveTimeout.start()
 
@@ -827,6 +793,20 @@ do($ = window.jQuery, window) ->
         message: data.message.content
         id: data.id
         from: 'agent'
+
+      # intro message - CSI Custom
+      if data.intro_message != undefined
+        @renderMessage
+          message: data.intro_message
+          id: data.id
+          from: 'agent'
+
+      # intent_buttons - CSI Custom
+      if data.intent_buttons
+        for btn in data.intent_buttons
+          @renderIntentButton
+            btnintent: btn.payload
+            btnlabel: btn.title
 
       @scrollToBottom showHint: true
 
