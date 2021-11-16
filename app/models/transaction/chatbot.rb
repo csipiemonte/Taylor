@@ -106,7 +106,7 @@ class Transaction::Chatbot
         message:        chat_message,
         intro_message:  get_started_resp[1]['text'],
         intent_buttons: get_started_resp[1]['buttons']
-      },
+      }
     }
   end
 

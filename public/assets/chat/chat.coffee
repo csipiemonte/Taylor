@@ -802,7 +802,7 @@ do($ = window.jQuery, window) ->
           from: 'agent'
 
       # intent_buttons - CSI Custom
-      if data.intent_buttons
+      if data.intent_buttons != undefined
         for btn in data.intent_buttons
           @renderIntentButton
             btnintent: btn.payload
@@ -1035,7 +1035,7 @@ do($ = window.jQuery, window) ->
     # ad uno degli intent censiti.
     invokeIntent: (event) ->
       event.preventDefault()
-      intent = e.target.intent
+      intent = event.target.intent
       return intent == undefined
 
       @inactiveTimeout.start()
@@ -1043,7 +1043,7 @@ do($ = window.jQuery, window) ->
       sessionStorage.removeItem 'unfinished_message'
 
       messageElement = @view('message')
-        message: e.target.text
+        message: event.target.text
         from: 'customer'
         id: @_messageCount++
         unreadClass: ''
