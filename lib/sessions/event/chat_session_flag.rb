@@ -19,7 +19,6 @@ return is sent as message back to peer
     return super if super
     return if !permission_check('chat.agent', 'chat')
 
-
     chat_session = Chat::Session.find_by(session_id: @payload['session_id'])
     if !chat_session
       return {
@@ -31,11 +30,10 @@ return is sent as message back to peer
       }
     end
 
-    #updating flag on db
-    ChatbotService.bindSupervisors(chat_session)
+    # updating flag on db
+    ChatbotService.bind_supervisors(chat_session)
     chat_session.flag_raised = @payload['state']
     chat_session.save
-
 
     user = chat_session.agent_user
     data = {
@@ -51,5 +49,4 @@ return is sent as message back to peer
 
     nil
   end
-
 end
