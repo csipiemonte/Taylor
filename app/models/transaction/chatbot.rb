@@ -54,14 +54,17 @@ class Transaction::Chatbot
       },
       { json: true }
     )
-    Rails.logger.info "get_started_response #{get_started_response}"
 
     if !get_started_response.success?
       send_message_to_client(error_message(@chatbot.id, @item[:chat_session].id), clients)
       return
     end
 
-    msg = get_started_message(get_started_response.body, @chatbot.id, @item[:chat_session].id)
+    msg = get_started_message(
+      JSON.parse(get_started_response.body),
+      @chatbot.id,
+      @item[:chat_session].id
+    )
     send_message_to_client(msg, clients)
   end
 
@@ -78,14 +81,16 @@ class Transaction::Chatbot
       },
       { json: true }
     )
-    Rails.logger.info "ai_response #{ai_response}"
 
     if !ai_response.success?
       send_message_to_client(error_message(@chatbot.id, @item[:chat_session].id), clients)
       return
     end
 
-    reply_text = ai_response.body[0]['text']
+    ai_response_body = JSON.parse(ai_response.body)
+    Rails.logger.info "ai_response_body #{ai_response_body}"
+
+    reply_text = ai_response_body[0]['text']
     actual_chat = Chat.find_by(id: chat_session.chat_id)
     active_agent_count = actual_chat.get_active_agent_count  # operatori disponibili
 
@@ -97,7 +102,7 @@ class Transaction::Chatbot
       return
     end
 
-    reply_msg = chat_session_message(ai_response.body[0], @chatbot.id, message[:chat_session_id])
+    reply_msg = chat_session_message(ai_response_body[0], @chatbot.id, message[:chat_session_id])
     send_message_to_client(reply_msg)
   end
 
@@ -145,6 +150,7 @@ class Transaction::Chatbot
   # - data: dati associati all'evento
   # cfr. https://gitlab.csi.it/prodotti/nextcrm/zammad/wikis/rif_channel_chat
   def get_started_message(get_started_resp, user_id, session_id)
+    Rails.logger.info "get_started_resp #{get_started_resp}"
     chat_message = Chat::Message.create(
       chat_session_id: session_id,
       content:         get_started_resp[0]['text'],
