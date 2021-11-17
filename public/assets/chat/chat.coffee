@@ -816,7 +816,7 @@ do($ = window.jQuery, window) ->
 
     # Metodo custom CSI per mostrare i button sulla conversazione
     renderIntentButton: (data) =>
-      @lastAddedType = "message--#{ data.from }"
+      @lastAddedType = 'message--agent'
       @el.find('.zammad-chat-body').append @view('intent_button')(data)
 
     open: =>
@@ -1052,21 +1052,12 @@ do($ = window.jQuery, window) ->
 
       @maybeAddTimestamp()
 
-      # add message before message typing loader
-      console.log('prima if else')
-      if @el.find('.zammad-chat-message--typing').get(0)
-        console.log('inside if')
-        @lastAddedType = 'typing-placeholder'
-        @el.find('.zammad-chat-message--typing').before messageElement
-      else
-        console.log('inside else')
-        @lastAddedType = 'message--customer'
-        @el.find('.zammad-chat-body').append messageElement
+      @lastAddedType = 'message--customer'
+      @el.find('.zammad-chat-body').append messageElement
 
-      @input.html('')
       @scrollToBottom()
 
-      # send message event
+      # send message event passing intent
       console.log('intent prima di send', intent)
       @send 'chat_session_message',
         content: intent
