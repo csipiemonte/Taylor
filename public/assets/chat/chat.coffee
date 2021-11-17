@@ -1038,7 +1038,7 @@ do($ = window.jQuery, window) ->
       event.preventDefault()
       intent = event.target.getAttribute('data-intent')
       console.log('intent', intent)
-      return intent == undefined
+      return if intent == undefined
 
       @inactiveTimeout.start()
 
