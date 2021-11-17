@@ -368,7 +368,6 @@ do($ = window.jQuery, window) ->
       @el.find('.js-chat-status').click @stopPropagation
       @el.find('.zammad-chat-controls').on 'submit', @onSubmit
       @el.find('.zammad-chat-body').on 'scroll', @detectScrolledtoBottom
-      @el.find('.zammad-chat-body').on 'click', @invokeIntent
       @el.find('.zammad-scroll-hint').click @onScrollHintClick
       @input.on(
         keydown: @checkForEnter
@@ -807,7 +806,7 @@ do($ = window.jQuery, window) ->
           @renderIntentButton
             btnintent: btn.payload
             btnlabel: btn.title
-
+        @el.find('.zammad-chat-intent').on 'click', @invokeIntent
       @scrollToBottom showHint: true
 
     renderMessage: (data) =>
@@ -990,6 +989,7 @@ do($ = window.jQuery, window) ->
         session_id: @sessionId
 
     maybeAddTimestamp: ->
+      console.log('maybeAddTimestamp')
       timestamp = Date.now()
 
       if !@lastTimestamp or (timestamp - @lastTimestamp) > @showTimeEveryXMinutes * 60000
@@ -1034,8 +1034,10 @@ do($ = window.jQuery, window) ->
     # Metodo custom CSI per gestire il click su uno dei bottoni e innescare la chiamata
     # ad uno degli intent censiti.
     invokeIntent: (event) ->
+      console.log('evento dentro invoke intent', event)
       event.preventDefault()
-      intent = event.target.intent
+      intent = event.target.getAttribute('data-intent')
+      console.log('intent', intent)
       return intent == undefined
 
       @inactiveTimeout.start()
@@ -1051,10 +1053,13 @@ do($ = window.jQuery, window) ->
       @maybeAddTimestamp()
 
       # add message before message typing loader
+      console.log('prima if else')
       if @el.find('.zammad-chat-message--typing').get(0)
+        console.log('inside if')
         @lastAddedType = 'typing-placeholder'
         @el.find('.zammad-chat-message--typing').before messageElement
       else
+        console.log('inside else')
         @lastAddedType = 'message--customer'
         @el.find('.zammad-chat-body').append messageElement
 
@@ -1062,6 +1067,7 @@ do($ = window.jQuery, window) ->
       @scrollToBottom()
 
       # send message event
+      console.log('intent prima di send', intent)
       @send 'chat_session_message',
         content: intent
         id: @_messageCount
@@ -1077,6 +1083,7 @@ do($ = window.jQuery, window) ->
       @el.find('.zammad-chat-body').animate({scrollTop: @el.find('.zammad-chat-body').prop('scrollHeight')}, 300)
 
     scrollToBottom: ({ showHint } = { showHint: false }) ->
+      console.log('scrollToBottom')
       if @scrolledToBottom
         @el.find('.zammad-chat-body').scrollTop($('.zammad-chat-body').prop('scrollHeight'))
       else if showHint
