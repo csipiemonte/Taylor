@@ -177,13 +177,18 @@ class Transaction::Chatbot
       content:         elem_0_resp['text'],
       created_by_id:   user_id,
     )
+
+    event_data = {
+      session_id: @item[:chat_session].session_id,
+      message:    chat_message
+    }
+    if elem_0_resp['buttons']
+      event_data['intent_buttons'] = elem_0_resp['buttons'] # eventuali btn di intent
+    end
+
     {
       event: 'chat_session_message',
-      data:  {
-        session_id:     @item[:chat_session].session_id,
-        message:        chat_message,
-        intent_buttons: get_started_resp[0]['buttons'] # eventuali btn di intent
-      }
+      data:  event_data
     }
   end
 

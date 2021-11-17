@@ -1040,10 +1040,6 @@ do($ = window.jQuery, window) ->
       console.log('intent', intent)
       return if intent == undefined
 
-      @inactiveTimeout.start()
-
-      sessionStorage.removeItem 'unfinished_message'
-
       messageElement = @view('message')
         message: event.target.text
         from: 'customer'
