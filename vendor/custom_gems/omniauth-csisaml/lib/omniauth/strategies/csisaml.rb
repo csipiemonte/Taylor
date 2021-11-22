@@ -11,7 +11,7 @@ class Csisaml < OmniAuth::Strategies::SAML
     entity_id                      = "#{http_type}://#{fqdn}/auth/saml/metadata"
     assertion_consumer_service_url = "#{http_type}://#{fqdn}/auth/saml/callback"
 
-    config  = Setting.get('auth_advanced_saml_credentials') || {}
+    config = Setting.get('auth_advanced_saml_credentials') || {}
 
     # cfr. https://intranet.csi.it/web/wp-content/uploads/2021/01/Manuale-uso-integrazione-piattaforma-Shibboleth2.pdf
     options = config.reject { |_k, v| v.blank? }
