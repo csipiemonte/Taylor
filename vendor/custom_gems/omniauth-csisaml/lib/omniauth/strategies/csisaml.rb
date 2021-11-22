@@ -12,19 +12,18 @@ class Csisaml < OmniAuth::Strategies::SAML
     assertion_consumer_service_url = "#{http_type}://#{fqdn}/auth/saml/callback"
 
     config  = Setting.get('auth_advanced_saml_credentials') || {}
+
+    # cfr. https://intranet.csi.it/web/wp-content/uploads/2021/01/Manuale-uso-integrazione-piattaforma-Shibboleth2.pdf
     options = config.reject { |_k, v| v.blank? }
       .merge(
-        attribute_statements:{
-          nickname: ['Shib-Identita-Matricola'],
-          first_name: ['Shib-Identita-Nome'],
-          last_name: ['Shib-Identita-Cognome']
+        attribute_statements: {
+          nickname:   ['Shib-Identita-Matricola'], # restituito solo per IAMIDPCSI e IAMIDPCRP
+          first_name: ['Shib-Identita-Nome'], # restituito sempre
+          last_name:  ['Shib-Identita-Cognome'] # restituito sempre
         }
-
-        )
-
+      )
     args[0] = options
 
     super
   end
-
 end

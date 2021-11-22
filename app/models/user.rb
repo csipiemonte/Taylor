@@ -354,6 +354,7 @@ returns
       url = local_url
     end
     begin
+      logger.info "[user.rb - create_from_hash!] nickname: #{hash['info']['nickname']}"
       data = {
         login:         hash['info']['nickname'] || hash['uid'],
         firstname:     hash['info']['name'] || hash['info']['display_name'],
