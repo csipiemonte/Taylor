@@ -208,7 +208,7 @@ namespace :csi do
         'required':  true,
         'name':      'group_id',
         'label':     'group_id',
-        'default':  1,
+        'default':  2,
         'select' => {
           'options' => {
             '1' => { 'id': 2, 'name': 'ASL Alessandria' },
