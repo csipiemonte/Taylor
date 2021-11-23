@@ -806,7 +806,7 @@ do($ = window.jQuery, window) ->
           @renderIntentButton
             btnintent: btn.payload
             btnlabel: btn.title
-        @el.find('.zammad-chat-intent').on 'click', @invokeIntent
+        @el.find('.zammad-chat-intent').on 'click', @onClickIntentButton
       @scrollToBottom showHint: true
 
     renderMessage: (data) =>
@@ -818,6 +818,15 @@ do($ = window.jQuery, window) ->
     renderIntentButton: (data) =>
       @lastAddedType = 'message--agent'
       @el.find('.zammad-chat-body').append @view('intent_button')(data)
+
+    # Metodo custom CSI
+    onClickIntentButton: (event) =>
+      event.preventDefault()
+      intent = event.target.getAttribute('data-intent')
+      console.log('intent', intent)
+      return if intent == undefined
+
+      @invokeIntent(intent, event.target.text)
 
     open: =>
       if @isOpen
@@ -1033,15 +1042,9 @@ do($ = window.jQuery, window) ->
 
     # Metodo custom CSI per gestire il click su uno dei bottoni e innescare la chiamata
     # ad uno degli intent censiti.
-    invokeIntent: (event) ->
-      console.log('evento dentro invoke intent', event)
-      event.preventDefault()
-      intent = event.target.getAttribute('data-intent')
-      console.log('intent', intent)
-      return if intent == undefined
-
+    invokeIntent: (intent, msg) ->
       messageElement = @view('message')
-        message: event.target.text
+        message: msg
         from: 'customer'
         id: @_messageCount++
         unreadClass: ''

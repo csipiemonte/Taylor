@@ -56,6 +56,7 @@ class Transaction::Chatbot
     )
 
     if !get_started_response.success?
+      Rails.logger.error "Errore occorso durante l'invocazione del chatbot (intent /get_started), dettaglio: #{get_started_response.error}"
       send_message_to_client(error_message(@chatbot.id, @item[:chat_session].id), clients)
       return
     end
@@ -83,6 +84,7 @@ class Transaction::Chatbot
     )
 
     if !ai_response.success?
+      Rails.logger.error "Errore occorso durante l'invocazione del chatbot, dettaglio: #{ai_response.error}"
       send_message_to_client(error_message(@chatbot.id, @item[:chat_session].id), clients)
       return
     end
