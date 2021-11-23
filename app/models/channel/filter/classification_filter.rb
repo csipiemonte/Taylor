@@ -30,7 +30,7 @@ module Channel::Filter::ClassificationFilter
       )
 
       if !response.success?
-        Rails.logger.error 'Errore occorso durante l\'invocazione del Classification Engine'
+        Rails.logger.error "Errore occorso durante l'invocazione del Classification Engine, dettaglio: #{response.error}"
         return
       end
 
