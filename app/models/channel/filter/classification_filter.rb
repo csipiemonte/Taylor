@@ -37,8 +37,8 @@ module Channel::Filter::ClassificationFilter
       # risosta composta dai campi [{"confidence" => <indice_confidenza>, "class" = > <classificazione>}]
       body_resp = JSON.parse(response.body)
       Rails.logger.info "CLASSIFICATION FILTER PRE - body_resp: #{body_resp}"
-      if body_resp && body_resp['class']
-        mail['classification'] = body_resp['class'] if body_resp['class'] != 'NORESPONSE'
+      if body_resp && body_resp[0]['class']
+        mail['classification'] = body_resp[0]['class'] if body_resp[0]['class'] != 'NORESPONSE'
       end
     rescue => e
       Rails.logger.error "A problem occured during ticket classification.\n#{e.backtrace}"
