@@ -23,8 +23,8 @@ module Channel::Filter::ClassificationFilter
       response = UserAgent.post(
         "#{Setting.get('classification_engine_api_settings')}/predict",
         {
-          'text':      "#{subject} #{body}",
-          'threshold': 0.8
+          'data':      [ { 'content': body, 'subject': subject } ],
+          'threshold': 0.6
         },
         { json: true }
       )
