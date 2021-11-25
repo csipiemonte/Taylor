@@ -214,6 +214,11 @@ namespace :csi do
             '1' => { 'id': 2, 'name': 'ASL Alessandria' },
             '2' => { 'id': 3, 'name': 'ASL Biella' },
             '3' => { 'id': 4, 'name': 'ASL Novara' },
+            '4' => { 'id': 5, 'name': 'RPSAL-010210-ASL Cuneo 1' },
+            '5' => { 'id': 6, 'name': 'RPSAL-010211-ASL Cuneo 2' },
+            '6' => { 'id': 8, 'name': 'RPSAL-010906-ASO Cuneo' },
+            '7' => { 'id': 7, 'name': 'RPSAL-010907-ASO Alessandria' },
+            '8' => { 'id': 9, 'name': 'RPSAL-010908-ASO Mauriziano' }
           }
         },
         'visible':   true
