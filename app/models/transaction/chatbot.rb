@@ -94,8 +94,13 @@ class Transaction::Chatbot
 
   # Metodo che esegue la chiamata POST al webhook del chatbot
   def call_chatbot_webhook(msg_text)
+    chat = Chat.find_by(id: @item[:chat_session].chat_id)
+    # recuperiamo l'id della chat specificato dal frontend nel index html
+    # esempio su csp: $(function () { new ZammadChat({ fontSize: '12px', chatId: 1, debug: true }); })
+    # chatId 1 recuperera dalla tabella con id 1 la colonna name ad esempio bolloauto
+    # importante:  chat.name deve essere un argomento che corrisponde ad un chatbot utilizzabile, impostare da BO lo stesso nome della chat che si vuole usare
     UserAgent.post(
-      "#{@api_host}/webhook",
+      "#{@api_host}/#{chat.name}/webhook",
       {
         'sender':  @item[:chat_session].id, # id del chat customer per poter eventualmente stabilire una conversazione
         'message': msg_text
