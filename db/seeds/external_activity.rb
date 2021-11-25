@@ -218,6 +218,7 @@ zammad_light_model = {
   },
   '6' => {
     'required':  true,
+    'external_visibility': true,
     'name':      'group_id',
     'label':     'group_id',
     'default':  2,
