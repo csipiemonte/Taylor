@@ -1260,7 +1260,9 @@ perform active triggers on ticket
 
           if model_field_type != 'comment'
             # campi non di tipo 'comment'
-            next if ext_act_data[model_param_name] != model_param_value # skip se il parametro in data non coincide con il valore di confronto presente nella condition
+            # skip se il parametro in data non coincide con il valore di confronto presente nella condition
+            next if ext_act_data[model_param_name].nil? || model_param_value.nil?
+            next if ext_act_data[model_param_name].to_s != model_param_value.to_s
           else
             # il campo ':changes di item e' cosi' composto
             # :changes=>{ "data"=>[ { "commento" => [{"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"upupa"}, {"external"=>false, "text"=>"testo da mettere un commento.<div><br></div>"}, {"external"=>false, "text"=>"nuova nota per strip_tags"}]

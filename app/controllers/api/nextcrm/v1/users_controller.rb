@@ -100,9 +100,6 @@ class Api::Nextcrm::V1::UsersController < ::UsersController
       active
       note
       codice_fiscale
-      tessera_team
-      tessera_stp
-      tessera_eni
       birthdate
       last_login
       created_at
