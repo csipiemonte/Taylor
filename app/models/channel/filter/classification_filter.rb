@@ -23,8 +23,7 @@ module Channel::Filter::ClassificationFilter
       response = UserAgent.post(
         "#{Setting.get('classification_engine_api_settings')}/predict",
         {
-          'data':      [ { 'content': body, 'subject': subject } ],
-          'threshold': 0.6
+          'data': [ { 'content': body, 'subject': subject } ]
         },
         { json: true }
       )
@@ -34,11 +33,12 @@ module Channel::Filter::ClassificationFilter
         return
       end
 
-      # risosta composta dai campi [{"confidence" => <indice_confidenza>, "class" = > <classificazione>}]
+      threshold = 0.6 #  soglia di 'confidence' nella 'class' fornita in riposta
+      # risposta composta dai campi [{"confidence" => <indice_confidenza>, "class" = > <classificazione>}]
       body_resp = JSON.parse(response.body)
       Rails.logger.info "CLASSIFICATION FILTER PRE - body_resp: #{body_resp}"
-      if body_resp && body_resp[0]['class']
-        mail['classification'] = body_resp[0]['class'] if body_resp[0]['class'] != 'NORESPONSE'
+      if body_resp && body_resp[0]['class'] && body_resp[0]['confidence']
+        mail['classification'] = body_resp[0]['class'] if body_resp[0]['confidence'] >= threshold
       end
     rescue => e
       Rails.logger.error "A problem occured during ticket classification.\n#{e.backtrace}"
