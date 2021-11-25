@@ -780,11 +780,14 @@ do($ = window.jQuery, window) ->
         id: @_messageCount
         session_id: @sessionId
 
-     receiveMessage: (data) =>
+    receiveMessage: (data) =>
       @inactiveTimeout.start()
+
       # hide writing indicator
       @onAgentTypingEnd()
+
       @maybeAddTimestamp()
+
       # chatbot_response - CSI Custom
       console.log('data.chatbot_response', data.chatbot_response)
       if data.chatbot_response != undefined
@@ -792,7 +795,7 @@ do($ = window.jQuery, window) ->
           @renderMessage
             message: chatbot_msg.text
             from: 'agent'
-          console.log('chatbot_msg', chatbot_msg)   
+
           if chatbot_msg.hasOwnProperty('buttons')
             for btn in chatbot_msg.buttons
               @renderIntentButton
@@ -826,16 +829,19 @@ do($ = window.jQuery, window) ->
       intent = event.target.getAttribute('data-intent')
       label = event.target.getAttribute('data-label')
       return if intent == undefined
+
       console.log('evento', event.timeStamp)
-      # work around, le chiamate dai pulsanti si moltiplicavano per potenza di 2. soluzione provvisoria
+      # work around, le chiamate dai pulsanti si moltiplicavano per potenza di 2.
+      # soluzione provvisoria
+      # TODO, indagare la causa della moltiplicazione degli eventi.
       if @hasSametimeStamp != event.timeStamp
-         @hasSametimeStamp = event.timeStamp
-         @invokeIntent(intent, label)
-         console.log('non duplicato')
-       else
+        @hasSametimeStamp = event.timeStamp
+        @invokeIntent(intent, label)
+        console.log('non duplicato')
+      else
         console.log('duplicato')
-        return 
-      
+        return
+
     open: =>
       if @isOpen
         @log.debug 'widget already open, block'
@@ -1055,11 +1061,14 @@ do($ = window.jQuery, window) ->
         from: 'customer'
         id: @_messageCount++
         unreadClass: ''
+
       @maybeAddTimestamp()
       
       @lastAddedType = 'message--customer'
       @el.find('.zammad-chat-body').append messageElement
+
       @scrollToBottom()
+
       # send message event passing intent
       console.log('intent prima di send', intent)
       @send 'chat_session_message',
