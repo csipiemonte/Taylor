@@ -46,22 +46,14 @@ class Transaction::Chatbot
     # di un intent si ottiene premettendo il carattere '/' al nome dell'intent.
     # Per info sull'intent /get_started
     # cfr. https://gitlab.csi.it/prodotti/nextcrm/zammad/wikis/rif_channel_chat
-    get_started_response = UserAgent.post(
-      "#{@api_host}/webhook",
-      {
-        'sender':  @item[:chat_session].id, # id del chat customer per poter eventualmente stabilire una conversazione
-        'message': '/get_started'
-      },
-      { json: true }
-    )
-
+    get_started_response = call_chatbot_webhook('/get_started')
     if !get_started_response.success?
       Rails.logger.error "Errore occorso durante l'invocazione del chatbot (intent /get_started), dettaglio: #{get_started_response.error}"
       send_message_to_client(error_message(@chatbot.id, @item[:chat_session].id), clients)
       return
     end
 
-    msg = get_started_message(
+    msg = chatbot_response_message(
       JSON.parse(get_started_response.body),
       @chatbot.id,
       @item[:chat_session].id
@@ -74,15 +66,7 @@ class Transaction::Chatbot
     chat_session = Chat::Session.find_by(id: message[:chat_session_id])
     return if chat_session.stop_chatbot
 
-    ai_response = UserAgent.post(
-      "#{@api_host}/webhook",
-      {
-        'sender':  @item[:chat_session].id, # id del chat customer per poter eventualmente stabilire una conversazione
-        'message': message.content
-      },
-      { json: true }
-    )
-
+    ai_response = call_chatbot_webhook(message.content)
     if !ai_response.success?
       Rails.logger.error "Errore occorso durante l'invocazione del chatbot, dettaglio: #{ai_response.error}"
       send_message_to_client(error_message(@chatbot.id, @item[:chat_session].id), clients)
@@ -104,8 +88,20 @@ class Transaction::Chatbot
       return
     end
 
-    reply_msg = chat_session_message(ai_response_body[0], @chatbot.id, message[:chat_session_id])
+    reply_msg = chatbot_response_message(ai_response_body, @chatbot.id, message[:chat_session_id])
     send_message_to_client(reply_msg)
+  end
+
+  # Metodo che esegue la chiamata POST al webhook del chatbot
+  def call_chatbot_webhook(msg_text)
+    UserAgent.post(
+      "#{@api_host}/webhook",
+      {
+        'sender':  @item[:chat_session].id, # id del chat customer per poter eventualmente stabilire una conversazione
+        'message': msg_text
+      },
+      { json: true }
+    )
   end
 
   # Metodo incaricato di passare la chat dal chatbot automatizzato ad un operatore umano.
@@ -151,52 +147,27 @@ class Transaction::Chatbot
   # - event: evento 'chat_session_message' che dovra' essere intercettato su chat.coffee
   # - data: dati associati all'evento
   # cfr. https://gitlab.csi.it/prodotti/nextcrm/zammad/wikis/rif_channel_chat
-  def get_started_message(get_started_resp, user_id, session_id)
-    Rails.logger.info "get_started_resp #{get_started_resp}"
+  def chatbot_response_message(chatbot_resp, user_id, session_id)
+    Rails.logger.info "chatbot_resp #{chatbot_resp}"
     chat_message = Chat::Message.create(
       chat_session_id: session_id,
-      content:         get_started_resp[0]['text'],
+      content:         'Risposta automatica del chatbot.',
       created_by_id:   user_id,
     )
     {
       event: 'chat_session_message',
       data:  {
-        session_id:     @item[:chat_session].session_id,
-        message:        chat_message,
-        intro_message:  get_started_resp[1]['text'],
-        intent_buttons: get_started_resp[1]['buttons']
+        session_id:       @item[:chat_session].session_id,
+        message:          chat_message,
+        chatbot_response: chatbot_resp
       }
-    }
-  end
-
-  # Metodo che crea un json di risposta da inviare al client della chat;
-  # il json di risposta e' composto da:
-  # - event: evento 'chat_session_message' che dovra' essere intercettato su chat.coffee
-  # - data: dati associati all'evento
-  def chat_session_message(elem_0_resp, user_id, session_id)
-    chat_message = Chat::Message.create(
-      chat_session_id: session_id,
-      content:         elem_0_resp['text'],
-      created_by_id:   user_id,
-    )
-
-    event_data = {
-      session_id: @item[:chat_session].session_id,
-      message:    chat_message
-    }
-    if elem_0_resp['buttons']
-      event_data['intent_buttons'] = elem_0_resp['buttons'] # eventuali btn di intent
-    end
-
-    {
-      event: 'chat_session_message',
-      data:  event_data
     }
   end
 
   # Metodo che invia il messaggio al client
   def send_message_to_client(message_to_send, clients = nil)
-    chat_clients = clients ? clients : @item[:clients]
+    chat_clients = @item[:clients]
+    chat_clients = clients if clients
     # send to participents
     chat_clients.each do |client_id, _client|
       Sessions.send(client_id, message_to_send)
