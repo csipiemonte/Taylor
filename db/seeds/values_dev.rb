@@ -36,3 +36,7 @@ remedy_base_url.save!
 remedy_token = Setting.find_by(name: 'remedy_token')
 remedy_token.state = 'f9b12cd4-16f3-3956-96fa-2f288667b9f3'
 remedy_token.save!
+
+notification_sender_email = Setting.find_by(name: 'notification_sender')
+notification_sender_email.state = 'Taylor CSI DEV <crmdev1@uctest.csi.it>'
+notification_sender_email.save!
