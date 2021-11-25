@@ -1,3 +1,5 @@
 <%- @user.avatar("80") %>
 <h1><%= @user.displayName() %></h1>
-<h3><a href='/#user/cdp/<%= @user.id %>'> 360° Customer View </a></h3>
+<% if App.Config.get('cdp_profile') == true: %>
+  <h3><a href='#user_cdp/<%- @user.id %>' class="" >  360° Citizen View </a></h3>
+<% end %>

@@ -22,7 +22,7 @@ class App.UserCdp extends App.Controller
     meta
 
   url: =>
-    '#user/cdp/' + @user_id
+    '#user_cdp/' + @user_id
 
   show: =>
     App.OnlineNotification.seen('User', @user_id)
@@ -103,18 +103,158 @@ class CdpEvents extends App.Controller
       type: 'GET'
       url:  "#{@apiPath}/users/#{@user_id}/cdp_events"
       data:
-        limit: @limit || 50
+        limit: @limit || 500
       processData: true
       success: (data) =>
-        
-        @records = data
+        @scope_data = data['scope_data']
+        @records = data['data']
+        @global_satisfaction = data['global_nps_score'] 
+        @charts_data = data['charts_data']
         @render()
     )
 
   render: =>
+    datatable_records = data: @records
+    
     @html App.view('user_cdp/cdp_events')(
-      records: @records
+      global_satisfaction: @global_satisfaction,
+      scope_data: @scope_data
     )
+    
+    # console.error(datatable_records)
+    
+    @el.find('#cdp-events-table').DataTable
+      'ajax': (data, callback, settings) ->
+        callback datatable_records
+        return
+      "order": [[ 6, "desc" ]]
+      'columns': [
+        { 'data': (row, type, val, meta) ->
+          if type == 'set'
+            return
+          else if type == 'display'
+            icon_name = 'in-process'
+            switch row.type
+              when 'Feedback'
+                if (row.properties.NPS_score < 4)
+                  # icon_name = 'face-sad'
+                  return '<p class="datatable-event-icon datatable-emoji-icon">☹️</p>'
+                else if (row.properties.NPS_score < 8)
+                  # icon_name = 'face-meh'
+                  return '<p class="datatable-event-icon datatable-emoji-icon">😐</p>'
+                else  
+                  # icon_name = 'face-happy'
+                  return '<p class="datatable-event-icon datatable-emoji-icon">🙂</p>'
+              when 'Richiesta ad Assistenza'
+                icon_name = 'in-process'
+              when 'Pagamento'
+                icon_name = 'rearange'
+              when 'Prenotazione Appuntamento'
+                icon_name = 'person'
+              when 'Richiesta Documento'
+                icon_name = 'clipboard'
+              when 'Upload Documento'
+                icon_name = 'cloud'
+              when 'Download Documento'
+                icon_name = 'download'
+              when 'Stampa Documento'
+                icon_name = 'printer'
+
+            return '<svg class="datatable-event-icon" style=""><use xlink:href="assets/images/icons.svg#icon-'+icon_name+'"></use></svg>'
+          else if type == 'filter'
+            return row.type
+          # 'sort', 'type' and undefined all just use the base value
+          row.type
+        }
+        { 'data': 'type' }
+        { 'data': 'scope' }
+        { 'data': 'source.type' }
+        { 'data': 'source.properties.name' }
+        { 'data': 'properties.description' }
+        { 'data': 'created_at' }
+        # { 'data': (row, type, val, meta) ->
+        #   if type == 'set'
+        #     return
+        #   else if type == 'display'
+        #     if row.additional_info && row.additional_info.length > 0 
+        #       return '<svg class="datatable-event-icon" style="height:18px"><use xlink:href="assets/images/icons.svg#icon-info"></use></svg>'
+        #     else
+        #       # return ''
+        #       return '<svg class="datatable-event-icon" style="height:18px"><use xlink:href="assets/images/icons.svg#icon-info"></use></svg>'
+        #   else if type == 'filter'
+        #     return ''
+        #   # 'sort', 'type' and undefined all just use the base value
+        #   ''
+        # }
+      ]
+
+    options = 
+      series: @charts_data['scope_usage']['data']
+      chart:
+        width: 320
+        type: 'pie'
+      legend:
+        show: true
+        position: 'bottom'
+      title:
+        text: 'Interesse per Ambito'
+        align: 'center'
+        style:
+          fontSize: '20px'
+          fontWeight: 400
+          fontFamily: 'Fira Sans'
+      labels: @charts_data['scope_usage']['labels']
+      responsive: [ {
+        breakpoint: 480
+        options:
+          chart: width: 50
+          legend: position: 'bottom'
+      } ]
+    chart = new ApexCharts(document.querySelector('#cdpChartScopes'), options)
+    chart.render()
+
+
+    # grafico satisfaction
+    options = 
+      series: [ { data: @charts_data['scope_nps']['data'] } ]
+      chart:
+        type: 'bar'
+        height: 220
+        toolbar: show: false
+      title:
+        text: 'Satisfaction per Ambito'
+        align: 'center'
+        style:
+          fontSize: '20px'
+          fontWeight: 400
+          fontFamily: 'Fira Sans'
+      plotOptions: bar:
+        barHeight: '100%'
+        distributed: true
+        horizontal: true
+        dataLabels: position: 'bottom'
+      dataLabels:
+        enabled: true
+        textAnchor: 'start'
+        style: colors: [ '#fff' ]
+        formatter: (val, opt) ->
+          opt.w.globals.labels[opt.dataPointIndex] + ':  ' + val
+        offsetX: 0
+        dropShadow: enabled: true
+      legend: show: false
+      stroke:
+        width: 1
+        colors: [ '#fff' ]
+      xaxis: categories: @charts_data['scope_nps']['labels']
+      yaxis: labels: show: false
+      tooltip:
+        theme: 'dark'
+        x: show: false
+        y: title: formatter: ->
+          ''
+    chart = new ApexCharts(document.querySelector('#cdpChartSatisfactionHisto'), options)
+    chart.render()
+    
 
 class Router extends App.ControllerPermanent
   requiredPermission: 'ticket.agent'
@@ -132,4 +272,4 @@ class Router extends App.ControllerPermanent
       show:       true
     )
 
-App.Config.set('user/cdp/:user_id', Router, 'Routes')
+App.Config.set('user_cdp/:user_id', Router, 'Routes')

@@ -1,0 +1,22 @@
+tipo,ambito,nomeFonte,tipoFonte,descrizione,NPSscore
+Feedback,Sanità,sansol,Applicazione Backend,Feedback rilasciato da utente,7
+Feedback,Tributi,tassa-auto,Applicazione Backend,Feedback rilasciato da utente,8
+Feedback,Agricoltura,nembopratiche,Applicazione Backend,feedback rilasciato da utente,5
+Richiesta ad Assistenza,Sanità,sansol,Applicazione Backend,Informazione sul servizio,
+Richiesta ad Assistenza,Tributi,tassa-auto,Applicazione Backend,Come utilizzare l'applicativo,
+Richiesta ad Assistenza,Agricoltura,nembopratiche,Applicazione Backend,Assistenza normativa e di materia,
+Pagamento,Sanità,sansol,Applicazione Backend,Pagamento ticket,
+Pagamento,Tributi,tassa-auto,Applicazione Backend,Pagamento bollo,
+Pagamento,Agricoltura,nembopratiche,Applicazione Backend,Pagamento licenza,
+Prenotazione Appuntamento,Sanità,sansol,Applicazione Backend,Visita medica specialistica,
+Prenotazione Appuntamento,Tributi,tassa-auto,Applicazione Backend,Appuntamento verifica,
+Prenotazione Appuntamento,Agricoltura,nembopratiche,Applicazione Backend,Appuntamento sportello virtuale,
+Richiesta Documento,Sanità,sansol,Applicazione Backend,Richiesta visione referto esame,
+Richiesta Documento,Tributi,tassa-auto,Applicazione Backend,Consultazione ultimi pagamenti,
+Richiesta Documento,Agricoltura,nembopratiche,Applicazione Backend,Visione licenza,
+Upload Documento,Sanità,fascicolo sanitario,Applicazione Backend,Esame radiologico,
+Upload Documento,Tributi,tassa-auto,Applicazione Backend,Libretto auto,
+Upload Documento,Agricoltura,nembopratiche,Applicazione Backend,Carta di Identità,
+Download Documento,Sanità,fascicolo sanitario,Applicazione Backend,Esami del sangue,
+Download Documento,Tributi,tassa-auto,Applicazione Backend,Ricevuta pagamento,
+Download Documento,Agricoltura,nembopratiche,Applicazione Backend,Licenza di pesca,

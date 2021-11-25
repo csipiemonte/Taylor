@@ -50,9 +50,13 @@ class CustomerDataPlatformService
       # TODO,
       {error: '500'}
     end
+    
+  rescue StandardError => e
+    Rails.logger.error e  
+    raise e
   end
 
-  def self.search_events(profile_id, limit = 20)
+  def self.search_events(profile_id, limit = 200)
     path = '/cxs/events/search'
     body = { 
       offset: 0,
@@ -73,10 +77,14 @@ class CustomerDataPlatformService
     if response.success?
       response_body = response.body
       result = Oj.load(response_body)
-      result['list'].select{|e|['Sanità','Tassa Auto'].include?(e['scope'])}
+      #result['list'].select{|e|['Sanità','Tassa Auto'].include?(e['scope'])}
     else
       # TODO,
       {error: '500', message: response.body}
     end
+
+  rescue StandardError => e
+    Rails.logger.error e  
+    raise e
   end
 end

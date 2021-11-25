@@ -46,6 +46,9 @@
 
 //= require ./app/index.coffee
 
+//= require ./app/lib/apexcharts/apexcharts
+//= require ./app/lib/datatables/datatables.min
+
 // IE8 workaround for missing console.log
 if (!window.console) {
   window.console = {}
