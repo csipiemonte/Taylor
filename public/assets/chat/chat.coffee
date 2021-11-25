@@ -137,7 +137,6 @@ do($ = window.jQuery, window) ->
       @connect()
 
     send: (event, data = {}) =>
-      @log.debug 'send', event, data
       msg = JSON.stringify
         event: event
         data: data
@@ -191,7 +190,8 @@ do($ = window.jQuery, window) ->
     inputTimeout: null
     isTyping: false
     state: 'offline'
-    initialQueueDelay: 10000
+    initialQueueDelay: 10000,
+    hasSametimeStamp:null, # provvisoria per bloccare le troppe chiamate
     translations: # lasciate traduzioni a es, fr, it, le altre sono state rimosse
       'es':
         '<strong>Chat</strong> with us!': '<strong>Chatee</strong> con nosotros!'
@@ -780,33 +780,32 @@ do($ = window.jQuery, window) ->
         id: @_messageCount
         session_id: @sessionId
 
-    receiveMessage: (data) =>
+     receiveMessage: (data) =>
       @inactiveTimeout.start()
-
       # hide writing indicator
       @onAgentTypingEnd()
-
       @maybeAddTimestamp()
+      # chatbot_response - CSI Custom
+      console.log('data.chatbot_response', data.chatbot_response)
+      if data.chatbot_response != undefined
+        for chatbot_msg in data.chatbot_response
+          @renderMessage
+            message: chatbot_msg.text
+            from: 'agent'
+          console.log('chatbot_msg', chatbot_msg)   
+          if chatbot_msg.hasOwnProperty('buttons')
+            for btn in chatbot_msg.buttons
+              @renderIntentButton
+                btnintent: btn.payload
+                btnlabel: btn.title
 
-      @renderMessage
-        message: data.message.content
-        id: data.id
-        from: 'agent'
-
-      # intro message - CSI Custom
-      if data.intro_message != undefined
+            @el.find('.zammad-chat-intent').on 'click', @onClickIntentButton
+      else
         @renderMessage
-          message: data.intro_message
+          message: data.message.content
           id: data.id
           from: 'agent'
 
-      # intent_buttons - CSI Custom
-      if data.intent_buttons != undefined
-        for btn in data.intent_buttons
-          @renderIntentButton
-            btnintent: btn.payload
-            btnlabel: btn.title
-        @el.find('.zammad-chat-intent').on 'click', @onClickIntentButton
       @scrollToBottom showHint: true
 
     renderMessage: (data) =>
@@ -822,12 +821,21 @@ do($ = window.jQuery, window) ->
     # Metodo custom CSI
     onClickIntentButton: (event) =>
       event.preventDefault()
+      event.stopPropagation()
+      event.stopImmediatePropagation()
       intent = event.target.getAttribute('data-intent')
-      console.log('intent', intent)
+      label = event.target.getAttribute('data-label')
       return if intent == undefined
-
-      @invokeIntent(intent, event.target.text)
-
+      console.log('evento', event.timeStamp)
+      # work around, le chiamate dai pulsanti si moltiplicavano per potenza di 2. soluzione provvisoria
+      if @hasSametimeStamp != event.timeStamp
+         @hasSametimeStamp = event.timeStamp
+         @invokeIntent(intent, label)
+         console.log('non duplicato')
+       else
+        console.log('duplicato')
+        return 
+      
     open: =>
       if @isOpen
         @log.debug 'widget already open, block'
@@ -998,7 +1006,6 @@ do($ = window.jQuery, window) ->
         session_id: @sessionId
 
     maybeAddTimestamp: ->
-      console.log('maybeAddTimestamp')
       timestamp = Date.now()
 
       if !@lastTimestamp or (timestamp - @lastTimestamp) > @showTimeEveryXMinutes * 60000
@@ -1048,14 +1055,11 @@ do($ = window.jQuery, window) ->
         from: 'customer'
         id: @_messageCount++
         unreadClass: ''
-
       @maybeAddTimestamp()
-
+      
       @lastAddedType = 'message--customer'
       @el.find('.zammad-chat-body').append messageElement
-
       @scrollToBottom()
-
       # send message event passing intent
       console.log('intent prima di send', intent)
       @send 'chat_session_message',
@@ -1073,7 +1077,6 @@ do($ = window.jQuery, window) ->
       @el.find('.zammad-chat-body').animate({scrollTop: @el.find('.zammad-chat-body').prop('scrollHeight')}, 300)
 
     scrollToBottom: ({ showHint } = { showHint: false }) ->
-      console.log('scrollToBottom')
       if @scrolledToBottom
         @el.find('.zammad-chat-body').scrollTop($('.zammad-chat-body').prop('scrollHeight'))
       else if showHint
