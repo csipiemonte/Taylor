@@ -8,21 +8,18 @@
     <div style="display: flex; justify-content:center; align-items: center; flex-direction:column; "> 
       <div style="margin-top: -20px;"><h2>Satisfaction Globale</h2></div>
       <div>
-        <% if @global_satisfaction < 3: %>
-          <svg class="icon"><use xlink:href="assets/images/icons.svg#icon-mood-superbad"></use></svg>
-        <% else if @global_satisfaction < 4: %>
-          <svg class="icon"><use xlink:href="assets/images/icons.svg#icon-mood-bad"></use></svg>
-        <% else if @global_satisfaction < 5: %>
-          <svg class="icon"><use xlink:href="assets/images/icons.svg#icon-mood-sad"></use></svg>
-        <% else if @global_satisfaction < 8: %>
-          <svg class="icon"><use xlink:href="assets/images/icons.svg#icon-mood-ok"></use></svg>
-        <% else if @global_satisfaction < 9: %>
-          <svg class="icon"><use xlink:href="assets/images/icons.svg#icon-mood-good"></use></svg>
-  
-          <%# <img src="assets/images/nextcrm/smile-happy.svg"> %>
-          
+
+
+
+        <% if @global_satisfaction < 4: %>
+          <p class="widget-emoji-icon">☹️</p>
+          <%# <svg class="icon"><use xlink:href="assets/images/icons.svg#icon-mood-bad"></use></svg> %>
+        <% else if @global_satisfaction < 7: %>
+          <p class="widget-emoji-icon">😐</p>
+          <%# <svg class="icon"><use xlink:href="assets/images/icons.svg#icon-mood-ok"></use></svg> %>
         <% else:  %>
-          <svg class="icon"><use xlink:href="assets/images/icons.svg#icon-mood-supergood"></use></svg>
+           <p class="widget-emoji-icon">🙂</p>
+          <%# <svg class="icon"><use xlink:href="assets/images/icons.svg#icon-mood-supergood"></use></svg> %>
         <% end %>
 
       </div>
@@ -55,8 +52,9 @@
 
 
 <style>
-.satisfaction-widget-icon {
-
+.widget-emoji-icon {
+  font-size: 80px;
+  height: 100px;
 }
 .datatable-event-icon {
   height:24px; 
