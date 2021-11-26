@@ -18,6 +18,9 @@
           <svg class="icon"><use xlink:href="assets/images/icons.svg#icon-mood-ok"></use></svg>
         <% else if @global_satisfaction < 9: %>
           <svg class="icon"><use xlink:href="assets/images/icons.svg#icon-mood-good"></use></svg>
+  
+          <%# <img src="assets/images/nextcrm/smile-happy.svg"> %>
+          
         <% else:  %>
           <svg class="icon"><use xlink:href="assets/images/icons.svg#icon-mood-supergood"></use></svg>
         <% end %>
@@ -52,6 +55,9 @@
 
 
 <style>
+.satisfaction-widget-icon {
+
+}
 .datatable-event-icon {
   height:24px; 
   width:-webkit-fill-available; 
@@ -60,7 +66,7 @@
   fill: #9d8763;
 }
 .datatable-emoji-icon {
-  font-size: 23px;
+  font-size: 18px;
   text-align: center;
 }
 </style>
