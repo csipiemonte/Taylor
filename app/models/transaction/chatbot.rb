@@ -99,8 +99,10 @@ class Transaction::Chatbot
     # esempio su csp: $(function () { new ZammadChat({ fontSize: '12px', chatId: 1, debug: true }); })
     # chatId 1 recuperera dalla tabella con id 1 la colonna name ad esempio bolloauto
     # importante:  chat.name deve essere un argomento che corrisponde ad un chatbot utilizzabile, impostare da BO lo stesso nome della chat che si vuole usare
+    chatbot_url = "#{@api_host}/#{chat.name}/webhook"
+    Rails.logger.info "[call_chatbot_webhook] chatbot_url: #{chatbot_url}"
     UserAgent.post(
-      "#{@api_host}/#{chat.name}/webhook",
+      chatbot_url,
       {
         'sender':  @item[:chat_session].id, # id del chat customer per poter eventualmente stabilire una conversazione
         'message': msg_text
