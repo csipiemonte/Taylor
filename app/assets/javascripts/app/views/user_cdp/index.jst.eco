@@ -1,0 +1,11 @@
+<div class="profile">
+  <div class="profile-window" style="max-width: 1960px">
+    <div class="profile-section vertical centered">
+      <div class="align-right profile-action js-action"></div>
+      <div class="profile-name js-profileName text-center"></div>
+    </div>
+
+    <div class="js-cdp-events"></div>
+  </div>
+</div>
+
