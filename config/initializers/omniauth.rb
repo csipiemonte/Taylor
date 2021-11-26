@@ -22,7 +22,7 @@ Rails.application.config.middleware.use OmniAuth::Builder do
 
   # google database connect
   provider :google_oauth2_database, 'not_change_will_be_set_by_database', 'not_change_will_be_set_by_database', {
-    client_options: {connection_opts: {proxy: ''}},
+    client_options:    { connection_opts: { proxy: '' } },
     authorize_options: {
       access_type:     'online',
       approval_prompt: '',
@@ -56,14 +56,13 @@ Rails.application.config.middleware.use OmniAuth::Builder do
   # weibo database connect
   provider :weibo_database, 'not_change_will_be_set_by_database', 'not_change_will_be_set_by_database'
 
-  # SAML database connect
-  provider :saml_database
+  # CSI SAML: la custom omniauth strategy 'csisaml' e' implementata nella custom gem
+  # presente nella directory 'vendor/custom_gems/omniauth-csisaml'
+  # La strategy e' caricata automaticamente in vendor/custom_gems/omniauth-csisaml/lib/omniauth-csisaml.rb
+  provider :csisaml
 
   # CSI SPID (Shibboleth) custom omniauth Strategy
   provider :csimodshib
-
-  # CSI SPID (Shibboleth) custom omniauth Strategy
-  provider :csisaml
 end
 
 # This fixes issue #1642 and is required for setups in which Zammad is used
