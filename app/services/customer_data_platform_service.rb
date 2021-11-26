@@ -66,7 +66,8 @@ class CustomerDataPlatformService
         parameterValues: {
           propertyName: 'profileId', 
           comparisonOperator: 'equals', 
-          propertyValue: '9a404711-9632-4886-9f38-7c0edfc73b39'
+          propertyValue: profile_id
+          # propertyValue: '9a404711-9632-4886-9f38-7c0edfc73b39'
         }
       }
     }

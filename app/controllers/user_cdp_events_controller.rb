@@ -120,7 +120,11 @@ class UserCdpEventsController < ApplicationController
     events.sort_by!{ |k| k[:created_at]}
     events.reverse!
 
-    render json: {data: events, scope_data:scope_data, global_nps_score:global_nps_score, charts_data: charts_data}, status: :ok
+    unomi = {
+      profile_id: unomi_profile_id
+    }
+
+    render json: {unomi:unomi, data: events, scope_data:scope_data, global_nps_score:global_nps_score, charts_data: charts_data}, status: :ok
   end
 
   # def show
