@@ -75,16 +75,19 @@ class Transaction::Chatbot
 
     ai_response_body = JSON.parse(ai_response.body)
     Rails.logger.info "ai_response_body #{ai_response_body}"
-
     reply_text = ai_response_body[0]['text']
     actual_chat = Chat.find_by(id: chat_session.chat_id)
-    active_agent_count = actual_chat.get_active_agent_count  # operatori disponibili
 
     # stiamo usando il chat, a fronte di una domanda tipo 'vorrei parlare con un operatore' o simili
     # il motore di AI riconosce l'intent 'umano' e restistuisce un json con chiave '@handoff',
     # che viene recepito dalla logica sottostante per passare la palla (handoff) ad un operatore reale.
-    if reply_text['@handoff'] && active_agent_count.positive?
-      perform_handoff(chat_session)
+    if reply_text['@handoff']
+      if actual_chat.get_active_agent_count.positive?
+        perform_handoff(chat_session)
+      else
+        reply_msg = chatbot_response_message([{ text: 'operatore umani non disponibili, riprova dopo' } ], @chatbot.id, message[:chat_session_id])
+        send_message_to_client(reply_msg)
+      end
       return
     end
 
@@ -126,6 +129,8 @@ class Transaction::Chatbot
       },
       clients: @item[:clients]
     }
+    Rails.logger.info "params@ #{params}"
+    Rails.logger.info "chat_session@ #{chat_session}"
     event = Sessions::Event::ChatbotTransfer.new(params)
     event.run
     event.destroy
@@ -180,6 +185,8 @@ class Transaction::Chatbot
       Sessions.send(client_id, message_to_send)
     end
     chat_ids = Chat.agent_active_chat_ids(@chatbot)
+    Rails.logger.info "chat_ids #{chat_ids}"
+    Rails.logger.info "chatbot #{@chatbot}"
     # broadcast new state to agents
     Chat.broadcast_agent_state_update(chat_ids)
   end
