@@ -4601,18 +4601,3 @@ Setting.create_if_not_exists(
   frontend:    true,
 )
 
-
-# NEXTCRM features toggle on/off
-Setting.create_if_not_exists(
-  title:       'Customer Data Platform profile',
-  name:        'cdp_profile',
-  area:        'System::Features',
-  description: 'Enable feature CDP profile',
-  options:     {},
-  state:  false, 
-  preferences: {
-    prio:       2,
-    permission: ['admin.integration'],
-  },
-  frontend:    true,
-)

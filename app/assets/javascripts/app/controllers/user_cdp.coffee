@@ -171,21 +171,14 @@ class CdpEvents extends App.Controller
         { 'data': 'source.type' }
         { 'data': 'source.properties.name' }
         { 'data': 'properties.description' }
-        { 'data': 'created_at' }
-        # { 'data': (row, type, val, meta) ->
-        #   if type == 'set'
-        #     return
-        #   else if type == 'display'
-        #     if row.additional_info && row.additional_info.length > 0 
-        #       return '<svg class="datatable-event-icon" style="height:18px"><use xlink:href="assets/images/icons.svg#icon-info"></use></svg>'
-        #     else
-        #       # return ''
-        #       return '<svg class="datatable-event-icon" style="height:18px"><use xlink:href="assets/images/icons.svg#icon-info"></use></svg>'
-        #   else if type == 'filter'
-        #     return ''
-        #   # 'sort', 'type' and undefined all just use the base value
-        #   ''
-        # }
+        { 'data': (row, type, val, meta) ->
+          if type == 'set'
+            return
+          else if type == 'display' ||  type == 'filter'
+            return moment(row.created_at).format('DD/MM/YYYY HH:mm')
+          # 'sort', 'type' and undefined all just use the base value
+          row.created_at
+        }
       ]
 
     options = 
