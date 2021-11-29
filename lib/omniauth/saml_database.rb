@@ -1,5 +1,8 @@
 class SamlDatabase < OmniAuth::Strategies::SAML
-  option :name, 'saml'
+  # Strategy nativa Zammad, rinominata in '_saml' per non andare in contrasto
+  # con la custom strategy omniauth CSI definita in
+  # vendor/custom_gems/omniauth-csisaml/lib/omniauth/strategies/csisaml.rb
+  option :name, '_saml'
 
   def initialize(app, *args, &block)
 
@@ -14,10 +17,10 @@ class SamlDatabase < OmniAuth::Strategies::SAML
     config  = Setting.get('auth_advanced_saml_credentials') || {}
     options = config.reject { |_k, v| v.blank? }
       .merge(
-        attribute_statements:{
-          login: ['Shib-Identita-CodiceFiscale'],
+        attribute_statements: {
+          login:      ['Shib-Identita-CodiceFiscale'],
           first_name: ['Shib-Identita-Nome'],
-          last_name: ['Shib-Identita-Cognome']
+          last_name:  ['Shib-Identita-Cognome']
         }
       )
 
