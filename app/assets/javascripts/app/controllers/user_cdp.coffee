@@ -16,13 +16,13 @@ class App.UserCdp extends App.Controller
     if App.User.exists(@user_id)
       user = App.User.find(@user_id)
 
-      meta.head       = user.displayName()
-      meta.title      = user.displayName()
-      meta.iconClass  = user.icon()
+      meta.head       = '360 View ' + user.displayName()
+      meta.title      = '360 View ' + user.displayName()
+      meta.iconClass  = 'eye' #user.icon()
     meta
 
   url: =>
-    '#user_cdp/' + @user_id
+    '#user/cdp/' + @user_id
 
   show: =>
     App.OnlineNotification.seen('User', @user_id)
@@ -259,10 +259,10 @@ class Router extends App.ControllerPermanent
       user_id:  params.user_id
 
     App.TaskManager.execute(
-      key:        "User-#{@user_id}"
+      key:        "Cdp-#{@user_id}"
       controller: 'UserCdp'
       params:     clean_params
       show:       true
     )
 
-App.Config.set('user_cdp/:user_id', Router, 'Routes')
+App.Config.set('user/cdp/:user_id', Router, 'Routes')
