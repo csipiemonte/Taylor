@@ -1070,7 +1070,6 @@ do($ = window.jQuery, window) ->
       @scrollToBottom()
 
       # send message event passing intent
-      console.log('intent prima di send', intent)
       @send 'chat_session_message',
         content: intent
         id: @_messageCount
