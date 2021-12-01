@@ -138,13 +138,16 @@ class CdpEvents extends App.Controller
               when 'Feedback'
                 if (row.properties.NPS_score < 4)
                   # icon_name = 'face-sad'
-                  return '<p class="datatable-event-icon datatable-emoji-icon">☹️</p>'
+                  return '<img class="datatable-img-icon" src="/assets/images/nextcrm/satisfaction_bad.png" width="24" height="24">'
+                  # return '<p class="datatable-event-icon datatable-emoji-icon">☹️</p>'
                 else if (row.properties.NPS_score < 8)
                   # icon_name = 'face-meh'
-                  return '<p class="datatable-event-icon datatable-emoji-icon">😐</p>'
+                  # return '<p class="datatable-event-icon datatable-emoji-icon">😐</p>'
+                  return '<img class="datatable-img-icon" src="/assets/images/nextcrm/satisfaction_ok.png" width="24" height="24">'
                 else  
                   # icon_name = 'face-happy'
-                  return '<p class="datatable-event-icon datatable-emoji-icon">🙂</p>'
+                  # return '<p class="datatable-event-icon datatable-emoji-icon">🙂</p>'
+                  return '<img class="datatable-img-icon" src="/assets/images/nextcrm/satisfaction_good.png" width="24" height="24">'
               when 'Richiesta ad Assistenza'
                 icon_name = 'in-process'
               when 'Pagamento'
