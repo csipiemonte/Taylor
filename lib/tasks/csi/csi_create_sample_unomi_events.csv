@@ -1,22 +1,22 @@
 tipo,ambito,nomeFonte,tipoFonte,descrizione,NPSscore
-Feedback,Sanità,sansol,Applicazione Backend,Feedback rilasciato da utente,7
-Feedback,Tributi,tassa-auto,Applicazione Backend,Feedback rilasciato da utente,8
-Feedback,Agricoltura,nembopratiche,Applicazione Backend,feedback rilasciato da utente,5
-Richiesta ad Assistenza,Sanità,sansol,Applicazione Backend,Informazione sul servizio,
+Upload Documento,Tributi,tassa-auto,Applicazione Backend,Libretto auto,
+Feedback,Sanità,sansol,Applicazione Backend,Feedback rilasciato da utente,8
 Richiesta ad Assistenza,Tributi,tassa-auto,Applicazione Backend,Come utilizzare l'applicativo,
-Richiesta ad Assistenza,Agricoltura,nembopratiche,Applicazione Backend,Assistenza normativa e di materia,
-Pagamento,Sanità,sansol,Applicazione Backend,Pagamento ticket,
-Pagamento,Tributi,tassa-auto,Applicazione Backend,Pagamento bollo,
+Prenotazione Appuntamento,Agricoltura,nembopratiche,Applicazione Backend,Appuntamento sportello virtuale,
 Pagamento,Agricoltura,nembopratiche,Applicazione Backend,Pagamento licenza,
 Prenotazione Appuntamento,Sanità,sansol,Applicazione Backend,Visita medica specialistica,
+Download Documento,Agricoltura,nembopratiche,Applicazione Backend,Licenza di pesca,
+Richiesta ad Assistenza,Agricoltura,nembopratiche,Applicazione Backend,Assistenza normativa e di materia,
+Pagamento,Tributi,tassa-auto,Applicazione Backend,Pagamento bollo,
 Prenotazione Appuntamento,Tributi,tassa-auto,Applicazione Backend,Appuntamento verifica,
-Prenotazione Appuntamento,Agricoltura,nembopratiche,Applicazione Backend,Appuntamento sportello virtuale,
+Upload Documento,Agricoltura,nembopratiche,Applicazione Backend,Carta di Identità,
 Richiesta Documento,Sanità,sansol,Applicazione Backend,Richiesta visione referto esame,
+Feedback,Agricoltura,nembopratiche,Applicazione Backend,feedback rilasciato da utente,3
 Richiesta Documento,Tributi,tassa-auto,Applicazione Backend,Consultazione ultimi pagamenti,
+Pagamento,Sanità,sansol,Applicazione Backend,Pagamento ticket,
 Richiesta Documento,Agricoltura,nembopratiche,Applicazione Backend,Visione licenza,
 Upload Documento,Sanità,fascicolo sanitario,Applicazione Backend,Esame radiologico,
-Upload Documento,Tributi,tassa-auto,Applicazione Backend,Libretto auto,
-Upload Documento,Agricoltura,nembopratiche,Applicazione Backend,Carta di Identità,
 Download Documento,Sanità,fascicolo sanitario,Applicazione Backend,Esami del sangue,
+Richiesta ad Assistenza,Sanità,sansol,Applicazione Backend,Informazione sul servizio,
+Feedback,Tributi,tassa-auto,Applicazione Backend,Feedback rilasciato da utente,6
 Download Documento,Tributi,tassa-auto,Applicazione Backend,Ricevuta pagamento,
-Download Documento,Agricoltura,nembopratiche,Applicazione Backend,Licenza di pesca,

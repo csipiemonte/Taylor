@@ -41,13 +41,26 @@ namespace :csi do
         # require 'csv'    
         # event_list = CSV.read(csv_filename, :headers => true)
 
-        event_list.each do |e|
-            event_data['events'] << generate_event_data(e[0], e[1], e[2], e[3], e[4], e[5])
+
+        # event_list.each_with_index do |e, index|
+        #     event_data['events'] << generate_event_data(e[0], e[1], e[2], e[3], e[4], e[5])
+        # end
+
+        # response = Faraday.post url, event_data.to_json, headers
+        # puts response.status
+        # puts response.body
+
+        event_list.each_with_index do |e, index|
+            this_event_data << generate_event_data(e[0], e[1], e[2], e[3], e[4], e[5])
+            response = Faraday.post url, this_event_data.to_json, headers
+            if response.success?
+                puts "Created event #{index}/#{event_list.length}"
+            else
+                puts "ERROR on event #{index}/#{event_list.length}. Status: #{response.status}. Body: #{response.body}"
+            end
+            sleep 69
         end
 
-        response = Faraday.post url, event_data.to_json, headers
-        puts response.status
-        puts response.body
         
     end
 end
