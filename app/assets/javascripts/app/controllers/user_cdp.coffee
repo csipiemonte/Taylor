@@ -163,7 +163,7 @@ class CdpEvents extends App.Controller
               when 'Stampa Documento'
                 icon_name = 'printer'
 
-            return '<svg class="datatable-event-icon" style=""><use xlink:href="assets/images/icons.svg#icon-'+icon_name+'"></use></svg>'
+            return '<svg class="datatable-event-icon datatable-img-icon" style=""><use xlink:href="assets/images/icons.svg#icon-'+icon_name+'"></use></svg>'
           else if type == 'filter'
             return row.type
           # 'sort', 'type' and undefined all just use the base value
