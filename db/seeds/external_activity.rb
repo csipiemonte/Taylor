@@ -180,11 +180,13 @@ zammad_light_model = {
       'select' => {
         'not_null': true,
         'options' => {
-          '1' => { 'id': 1, 'name': 'Nuovo', 'disabled': true },
-          '2' => { 'id': 2, 'name': 'Aperto', 'disabled': true },
-          '4' => { 'id': 3, 'name': 'In attesa di', 'disabled': true },
-          '6' => { 'id': 4, 'name': 'Chiuso' },
-          '7' => { 'id': 7, 'name': 'In attesa di chiusura', 'disabled': true },
+          '1' =>  { 'id': 1, 'name': 'Nuovo', 'disabled': true },
+          '2' =>  { 'id': 2, 'name': 'Aperto', 'disabled': true },
+          '4' =>  { 'id': 4, 'name': 'Chiuso' },
+          '6' =>  { 'id': 6, 'name': 'Rimosso', 'disabled': true },
+          '8' =>  { 'id': 8, 'name': 'Risolto', 'disabled': true },
+          '9' =>  { 'id': 9, 'name': 'In attesa di informazioni da utente', 'disabled': true },
+          '10' => { 'id': 10, 'name': 'Non di competenza', 'disabled': true }
         }
       }
   },
