@@ -38,5 +38,5 @@ remedy_token.state = '71087ed6-07a0-3628-a0c5-5601aae89ae8'
 remedy_token.save!
 
 notification_sender_email = Setting.find_by(name: 'notification_sender')
-notification_sender_email.state = 'Taylor CSI <no-reply.assistenza.nextcrm@csi.it>'
+notification_sender_email.state = 'No-reply CSI Assistenza <admin.assistenza.nextcrm@csi.it>'
 notification_sender_email.save!
