@@ -91,13 +91,14 @@ class CdpEvents extends App.Controller
 
   constructor: ->
     super
-    @fetch()
     @records = []
-
+    @fetch()
+    
   show: (e) =>
     e.preventDefault()
 
   fetch: =>
+    console.debug('performing cdp ajax call')
     @ajax(
       id:   "cdp_events_#{@user_id}"
       type: 'GET'
@@ -106,10 +107,12 @@ class CdpEvents extends App.Controller
         limit: @limit || 500
       processData: true
       success: (data) =>
+        console.debug('cdp data succesfully received')
         @scope_data = data['scope_data']
         @records = data['data']
         @global_satisfaction = data['global_nps_score'] 
         @charts_data = data['charts_data']
+        console.debug('calling render')
         @render()
     )
 
@@ -121,8 +124,8 @@ class CdpEvents extends App.Controller
       scope_data: @scope_data
     )
     
-    # console.error(datatable_records)
     
+    console.debug('setup datatables')
     @el.find('#cdp-events-table').DataTable
       'ajax': (data, callback, settings) ->
         callback datatable_records
@@ -137,16 +140,10 @@ class CdpEvents extends App.Controller
             switch row.type
               when 'Feedback'
                 if (row.properties.NPS_score < 4)
-                  # icon_name = 'face-sad'
                   return '<img class="datatable-img-icon" src="/assets/images/nextcrm/satisfaction_bad.png" width="24" height="24">'
-                  # return '<p class="datatable-event-icon datatable-emoji-icon">☹️</p>'
                 else if (row.properties.NPS_score < 8)
-                  # icon_name = 'face-meh'
-                  # return '<p class="datatable-event-icon datatable-emoji-icon">😐</p>'
                   return '<img class="datatable-img-icon" src="/assets/images/nextcrm/satisfaction_ok.png" width="24" height="24">'
                 else  
-                  # icon_name = 'face-happy'
-                  # return '<p class="datatable-event-icon datatable-emoji-icon">🙂</p>'
                   return '<img class="datatable-img-icon" src="/assets/images/nextcrm/satisfaction_good.png" width="24" height="24">'
               when 'Richiesta ad Assistenza'
                 icon_name = 'in-process'
@@ -162,7 +159,6 @@ class CdpEvents extends App.Controller
                 icon_name = 'download'
               when 'Stampa Documento'
                 icon_name = 'printer'
-
             return '<svg class="datatable-event-icon datatable-img-icon" style=""><use xlink:href="assets/images/icons.svg#icon-'+icon_name+'"></use></svg>'
           else if type == 'filter'
             return row.type
@@ -184,7 +180,9 @@ class CdpEvents extends App.Controller
         }
       ]
 
-    options = 
+    # grafico torta
+    console.debug('setup pie chart')
+    piechart_options = 
       series: @charts_data['scope_usage']['data']
       chart:
         width: 320
@@ -206,12 +204,14 @@ class CdpEvents extends App.Controller
           chart: width: 50
           legend: position: 'bottom'
       } ]
-    chart = new ApexCharts(document.querySelector('#cdpChartScopes'), options)
-    chart.render()
+    console.debug('create new chart pie')  
+    piechart = new ApexCharts(document.querySelector('#cdpChartScopes'), piechart_options)
+    piechart.render()
 
 
     # grafico satisfaction
-    options = 
+    console.debug('setup bar chart')
+    barchart_options = 
       series: [ { data: @charts_data['scope_nps']['data'] } ]
       chart:
         type: 'bar'
@@ -248,8 +248,9 @@ class CdpEvents extends App.Controller
         x: show: false
         y: title: formatter: ->
           ''
-    chart = new ApexCharts(document.querySelector('#cdpChartSatisfactionHisto'), options)
-    chart.render()
+    console.debug('create new chart satisfaction')  
+    barchart = new ApexCharts(document.querySelector('#cdpChartSatisfactionHisto'), barchart_options)
+    barchart.render()
     
 
 class Router extends App.ControllerPermanent
