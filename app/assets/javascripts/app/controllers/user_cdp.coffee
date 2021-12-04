@@ -205,8 +205,15 @@ class CdpEvents extends App.Controller
           legend: position: 'bottom'
       } ]
     console.debug('create new chart pie')  
-    piechart = new ApexCharts(document.querySelector('#cdpChartScopes'), piechart_options)
-    piechart.render()
+    # piechart = new ApexCharts(document.querySelector('#cdpChartScopes'), piechart_options)
+    piechart = new ApexCharts(@el.find('#cdpChartScopes')[0], piechart_options)
+    piechart.render().then ((value) ->
+      console.debug 'piechart succesfully rendered, ', value
+      return
+    ), (error) ->
+      console.error 'piechart error in render, ', error
+      return
+
 
 
     # grafico satisfaction
@@ -248,9 +255,18 @@ class CdpEvents extends App.Controller
         x: show: false
         y: title: formatter: ->
           ''
-    console.debug('create new chart satisfaction')  
-    barchart = new ApexCharts(document.querySelector('#cdpChartSatisfactionHisto'), barchart_options)
-    barchart.render()
+    console.debug('create new chart satisfaction in jquery element: ', @el.find('#cdpChartSatisfactionHisto')[0])  
+    console.debug('create new chart satisfaction in querySelector element: ', document.querySelector('#cdpChartSatisfactionHisto'))  
+    # barchart = new ApexCharts(document.querySelector('#cdpChartSatisfactionHisto'), barchart_options)
+    barchart = new ApexCharts(@el.find('#cdpChartSatisfactionHisto')[0], barchart_options)
+    barchart.render().then ((value) ->
+      console.debug 'barchart succesfully rendered, ', value
+      return
+    ), (error) ->
+      console.error 'barchart error in render, ', error
+      return
+
+
     
 
 class Router extends App.ControllerPermanent
