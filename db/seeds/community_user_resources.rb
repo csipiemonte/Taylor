@@ -3,7 +3,6 @@ org_community = Organization.create_if_not_exists(
   name: 'Zammad Foundation',
 )
 user_community = User.create_or_update(
-  id:              2,
   login:           'nicole.braun@zammad.org',
   firstname:       'Nicole',
   lastname:        'Braun',
