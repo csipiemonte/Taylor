@@ -65,7 +65,6 @@ Setting.create_if_not_exists(
 # TODO, capire se lo user 'chatbot@zammad.org' debba avere un role di 'Virtual Agent (Chatbot)'
 # invece che di 'Agent'
 User.create_if_not_exists(
-  id:        3,
   login:     'chatbot@zammad.org',
   firstname: 'Zimmy',
   lastname:  'Bot',
@@ -85,20 +84,17 @@ Permission.create_if_not_exists(
 )
 
 # Creazione del role 'Supervisor'
-supervisor = Role.find_by(name: 'Supervisor')
-if !supervisor
-  supervisor = Role.create!(
-    id:                '4',
-    name:              'Supervisor',
-    note:              'To monitor the activity of the business.',
-    default_at_signup: false,
-    preferences:       {
-      not: ['Customer'],
-    },
-    updated_by_id:     1,
-    created_by_id:     1
-  )
-end
+Role.create_if_not_exists(
+  name:              'Supervisor',
+  note:              'To monitor the activity of the business.',
+  default_at_signup: false,
+  preferences:       {
+    not: ['Customer'],
+  },
+  updated_by_id:     1,
+  created_by_id:     1
+)
+supervisor = Role.lookup(name: 'Supervisor')
 
 # Assegnazione delle permission al role 'Supervisor'
 supervisor.permission_grant('user_preferences')

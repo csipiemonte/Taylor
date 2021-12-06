@@ -1,5 +1,4 @@
 User.create_if_not_exists(
-  id:            1,
   login:         '-',
   firstname:     '-',
   lastname:      '',

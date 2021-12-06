@@ -115,7 +115,7 @@ class UsersController < ApplicationController
     # initial admin account
     count = User.all.count
     admin_account_exists = true
-    if count <= 6 # ATTENZIONE: questo valore deve essere incrementato se nei seeds sono aggiunti altri user
+    if count <= 3 # ATTENZIONE: questo valore deve essere incrementato se nei seeds sono aggiunti altri user
       admin_account_exists = false
     end
 
@@ -158,7 +158,7 @@ class UsersController < ApplicationController
       # add first user as admin/agent and to all groups
       group_ids = []
       role_ids  = []
-      if count <= 6 # ATTENZIONE: questo valore deve essere incrementato se nei seeds sono aggiunti altri user
+      if count <= 3 # ATTENZIONE: questo valore deve essere incrementato se nei seeds sono aggiunti altri user
         Role.where(name: %w[Admin Agent]).each do |role|
           role_ids.push role.id
         end

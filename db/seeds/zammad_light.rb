@@ -91,17 +91,6 @@ Setting.create_if_not_exists(
   frontend:    false
 )
 
-User.create_if_not_exists(
-  id:              5,
-  login:           'zammad_light.agent@zammad.org',
-  firstname:       'Zammad Light',
-  lastname:        'Agent',
-  email:           'zammad_light.agent@zammad.org',
-  password:        '',
-  active:          true,
-  roles:           [ Role.find_by(name: 'Agent') ]
-)
-
 Setting.create_if_not_exists(
   title:       'Zammad Light State Alignment',
   name:        'asl_state_alignment',
@@ -111,10 +100,3 @@ Setting.create_if_not_exists(
   state:       true,
   frontend:    false
 )
-
-
-
-
-
-
-
