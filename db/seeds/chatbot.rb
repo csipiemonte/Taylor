@@ -87,7 +87,7 @@ Permission.create_if_not_exists(
 # Creazione del role 'Supervisor'
 supervisor = Role.find_by(name: 'Supervisor')
 if !supervisor
-  Role.create!(
+  supervisor = Role.create!(
     id:                '4',
     name:              'Supervisor',
     note:              'To monitor the activity of the business.',
