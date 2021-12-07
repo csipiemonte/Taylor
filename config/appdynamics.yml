@@ -1,0 +1,18 @@
+app_name: NEXTCRM_TST_CSI-01
+tier_name: ZammadTST
+node_name: ZammadTSTNode01
+log_max_file_size: 10485760
+log_max_num_files: 5
+controller:
+  host: csi-net.saas.appdynamics.com
+  port: 443
+  account: csi-net
+  access_key: 56613ac1-cedd-41ef-a655-4b2adbc7560b
+  cert_path: /etc/pki/tls/certs/ca-bundle.crt
+  use_ssl: true
+  http_proxy_host: proxy-nivola
+  http_proxy_port: 3128
+  log_dir: /appserv/zammad/zammad/log/
+  log_level: info
+  log_max_file_size: 10485760
+  log_max_num_files: 5
