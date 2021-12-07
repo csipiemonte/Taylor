@@ -25,15 +25,21 @@ class App.UserCdp extends App.Controller
     '#user/cdp/' + @user_id
 
   show: =>
+    
     App.OnlineNotification.seen('User', @user_id)
     @navupdate(url: '#', type: 'menu')
+
+    # on showing, force a chart redraw. This prevents charts visualization bugs when navigating on zammad taskbar tabs
+    ApexCharts.exec('cdp-satisfaction-bar', 'resetSeries');
+    ApexCharts.exec('cdp-scope-pie', 'resetSeries');
 
   changed: ->
     false
 
-
-
   render: (user) =>
+
+    # update taskbar with new meta data
+    App.TaskManager.touch(@taskKey)
 
     if !@doNotLog
       @doNotLog = 1
@@ -132,38 +138,40 @@ class CdpEvents extends App.Controller
         return
       "order": [[ 6, "desc" ]]
       'columns': [
-        { 'data': (row, type, val, meta) ->
-          if type == 'set'
-            return
-          else if type == 'display'
-            icon_name = 'in-process'
-            switch row.type
-              when 'Feedback'
-                if (row.properties.NPS_score < 4)
-                  return '<img class="datatable-img-icon" src="/assets/images/nextcrm/satisfaction_bad.png" width="24" height="24">'
-                else if (row.properties.NPS_score < 8)
-                  return '<img class="datatable-img-icon" src="/assets/images/nextcrm/satisfaction_ok.png" width="24" height="24">'
-                else  
-                  return '<img class="datatable-img-icon" src="/assets/images/nextcrm/satisfaction_good.png" width="24" height="24">'
-              when 'Richiesta ad Assistenza'
-                icon_name = 'in-process'
-              when 'Pagamento'
-                icon_name = 'rearange'
-              when 'Prenotazione Appuntamento'
-                icon_name = 'person'
-              when 'Richiesta Documento'
-                icon_name = 'clipboard'
-              when 'Upload Documento'
-                icon_name = 'cloud'
-              when 'Download Documento'
-                icon_name = 'download'
-              when 'Stampa Documento'
-                icon_name = 'printer'
-            return '<svg class="datatable-event-icon datatable-img-icon" style=""><use xlink:href="assets/images/icons.svg#icon-'+icon_name+'"></use></svg>'
-          else if type == 'filter'
-            return row.type
-          # 'sort', 'type' and undefined all just use the base value
-          row.type
+        {
+          'orderable': false
+          'data': (row, type, val, meta) ->
+            if type == 'set'
+              return
+            else if type == 'display'
+              icon_name = 'in-process'
+              switch row.type
+                when 'Feedback'
+                  if (row.properties.NPS_score < 4)
+                    return '<img class="datatable-img-icon" src="/assets/images/nextcrm/satisfaction_bad.png" width="24" height="24">'
+                  else if (row.properties.NPS_score < 8)
+                    return '<img class="datatable-img-icon" src="/assets/images/nextcrm/satisfaction_ok.png" width="24" height="24">'
+                  else  
+                    return '<img class="datatable-img-icon" src="/assets/images/nextcrm/satisfaction_good.png" width="24" height="24">'
+                when 'Richiesta ad Assistenza'
+                  icon_name = 'in-process'
+                when 'Pagamento'
+                  icon_name = 'rearange'
+                when 'Prenotazione Appuntamento'
+                  icon_name = 'person'
+                when 'Richiesta Documento'
+                  icon_name = 'clipboard'
+                when 'Upload Documento'
+                  icon_name = 'cloud'
+                when 'Download Documento'
+                  icon_name = 'download'
+                when 'Stampa Documento'
+                  icon_name = 'printer'
+              return '<svg class="datatable-event-icon datatable-img-icon" style=""><use xlink:href="assets/images/icons.svg#icon-'+icon_name+'"></use></svg>'
+            else if type == 'filter'
+              return row.type
+            # 'sort', 'type' and undefined all just use the base value
+            row.type
         }
         { 'data': 'type' }
         { 'data': 'scope' }
@@ -185,6 +193,7 @@ class CdpEvents extends App.Controller
     piechart_options = 
       series: @charts_data['scope_usage']['data']
       chart:
+        id: 'cdp-scope-pie'
         width: 320
         type: 'pie'
       legend:
@@ -221,6 +230,7 @@ class CdpEvents extends App.Controller
     barchart_options = 
       series: [ { data: @charts_data['scope_nps']['data'] } ]
       chart:
+        id: 'cdp-satisfaction-bar'
         type: 'bar'
         height: 220
         toolbar: show: false
