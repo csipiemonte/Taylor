@@ -885,7 +885,7 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
             if (pipe.data.self_written) {
               return;
             }
-            this.onAgentTypingStart();
+            this.onAgentTypingStart(pipe.data.whispering);
             break;
           case 'chat_session_start':
             this.onConnectionEstablished(pipe.data);
@@ -1295,7 +1295,7 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
       }));
     };
 
-    ZammadChat.prototype.onAgentTypingStart = function() {
+    ZammadChat.prototype.onAgentTypingStart = function(whispering) {
       if (this.stopTypingId) {
         clearTimeout(this.stopTypingId);
       }
@@ -1304,7 +1304,9 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
         return;
       }
       this.maybeAddTimestamp();
-      this.el.find('.zammad-chat-body').append(this.view('typingIndicator')());
+      if (!whispering) {
+        this.el.find('.zammad-chat-body').append(this.view('typingIndicator')());
+      }
       if (!this.isVisible(this.el.find('.zammad-chat-message--typing'), true)) {
         return;
       }
