@@ -113,13 +113,23 @@ class CdpEvents extends App.Controller
         limit: @limit || 500
       processData: true
       success: (data) =>
-        console.debug('cdp data succesfully received')
+        console.debug('cdp data succesfully received: ', data)
         @scope_data = data['scope_data']
         @records = data['data']
         @global_satisfaction = data['global_nps_score'] 
         @charts_data = data['charts_data']
         console.debug('calling render')
         @render()
+      error: (jqXHR,textStatus, errorThrown  ) =>
+        if jqXHR.status == 404
+          console.warn(jqXHR.responseText)
+          # todo handle no data
+          @html App.view('user_cdp/cdp_events')(
+            global_satisfaction: null,
+            scope_data: null
+          )
+        else
+          console.error("error from #{@apiPath}/users/#{@user_id}/cdp_events. status: #{jqXHR.status}, body: #{jqXHR.responseText}")
     )
 
   render: =>
@@ -133,6 +143,7 @@ class CdpEvents extends App.Controller
     
     console.debug('setup datatables')
     @el.find('#cdp-events-table').DataTable
+      "autoWidth": false,  #https://stackoverflow.com/questions/8278981/datatables-on-the-fly-resizing
       'ajax': (data, callback, settings) ->
         callback datatable_records
         return

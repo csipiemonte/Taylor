@@ -1,81 +1,90 @@
-<div class="profile-section " style="display: flex; justify-content:space-between; margin-left: -50px;">
-  
-  <div class="chart-container"  >
-    <div id="cdpChartScopes"></div>
-  </div>
+<% if @scope_data: %> 
 
-   <div class="chart-container"  style="width: 300px; height: 150px">
-    <div style="display: flex; justify-content:center; align-items: center; flex-direction:column; "> 
-      <div style="margin-top: -20px;"><h2>Satisfaction Globale</h2></div>
-      <div>
-
-
-
-        <% if @global_satisfaction < 4: %>
-          <img src="/assets/images/nextcrm/satisfaction_bad.png" width="80" height="80">
-          <%# <p class="widget-emoji-icon">☹️</p> %>
-          <%# <svg class="icon"><use xlink:href="assets/images/icons.svg#icon-mood-bad"></use></svg> %>
-        <% else if @global_satisfaction < 7: %>
-          <img src="/assets/images/nextcrm/satisfaction_ok.png" width="80" height="80">
-          <%# <p class="widget-emoji-icon">😐</p> %>
-          <%# <svg class="icon"><use xlink:href="assets/images/icons.svg#icon-mood-ok"></use></svg> %>
-        <% else:  %>
-            <img style="margin-top: 20px" src="/assets/images/nextcrm/satisfaction_good.png" width="100" height="100">
-           <%# <p class="widget-emoji-icon">🙂</p> %>
-          <%# <svg class="icon"><use xlink:href="assets/images/icons.svg#icon-mood-supergood"></use></svg> %>
-        <% end %>
-
-      </div>
-      <div><h2><%- @global_satisfaction %>/10</h2></div>
+  <div class="profile-section " style="display: flex; justify-content:space-evenly; margin-left: -50px;">
+    
+    <div class="chart-container"  >
+      <div id="cdpChartScopes"></div>
     </div>
+
+    <div class="chart-container"  style="width: 300px; height: 150px">
+      <div style="display: flex; justify-content:center; align-items: center; flex-direction:column; "> 
+        <div style="margin-top: -20px;"><h2>Satisfaction Globale</h2></div>
+        <div>
+
+
+
+          <% if @global_satisfaction < 4: %>
+            <img src="/assets/images/nextcrm/satisfaction_bad.png" width="80" height="80">
+            <%# <p class="widget-emoji-icon">☹️</p> %>
+            <%# <svg class="icon"><use xlink:href="assets/images/icons.svg#icon-mood-bad"></use></svg> %>
+          <% else if @global_satisfaction < 7: %>
+            <img src="/assets/images/nextcrm/satisfaction_ok.png" width="80" height="80">
+            <%# <p class="widget-emoji-icon">😐</p> %>
+            <%# <svg class="icon"><use xlink:href="assets/images/icons.svg#icon-mood-ok"></use></svg> %>
+          <% else:  %>
+              <img style="margin-top: 20px" src="/assets/images/nextcrm/satisfaction_good.png" width="100" height="100">
+            <%# <p class="widget-emoji-icon">🙂</p> %>
+            <%# <svg class="icon"><use xlink:href="assets/images/icons.svg#icon-mood-supergood"></use></svg> %>
+          <% end %>
+
+        </div>
+        <div><h2><%- @global_satisfaction %>/10</h2></div>
+      </div>
+    </div>
+
+    <div class="chart-container" >
+      <div id="cdpChartSatisfactionHisto"></div>
+    </div>
+
   </div>
 
-  <div class="chart-container" >
-    <div id="cdpChartSatisfactionHisto"></div>
+  <%# <div style="padding: 0px 50px" class=""><h2>Lista Eventi</h2></div> %>
+  <div class="profile-section vertical centered">
+    <!--<h2><%- @T('Event List') %></h2>-->
+    <h2>Attività</h2>
+    <table id="cdp-events-table" width="80%" class="display " style="width:100%" >
+        <thead>
+          <tr>
+            <th width="5%">
+            <th width="10%"><%- @T('Type') %>
+            <th width="5%"><%- @T('Scope') %>
+            <th width="10%"><%- @T('Source Type') %>
+            <th width="10%"><%- @T('Source Name') %>
+            <th><%- @T('Description') %>
+            <th width="10%"><%- @T('Created at') %>
+        </thead>
+    </table>
   </div>
 
-</div>
+<% else: %>
 
-<%# <div style="padding: 0px 50px" class=""><h2>Lista Eventi</h2></div> %>
-<div class="profile-section vertical centered">
-  <!--<h2><%- @T('Event List') %></h2>-->
-  <h2>Attività</h2>
-  <table id="cdp-events-table" width="80%" class="display" style="width:100%" >
-      <thead>
-        <tr>
-          <th width="5%">
-          <th width="10%"><%- @T('Type') %>
-          <th width="5%"><%- @T('Scope') %>
-          <th width="10%"><%- @T('Source Type') %>
-          <th width="10%"><%- @T('Source Name') %>
-          <th><%- @T('Description') %>
-          <th width="10%"><%- @T('Created at') %>
-      </thead>
-  </table>
-</div>
+  <div class="profile-section vertical centered">
+    <h2>Nessun dato disponibile per l'utente</h2>
+  </div>   
 
+<% end %> 
 
 
 <style>
-.widget-emoji-icon {
-  font-size: 80px;
-  height: 100px;
-}
-.datatable-event-icon {
-  height:24px; 
-  width:-webkit-fill-available; 
-  width:-moz-fill-available; 
-  max-width: 80px;
-  fill: #9d8763;
-}
-.datatable-img-icon {
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-}
+  .widget-emoji-icon {
+    font-size: 80px;
+    height: 100px;
+  }
+  .datatable-event-icon {
+    height:24px; 
+    width:-webkit-fill-available; 
+    width:-moz-fill-available; 
+    max-width: 80px;
+    fill: #9d8763;
+  }
+  .datatable-img-icon {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
 </style>
 
-
+<!--
 
 <script>
 // tabella eventi
@@ -217,4 +226,4 @@
 
 </script>
 
-
+-->

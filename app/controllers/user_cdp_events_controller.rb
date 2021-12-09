@@ -33,7 +33,12 @@ class UserCdpEventsController < ApplicationController
 
     unomi_profile = CustomerDataPlatformService.fetch_profile(user.email)
     unomi_profile_id = unomi_profile ? unomi_profile['itemId'] : nil 
-    return [] unless unomi_profile_id
+
+    unless unomi_profile_id
+      render json: {:error => "unomi user profile not found for email #{user.email}"},  status: 404
+      return 
+    end
+
     unomi_events = CustomerDataPlatformService.search_events(unomi_profile_id)
     
     scope_data = {}
