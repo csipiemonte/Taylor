@@ -617,7 +617,7 @@ do($ = window.jQuery, window) ->
             @receiveMessage pipe.data
           when 'chat_session_typing'
             return if pipe.data.self_written
-            @onAgentTypingStart()
+            @onAgentTypingStart(pipe.data.whispering)
           when 'chat_session_start'
             @onConnectionEstablished pipe.data
           when 'chat_session_queue'
@@ -987,7 +987,7 @@ do($ = window.jQuery, window) ->
       @el.find('.zammad-chat-modal').html @view('waiting')
         position: data.position
 
-    onAgentTypingStart: =>
+    onAgentTypingStart: (whispering) =>
       if @stopTypingId
         clearTimeout(@stopTypingId)
       @stopTypingId = setTimeout(@onAgentTypingEnd, 3000)
@@ -996,8 +996,9 @@ do($ = window.jQuery, window) ->
       return if @el.find('.zammad-chat-message--typing').get(0)
 
       @maybeAddTimestamp()
-
-      @el.find('.zammad-chat-body').append @view('typingIndicator')()
+      # abbiamo aggiunto il controllo su whispering per nascondere anche la classe css che mostra la digitazione
+      if !whispering
+        @el.find('.zammad-chat-body').append @view('typingIndicator')()
 
       # only if typing indicator is shown
       return if !@isVisible(@el.find('.zammad-chat-message--typing'), true)

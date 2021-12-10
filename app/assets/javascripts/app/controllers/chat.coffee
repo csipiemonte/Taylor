@@ -448,6 +448,7 @@ class ChatWindow extends App.Controller
     @on('layout-change', @onLayoutChange)
 
     @bind('chat_session_typing', (data) =>
+      console.log('chat coffee loader', data)
       return if data.session_id isnt @session.session_id
       return if data.self_written
       @showWritingLoader()
@@ -491,7 +492,7 @@ class ChatWindow extends App.Controller
     @closeButton.removeClass 'is-hidden'
     @peekAgentBtn.removeClass 'hidden'
 
-
+  # il simbolo del messaggio in basso a destra vicino alla barra di scrittura: attivandolo i nostri messaggi diventano gialli e nascosti all'utente ma visibili al supervisore. Viceversa anche il supervisore può attivare questa funzione e nascondere i propri messaggi all'utente.
   whisperingBtnClick: =>
     @whispering = !@whispering
     if @whisperBtn.hasClass('enabled')
@@ -499,6 +500,7 @@ class ChatWindow extends App.Controller
     else
       @whisperBtn.addClass('enabled')
 
+  # il simbolo occhiolino nero: attivandolo leggiamo segretamente ciò che l'utente sta digitando (IMPORTANTE AI FINI DI PRIVACY: AVVISARE L'UTENTE DI QUESTA OPZIONE)
   peekCustomerBtnClick: =>
     @peekingCustomer = !@peekingCustomer
     if @peekCustomerBtn.hasClass('enabled')
@@ -506,6 +508,7 @@ class ChatWindow extends App.Controller
     else
       @peekCustomerBtn.addClass('enabled')
 
+  # il simbolo occhiolino rosso: attivandolo leggiamo segretamente ciò che l'agente sta digitando
   peekAgentBtnClick: =>
     @peekingAgent = !@peekingAgent
     if @peekAgentBtn.hasClass('enabled')
@@ -513,6 +516,7 @@ class ChatWindow extends App.Controller
     else
       @peekAgentBtn.addClass('enabled')
 
+  # il simbolo punto esclamativo: attivandolo segnaliamo ad un supervisore disponibile della necessità di supporto su una chat (supervisore verifica su chat monitor)
   raiseFlagBtnClick: =>
     @flagRaised = !@flagRaised
     if @raiseFlagBtn.hasClass('enabled')
@@ -716,7 +720,8 @@ class ChatWindow extends App.Controller
       App.WebSocket.send(
         event:'chat_session_typing'
         data:
-          session_id: @session.session_id
+          session_id: @session.session_id,
+          whispering: @whispering
       )
 
     switch event.keyCode
@@ -765,7 +770,8 @@ class ChatWindow extends App.Controller
       App.WebSocket.send(
         event:'chat_session_typing'
         data:
-          session_id: @session.session_id
+          session_id: @session.session_id,
+          whispering: @whispering
       )
       @delay(send, delay)
 
@@ -812,8 +818,8 @@ class ChatWindow extends App.Controller
 
   addMessage: (message, sender, isNew, useMaybeAddTimestamp = true, whispering = false, sneakPeekMessage = false) =>
     if sneakPeekMessage
-      return if sender == "customer" && !@peekingCustomer
-      return if sender == "agent" && !@peekingAgent
+      return if sender == 'customer' && !@peekingCustomer
+      return if sender == 'agent' && !@peekingAgent
     placeholder = @$('.chat-message--'+sender+'.chat-message--sneak-peek')
     if placeholder.length > 0 && sneakPeekMessage
       placeholder.text(message)
@@ -1108,7 +1114,7 @@ class App.ChatMonitor extends App.Controller
         sessions = data
         @table_wrapper.html('')
         @table = new App.ControllerTable(
-          tableId:  "chat-monitoring-table"
+          tableId:  'chat-monitoring-table'
           el:       @table_wrapper
           overview: [  'state', 'id', 'user_id', 'stop_chatbot', 'flag_raised', 'created_at' ]
           attribute_list: [
@@ -1152,14 +1158,14 @@ class App.ChatMonitor extends App.Controller
     e.preventDefault()
     row = $(e.target)
     for session in sessions
-      if session["id"] == id
+      if session['id'] == id
         $.ajax(
           id:    'chat_session_messages'
           type:  'GET'
           url:   "#{App.Config.get('api_path')}/chat_monitor/messages/"+id
           processData: true
           success: (data, status, xhr) =>
-            session["messages"] = data
+            session['messages'] = data
             chat = addChat(session, row)
             chat.adjustForMonitoring()
         )
