@@ -193,7 +193,7 @@ class CdpEvents extends App.Controller
           if type == 'set'
             return
           else if type == 'display' ||  type == 'filter'
-            return moment(row.created_at).format('DD/MM/YYYY HH:mm')
+            return moment(row.created_at).format('DD/MM/YYYY HH:mm:ss')
           # 'sort', 'type' and undefined all just use the base value
           row.created_at
         }
