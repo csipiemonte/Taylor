@@ -492,7 +492,11 @@ class ChatWindow extends App.Controller
     @closeButton.removeClass 'is-hidden'
     @peekAgentBtn.removeClass 'hidden'
 
-  # il simbolo del messaggio in basso a destra vicino alla barra di scrittura: attivandolo i nostri messaggi diventano gialli e nascosti all'utente ma visibili al supervisore. Viceversa anche il supervisore può attivare questa funzione e nascondere i propri messaggi all'utente.
+
+  # il simbolo del messaggio in basso a destra vicino alla barra di scrittura:
+  # attivandolo i nostri messaggi diventano gialli e nascosti all'utente ma visibili
+  # al supervisore. Viceversa anche il supervisore puo' attivare questa funzione e
+  # nascondere i propri messaggi all'utente.
   whisperingBtnClick: =>
     @whispering = !@whispering
     if @whisperBtn.hasClass('enabled')
@@ -500,7 +504,8 @@ class ChatWindow extends App.Controller
     else
       @whisperBtn.addClass('enabled')
 
-  # il simbolo occhiolino nero: attivandolo leggiamo segretamente ciò che l'utente sta digitando (IMPORTANTE AI FINI DI PRIVACY: AVVISARE L'UTENTE DI QUESTA OPZIONE)
+  # il simbolo occhiolino nero: attivandolo leggiamo segretamente cio' che l'utente sta
+  # digitando (IMPORTANTE AI FINI DI PRIVACY: AVVISARE L'UTENTE DI QUESTA OPZIONE)
   peekCustomerBtnClick: =>
     @peekingCustomer = !@peekingCustomer
     if @peekCustomerBtn.hasClass('enabled')
@@ -508,7 +513,7 @@ class ChatWindow extends App.Controller
     else
       @peekCustomerBtn.addClass('enabled')
 
-  # il simbolo occhiolino rosso: attivandolo leggiamo segretamente ciò che l'agente sta digitando
+  # il simbolo occhiolino rosso: attivandolo leggiamo segretamente cio' che l'agente sta digitando
   peekAgentBtnClick: =>
     @peekingAgent = !@peekingAgent
     if @peekAgentBtn.hasClass('enabled')
@@ -516,7 +521,8 @@ class ChatWindow extends App.Controller
     else
       @peekAgentBtn.addClass('enabled')
 
-  # il simbolo punto esclamativo: attivandolo segnaliamo ad un supervisore disponibile della necessità di supporto su una chat (supervisore verifica su chat monitor)
+  # il simbolo punto esclamativo: attivandolo segnaliamo ad un supervisore disponibile
+  # della necessita' di supporto su una chat (supervisore verifica su chat monitor)
   raiseFlagBtnClick: =>
     @flagRaised = !@flagRaised
     if @raiseFlagBtn.hasClass('enabled')
