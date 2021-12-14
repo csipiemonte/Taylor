@@ -15,7 +15,7 @@ class Observer::Ticket::Article::CommunicateWhatsapp < ActiveRecord::Observer
     return true if sender.nil?
     return true if sender.name == 'Customer'
 
-    # only apply on telegram messages
+    # only apply on whatsapp messages
     return true if !record.type_id
 
     type = Ticket::Article::Type.lookup(id: record.type_id)
