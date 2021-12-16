@@ -14,4 +14,3 @@ Ticket::Article::Type.create_if_not_exists(id: 12, name: 'telegram personal-mess
 # CSI channels
 Ticket::Article::Type.create_if_not_exists(id: 13, name: 'web (via api)', communication: true)
 Ticket::Article::Type.create_if_not_exists(id: 14, name: 'phone (via api)', communication: true)
-Ticket::Article::Type.create_if_not_exists(id: 15, name: 'whatsapp personal-message', communication: true)
