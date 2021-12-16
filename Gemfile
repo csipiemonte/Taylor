@@ -147,6 +147,11 @@ gem 'viewpoint'
 # integrations - S/MIME
 gem 'openssl'
 
+# monitoring
+group :development, :qa do
+  gem 'newrelic_rpm'
+end
+
 # Gems used only for develop/test and not required
 # in production environments by default.
 group :development, :test do
