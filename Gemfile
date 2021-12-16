@@ -147,12 +147,6 @@ gem 'viewpoint'
 # integrations - S/MIME
 gem 'openssl'
 
-
-# appdynamics
-group :production, :qa do 
-  gem 'appdynamics'
-end
-
 # Gems used only for develop/test and not required
 # in production environments by default.
 group :development, :test do
