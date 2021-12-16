@@ -1,3 +1,0 @@
-<%- @user.avatar("80") %>
-<h1><%= @user.displayName() %></h1>
-<h3><%= @user.email %></h3>
