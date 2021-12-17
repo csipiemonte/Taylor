@@ -148,7 +148,7 @@ gem 'viewpoint'
 gem 'openssl'
 
 # monitoring
-group :development, :qa do
+group :dev, :qa do
   gem 'newrelic_rpm'
 end
 
