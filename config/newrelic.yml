@@ -8,8 +8,8 @@
 
 common: &default_settings
   # Required license key associated with your New Relic account.
-  license_key: c4b1dc77d2c81f2171499cfa887c8b2eed14599a
-
+  # account SYMON_TEST2_old
+  license_key: 31e2ceffe2201c17ad3955a86085110a4bfa459a
 
   # Your application name. Renaming here affects where data displays in New
   # Relic.  For more details, see https://docs.newrelic.com/docs/apm/new-relic-apm/maintenance/renaming-applications
@@ -28,12 +28,21 @@ common: &default_settings
 development:
   <<: *default_settings
   app_name: ZammadDEV
-  log_level: debug
+  agent_enabled: false
 
   # NOTE: There is substantial overhead when running in developer mode.
   # Do not use for production or load testing.
   developer_mode: false
 
+dev:
+  <<: *default_settings
+  app_name: ZammadDEV
+  agent_enabled: false
+
+  # NOTE: There is substantial overhead when running in developer mode.
+  # Do not use for production or load testing.
+  developer_mode: false
+  
 qa:
   <<: *default_settings
   app_name: ZammadTST
