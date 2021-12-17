@@ -1,7 +1,7 @@
 remedy_env_vars = Setting.find_by(name: 'remedy_env_vars')
 remedy_env_vars.state = {
   access_token:  ENV['ACCESS_TOKEN'],
-  base_url:      'https://tst-api-piemonte.ecosis.csi.it/tecno/troubleticketing/v1',
+  base_url:      'https://api-piemonte.csi.it/tecno/troubleticketin/v1',
   request_id:    'zammad_to_remedy',
   forwarded_for: '127.0.0.1'
 }
