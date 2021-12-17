@@ -20,4 +20,9 @@ VALUES
 (33, 'sw', 'AUTOCERTIFICAZIONE ESENZIONE PER PATOLOGIA CITTADINI', NOW(), NOW()),
 (34, 'sw', 'Trova un', NOW(), NOW()),
 (35, 'sw', 'FSE - Taccuino per cittadino', NOW(), NOW()),
-(36, 'sw', 'SOL ESTRATTO CONTO TICKET SANITARI', NOW(), NOW())
+(36, 'sw', 'SOL ESTRATTO CONTO TICKET SANITARI', NOW(), NOW()),
+(37, 'sw', 'AMINDER Gestione Ammortizzatori Sociali in Deroga', NOW(), NOW()),
+(38, 'sw', 'Gestione online comunicazioni obbligatorie (geco)', NOW(), NOW()),
+(39, 'sw', 'Comunicazioni Massive file XML (COMMAX)', NOW(), NOW()),
+(40, 'sw', 'Prospetto Disabili (PRODIS)', NOW(), NOW()),
+(41, 'sw', 'Portale Apprendistato', NOW(), NOW())
