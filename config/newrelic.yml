@@ -28,6 +28,7 @@ common: &default_settings
 development:
   <<: *default_settings
   app_name: ZammadDEV
+  # To disable the agent 
   agent_enabled: false
 
   # NOTE: There is substantial overhead when running in developer mode.
@@ -37,6 +38,7 @@ development:
 dev:
   <<: *default_settings
   app_name: ZammadDEV
+  # To disable the agent 
   agent_enabled: false
 
   # NOTE: There is substantial overhead when running in developer mode.
@@ -46,6 +48,8 @@ dev:
 qa:
   <<: *default_settings
   app_name: ZammadTST
+  # To disable the agent
+  agent_enabled: false
 
   # NOTE: There is substantial overhead when running in developer mode.
   # Do not use for production or load testing.
@@ -55,8 +59,10 @@ test:
   <<: *default_settings
   # It doesn't make sense to report to New Relic from automated test runs.
   monitor_mode: false
-
+  # To disable the agent
+  agent_enabled: false
 
 production:
-
   <<: *default_settings
+  # To disable the agent
+  agent_enabled: false
