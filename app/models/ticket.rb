@@ -75,8 +75,6 @@ class Ticket < ApplicationModel
 
   belongs_to    :type,                  class_name: 'Ticket::Type', optional: true
 
-  has_many      :external_activities,   class_name: 'ExternalActivity', dependent: :destroy
-
   self.inheritance_column = nil
 
   attr_accessor :callback_loop
