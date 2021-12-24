@@ -302,7 +302,9 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
         event: event,
         data: data
       });
-      return this.ws.send(msg);
+      if (this.ws.readyState === 1) {
+        return this.ws.send(msg);
+      }
     };
 
     Io.prototype.ping = function() {
@@ -431,7 +433,8 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
         'Start new conversation': 'Avvia una nuova chat',
         'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Dal momento che non hai risposto negli ultimi %s minuti la tua chat con <strong>%s</strong> è stata chiusa.',
         'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Dal momento che non hai risposto negli ultimi %s minuti la tua chat è stata chiusa.',
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Ci dispiace, ci vuole più tempo del previsto per arrivare al tuo turno. Per favore riprova più tardi o inviaci un\'email. Grazie!'
+        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Ci dispiace, ci vuole più tempo del previsto per arrivare al tuo turno. Per favore riprova più tardi o inviaci un\'email. Grazie!',
+        'We are sorry, we are facing some connection problem. Please try again later or send us an email. Thank you!': 'Ci dispiace, ci sono problemi di connessione. Per favore riprova più tardi o inviaci un\'email. Grazie!'
       }
     };
 
@@ -505,6 +508,7 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
       this.onQueueScreen = bind(this.onQueueScreen, this);
       this.onWebSocketClose = bind(this.onWebSocketClose, this);
       this.onCloseAnimationEnd = bind(this.onCloseAnimationEnd, this);
+      this.reloadChat = bind(this.reloadChat, this);
       this.close = bind(this.close, this);
       this.toggle = bind(this.toggle, this);
       this.sessionClose = bind(this.sessionClose, this);
@@ -945,15 +949,11 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
       this.log.debug(message);
       this.addStatus(message);
       $("." + this.options.buttonClass).hide();
+      this.el.find('.zammad-chat-modal').html(this.view('error_connection'));
       if (this.isOpen) {
         this.disableInput();
-        this.destroy({
-          remove: false
-        });
       } else {
-        this.destroy({
-          remove: true
-        });
+
       }
       return typeof (base = this.options).onError === "function" ? base.onError(message) : void 0;
     };
@@ -1203,10 +1203,6 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
       if (this.initDelayId) {
         clearTimeout(this.initDelayId);
       }
-      if (!this.sessionId) {
-        this.log.debug('can\'t close widget without sessionId');
-        return;
-      }
       this.log.debug('close widget');
       if (event) {
         event.stopPropagation();
@@ -1221,11 +1217,17 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
       }, 500, this.onCloseAnimationEnd);
     };
 
+    ZammadChat.prototype.reloadChat = function() {
+      this.log.debug('reload chat');
+      this.close();
+      this.isOpen = false;
+      return setTimeout(this.open(), 2000);
+    };
+
     ZammadChat.prototype.onCloseAnimationEnd = function() {
       var base;
       this.el.css('bottom', '');
       this.el.removeClass('zammad-chat-is-open');
-      this.showLoader();
       this.el.find('.zammad-chat-welcome').removeClass('zammad-chat-is-hidden');
       this.el.find('.zammad-chat-agent').addClass('zammad-chat-is-hidden');
       this.el.find('.zammad-chat-agent-status').addClass('zammad-chat-is-hidden');
@@ -1506,27 +1508,19 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
     };
 
     ZammadChat.prototype.showCustomerTimeout = function() {
-      var reload;
       this.el.find('.zammad-chat-modal').html(this.view('customer_timeout')({
         agent: this.agent.name,
         delay: this.options.inactiveTimeout
       }));
-      reload = function() {
-        return location.reload();
-      };
-      this.el.find('.js-restart').click(reload);
+      this.el.find('.js-restart').on('click', this.reloadChat);
       return this.sessionClose();
     };
 
     ZammadChat.prototype.showWaitingListTimeout = function() {
-      var reload;
       this.el.find('.zammad-chat-modal').html(this.view('waiting_list_timeout')({
         delay: this.options.watingListTimeout
       }));
-      reload = function() {
-        return location.reload();
-      };
-      this.el.find('.js-restart').click(reload);
+      this.el.find('.js-restart').on('click', this.reloadChat);
       return this.sessionClose();
     };
 
@@ -1589,10 +1583,7 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
         timeoutIntervallCheck: this.options.idleTimeoutIntervallCheck,
         callback: (function(_this) {
           return function() {
-            _this.log.debug('Idle timeout reached, hide widget', new Date);
-            return _this.destroy({
-              remove: true
-            });
+            return _this.log.debug('Idle timeout reached, hide widget', new Date);
           };
         })(this)
       });
@@ -1604,10 +1595,7 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
         callback: (function(_this) {
           return function() {
             _this.log.debug('Inactive timeout reached, show timeout screen.', new Date);
-            _this.showCustomerTimeout();
-            return _this.destroy({
-              remove: false
-            });
+            return _this.showCustomerTimeout();
           };
         })(this)
       });
@@ -1619,10 +1607,7 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
         callback: (function(_this) {
           return function() {
             _this.log.debug('Waiting list timeout reached, show timeout screen.', new Date);
-            _this.showWaitingListTimeout();
-            return _this.destroy({
-              remove: false
-            });
+            return _this.showWaitingListTimeout();
           };
         })(this)
       });
@@ -2068,6 +2053,61 @@ window.zammadChatTemplates["customer_timeout"] = function(__obj) {
       __out.push(this.T('Start new conversation'));
     
       __out.push('</div>\n</div>');
+    
+    }).call(this);
+    
+  }).call(__obj);
+  __obj.safe = __objSafe, __obj.escape = __escape;
+  return __out.join('');
+};
+
+if (!window.zammadChatTemplates) {
+  window.zammadChatTemplates = {};
+}
+window.zammadChatTemplates["error_connection"] = function(__obj) {
+  if (!__obj) __obj = {};
+  var __out = [], __capture = function(callback) {
+    var out = __out, result;
+    __out = [];
+    callback.call(this);
+    result = __out.join('');
+    __out = out;
+    return __safe(result);
+  }, __sanitize = function(value) {
+    if (value && value.ecoSafe) {
+      return value;
+    } else if (typeof value !== 'undefined' && value != null) {
+      return __escape(value);
+    } else {
+      return '';
+    }
+  }, __safe, __objSafe = __obj.safe, __escape = __obj.escape;
+  __safe = __obj.safe = function(value) {
+    if (value && value.ecoSafe) {
+      return value;
+    } else {
+      if (!(typeof value !== 'undefined' && value != null)) value = '';
+      var result = new String(value);
+      result.ecoSafe = true;
+      return result;
+    }
+  };
+  if (!__escape) {
+    __escape = __obj.escape = function(value) {
+      return ('' + value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    };
+  }
+  (function() {
+    (function() {
+      __out.push('<div class="zammad-chat-modal-text">\n  ');
+    
+      __out.push(this.T('We are sorry, we are facing some connection problem. Please try again later or send us an email. Thank you!'));
+    
+      __out.push('\n  <br>\n</div>');
     
     }).call(this);
     

@@ -140,7 +140,9 @@ do($ = window.jQuery, window) ->
       msg = JSON.stringify
         event: event
         data: data
-      @ws.send msg
+      # aggiunto controllo sullo readyState
+      if @ws.readyState == 1
+        @ws.send msg
 
     ping: =>
       localPing = =>
@@ -244,6 +246,7 @@ do($ = window.jQuery, window) ->
         'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Dal momento che non hai risposto negli ultimi %s minuti la tua chat con <strong>%s</strong> è stata chiusa.'
         'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Dal momento che non hai risposto negli ultimi %s minuti la tua chat è stata chiusa.'
         'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Ci dispiace, ci vuole più tempo del previsto per arrivare al tuo turno. Per favore riprova più tardi o inviaci un\'email. Grazie!'
+        'We are sorry, we are facing some connection problem. Please try again later or send us an email. Thank you!': 'Ci dispiace, ci sono problemi di connessione. Per favore riprova più tardi o inviaci un\'email. Grazie!'
     sessionId: undefined
     scrolledToBottom: true
     scrollSnapTolerance: 10
@@ -659,11 +662,13 @@ do($ = window.jQuery, window) ->
       @log.debug message
       @addStatus(message)
       $(".#{ @options.buttonClass }").hide()
+      # vista dopo due minuti di loading
+      @el.find('.zammad-chat-modal').html @view('error_connection')
       if @isOpen
         @disableInput()
-        @destroy(remove: false)
+        # @destroy(remove: false) provvisoriamente commentato
       else
-        @destroy(remove: true)
+        # @destroy(remove: true) provvisoriamente commentato
 
       @options.onError?(message)
 
@@ -846,7 +851,7 @@ do($ = window.jQuery, window) ->
       if @isOpen
         @log.debug 'widget already open, block'
         return
-
+    
       @isOpen = true
       @log.debug 'open widget'
       @show()
@@ -906,9 +911,11 @@ do($ = window.jQuery, window) ->
         return
       if @initDelayId
         clearTimeout(@initDelayId)
-      if !@sessionId
-        @log.debug 'can\'t close widget without sessionId'
-        return
+      # non sempre il session id è necessario il controllo risulta bloccante
+      # @log.debug "session id close #{@sessionId}"
+      # if !@sessionId && @state == 'online'
+      #   @log.debug 'can\'t close widget without sessionId'
+      #   return
 
       @log.debug 'close widget'
 
@@ -923,11 +930,16 @@ do($ = window.jQuery, window) ->
       remainerHeight = @el.height() - @el.find('.zammad-chat-header').outerHeight()
       @el.animate { bottom: -remainerHeight }, 500, @onCloseAnimationEnd
 
+    # aggiunta metodo reloadChat sostituisce location reload
+    reloadChat: =>
+      @log.debug 'reload chat'
+      @close()
+      @isOpen = false
+      setTimeout(@open(), 2000)
+
     onCloseAnimationEnd: =>
       @el.css 'bottom', ''
       @el.removeClass('zammad-chat-is-open')
-
-      @showLoader()
       @el.find('.zammad-chat-welcome').removeClass('zammad-chat-is-hidden')
       @el.find('.zammad-chat-agent').addClass('zammad-chat-is-hidden')
       @el.find('.zammad-chat-agent-status').addClass('zammad-chat-is-hidden')
@@ -1176,17 +1188,13 @@ do($ = window.jQuery, window) ->
       @el.find('.zammad-chat-modal').html @view('customer_timeout')
         agent: @agent.name
         delay: @options.inactiveTimeout
-      reload = ->
-        location.reload()
-      @el.find('.js-restart').click reload
+      @el.find('.js-restart').on 'click', @reloadChat
       @sessionClose()
 
     showWaitingListTimeout: ->
       @el.find('.zammad-chat-modal').html @view('waiting_list_timeout')
         delay: @options.watingListTimeout
-      reload = ->
-        location.reload()
-      @el.find('.js-restart').click reload
+      @el.find('.js-restart').on 'click', @reloadChat
       @sessionClose()
 
     showLoader: ->
@@ -1239,7 +1247,7 @@ do($ = window.jQuery, window) ->
         timeoutIntervallCheck: @options.idleTimeoutIntervallCheck
         callback: =>
           @log.debug 'Idle timeout reached, hide widget', new Date
-          @destroy(remove: true)
+          # @destroy(remove: true) provvisoriamente commentato
       )
       @inactiveTimeout = new Timeout(
         logPrefix: 'inactiveTimeout'
@@ -1249,7 +1257,7 @@ do($ = window.jQuery, window) ->
         callback: =>
           @log.debug 'Inactive timeout reached, show timeout screen.', new Date
           @showCustomerTimeout()
-          @destroy(remove: false)
+          # @destroy(remove: false) provvisoriamente commentato
       )
       @waitingListTimeout = new Timeout(
         logPrefix: 'waitingListTimeout'
@@ -1259,7 +1267,7 @@ do($ = window.jQuery, window) ->
         callback: =>
           @log.debug 'Waiting list timeout reached, show timeout screen.', new Date
           @showWaitingListTimeout()
-          @destroy(remove: false)
+          # @destroy(remove: false) provvisoriamente commentato
       )
 
     disableScrollOnRoot: ->
