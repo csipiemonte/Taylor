@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 
 # core - base
-ruby '2.6.5'
+ruby '2.6.6'
 gem 'rails', '5.2.4.4'
 
 # fix temporaneneo in attesa di passare a rails 5.2.6: vedi https://gitlab.csi.it/prodotti/nextcrm/nextcrm/issues/84

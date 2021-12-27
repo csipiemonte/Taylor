@@ -894,7 +894,7 @@ RSpec.describe 'Ticket', type: :request do
       delete "/api/v1/ticket_articles/#{json_response['id']}", params: {}, as: :json
       expect(response).to have_http_status(:unauthorized)
       expect(json_response).to be_a_kind_of(Hash)
-      expect(json_response['error']).to eq('Not authorized (admin permission required)!')
+      expect(json_response['error']).to eq('Not authorized (communication articles cannot be deleted)!')
 
       delete "/api/v1/tickets/#{ticket.id}", params: {}, as: :json
       expect(response).to have_http_status(:unauthorized)
@@ -991,7 +991,7 @@ RSpec.describe 'Ticket', type: :request do
       expect(json_response['type_id']).to eq(Ticket::Article::Type.lookup(name: 'email').id)
 
       delete "/api/v1/ticket_articles/#{json_response['id']}", params: {}, as: :json
-      expect(response).to have_http_status(:ok)
+      expect(response).to have_http_status(:unauthorized)
 
       delete "/api/v1/tickets/#{ticket.id}", params: {}, as: :json
       expect(response).to have_http_status(:ok)
@@ -1237,7 +1237,7 @@ RSpec.describe 'Ticket', type: :request do
       delete "/api/v1/ticket_articles/#{article_json_response['id']}", params: {}, as: :json
       expect(response).to have_http_status(:unauthorized)
       expect(json_response).to be_a_kind_of(Hash)
-      expect(json_response['error']).to eq('Not authorized (admin permission required)!')
+      expect(json_response['error']).to eq('Not authorized (agent permission required)!')
 
       params = {
         ticket_id: ticket.id,
@@ -1261,7 +1261,7 @@ RSpec.describe 'Ticket', type: :request do
       delete "/api/v1/ticket_articles/#{json_response['id']}", params: {}, as: :json
       expect(response).to have_http_status(:unauthorized)
       expect(json_response).to be_a_kind_of(Hash)
-      expect(json_response['error']).to eq('Not authorized (admin permission required)!')
+      expect(json_response['error']).to eq('Not authorized (agent permission required)!')
 
       params = {
         from:      'something which should not be changed on server side',
@@ -1923,29 +1923,29 @@ RSpec.describe 'Ticket', type: :request do
       )
 
       authenticated_as(customer_user)
-      get "/api/v1/ticket_merge/#{ticket2.id}/#{ticket1.id}", params: {}, as: :json
+      put "/api/v1/ticket_merge/#{ticket2.id}/#{ticket1.id}", params: {}, as: :json
       expect(response).to have_http_status(:unauthorized)
 
       authenticated_as(agent_user)
-      get "/api/v1/ticket_merge/#{ticket2.id}/#{ticket1.id}", params: {}, as: :json
+      put "/api/v1/ticket_merge/#{ticket2.id}/#{ticket1.id}", params: {}, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['result']).to eq('failed')
       expect(json_response['message']).to eq('No such master ticket number!')
 
-      get "/api/v1/ticket_merge/#{ticket3.id}/#{ticket1.number}", params: {}, as: :json
+      put "/api/v1/ticket_merge/#{ticket3.id}/#{ticket1.number}", params: {}, as: :json
       expect(response).to have_http_status(:unauthorized)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to eq('Not authorized')
       expect(json_response['error_human']).to eq('Not authorized')
 
-      get "/api/v1/ticket_merge/#{ticket1.id}/#{ticket3.number}", params: {}, as: :json
+      put "/api/v1/ticket_merge/#{ticket1.id}/#{ticket3.number}", params: {}, as: :json
       expect(response).to have_http_status(:unauthorized)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to eq('Not authorized')
       expect(json_response['error_human']).to eq('Not authorized')
 
-      get "/api/v1/ticket_merge/#{ticket1.id}/#{ticket2.number}", params: {}, as: :json
+      put "/api/v1/ticket_merge/#{ticket1.id}/#{ticket2.number}", params: {}, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['result']).to eq('success')
@@ -1975,7 +1975,7 @@ RSpec.describe 'Ticket', type: :request do
       agent_user.group_names_access_map = { group_change_permission.name => %w[read change] }
 
       authenticated_as(agent_user)
-      get "/api/v1/ticket_merge/#{ticket1.id}/#{ticket2.number}", params: {}, as: :json
+      put "/api/v1/ticket_merge/#{ticket1.id}/#{ticket2.number}", params: {}, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['result']).to eq('success')

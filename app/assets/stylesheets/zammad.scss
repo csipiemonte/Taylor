@@ -3201,6 +3201,8 @@ ol.tabs li {
       background-color:white;
       width: 29px;
       height: 28px;
+  &.auth-provider--sso {
+    background: #454545;
   }
 
   .provider-name {
@@ -3400,6 +3402,10 @@ ol.tabs li {
 .icon-checkbox,
 .icon-checkbox-checked,
 .icon-checkbox-indeterminate {
+  fill: white;
+}
+
+.icon-sso-button {
   fill: white;
 }
 

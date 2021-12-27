@@ -111,4 +111,9 @@ App.Config.set('auth_provider_all', {
     name:   'CSI'
     config: 'auth_advanced_saml'
     class:  'csi'
+  sso:
+    url:    '/auth/sso'
+    name:   'SSO'
+    config: 'auth_sso'
+    class:  'sso'
 })
