@@ -1,4 +1,4 @@
--- Popolamento della tabella "service_catalog_items" per l'ambiente di PROD
+-- Popolamento della tabella "service_catalog_items" per l'ambiente di TEST (QA)
 -- ATTENZIONE: perché abbia effetto, l'esecuzione dello script SQL deve essere seguita
 -- da un deploy che inneschi i db:seeds (cfr. db/seeds/object_manager_attributes_csi.rb)
 
