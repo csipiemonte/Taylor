@@ -1029,7 +1029,8 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
   # @response_message 200 [User] Created User record.
   # @response_message 401        Invalid session.
   def create_admin
-    if User.count > 2 # system and example users
+    # ATTENZIONE: questo valore deve essere incrementato se nei seeds sono aggiunti altri user
+    if User.count > 4 # system and example users
       raise Exceptions::UnprocessableEntity, 'Administrator account already created'
     end
 
