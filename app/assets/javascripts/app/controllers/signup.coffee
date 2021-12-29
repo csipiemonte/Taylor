@@ -53,11 +53,19 @@ class Index extends App.ControllerContent
     errors = user.validate(
       screen: 'signup'
     )
+
     if errors
       @log 'error new', errors
+
+      # Only highlight, but don't add message. Error text breaks layout.
+      Object.keys(errors).forEach (key) ->
+        errors[key] = null
+
       @formValidate(form: e.target, errors: errors)
       @formEnable(e)
       return false
+    else
+      @formValidate(form: e.target, errors: errors)
 
     # save user
     user.save(
@@ -67,10 +75,7 @@ class Index extends App.ControllerContent
         )
       fail: (settings, details) =>
         @formEnable(e)
-        if _.isArray(details.error)
-          @form.showAlert( App.i18n.translateInline( details.error[0], details.error[1] ) )
-        else
-          @form.showAlert(details.error_human || details.error || 'Unable to update object!')
+        @form.showAlert(details.error_human || details.error || 'Unable to update object!')
     )
 
   resend: (e) =>

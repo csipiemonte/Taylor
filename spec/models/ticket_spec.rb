@@ -4,6 +4,7 @@ require 'models/concerns/can_be_imported_examples'
 require 'models/concerns/can_csv_import_examples'
 require 'models/concerns/has_history_examples'
 require 'models/concerns/has_tags_examples'
+require 'models/concerns/has_taskbars_examples'
 require 'models/concerns/has_xss_sanitized_note_examples'
 require 'models/concerns/has_object_manager_attributes_validation_examples'
 
@@ -13,6 +14,7 @@ RSpec.describe Ticket, type: :model do
   it_behaves_like 'CanCsvImport'
   it_behaves_like 'HasHistory', history_relation_object: 'Ticket::Article'
   it_behaves_like 'HasTags'
+  it_behaves_like 'HasTaskbars'
   it_behaves_like 'HasXssSanitizedNote', model_factory: :ticket
   it_behaves_like 'HasObjectManagerAttributesValidation'
 
@@ -81,7 +83,6 @@ RSpec.describe Ticket, type: :model do
         end
       end
 
-      # Issue #2469 - Add information "Ticket merged" to History
       context 'when merging' do
         let(:merge_user) { create(:user) }
 
@@ -91,11 +92,12 @@ RSpec.describe Ticket, type: :model do
           # when creating the history entries
           target_ticket
           travel 5.minutes
+
+          ticket.merge_to(ticket_id: target_ticket.id, user_id: merge_user.id)
         end
 
+        # Issue #2469 - Add information "Ticket merged" to History
         it 'creates history entries in both the origin ticket and the target ticket' do
-          ticket.merge_to(ticket_id: target_ticket.id, user_id: merge_user.id)
-
           expect(target_ticket.history_get.size).to eq 2
 
           target_history = target_ticket.history_get.last
@@ -123,6 +125,24 @@ RSpec.describe Ticket, type: :model do
           ticket.merge_to(ticket_id: target_ticket.id, user_id: merge_user.id)
 
           expect(ExternalSync).to have_received(:migrate).with('Ticket', ticket.id, target_ticket.id)
+        end
+
+        # Issue #2960 - Ticket removal of merged / linked tickets doesn't remove references
+        context 'and deleting the origin ticket' do
+          it 'adds reference number and title to the target ticket' do
+            expect { ticket.destroy }
+              .to change { target_ticket.history_get.find { |elem| elem.fetch('type') == 'received_merge' }.dig('value_from') }
+              .to("##{ticket.number} #{ticket.title}")
+          end
+        end
+
+        # Issue #2960 - Ticket removal of merged / linked tickets doesn't remove references
+        context 'and deleting the target ticket' do
+          it 'adds reference number and title to the origin ticket' do
+            expect { target_ticket.destroy }
+              .to change { ticket.history_get.find { |elem| elem.fetch('type') == 'merged_into' }.dig('value_to') }
+              .to("##{target_ticket.number} #{target_ticket.title}")
+          end
         end
       end
     end
@@ -158,6 +178,72 @@ RSpec.describe Ticket, type: :model do
         it 'changes #state to specified value' do
           expect { ticket.perform_changes(perform, 'trigger', ticket, User.first) }
             .to change { ticket.reload.state.name }.to('closed')
+        end
+      end
+
+      # Test for backwards compatibility after PR https://github.com/zammad/zammad/pull/2862
+      context 'with "pending_time" => { "value": DATE } in "perform" hash' do
+        let(:perform) do
+          {
+            'ticket.state_id'     => {
+              'value' => Ticket::State.lookup(name: 'pending reminder').id.to_s
+            },
+            'ticket.pending_time' => {
+              'value' => timestamp,
+            },
+          }
+        end
+
+        let(:timestamp) { Time.zone.now }
+
+        it 'changes pending date to given date' do
+          freeze_time do
+            expect { ticket.perform_changes(perform, 'trigger', ticket, User.first) }
+              .to change(ticket, :pending_time).to(be_within(1.minute).of(timestamp))
+          end
+        end
+      end
+
+      # Test for PR https://github.com/zammad/zammad/pull/2862
+      context 'with "pending_time" => { "operator": "relative" } in "perform" hash' do
+        shared_examples 'verify' do
+          it 'verify relative pending time rule' do
+            freeze_time do
+              interval = relative_value.send(relative_range).from_now
+
+              expect { ticket.perform_changes(perform, 'trigger', ticket, User.first) }
+                .to change(ticket, :pending_time).to(be_within(1.minute).of(interval))
+            end
+          end
+        end
+
+        let(:perform) do
+          {
+            'ticket.state_id'     => {
+              'value' => Ticket::State.lookup(name: 'pending reminder').id.to_s
+            },
+            'ticket.pending_time' => {
+              'operator' => 'relative',
+              'value'    => relative_value,
+              'range'    => relative_range_config
+            },
+          }
+        end
+
+        let(:relative_range_config) { relative_range.to_s.singularize }
+
+        context 'and value in days' do
+          let(:relative_value) { 2 }
+          let(:relative_range) { :days }
+
+          include_examples 'verify'
+        end
+
+        context 'and value in minutes' do
+          let(:relative_value) { 60 }
+          let(:relative_range) { :minutes }
+
+          include_examples 'verify'
         end
       end
 
@@ -224,7 +310,7 @@ RSpec.describe Ticket, type: :model do
         #
         # Notification triggers should log notification as private or public
         # according to given configuration
-        let(:user) { create(:admin_user, mobile: '+37061010000') }
+        let(:user) { create(:admin, mobile: '+37061010000') }
 
         before { ticket.group.users << user }
 
@@ -394,13 +480,13 @@ RSpec.describe Ticket, type: :model do
 
   describe 'Attributes:' do
     describe '#owner' do
-      let(:original_owner) { create(:agent_user, groups: [ticket.group]) }
+      let(:original_owner) { create(:agent, groups: [ticket.group]) }
 
       before { ticket.update(owner: original_owner) }
 
       context 'when assigned directly' do
         context 'to an active agent belonging to ticket.group' do
-          let(:agent) { create(:agent_user, groups: [ticket.group]) }
+          let(:agent) { create(:agent, groups: [ticket.group]) }
 
           it 'can be set' do
             expect { ticket.update(owner: agent) }
@@ -409,7 +495,7 @@ RSpec.describe Ticket, type: :model do
         end
 
         context 'to an agent not belonging to ticket.group' do
-          let(:agent) { create(:agent_user, groups: [other_group]) }
+          let(:agent) { create(:agent, groups: [other_group]) }
           let(:other_group) { create(:group) }
 
           it 'resets to default user (id: 1) instead' do
@@ -419,7 +505,7 @@ RSpec.describe Ticket, type: :model do
         end
 
         context 'to an inactive agent' do
-          let(:agent) { create(:agent_user, groups: [ticket.group], active: false) }
+          let(:agent) { create(:agent, groups: [ticket.group], active: false) }
 
           it 'resets to default user (id: 1) instead' do
             expect { ticket.update(owner: agent) }
@@ -428,7 +514,7 @@ RSpec.describe Ticket, type: :model do
         end
 
         context 'to a non-agent' do
-          let(:agent) { create(:customer_user, groups: [ticket.group]) }
+          let(:agent) { create(:customer, groups: [ticket.group]) }
 
           it 'resets to default user (id: 1) instead' do
             expect { ticket.update(owner: agent) }
@@ -569,7 +655,7 @@ RSpec.describe Ticket, type: :model do
     end
 
     describe '#escalation_at' do
-      before { travel_to(Time.current) }  # freeze time
+      before { travel_to(Time.current) } # freeze time
 
       let(:sla) { create(:sla, calendar: calendar, first_response_time: 60, update_time: 180, solution_time: 240) }
       let(:calendar) { create(:calendar, :'24/7') }
@@ -581,7 +667,7 @@ RSpec.describe Ticket, type: :model do
       end
 
       context 'with an SLA in the system' do
-        before { sla }  # create sla
+        before { sla } # create sla
 
         it 'is set based on SLA’s #first_response_time' do
           expect(ticket.reload.escalation_at.to_i)
@@ -589,12 +675,12 @@ RSpec.describe Ticket, type: :model do
         end
 
         context 'after first agent’s response' do
-          before { ticket }  # create ticket
+          before { ticket } # create ticket
 
           let(:article) { create(:ticket_article, ticket: ticket, sender_name: 'Agent') }
 
           it 'is updated based on the SLA’s #update_time' do
-            travel(1.minute)  # time is frozen: if we don't travel forward, pre- and post-update values will be the same
+            travel(1.minute) # time is frozen: if we don't travel forward, pre- and post-update values will be the same
 
             expect { article }
               .to change { ticket.reload.escalation_at.to_i }
@@ -603,7 +689,7 @@ RSpec.describe Ticket, type: :model do
 
           context 'when new #update_time is later than original #solution_time' do
             it 'is updated based on the original #solution_time' do
-              travel(2.hours)  # time is frozen: if we don't travel forward, pre- and post-update values will be the same
+              travel(2.hours) # time is frozen: if we don't travel forward, pre- and post-update values will be the same
 
               expect { article }
                 .to change { ticket.reload.escalation_at.to_i }
@@ -640,7 +726,7 @@ RSpec.describe Ticket, type: :model do
     end
 
     describe '#first_response_escalation_at' do
-      before { travel_to(Time.current) }  # freeze time
+      before { travel_to(Time.current) } # freeze time
 
       let(:sla) { create(:sla, calendar: calendar, first_response_time: 60, update_time: 180, solution_time: 240) }
       let(:calendar) { create(:calendar, :'24/7') }
@@ -652,7 +738,7 @@ RSpec.describe Ticket, type: :model do
       end
 
       context 'with an SLA in the system' do
-        before { sla }  # create sla
+        before { sla } # create sla
 
         it 'is set based on SLA’s #first_response_time' do
           expect(ticket.reload.first_response_escalation_at.to_i)
@@ -660,7 +746,7 @@ RSpec.describe Ticket, type: :model do
         end
 
         context 'after first agent’s response' do
-          before { ticket }  # create ticket
+          before { ticket } # create ticket
 
           let(:article) { create(:ticket_article, ticket: ticket, sender_name: 'Agent') }
 
@@ -672,7 +758,7 @@ RSpec.describe Ticket, type: :model do
     end
 
     describe '#update_escalation_at' do
-      before { travel_to(Time.current) }  # freeze time
+      before { travel_to(Time.current) } # freeze time
 
       let(:sla) { create(:sla, calendar: calendar, first_response_time: 60, update_time: 180, solution_time: 240) }
       let(:calendar) { create(:calendar, :'24/7') }
@@ -684,7 +770,7 @@ RSpec.describe Ticket, type: :model do
       end
 
       context 'with an SLA in the system' do
-        before { sla }  # create sla
+        before { sla } # create sla
 
         it 'is set based on SLA’s #update_time' do
           expect(ticket.reload.update_escalation_at.to_i)
@@ -692,12 +778,12 @@ RSpec.describe Ticket, type: :model do
         end
 
         context 'after first agent’s response' do
-          before { ticket }  # create ticket
+          before { ticket } # create ticket
 
           let(:article) { create(:ticket_article, ticket: ticket, sender_name: 'Agent') }
 
           it 'is updated based on the SLA’s #update_time' do
-            travel(1.minute)  # time is frozen: if we don't travel forward, pre- and post-update values will be the same
+            travel(1.minute) # time is frozen: if we don't travel forward, pre- and post-update values will be the same
 
             expect { article }
               .to change { ticket.reload.update_escalation_at.to_i }
@@ -708,7 +794,7 @@ RSpec.describe Ticket, type: :model do
     end
 
     describe '#close_escalation_at' do
-      before { travel_to(Time.current) }  # freeze time
+      before { travel_to(Time.current) } # freeze time
 
       let(:sla) { create(:sla, calendar: calendar, first_response_time: 60, update_time: 180, solution_time: 240) }
       let(:calendar) { create(:calendar, :'24/7') }
@@ -720,7 +806,7 @@ RSpec.describe Ticket, type: :model do
       end
 
       context 'with an SLA in the system' do
-        before { sla }  # create sla
+        before { sla } # create sla
 
         it 'is set based on SLA’s #solution_time' do
           expect(ticket.reload.close_escalation_at.to_i)
@@ -728,7 +814,7 @@ RSpec.describe Ticket, type: :model do
         end
 
         context 'after first agent’s response' do
-          before { ticket }  # create ticket
+          before { ticket } # create ticket
 
           let(:article) { create(:ticket_article, ticket: ticket, sender_name: 'Agent') }
 
@@ -777,6 +863,123 @@ RSpec.describe Ticket, type: :model do
     end
   end
 
+  describe '.search' do
+
+    shared_examples 'search permissions' do
+      let(:group) { create(:group) }
+
+      before do
+        ticket
+      end
+
+      shared_examples 'permitted' do
+        it 'finds Ticket' do
+          expect( described_class.search(query: ticket.number, current_user: current_user).count ).to eq(1)
+        end
+      end
+
+      shared_examples 'no permission' do
+        it "doesn't find Ticket" do
+          expect( described_class.search(query: ticket.number, current_user: current_user) ).to be_blank
+        end
+      end
+
+      context 'Agent with Group access' do
+
+        let(:ticket) do
+          ticket = create(:ticket, group: group)
+          create(:ticket_article, ticket: ticket)
+          ticket
+        end
+
+        let(:current_user) { create(:agent, groups: [group]) }
+
+        it_behaves_like 'permitted'
+      end
+
+      context 'when Agent is Customer of Ticket' do
+
+        let(:ticket) do
+          ticket = create(:ticket, customer: current_user)
+          create(:ticket_article, ticket: ticket)
+          ticket
+        end
+
+        let(:current_user) { create(:agent_and_customer) }
+
+        it_behaves_like 'permitted'
+      end
+
+      context 'for Organization access' do
+
+        let(:ticket) do
+          ticket = create(:ticket, customer: customer)
+          create(:ticket_article, ticket: ticket)
+          ticket
+        end
+
+        let(:customer) { create(:customer, organization: organization) }
+
+        context 'when Organization is shared' do
+          let(:organization) { create(:organization, shared: true) }
+
+          context 'for unrelated Agent' do
+            let(:current_user) { create(:agent) }
+
+            it_behaves_like 'no permission'
+          end
+
+          context 'for Agent in same Organization' do
+            let(:current_user) { create(:agent_and_customer, organization: organization) }
+
+            it_behaves_like 'permitted'
+          end
+
+          context 'for Customer of Ticket' do
+            let(:current_user) { customer }
+
+            it_behaves_like 'permitted'
+          end
+        end
+
+        context 'when Organization is not shared' do
+          let(:organization) { create(:organization, shared: false) }
+
+          context 'for unrelated Agent' do
+            let(:current_user) { create(:agent) }
+
+            it_behaves_like 'no permission'
+          end
+
+          context 'for Agent in same Organization' do
+            let(:current_user) { create(:agent_and_customer, organization: organization) }
+
+            it_behaves_like 'no permission'
+          end
+
+          context 'for Customer of Ticket' do
+            let(:current_user) { customer }
+
+            it_behaves_like 'permitted'
+          end
+        end
+      end
+    end
+
+    context 'with searchindex', searchindex: true do
+
+      include_examples 'search permissions' do
+        before do
+          configure_elasticsearch(required: true, rebuild: true)
+        end
+      end
+    end
+
+    context 'without searchindex' do
+      include_examples 'search permissions'
+    end
+  end
+
   describe 'Callbacks & Observers -' do
     describe 'NULL byte handling (via ChecksAttributeValuesAndLength concern):' do
       it 'removes them from title on creation, if necessary (postgres doesn’t like them)' do
@@ -812,9 +1015,9 @@ RSpec.describe Ticket, type: :model do
     describe 'Touching associations on update:' do
       subject(:ticket) { create(:ticket, customer: customer) }
 
-      let(:customer) { create(:customer_user, organization: organization) }
+      let(:customer) { create(:customer, organization: organization) }
       let(:organization) { create(:organization) }
-      let(:other_customer) { create(:customer_user, organization: other_organization) }
+      let(:other_customer) { create(:customer, organization: other_organization) }
       let(:other_organization) { create(:organization) }
 
       context 'on creation' do
@@ -913,6 +1116,27 @@ RSpec.describe Ticket, type: :model do
           .to(false)
       end
 
+      it 'destroys all related dependencies' do
+        refs_known = { 'Ticket::Article'        => { 'ticket_id'=>1 },
+                       'Ticket::TimeAccounting' => { 'ticket_id'=>1 },
+                       'Ticket::Flag'           => { 'ticket_id'=>1 } }
+
+        ticket     = create(:ticket)
+        article    = create(:ticket_article, ticket: ticket)
+        accounting = create(:ticket_time_accounting, ticket: ticket)
+        flag       = create(:ticket_flag, ticket: ticket)
+
+        refs_ticket = Models.references('Ticket', ticket.id, true)
+        expect(refs_ticket).to eq(refs_known)
+
+        ticket.destroy
+
+        expect { ticket.reload }.to raise_exception(ActiveRecord::RecordNotFound)
+        expect { article.reload }.to raise_exception(ActiveRecord::RecordNotFound)
+        expect { accounting.reload }.to raise_exception(ActiveRecord::RecordNotFound)
+        expect { flag.reload }.to raise_exception(ActiveRecord::RecordNotFound)
+      end
+
       context 'when ticket is generated from email (with attachments)' do
         subject(:ticket) { Channel::EmailParser.new.process({}, raw_email).first }
 
@@ -927,7 +1151,7 @@ RSpec.describe Ticket, type: :model do
 
         context 'and subsequently destroyed' do
           it 'deletes all related attachments' do
-            ticket  # create ticket
+            ticket # create ticket
 
             expect { ticket.destroy }
               .to change(Store, :count).by(-2)
@@ -937,7 +1161,7 @@ RSpec.describe Ticket, type: :model do
         end
 
         context 'and a duplicate ticket is generated from the same email' do
-          before { ticket }  # create ticket
+          before { ticket } # create ticket
 
           let(:duplicate) { Channel::EmailParser.new.process({}, raw_email).first }
 
@@ -950,7 +1174,7 @@ RSpec.describe Ticket, type: :model do
 
           context 'when only the duplicate ticket is destroyed' do
             it 'deletes only the duplicate attachments' do
-              duplicate  # create ticket
+              duplicate # create ticket
 
               expect { duplicate.destroy }
                 .to change(Store, :count).by(-2)

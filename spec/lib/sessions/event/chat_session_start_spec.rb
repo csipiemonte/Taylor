@@ -14,7 +14,7 @@ RSpec.describe Sessions::Event::ChatSessionStart do
     )
   end
   let!(:agent) do
-    agent = create(:agent_user, preferences: { chat: { active: { chat.id.to_s => 'on' } } })
+    agent = create(:agent, preferences: { chat: { active: { chat.id.to_s => 'on' } } })
     file = File.open('test/data/image/1000x1000.png', 'rb')
     contents = file.read
     avatar = Avatar.add(
@@ -35,7 +35,7 @@ RSpec.describe Sessions::Event::ChatSessionStart do
     agent.save!
     agent
   end
-  let!(:customer) { create(:customer_user) }
+  let!(:customer) { create(:customer) }
   let(:subject_as_agent) do
     Sessions.create(client_id, { 'id' => agent.id }, {})
     Sessions.queue(client_id)
@@ -77,10 +77,10 @@ RSpec.describe Sessions::Event::ChatSessionStart do
         messages = Sessions.queue(client_id)
         expect(messages.count).to eq(1)
         expect(messages).to eq([
-                                 'event' => 'chat_error',
-                                 'data'  => {
-                                   'state' => 'no_permission'
-                                 }
+                                 { 'event' => 'chat_error',
+                                   'data'  => {
+                                     'state' => 'no_permission'
+                                   } }
                                ])
       end
     end

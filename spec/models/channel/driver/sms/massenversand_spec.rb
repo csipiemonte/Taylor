@@ -50,7 +50,7 @@ RSpec.describe Channel::Driver::Sms::Massenversand do
     context 'when receiver is blocked' do
       let(:body) { 'blocked receiver ()' }
 
-      it 'raises RuntimeError' do
+      it 'raises RuntimeError' do # rubocop:disable RSpec/MultipleExpectations
         expect { instance.send(channel.options, { recipient: receiver_number, message: message_body }) }.to raise_error { |error|
           expect(error.message).not_to include(body)
         }

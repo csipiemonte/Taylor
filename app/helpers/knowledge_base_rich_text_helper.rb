@@ -22,9 +22,8 @@ module KnowledgeBaseRichTextHelper
       end
     end
 
-    parsed = Loofah.scrub_fragment(input, scrubber).to_s.html_safe # rubocop:disable Rails/OutputSafety
+    Loofah.scrub_fragment(input, scrubber).to_s.html_safe # rubocop:disable Rails/OutputSafety
 
-    parsed
   end
 
   def prepare_rich_text_videos(input)
@@ -43,7 +42,7 @@ module KnowledgeBaseRichTextHelper
               "https://player.vimeo.com/video/#{settings[:id]}"
             end
 
-      return match unless url
+      return match if !url
 
       "<div class='videoWrapper'><iframe id='#{settings[:provider]}#{settings[:id]}' type='text/html' src='#{url}' frameborder='0'></iframe></div>"
     end

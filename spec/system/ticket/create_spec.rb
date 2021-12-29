@@ -4,17 +4,17 @@ require 'system/examples/text_modules_examples'
 
 RSpec.describe 'Ticket Create', type: :system do
   context 'when applying ticket templates' do
-    let(:agent) { create(:agent_user, groups: [permitted_group]) }
+    let(:agent) { create(:agent, groups: [permitted_group]) }
     let(:permitted_group) { create(:group) }
     let(:unpermitted_group) { create(:group) }
     let!(:template) { create(:template, :dummy_data, group: unpermitted_group, owner: agent) }
 
     # Regression test for issue #2424 - Unavailable ticket template attributes get applied
-    it 'unavailable attributes do not get applied', authenticated: -> { agent } do
+    it 'unavailable attributes do not get applied', authenticated_as: :agent do
       visit 'ticket/create'
 
       use_template(template)
-      expect(page).not_to have_selector 'select[name="group_id"]'
+      expect(page).to have_no_selector 'select[name="group_id"]'
     end
   end
 
@@ -22,14 +22,15 @@ RSpec.describe 'Ticket Create', type: :system do
     include_examples 'text modules', path: 'ticket/create'
   end
 
-  context 'S/MIME' do
-
-    prepend_before do
+  context 'S/MIME', authenticated_as: :authenticate do
+    def authenticate
       Setting.set('smime_integration', true)
+      current_user
     end
 
     context 'no certificate present' do
-      let!(:template) { create(:template, :dummy_data) }
+      let!(:template)    { create(:template, :dummy_data) }
+      let(:current_user) { true }
 
       it 'has no security selections' do
         visit 'ticket/create'
@@ -37,16 +38,16 @@ RSpec.describe 'Ticket Create', type: :system do
         within(:active_content) do
           use_template(template)
 
-          expect(page).not_to have_css('div.js-securityEncrypt.btn--active', wait: 5)
-          expect(page).not_to have_css('div.js-securitySign.btn--active', wait: 5)
+          expect(page).to have_no_css('div.js-securityEncrypt.btn--active')
+          expect(page).to have_no_css('div.js-securitySign.btn--active')
           click '.js-submit'
 
           expect(page).to have_css('.ticket-article-item', count: 1)
 
           open_article_meta
 
-          expect(page).not_to have_css('span', text: 'Signed')
-          expect(page).not_to have_css('span', text: 'Encrypted')
+          expect(page).to have_no_css('span', text: 'Signed')
+          expect(page).to have_no_css('span', text: 'Encrypted')
 
           security_result = Ticket::Article.last.preferences['security']
           expect(security_result['encryption']['success']).to be nil
@@ -55,14 +56,15 @@ RSpec.describe 'Ticket Create', type: :system do
       end
     end
 
-    context 'private key configured', authenticated: -> { agent } do
+    context 'private key configured' do
+      let(:current_user) { agent }
       let!(:template) { create(:template, :dummy_data, group: group, owner: agent, customer: customer) }
 
       let(:system_email_address) { 'smime1@example.com' }
       let(:email_address) { create(:email_address, email: system_email_address) }
       let(:group) { create(:group, email_address: email_address) }
       let(:agent_groups) { [group] }
-      let(:agent) { create(:agent_user, groups: agent_groups) }
+      let(:agent) { create(:agent, groups: agent_groups) }
 
       before do
         create(:smime_certificate, :with_private, fixture: system_email_address)
@@ -71,7 +73,7 @@ RSpec.describe 'Ticket Create', type: :system do
       context 'recipient certificate present' do
 
         let(:recipient_email_address) { 'smime2@example.com' }
-        let(:customer) { create(:customer_user, email: recipient_email_address) }
+        let(:customer) { create(:customer, email: recipient_email_address) }
 
         before do
           create(:smime_certificate, fixture: recipient_email_address)
@@ -97,8 +99,8 @@ RSpec.describe 'Ticket Create', type: :system do
 
             open_article_meta
 
-            expect(page).not_to have_css('span', text: 'Signed')
-            expect(page).not_to have_css('span', text: 'Encrypted')
+            expect(page).to have_no_css('span', text: 'Signed')
+            expect(page).to have_no_css('span', text: 'Encrypted')
 
             security_result = Ticket::Article.last.preferences['security']
             expect(security_result['encryption']['success']).to be nil
@@ -126,7 +128,7 @@ RSpec.describe 'Ticket Create', type: :system do
             open_article_meta
 
             expect(page).to have_css('span', text: 'Signed')
-            expect(page).not_to have_css('span', text: 'Encrypted')
+            expect(page).to have_no_css('span', text: 'Encrypted')
 
             security_result = Ticket::Article.last.preferences['security']
             expect(security_result['encryption']['success']).to be nil
@@ -153,7 +155,7 @@ RSpec.describe 'Ticket Create', type: :system do
 
             open_article_meta
 
-            expect(page).not_to have_css('span', text: 'Signed')
+            expect(page).to have_no_css('span', text: 'Signed')
             expect(page).to have_css('span', text: 'Encrypted')
 
             security_result = Ticket::Article.last.preferences['security']

@@ -98,7 +98,7 @@ module ZammadSpecSupportRequest
   # @see FactoryBot#attributes_for
   #
   # @example
-  #  attributes_params_for(:admin_user, email: 'custom@example.com')
+  #  attributes_params_for(:admin, email: 'custom@example.com')
   #  # => {firstname: 'Nicole', email: 'custom@example.com', ...}
   #
   # @return [Hash{Symbol => <String, Array, Hash>}] request cleaned attributes
@@ -145,15 +145,11 @@ RSpec.configure do |config|
   #
   # In order for this to work, you must define the user in a `let` block first:
   #
-  #     let(:user) { create(:customer_user) }
+  #     let(:user) { create(:customer) }
   #
-  config.before(:each, :authenticated_as) do |example|
-    @current_user = if example.metadata[:authenticated_as].is_a? Proc
-                      instance_exec(&example.metadata[:authenticated_as])
-                    else
-                      create(*Array(example.metadata[:authenticated_as]))
-                    end
+  config.before(:each, :authenticated_as, type: :request) do |example|
+    user = authenticated_as_get_user example.metadata[:authenticated_as], return_type: :user
 
-    authenticated_as @current_user unless @current_user.nil?
+    authenticated_as user if user
   end
 end

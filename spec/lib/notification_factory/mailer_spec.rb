@@ -6,7 +6,7 @@ RSpec.describe NotificationFactory::Mailer do
     context 'for postmaster oversized mail' do
       let(:raw_incoming_mail) { File.read(Rails.root.join('test/data/mail/mail010.box')) }
 
-      let(:parsed_incoming_mail)  { Channel::EmailParser.new.parse raw_incoming_mail }
+      let(:parsed_incoming_mail) { Channel::EmailParser.new.parse raw_incoming_mail }
 
       let(:incoming_mail) do
         mail = OpenStruct.new
@@ -101,7 +101,7 @@ RSpec.describe NotificationFactory::Mailer do
     end
 
     context 'recipient with email address' do
-      let(:user) { create(:agent_user, email: 'somebody@example.com') }
+      let(:user) { create(:agent, email: 'somebody@example.com') }
 
       it 'returns a Mail::Message' do
         expect( result ).to be_kind_of(Mail::Message)
@@ -109,7 +109,7 @@ RSpec.describe NotificationFactory::Mailer do
     end
 
     context 'recipient without email address' do
-      let(:user) { create(:agent_user, email: '') }
+      let(:user) { create(:agent, email: '') }
 
       it 'raises Exceptions::UnprocessableEntity' do
         expect { result }.to raise_error(Exceptions::UnprocessableEntity)

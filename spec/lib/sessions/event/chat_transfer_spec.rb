@@ -15,9 +15,9 @@ RSpec.describe Sessions::Event::ChatTransfer do
     )
   end
   let!(:agent) do
-    create(:agent_user, preferences: { chat: { active: { chat.id.to_s => 'on' } } })
+    create(:agent, preferences: { chat: { active: { chat.id.to_s => 'on' } } })
   end
-  let!(:customer) { create(:customer_user) }
+  let!(:customer) { create(:customer) }
   let(:subject_as_agent) do
     Sessions.create(client_id, { 'id' => agent.id }, {})
     Sessions.queue(client_id)
@@ -53,10 +53,10 @@ RSpec.describe Sessions::Event::ChatTransfer do
         messages = Sessions.queue(client_id)
         expect(messages.count).to eq(1)
         expect(messages).to eq([
-                                 'event' => 'chat_error',
-                                 'data'  => {
-                                   'state' => 'no_permission'
-                                 }
+                                 { 'event' => 'chat_error',
+                                   'data'  => {
+                                     'state' => 'no_permission'
+                                   } }
                                ])
       end
     end

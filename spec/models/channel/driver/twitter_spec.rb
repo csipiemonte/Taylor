@@ -568,6 +568,35 @@ RSpec.describe Channel::Driver::Twitter do
             expect(Ticket::Article.last.attachments).to be_one
           end
         end
+
+        context 'when message is a retweet' do
+          let(:payload_file) { Rails.root.join('test/data/twitter/webhook_events/tweet_create-retweet.yml') }
+
+          context 'and "conversion of retweets" is enabled' do
+            before do
+              channel.options['sync']['track_retweets'] = true
+              channel.save
+            end
+
+            it 'creates a new article' do
+              expect { channel.process(payload) }
+                .to change(Ticket::Article, :count).by(1)
+                .and change { Ticket::Article.exists?(article_attributes) }.to(true)
+            end
+          end
+
+          context 'and "conversion of retweets" is disabled' do
+            before do
+              channel.options['sync']['track_retweets'] = false
+              channel.save
+            end
+
+            it 'does not create a new article' do
+              expect { channel.process(payload) }
+                .not_to change(Ticket::Article, :count)
+            end
+          end
+        end
       end
     end
 
@@ -921,7 +950,7 @@ RSpec.describe Channel::Driver::Twitter do
               tweet_ids.each { |tweet_id| create(:ticket_article, message_id: tweet_id) }
             end
 
-            let(:tweet_ids) { [1222126386334388225, 1222109934923460608] }  # rubocop:disable Style/NumericLiterals
+            let(:tweet_ids) { [1222126386334388225, 1222109934923460608] } # rubocop:disable Style/NumericLiterals
 
             it 'does not import duplicates' do
               expect { channel.fetch }.not_to change(Ticket::Article, :count)
@@ -970,7 +999,7 @@ RSpec.describe Channel::Driver::Twitter do
                   # Run BG job (Why not use Scheduler.worker?
                   # It led to hangs & failures elsewhere in test suite.)
                   Thread.new do
-                    sleep 5  # simulate other bg jobs holding up the queue
+                    sleep 5 # simulate other bg jobs holding up the queue
                     twitter_job.invoke_job
                   end.tap { example.run }.join
                 end

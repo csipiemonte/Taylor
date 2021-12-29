@@ -5,11 +5,11 @@ module Channel::Filter::SenderIsSystemAddress
   def self.run(_channel, mail)
 
     # if attributes already set by header
-    return if mail['x-zammad-ticket-create-article-sender'.to_sym]
-    return if mail['x-zammad-article-sender'.to_sym]
+    return if mail[:'x-zammad-ticket-create-article-sender']
+    return if mail[:'x-zammad-article-sender']
 
     # check if sender address is system
-    form = 'raw-from'.to_sym
+    form = :'raw-from'
     return if mail[form].blank?
     return if mail[:to].blank?
 
@@ -19,10 +19,10 @@ module Channel::Filter::SenderIsSystemAddress
 
       items = mail[form].addrs
       items.each do |item|
-        next if !EmailAddress.find_by(email: item.address.downcase)
+        next if !EmailAddress.exists?(email: item.address.downcase)
 
-        mail['x-zammad-ticket-create-article-sender'.to_sym] = 'Agent'
-        mail['x-zammad-article-sender'.to_sym] = 'Agent'
+        mail[:'x-zammad-ticket-create-article-sender'] = 'Agent'
+        mail[:'x-zammad-article-sender']               = 'Agent'
         return true
       end
     rescue => e
@@ -37,8 +37,20 @@ module Channel::Filter::SenderIsSystemAddress
       return if !user
       return if !user.permissions?('ticket.agent')
 
-      mail['x-zammad-ticket-create-article-sender'.to_sym] = 'Agent'
-      mail['x-zammad-article-sender'.to_sym] = 'Agent'
+      mail[:'x-zammad-ticket-create-article-sender'] = 'Agent'
+      mail[:'x-zammad-article-sender']               = 'Agent'
+
+      # if the agent is also customer of the ticket then
+      # we need to set the sender as customer.
+      ticket_id = mail[:'x-zammad-ticket-id']
+      if ticket_id.present?
+        ticket = Ticket.lookup(id: ticket_id)
+
+        if ticket.present? && ticket.customer_id == user.id
+          mail[:'x-zammad-ticket-create-article-sender'] = 'Customer'
+          mail[:'x-zammad-article-sender']               = 'Customer'
+        end
+      end
       return true
     rescue => e
       Rails.logger.error 'SenderIsSystemAddress: ' + e.inspect

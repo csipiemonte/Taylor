@@ -177,7 +177,7 @@ RSpec.describe Job, type: :model do
           end
 
           it 'updates #next_run_at' do
-            travel_to(Time.current.last_week)  # force new value for #next_run_at
+            travel_to(Time.current.last_week) # force new value for #next_run_at
 
             expect { job.run }.to change { job.reload.next_run_at }
           end
@@ -194,7 +194,7 @@ RSpec.describe Job, type: :model do
             end
 
             it 'updates #next_run_at' do
-              travel_to(Time.current.last_week)  # force new value for #next_run_at
+              travel_to(Time.current.last_week) # force new value for #next_run_at
 
               expect { job.run }.to change { job.reload.next_run_at }
             end
@@ -204,7 +204,7 @@ RSpec.describe Job, type: :model do
 
       context 'when job has pre_condition:current_user.id in selector' do
         let!(:matching_ticket) { create(:ticket, owner_id: 1) }
-        let!(:nonmatching_ticket) { create(:ticket, owner_id: create(:agent_user).id) }
+        let!(:nonmatching_ticket) { create(:ticket, owner_id: create(:agent).id) }
 
         let(:condition) do
           {
@@ -218,7 +218,7 @@ RSpec.describe Job, type: :model do
         end
 
         before do
-          UserInfo.current_user_id = create(:admin_user).id
+          UserInfo.current_user_id = create(:admin).id
           job
           UserInfo.current_user_id = nil
         end

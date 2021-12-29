@@ -324,7 +324,7 @@ returns
     # find ticket or create one
     state_ids        = Ticket::State.where(name: %w[closed merged removed]).pluck(:id)
     possible_tickets = Ticket.where(customer_id: user.id).where.not(state_id: state_ids).order(:updated_at)
-    ticket           = possible_tickets.find_each.find { |possible_ticket| possible_ticket.preferences[:channel_id] == channel.id  }
+    ticket           = possible_tickets.find_each.find { |possible_ticket| possible_ticket.preferences[:channel_id] == channel.id }
 
     if ticket
       # check if title need to be updated
@@ -705,7 +705,7 @@ returns
 
     # prevent multiple update
     if !params[:edited_message]
-      return if Ticket::Article.find_by(message_id: Telegram.message_id(params))
+      return if Ticket::Article.exists?(message_id: Telegram.message_id(params))
     end
 
     # update article
@@ -732,7 +732,7 @@ returns
       # get the last ticket of customer which is not closed yet, and close it
       state_ids        = Ticket::State.where(name: %w[closed merged removed]).pluck(:id)
       possible_tickets = Ticket.where(customer_id: user.id).where.not(state_id: state_ids).order(:updated_at)
-      ticket           = possible_tickets.find_each.find { |possible_ticket| possible_ticket.preferences[:channel_id] == channel.id  }
+      ticket           = possible_tickets.find_each.find { |possible_ticket| possible_ticket.preferences[:channel_id] == channel.id }
 
       return if !ticket
 

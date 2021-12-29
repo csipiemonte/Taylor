@@ -2,11 +2,11 @@ require 'rails_helper'
 
 RSpec.describe 'Integration SMIME', type: :request do
 
-  let(:admin_user) { create(:admin_user) }
+  let(:admin) { create(:admin) }
   let(:email_address) { 'smime1@example.com' }
 
   before do
-    authenticated_as(admin_user)
+    authenticated_as(admin)
   end
 
   describe '/integration/smime/certificate' do
@@ -35,7 +35,7 @@ RSpec.describe 'Integration SMIME', type: :request do
 
       it 'adds certificate by file' do
         expect do
-          post endpoint, params: { file: Rack::Test::UploadedFile.new(certificate_path, 'text/plain', true)  }
+          post endpoint, params: { file: Rack::Test::UploadedFile.new(certificate_path, 'text/plain', true) }
         end.to change(SMIMECertificate, :count).by(1)
 
         expect(response).to have_http_status(:ok)

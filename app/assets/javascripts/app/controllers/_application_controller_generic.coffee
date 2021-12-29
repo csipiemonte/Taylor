@@ -12,6 +12,7 @@ class App.ControllerGenericNew extends App.ControllerModal
       params:    @item
       screen:    @screen || 'edit'
       autofocus: true
+      handlers: @handlers
     )
     @controller.form
 
@@ -57,10 +58,11 @@ class App.ControllerGenericEdit extends App.ControllerModal
     @head = @pageData.head || @pageData.object
 
     @controller = new App.ControllerForm(
-      model:      App[ @genericObject ]
-      params:     @item
-      screen:     @screen || 'edit'
-      autofocus:  true
+      model:     App[ @genericObject ]
+      params:    @item
+      screen:    @screen || 'edit'
+      autofocus: true
+      handlers:  @handlers
     )
     @controller.form
 
@@ -645,11 +647,17 @@ class App.GenericHistory extends App.ControllerModal
         content = "#{ @T( item.type ) } #{ @T( 'sent to' ) } '#{ item.value_to }'"
       else if item.type is 'received_merge'
         ticket = App.Ticket.find( item.id_from )
-        ticket_link = "<a href=\"#ticket/zoom/#{ item.id_from }\">##{ ticket.number }</a>"
+        ticket_link = if ticket
+                        "<a href=\"#ticket/zoom/#{ item.id_from }\">##{ ticket.number }</a>"
+                      else
+                        item.value_from
         content = "#{ @T( 'Ticket' ) } #{ ticket_link } #{ @T( 'was merged into this ticket' ) }"
       else if item.type is 'merged_into'
         ticket = App.Ticket.find( item.id_to )
-        ticket_link = "<a href=\"#ticket/zoom/#{ item.id_to }\">##{ ticket.number }</a>"
+        ticket_link = if ticket
+                        "<a href=\"#ticket/zoom/#{ item.id_to }\">##{ ticket.number }</a>"
+                      else
+                        item.value_to
         content = "#{ @T( 'This ticket was merged into' ) } #{ @T( 'ticket' ) } #{ ticket_link }"
       else
         content = "#{ @T( item.type ) } #{ @T(item.object) } "

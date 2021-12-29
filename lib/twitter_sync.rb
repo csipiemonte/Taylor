@@ -480,7 +480,8 @@ create a tweet or direct message from an article
   def from_article(article)
 
     tweet = nil
-    if article[:type] == 'twitter direct-message'
+    case article[:type]
+    when 'twitter direct-message'
 
       Rails.logger.debug { "Create twitter direct message from article to '#{article[:to]}'..." }
 
@@ -509,7 +510,7 @@ create a tweet or direct message from an article
 
       tweet = Twitter::REST::Request.new(@client, :json_post, '/1.1/direct_messages/events/new.json', data).perform
 
-    elsif article[:type] == 'twitter status'
+    when 'twitter status'
 
       Rails.logger.debug { 'Create tweet from article...' }
 
@@ -692,7 +693,7 @@ process webhook messages from twitter
       @payload['direct_message_events'].each do |item|
         next if item['type'] != 'message_create'
 
-        next if Ticket::Article.find_by(message_id: item['id'])
+        next if Ticket::Article.exists?(message_id: item['id'])
 
         user = to_user_webhook(item['message_create']['sender_id'])
         ticket = to_ticket(item, user, channel.options[:sync][:direct_messages][:group_id], channel)
@@ -702,7 +703,8 @@ process webhook messages from twitter
 
     if @payload['tweet_create_events'].present?
       @payload['tweet_create_events'].each do |item|
-        next if Ticket::Article.find_by(message_id: item['id'])
+        next if Ticket::Article.exists?(message_id: item['id'])
+        next if item.key?('retweeted_status') && !channel.options.dig('sync', 'track_retweets')
 
         # check if it's mention
         group_id = nil

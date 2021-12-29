@@ -1,6 +1,8 @@
 # Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
 
 class Token < ApplicationModel
+  include CanBeAuthorized
+
   before_create :generate_token
   belongs_to    :user, optional: true
   store         :preferences
@@ -99,15 +101,28 @@ cleanup old token
     true
   end
 
-  def permissions?(permissions)
-    return false if !effective_user.permissions?(permissions)
-    return false if preferences[:permission].blank?
+  def permissions
+    Permission.where(
+      name:   Array(preferences[:permission]),
+      active: true,
+    )
+  end
 
-    Array(permissions).any? do |parentless|
-      Permission.with_parents(parentless).any? do |permission|
-        preferences[:permission].include?(permission)
-      end
-    end
+  def permissions?(names)
+    return false if !effective_user.permissions?(names)
+
+    super(names)
+  end
+
+  # allows to evaluate token permissions in context of given user instead of owner
+  # @param [User] user to use as context for the given block
+  # @param block to evaluate in given context
+  def with_context(user:, &block)
+    @effective_user = user
+
+    instance_eval(&block) if block_given?
+  ensure
+    @effective_user = nil
   end
 
   # allows to evaluate token permissions in context of given user instead of owner

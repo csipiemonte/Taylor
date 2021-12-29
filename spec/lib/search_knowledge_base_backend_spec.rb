@@ -3,6 +3,57 @@ require 'rails_helper'
 RSpec.describe SearchKnowledgeBaseBackend do
   include_context 'basic Knowledge Base'
 
+  let(:instance) { described_class.new options }
+  let(:user)     { create(:admin) }
+
+  let(:options) do
+    {
+      knowledge_base: knowledge_base,
+      locale:         primary_locale,
+      scope:          nil
+    }
+  end
+
+  context 'with ES', searchindex: true do
+    before do
+      configure_elasticsearch(required: true, rebuild: true) do
+        published_answer
+      end
+    end
+
+    describe '#search' do
+      context 'when highlight enabled' do
+        let(:options) do
+          {
+            knowledge_base:    knowledge_base,
+            locale:            primary_locale,
+            scope:             nil,
+            highlight_enabled: true
+          }
+        end
+
+        # https://github.com/zammad/zammad/issues/3070
+        it 'lists item with an attachment' do
+          expect(instance.search('Hello World', user: user)).to be_present
+        end
+      end
+    end
+  end
+
+  context 'with successful API response' do
+    shared_examples 'verify response' do |elasticsearch:|
+      it "ID is an Integer when ES=#{elasticsearch}", searchindex: elasticsearch do
+        published_answer
+        configure_elasticsearch(required: true, rebuild: true) if elasticsearch
+        first_result = instance.search(published_answer.translations.first.title, user: user).first
+        expect(first_result.dig(:id)).to be_a(Integer)
+      end
+    end
+
+    include_examples 'verify response', elasticsearch: true
+    include_examples 'verify response', elasticsearch: false
+  end
+
   context 'with user trait and object state' do
     def expected_visibility_instance(ui_identifier)
       options = {

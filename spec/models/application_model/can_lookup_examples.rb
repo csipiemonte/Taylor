@@ -38,7 +38,7 @@ RSpec.shared_examples 'ApplicationModel::CanLookup' do
       end
 
       describe "cache storage by #{attribute}" do
-        context 'inside a DB transaction' do  # provided by default RSpec config
+        context 'inside a DB transaction' do # provided by default RSpec config
           it 'leaves the cache untouched' do
             expect { described_class.lookup(attribute => instance.send(attribute)) }
               .not_to change { described_class.cache_get(instance.send(attribute)) }
@@ -61,6 +61,13 @@ RSpec.shared_examples 'ApplicationModel::CanLookup' do
               expect { described_class.lookup(attribute => instance.send(attribute)) }
                 .to change { described_class.cache_get(instance.send(attribute)) }
                 .to(instance)
+            end
+          end
+
+          if described_class.type_for_attribute(attribute).type == :string
+            # https://github.com/zammad/zammad/issues/3121
+            it 'retrieves results from cache with value as symbol' do
+              expect(described_class.lookup(attribute => instance.send(attribute).to_sym)).to be_present
             end
           end
 

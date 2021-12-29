@@ -515,10 +515,9 @@ curl http://localhost/api/v1/users/password_reset_verify -v -u #{login}:#{passwo
       return
     end
 
-    # check password policy
-    result = password_policy(params[:password])
-    if result != true
-      render json: { message: 'failed', notice: result }, status: :ok
+    result = PasswordPolicy.new(params[:password])
+    if !result.valid?
+      render json: { message: 'failed', notice: result.error }, status: :ok
       return
     end
 
@@ -583,10 +582,9 @@ curl http://localhost/api/v1/users/password_change -v -u #{login}:#{password} -H
       return
     end
 
-    # check password policy
-    result = password_policy(params[:password_new])
-    if result != true
-      render json: { message: 'failed', notice: result }, status: :ok
+    result = PasswordPolicy.new(params[:password_new])
+    if !result.valid?
+      render json: { message: 'failed', notice: result.error }, status: :ok
       return
     end
 
@@ -888,18 +886,176 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
 
   private
 
-  def password_policy(password)
-    if Setting.get('password_min_size').to_i > password.length
-      return ['Invalid password, it must be at least %s characters long!', Setting.get('password_min_size')]
-    end
-    if Setting.get('password_need_digit').to_i == 1 && password !~ /\d/
-      return ['Invalid password, it must contain at least 1 digit!']
-    end
-    if Setting.get('password_min_2_lower_2_upper_characters').to_i == 1 && ( password !~ /[A-Z].*[A-Z]/ || password !~ /[a-z].*[a-z]/ )
-      return ['Invalid password, it must contain at least 2 lowercase and 2 uppercase characters!']
+  def clean_user_params
+    User.param_cleanup(User.association_name_to_id_convert(params), true)
+  end
+
+  # @summary          Creates a User record with the provided attribute values.
+  # @notes            For creating a user via agent interface
+  #
+  # @parameter        User(required,body) [User] The attribute value structure needed to create a User record.
+  #
+  # @response_message 200 [User] Created User record.
+  # @response_message 401        Invalid session.
+  def create_internal
+    # permission check
+    check_attributes_by_current_user_permission(params)
+
+    user = User.new(clean_user_params)
+    user.associations_from_param(params)
+
+    user.save!
+
+    if params[:invite].present?
+      sleep 5 if ENV['REMOTE_URL'].present?
+      token = Token.create(action: 'PasswordReset', user_id: user.id)
+      NotificationFactory::Mailer.notification(
+        template: 'user_invite',
+        user:     user,
+        objects:  {
+          token:        token,
+          user:         user,
+          current_user: current_user,
+        }
+      )
     end
 
-    true
+    if response_expand?
+      user = user.reload.attributes_with_association_names
+      user.delete('password')
+      render json: user, status: :created
+      return
+    end
+
+    if response_full?
+      result = {
+        id:     user.id,
+        assets: user.assets({}),
+      }
+      render json: result, status: :created
+      return
+    end
+
+    user = user.reload.attributes_with_association_ids
+    user.delete('password')
+    render json: user, status: :created
+  end
+
+  # @summary          Creates a User record with the provided attribute values.
+  # @notes            For creating a user via public signup form
+  #
+  # @parameter        User(required,body) [User] The attribute value structure needed to create a User record.
+  #
+  # @response_message 200 [User] Created User record.
+  # @response_message 401        Invalid session.
+  def create_signup
+    # check if feature is enabled
+    if !Setting.get('user_create_account')
+      raise Exceptions::UnprocessableEntity, 'Feature not enabled!'
+    end
+
+    # check signup option only after admin account is created
+    if !params[:signup]
+      raise Exceptions::UnprocessableEntity, 'Only signup with not authenticate user possible!'
+    end
+
+    # check if user already exists
+    if clean_user_params[:email].blank?
+      raise Exceptions::UnprocessableEntity, 'Attribute \'email\' required!'
+    end
+
+    email_taken_by = User.find_by email: clean_user_params[:email].downcase.strip
+
+    result = PasswordPolicy.new(clean_user_params[:password])
+    if !result.valid?
+      raise Exceptions::UnprocessableEntity, result.error
+    end
+
+    user = User.new(clean_user_params)
+    user.associations_from_param(params)
+    user.role_ids      = Role.signup_role_ids
+    user.source        = 'signup'
+
+    if email_taken_by # show fake OK response to avoid leaking that email is already in use
+      User.without_callback :validation, :before, :ensure_uniq_email do # skip unique email validation
+        user.valid? # trigger errors raised in validations
+      end
+
+      result = User.password_reset_new_token(email_taken_by.email)
+      NotificationFactory::Mailer.notification(
+        template: 'signup_taken_reset',
+        user:     email_taken_by,
+        objects:  result,
+      )
+
+      render json: { message: 'ok' }, status: :created
+      return
+    end
+
+    UserInfo.ensure_current_user_id do
+      user.save!
+    end
+
+    result = User.signup_new_token(user)
+    NotificationFactory::Mailer.notification(
+      template: 'signup',
+      user:     user,
+      objects:  result,
+    )
+
+    render json: { message: 'ok' }, status: :created
+  end
+
+  # @summary          Creates a User record with the provided attribute values.
+  # @notes            For creating an administrator account when setting up the system
+  #
+  # @parameter        User(required,body) [User] The attribute value structure needed to create a User record.
+  #
+  # @response_message 200 [User] Created User record.
+  # @response_message 401        Invalid session.
+  def create_admin
+    if User.count > 2 # system and example users
+      raise Exceptions::UnprocessableEntity, 'Administrator account already created'
+    end
+
+    # check if user already exists
+    if clean_user_params[:email].blank?
+      raise Exceptions::UnprocessableEntity, 'Attribute \'email\' required!'
+    end
+
+    # check password policy
+    result = PasswordPolicy.new(clean_user_params[:password])
+    if !result.valid?
+      raise Exceptions::UnprocessableEntity, result.error
+    end
+
+    user = User.new(clean_user_params)
+    user.associations_from_param(params)
+    user.role_ids  = Role.where(name: %w[Admin Agent]).pluck(:id)
+    user.group_ids = Group.all.pluck(:id)
+
+    UserInfo.ensure_current_user_id do
+      user.save!
+    end
+
+    Setting.set('system_init_done', true)
+
+    # fetch org logo
+    if user.email.present?
+      Service::Image.organization_suggest(user.email)
+    end
+
+    # load calendar
+    Calendar.init_setup(request.remote_ip)
+
+    # load text modules
+    begin
+      TextModule.load(request.env['HTTP_ACCEPT_LANGUAGE'] || 'en-us')
+    rescue => e
+      logger.error "Unable to load text modules #{request.env['HTTP_ACCEPT_LANGUAGE'] || 'en-us'}: #{e.message}"
+    end
+
+    render json: { message: 'ok' }, status: :created
   end
 
   def clean_user_params

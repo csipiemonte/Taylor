@@ -1773,7 +1773,7 @@ Setting.create_if_not_exists(
       },
     ],
   },
-  state:       6,
+  state:       10,
   preferences: {
     permission: ['admin.security'],
   },
@@ -1798,7 +1798,7 @@ Setting.create_if_not_exists(
       },
     ],
   },
-  state:       0,
+  state:       1,
   preferences: {
     permission: ['admin.security'],
   },
@@ -1824,6 +1824,31 @@ Setting.create_if_not_exists(
     ],
   },
   state:       1,
+  preferences: {
+    permission: ['admin.security'],
+  },
+  frontend:    false
+)
+Setting.create_if_not_exists(
+  title:       'Special character required',
+  name:        'password_need_special_character',
+  area:        'Security::Password',
+  description: 'Password needs to contain at least one special character.',
+  options:     {
+    form: [
+      {
+        display: 'Needed',
+        null:    true,
+        name:    'password_need_special_character',
+        tag:     'select',
+        options: {
+          1 => 'yes',
+          0 => 'no',
+        },
+      },
+    ],
+  },
+  state:       0,
   preferences: {
     permission: ['admin.security'],
   },
@@ -1862,7 +1887,7 @@ Setting.create_if_not_exists(
       },
     ],
   },
-  state:       10,
+  state:       5,
   preferences: {
     permission: ['admin.security'],
   },
@@ -3306,11 +3331,38 @@ Setting.create_if_not_exists(
 
 Setting.create_if_not_exists(
   title:       'Defines postmaster filter.',
-  name:        '0010_postmaster_filter_trusted',
+  name:        '0005_postmaster_filter_trusted',
   area:        'Postmaster::PreFilter',
   description: 'Defines postmaster filter to remove X-Zammad headers from not trusted sources.',
   options:     {},
   state:       'Channel::Filter::Trusted',
+  frontend:    false
+)
+Setting.create_if_not_exists(
+  title:       'Defines postmaster filter.',
+  name:        '0006_postmaster_filter_auto_response_check',
+  area:        'Postmaster::PreFilter',
+  description: 'Defines postmaster filter to identify auto responses to prevent auto replies from Zammad.',
+  options:     {},
+  state:       'Channel::Filter::AutoResponseCheck',
+  frontend:    false
+)
+Setting.create_if_not_exists(
+  title:       'Defines postmaster filter.',
+  name:        '0007_postmaster_filter_follow_up_check',
+  area:        'Postmaster::PreFilter',
+  description: 'Defines postmaster filter to identify follow-ups (based on admin settings).',
+  options:     {},
+  state:       'Channel::Filter::FollowUpCheck',
+  frontend:    false
+)
+Setting.create_if_not_exists(
+  title:       'Defines postmaster filter.',
+  name:        '0008_postmaster_filter_follow_up_merged',
+  area:        'Postmaster::PreFilter',
+  description: 'Defines postmaster filter to identify follow-up ticket for merged tickets.',
+  options:     {},
+  state:       'Channel::Filter::FollowUpMerged',
   frontend:    false
 )
 Setting.create_if_not_exists(
@@ -3360,38 +3412,11 @@ Setting.create_if_not_exists(
 )
 Setting.create_if_not_exists(
   title:       'Defines postmaster filter.',
-  name:        '0020_postmaster_filter_auto_response_check',
-  area:        'Postmaster::PreFilter',
-  description: 'Defines postmaster filter to identify auto responses to prevent auto replies from Zammad.',
-  options:     {},
-  state:       'Channel::Filter::AutoResponseCheck',
-  frontend:    false
-)
-Setting.create_if_not_exists(
-  title:       'Defines postmaster filter.',
   name:        '0030_postmaster_filter_out_of_office_check',
   area:        'Postmaster::PreFilter',
   description: 'Defines postmaster filter to identify out-of-office emails for follow-up detection and keeping current ticket state.',
   options:     {},
   state:       'Channel::Filter::OutOfOfficeCheck',
-  frontend:    false
-)
-Setting.create_if_not_exists(
-  title:       'Defines postmaster filter.',
-  name:        '0100_postmaster_filter_follow_up_check',
-  area:        'Postmaster::PreFilter',
-  description: 'Defines postmaster filter to identify follow-ups (based on admin settings).',
-  options:     {},
-  state:       'Channel::Filter::FollowUpCheck',
-  frontend:    false
-)
-Setting.create_if_not_exists(
-  title:       'Defines postmaster filter.',
-  name:        '0110_postmaster_filter_follow_up_merged',
-  area:        'Postmaster::PreFilter',
-  description: 'Defines postmaster filter to identify follow-up ticket for merged tickets.',
-  options:     {},
-  state:       'Channel::Filter::FollowUpMerged',
   frontend:    false
 )
 Setting.create_if_not_exists(
@@ -3681,10 +3706,10 @@ Setting.create_if_not_exists(
   frontend:    false
 )
 Setting.create_if_not_exists(
-  title:       'Check_MK integration',
+  title:       'Checkmk integration',
   name:        'check_mk_integration',
   area:        'Integration::Switch',
-  description: 'Defines if Check_MK (http://mathias-kettner.com/check_mk.html) is enabled or not.',
+  description: 'Defines if Checkmk (https://checkmk.com/) is enabled or not.',
   options:     {
     form: [
       {
@@ -3739,7 +3764,7 @@ Setting.create_if_not_exists(
       {
         display: '',
         null:    true,
-        name:    'check_mk_auto_close',
+        name:    'checkmk_auto_close',
         tag:     'boolean',
         options: {
           true  => 'yes',
@@ -3779,10 +3804,10 @@ Setting.create_if_not_exists(
   frontend:    false
 )
 Setting.create_if_not_exists(
-  title:       'Check_MK tolen',
+  title:       'Checkmk token',
   name:        'check_mk_token',
   area:        'Core',
-  description: 'Defines the Check_MK token for allowing updates.',
+  description: 'Defines the Checkmk token for allowing updates.',
   options:     {},
   state:       ENV['CHECK_MK_TOKEN'] || SecureRandom.hex(16),
   preferences: {
@@ -4211,6 +4236,19 @@ Setting.create_if_not_exists(
     permission: ['admin.integration'],
   },
   frontend:    false
+)
+Setting.create_if_not_exists(
+  title:       'cti customer last activity',
+  name:        'cti_customer_last_activity',
+  area:        'Integration::Cti',
+  description: 'Defines the range in seconds of customer activity to trigger the user profile dialog on call.',
+  options:     {},
+  state:       30.days,
+  preferences: {
+    prio:       2,
+    permission: ['admin.integration'],
+  },
+  frontend:    false,
 )
 Setting.create_if_not_exists(
   title:       'Placetel integration',

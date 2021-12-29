@@ -2,19 +2,20 @@ require 'rails_helper'
 
 RSpec.describe 'Ticket zoom', type: :system do
 
-  describe 'owner auto-assignment' do
+  describe 'owner auto-assignment', authenticated_as: :authenticate do
     let!(:ticket) { create(:ticket, group: Group.find_by(name: 'Users'), state: Ticket::State.find_by(name: 'new')) }
     let!(:session_user) { User.find_by(login: 'master@example.com') }
 
     context 'for agent disabled' do
-      before do
+      def authenticate
         Setting.set('ticket_auto_assignment', false)
         Setting.set('ticket_auto_assignment_selector', { condition: { 'ticket.state_id' => { operator: 'is', value: Ticket::State.by_category(:work_on).pluck(:id) } } })
         Setting.set('ticket_auto_assignment_user_ids_ignore', [])
+
+        true
       end
 
       it 'do not assign ticket to current session user' do
-        refresh
         visit "#ticket/zoom/#{ticket.id}"
 
         within(:active_content) do
@@ -27,14 +28,16 @@ RSpec.describe 'Ticket zoom', type: :system do
     end
 
     context 'for agent enabled' do
-      before do
+      def authenticate
         Setting.set('ticket_auto_assignment', true)
         Setting.set('ticket_auto_assignment_selector', { condition: { 'ticket.state_id' => { operator: 'is', value: Ticket::State.by_category(:work_on).pluck(:id) } } })
+        Setting.set('ticket_auto_assignment_user_ids_ignore', setting_user_ids_ignore) if defined?(setting_user_ids_ignore)
+
+        true
       end
 
       context 'with empty "ticket_auto_assignment_user_ids_ignore"' do
         it 'assigns ticket to current session user' do
-          refresh
           visit "#ticket/zoom/#{ticket.id}"
 
           within(:active_content) do
@@ -47,10 +50,9 @@ RSpec.describe 'Ticket zoom', type: :system do
       end
 
       context 'with "ticket_auto_assignment_user_ids_ignore" (as integer)' do
-        it 'assigns ticket not to current session user' do
-          Setting.set('ticket_auto_assignment_user_ids_ignore', session_user.id)
+        let(:setting_user_ids_ignore) { session_user.id }
 
-          refresh
+        it 'assigns ticket not to current session user' do
           visit "#ticket/zoom/#{ticket.id}"
 
           within(:active_content) do
@@ -63,10 +65,9 @@ RSpec.describe 'Ticket zoom', type: :system do
       end
 
       context 'with "ticket_auto_assignment_user_ids_ignore" (as string)' do
-        it 'assigns ticket not to current session user' do
-          Setting.set('ticket_auto_assignment_user_ids_ignore', session_user.id.to_s)
+        let(:setting_user_ids_ignore) { session_user.id.to_s }
 
-          refresh
+        it 'assigns ticket not to current session user' do
           visit "#ticket/zoom/#{ticket.id}"
 
           within(:active_content) do
@@ -79,10 +80,9 @@ RSpec.describe 'Ticket zoom', type: :system do
       end
 
       context 'with "ticket_auto_assignment_user_ids_ignore" (as [integer])' do
-        it 'assigns ticket not to current session user' do
-          Setting.set('ticket_auto_assignment_user_ids_ignore', [session_user.id])
+        let(:setting_user_ids_ignore) { [session_user.id] }
 
-          refresh
+        it 'assigns ticket not to current session user' do
           visit "#ticket/zoom/#{ticket.id}"
 
           within(:active_content) do
@@ -95,10 +95,9 @@ RSpec.describe 'Ticket zoom', type: :system do
       end
 
       context 'with "ticket_auto_assignment_user_ids_ignore" (as [string])' do
-        it 'assigns ticket not to current session user' do
-          Setting.set('ticket_auto_assignment_user_ids_ignore', [session_user.id.to_s])
+        let(:setting_user_ids_ignore) { [session_user.id.to_s] }
 
-          refresh
+        it 'assigns ticket not to current session user' do
           visit "#ticket/zoom/#{ticket.id}"
 
           within(:active_content) do
@@ -111,10 +110,9 @@ RSpec.describe 'Ticket zoom', type: :system do
       end
 
       context 'with "ticket_auto_assignment_user_ids_ignore" and other user ids' do
-        it 'assigns ticket to current session user' do
-          Setting.set('ticket_auto_assignment_user_ids_ignore', [99_999, 999_999])
+        let(:setting_user_ids_ignore) { [99_999, 999_999] }
 
-          refresh
+        it 'assigns ticket to current session user' do
           visit "#ticket/zoom/#{ticket.id}"
 
           within(:active_content) do
@@ -178,14 +176,14 @@ RSpec.describe 'Ticket zoom', type: :system do
     context 'Group without signature' do
 
       let(:ticket) { create(:ticket) }
-      let(:current_user) { create(:agent_user, password: 'test', groups: [ticket.group]) }
+      let(:current_user) { create(:agent, password: 'test', groups: [ticket.group]) }
 
       before do
         # initial article to reply to
         create(:ticket_article, ticket: ticket)
       end
 
-      it 'ensures that text input opens on multiple replies', authenticated: -> { current_user } do
+      it 'ensures that text input opens on multiple replies', authenticated_as: :current_user do
         visit "ticket/zoom/#{ticket.id}"
 
         2.times do |article_offset|
@@ -195,8 +193,8 @@ RSpec.describe 'Ticket zoom', type: :system do
           all('a[data-type=emailReply]').last.click
 
           # wait till input box expands completely
-          find('.attachmentPlaceholder-label').in_fixed_postion
-          expect(page).not_to have_css('.attachmentPlaceholder-hint', wait: 0)
+          find('.attachmentPlaceholder-label').in_fixed_position
+          expect(page).to have_no_css('.attachmentPlaceholder-hint')
 
           find('.articleNewEdit-body').send_keys('Some reply')
           click '.js-submit'
@@ -207,13 +205,19 @@ RSpec.describe 'Ticket zoom', type: :system do
     end
   end
 
-  describe 'delete article', authenticated: -> { user } do
-    let(:admin)       { create :admin, groups: [Group.first] }
-    let(:agent)       { create :agent, groups: [Group.first] }
-    let(:other_agent) { create :agent, groups: [Group.first] }
+  describe 'delete article', authenticated_as: :authenticate do
+    let(:group)       { Group.first }
+    let(:admin)       { create :admin, groups: [group] }
+    let(:agent)       { create :agent, groups: [group] }
+    let(:other_agent) { create :agent, groups: [group] }
     let(:customer)    { create :customer }
-    let(:ticket)      { create :ticket, group: agent.groups.first, customer: customer }
     let(:article)     { send(item) }
+
+    def authenticate
+      Setting.set('ui_ticket_zoom_article_delete_timeframe', setting_delete_timeframe) if defined?(setting_delete_timeframe)
+      article
+      user
+    end
 
     def article_communication
       create_ticket_article(sender_name: 'Agent', internal: false, type_name: 'email', updated_by: customer)
@@ -244,10 +248,13 @@ RSpec.describe 'Ticket zoom', type: :system do
     end
 
     def create_ticket_article(sender_name:, internal:, type_name:, updated_by:)
+      UserInfo.current_user_id = updated_by.id
+
+      ticket = create :ticket, group: group, customer: customer
+
       create(:ticket_article,
              sender_name: sender_name, internal: internal, type_name: type_name, ticket: ticket,
              body: "to be deleted #{offset} #{item}",
-             updated_by_id: updated_by.id, created_by_id: updated_by.id,
              created_at: offset.ago, updated_at: offset.ago)
     end
 
@@ -258,13 +265,11 @@ RSpec.describe 'Ticket zoom', type: :system do
         let(:offset) { 0.minutes }
 
         it 'succeeds' do
-          refresh # make sure user roles are loaded
-
           ensure_websocket do
-            visit "ticket/zoom/#{ticket.id}"
+            visit "ticket/zoom/#{article.ticket.id}"
           end
 
-          within :active_ticket_article, article, wait: 15 do
+          within :active_ticket_article, article do
             click '.js-ArticleAction[data-type=delete]'
           end
 
@@ -280,18 +285,14 @@ RSpec.describe 'Ticket zoom', type: :system do
     context 'verifying permissions matrix' do
       shared_examples 'according to permission matrix' do |item:, expects_visible:, offset:, description:|
         context "looking at #{description} #{item}" do
-          let(:item) { item }
-          let!(:article) {  send(item) }
-
-          let(:offset) { offset }
+          let(:item)    { item }
+          let(:offset)  { offset }
           let(:matcher) { expects_visible ? :have_css : :have_no_css }
 
           it expects_visible ? 'delete button is visible' : 'delete button is not visible' do
-            refresh # make sure user roles are loaded
+            visit "ticket/zoom/#{article.ticket.id}"
 
-            visit "ticket/zoom/#{ticket.id}"
-
-            within :active_ticket_article, article, wait: 15 do
+            within :active_ticket_article, article do
               expect(page).to send(matcher, '.js-ArticleAction[data-type=delete]', wait: 0)
             end
           end
@@ -374,7 +375,7 @@ RSpec.describe 'Ticket zoom', type: :system do
       end
 
       context 'with custom offset' do
-        before { Setting.set 'ui_ticket_zoom_article_delete_timeframe', 6000 }
+        let(:setting_delete_timeframe) { 6_000 }
 
         context 'as admin' do
           let(:user) { admin }
@@ -392,7 +393,7 @@ RSpec.describe 'Ticket zoom', type: :system do
       end
 
       context 'with timeframe as 0' do
-        before { Setting.set 'ui_ticket_zoom_article_delete_timeframe', 0 }
+        let(:setting_delete_timeframe) { 0 }
 
         context 'as agent' do
           let(:user) { agent }
@@ -403,7 +404,7 @@ RSpec.describe 'Ticket zoom', type: :system do
     end
 
     context 'button is hidden on the go' do
-      before         { Setting.set 'ui_ticket_zoom_article_delete_timeframe', 5 }
+      let(:setting_delete_timeframe) { 5 }
 
       let(:user)     { agent }
       let(:item)     { 'article_note_self' }
@@ -411,33 +412,31 @@ RSpec.describe 'Ticket zoom', type: :system do
       let(:offset)   { 0.seconds }
 
       it 'successfully' do
-        refresh # make sure user roles are loaded
-
-        visit "ticket/zoom/#{ticket.id}"
+        visit "ticket/zoom/#{article.ticket.id}"
 
         within :active_ticket_article, article do
           find '.js-ArticleAction[data-type=delete]' # make sure delete button did show up
-          expect(page).to have_no_css('.js-ArticleAction[data-type=delete]', wait: 15)
+          expect(page).to have_no_css('.js-ArticleAction[data-type=delete]')
         end
       end
     end
   end
 
-  context 'S/MIME active', authenticated: -> { agent } do
-
+  context 'S/MIME active', authenticated_as: :authenticate do
     let(:system_email_address) { 'smime1@example.com' }
     let(:email_address) { create(:email_address, email: system_email_address) }
     let(:group) { create(:group, email_address: email_address) }
     let(:agent_groups) { [group] }
-    let(:agent) { create(:agent_user, groups: agent_groups) }
+    let(:agent) { create(:agent, groups: agent_groups) }
 
     let(:sender_email_address) { 'smime2@example.com' }
-    let(:customer) { create(:customer_user, email: sender_email_address) }
+    let(:customer) { create(:customer, email: sender_email_address) }
 
     let!(:ticket) { create(:ticket, group: group, owner: agent, customer: customer) }
 
-    before do
+    def authenticate
       Setting.set('smime_integration', true)
+      agent
     end
 
     context 'received mail' do
@@ -535,20 +534,22 @@ RSpec.describe 'Ticket zoom', type: :system do
           create(:smime_certificate, :with_private, fixture: system_email_address)
 
           visit "#ticket/zoom/#{ticket.id}"
-          expect(page).not_to have_css('.article-content', text: 'somebody with some text')
+          expect(page).to have_no_css('.article-content', text: 'somebody with some text')
           click '.js-securityRetryProcess'
           expect(page).to have_css('.article-content', text: 'somebody with some text')
         end
       end
     end
 
-    context 'replying' do
+    context 'replying', authenticated_as: :setup_and_authenticate do
 
-      before do
+      def setup_and_authenticate
         create(:ticket_article, ticket: ticket, from: customer.email)
 
         create(:smime_certificate, :with_private, fixture: system_email_address)
         create(:smime_certificate, fixture: sender_email_address)
+
+        authenticate
       end
 
       it 'plain' do
@@ -627,13 +628,17 @@ RSpec.describe 'Ticket zoom', type: :system do
 
       let(:smime_config) { {} }
 
-      before do
+      def authenticate
+        Setting.set('smime_integration', true)
+
         Setting.set('smime_config', smime_config)
 
         create(:ticket_article, ticket: ticket, from: customer.email)
 
         create(:smime_certificate, :with_private, fixture: system_email_address)
         create(:smime_certificate, fixture: sender_email_address)
+
+        agent
       end
 
       shared_examples 'security defaults example' do |sign:, encrypt:|
@@ -757,6 +762,292 @@ RSpec.describe 'Ticket zoom', type: :system do
 
           it_behaves_like 'sign and encrypt variations', 'security defaults group change'
         end
+      end
+    end
+  end
+
+  describe 'linking Knowledge Base answer' do
+    include_context 'basic Knowledge Base'
+
+    let(:ticket)      { create :ticket, group: Group.find_by(name: 'Users') }
+    let(:answer)      { published_answer }
+    let(:translation) { answer.translations.first }
+
+    shared_examples 'verify linking' do
+      it 'allows to look up an answer' do
+        visit "#ticket/zoom/#{ticket.id}"
+
+        within :active_content do
+          within '.link_kb_answers' do
+            find('.js-add').click
+
+            find('.js-input').send_keys translation.title
+
+            find(%(li[data-value="#{translation.id}"])).click
+
+            expect(find('.link_kb_answers ol')).to have_text translation.title
+          end
+        end
+      end
+    end
+
+    context 'with ES', searchindex: true, authenticated_as: :authenticate do
+      def authenticate
+        configure_elasticsearch(required: true, rebuild: true) do
+          answer
+        end
+
+        true
+      end
+
+      include_examples 'verify linking'
+    end
+
+    context 'without ES', authenticated_as: :authenticate do
+      def authenticate
+        answer
+        true
+      end
+
+      include_examples 'verify linking'
+    end
+  end
+
+  describe 'forwarding article with an image' do
+    let(:ticket_article_body) do
+      filename = 'squares.png'
+      file     = File.binread(Rails.root.join("spec/fixtures/image/#{filename}"))
+      ext      = File.extname(filename)[1...]
+      base64   = Base64.encode64(file).delete("\n")
+
+      "<img style='width: 1004px; max-width: 100%;' src=\\\"data:image/#{ext};base64,#{base64}\\\"><br>"
+    end
+
+    def current_ticket
+      Ticket.find current_url.split('/').last
+    end
+
+    def create_ticket
+      visit '#ticket/create'
+
+      within :active_content do
+        find('[data-type=email-out]').click
+
+        find('[name=title]').fill_in with: 'Title'
+        find('[name=customer_id_completion]').fill_in with: 'customer@example.com'
+        find('[name=group_id]').select 'Users'
+        find(:richtext).execute_script "this.innerHTML = \"#{ticket_article_body}\""
+        find('.js-submit').click
+      end
+
+      await_empty_ajax_queue
+    end
+
+    def forward
+      within :active_content do
+        click '.js-ArticleAction[data-type=emailForward]'
+        fill_in 'To', with: 'customer@example.com'
+        find('.js-submit').click
+      end
+
+      await_empty_ajax_queue
+    end
+
+    def images_identical?(image_a, image_b)
+      return false if image_a.height != image_b.height
+      return false if image_a.width != image_b.width
+
+      image_a.height.times do |y|
+        image_a.row(y).each_with_index do |pixel, x|
+          return false if pixel != image_b[x, y]
+        end
+      end
+
+      true
+    end
+
+    it 'keeps image intact' do
+      create_ticket
+      forward
+
+      images = current_ticket.articles.map do |article|
+        ChunkyPNG::Image.from_string article.attachments.first.content
+      end
+
+      expect(images_identical?(images.first, images.second)).to be(true)
+    end
+  end
+
+  context 'object manager attribute permission view' do
+    let!(:group_users) { Group.find_by(name: 'Users') }
+
+    shared_examples 'shows attributes and values for agent view and editable' do
+      it 'shows attributes and values for agent view and editable', authenticated_as: :current_user do
+        visit "ticket/zoom/#{ticket.id}"
+        refresh # refresh to have assets generated for ticket
+
+        expect(page).to have_select('state_id', options: ['new', 'open', 'pending reminder', 'pending close', 'closed'])
+        expect(page).to have_select('priority_id')
+        expect(page).to have_select('owner_id')
+        expect(page).to have_css('div.tabsSidebar-tab[data-tab=customer]')
+      end
+    end
+
+    shared_examples 'shows attributes and values for agent view but disabled' do
+      it 'shows attributes and values for agent view but disabled', authenticated_as: :current_user do
+        visit "ticket/zoom/#{ticket.id}"
+        refresh # refresh to have assets generated for ticket
+
+        expect(page).to have_css('select[name=state_id][disabled]')
+        expect(page).to have_css('select[name=priority_id][disabled]')
+        expect(page).to have_css('select[name=owner_id][disabled]')
+        expect(page).to have_css('div.tabsSidebar-tab[data-tab=customer]')
+      end
+    end
+
+    shared_examples 'shows attributes and values for customer view' do
+      it 'shows attributes and values for customer view', authenticated_as: :current_user do
+        visit "ticket/zoom/#{ticket.id}"
+        refresh # refresh to have assets generated for ticket
+
+        expect(page).to have_select('state_id', options: %w[new open closed])
+        expect(page).to have_no_select('priority_id')
+        expect(page).to have_no_select('owner_id')
+        expect(page).to have_no_css('div.tabsSidebar-tab[data-tab=customer]')
+      end
+    end
+
+    context 'as customer' do
+      let!(:current_user) { create(:customer) }
+      let(:ticket) { create(:ticket, customer: current_user) }
+
+      include_examples 'shows attributes and values for customer view'
+    end
+
+    context 'as agent with full permissions' do
+      let(:current_user) { create(:agent, groups: [ group_users ] ) }
+      let(:ticket) { create(:ticket, group: group_users ) }
+
+      include_examples 'shows attributes and values for agent view and editable'
+    end
+
+    context 'as agent with change permissions' do
+      let!(:current_user) { create(:agent) }
+      let(:ticket) { create(:ticket, group: group_users) }
+
+      before do
+        current_user.group_names_access_map = {
+          group_users.name => %w[read change],
+        }
+      end
+
+      include_examples 'shows attributes and values for agent view and editable'
+    end
+
+    context 'as agent with read permissions' do
+      let!(:current_user) { create(:agent) }
+      let(:ticket) { create(:ticket, group: group_users) }
+
+      before do
+        current_user.group_names_access_map = {
+          group_users.name => 'read',
+        }
+      end
+
+      include_examples 'shows attributes and values for agent view but disabled'
+    end
+
+    context 'as agent+customer with full permissions' do
+      let!(:current_user) { create(:agent_and_customer, groups: [ group_users ] ) }
+
+      context 'normal ticket' do
+        let(:ticket) { create(:ticket, group: group_users ) }
+
+        include_examples 'shows attributes and values for agent view and editable'
+      end
+
+      context 'ticket where current_user is also customer' do
+        let(:ticket) { create(:ticket, customer: current_user, group: group_users ) }
+
+        include_examples 'shows attributes and values for agent view and editable'
+      end
+    end
+
+    context 'as agent+customer with change permissions' do
+      let!(:current_user) { create(:agent_and_customer) }
+
+      before do
+        current_user.group_names_access_map = {
+          group_users.name => %w[read change],
+        }
+      end
+
+      context 'normal ticket' do
+        let(:ticket) { create(:ticket, group: group_users) }
+
+        include_examples 'shows attributes and values for agent view and editable'
+      end
+
+      context 'ticket where current_user is also customer' do
+        let(:ticket) { create(:ticket, customer: current_user, group: group_users) }
+
+        include_examples 'shows attributes and values for agent view and editable'
+      end
+    end
+
+    context 'as agent+customer with read permissions' do
+      let!(:current_user) { create(:agent_and_customer) }
+
+      before do
+        current_user.group_names_access_map = {
+          group_users.name => 'read',
+        }
+      end
+
+      context 'normal ticket' do
+        let(:ticket) { create(:ticket, group: group_users) }
+
+        include_examples 'shows attributes and values for agent view but disabled'
+      end
+
+      context 'ticket where current_user is also customer' do
+        let(:ticket) { create(:ticket, customer: current_user, group: group_users) }
+
+        include_examples 'shows attributes and values for agent view but disabled'
+      end
+    end
+
+    context 'as agent+customer but only customer for the ticket (no agent access)' do
+      let!(:current_user) { create(:agent_and_customer) }
+      let(:ticket) { create(:ticket, customer: current_user) }
+
+      include_examples 'shows attributes and values for customer view'
+    end
+  end
+
+  describe 'note visibility', authenticated_as: :customer do
+    context 'when logged in as a customer' do
+      let(:customer)        { create(:customer) }
+      let(:ticket)          { create(:ticket, customer: customer) }
+      let!(:ticket_article) { create(:ticket_article, ticket: ticket) }
+      let!(:ticket_note)    { create(:ticket_article, ticket: ticket, internal: true, type_name: 'note') }
+
+      it 'previously created private note is not visible' do
+        visit "ticket/zoom/#{ticket_article.ticket.id}"
+
+        expect(page).to have_no_selector(:active_ticket_article, ticket_note)
+      end
+
+      it 'previously created private note shows up via WS push' do
+        visit "ticket/zoom/#{ticket_article.ticket.id}"
+
+        # make sure ticket is done loading and change will be pushed via WS
+        find(:active_ticket_article, ticket_article)
+        await_empty_ajax_queue
+
+        ticket_note.update!(internal: false)
+
+        expect(page).to have_selector(:active_ticket_article, ticket_note)
       end
     end
   end

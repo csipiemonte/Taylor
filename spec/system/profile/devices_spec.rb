@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe 'Profile > Devices', type: :system, authenticated: true do
+RSpec.describe 'Profile > Devices', type: :system, authenticated_as: true do
   subject!(:device) { create(:user_device, user_id: User.find_by(login: 'master@example.com').id) }
 
   it 'allows to remove device' do
@@ -13,6 +13,6 @@ RSpec.describe 'Profile > Devices', type: :system, authenticated: true do
         .click
     end
 
-    wait(5).until { expect(page).to have_no_css('td', text: device.name) }
+    expect(page).to have_no_css('td', text: device.name)
   end
 end

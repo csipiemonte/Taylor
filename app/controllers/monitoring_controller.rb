@@ -162,12 +162,18 @@ curl http://localhost/api/v1/monitoring/health_check?token=XXX
       issues.push "Stuck import backend '#{backend}' detected. Last update: #{job.updated_at}"
     end
 
+    # stuck data privacy tasks
+    DataPrivacyTask.where.not(state: 'completed').where('updated_at <= ?', 30.minutes.ago).find_each do |task|
+      issues.push "Stuck data privacy task (ID #{task.id}) detected. Last update: #{task.updated_at}"
+    end
+
     token = Setting.get('monitoring_token')
 
     if issues.blank?
       result = {
         healthy: true,
         message: 'success',
+        issues:  issues,
         token:   token,
       }
       render json: result
@@ -305,13 +311,14 @@ curl http://localhost/api/v1/monitoring/amount_check?token=XXX&periode=1h
     periode = params[:periode][0, params[:periode].length - 1]
     raise Exceptions::UnprocessableEntity, 'periode need to be an integer!' if periode.to_i.zero?
 
-    if scale == 's'
+    case scale
+    when 's'
       created_at = Time.zone.now - periode.to_i.seconds
-    elsif scale == 'm'
+    when 'm'
       created_at = Time.zone.now - periode.to_i.minutes
-    elsif scale == 'h'
+    when 'h'
       created_at = Time.zone.now - periode.to_i.hours
-    elsif scale == 'd'
+    when 'd'
       created_at = Time.zone.now - periode.to_i.days
     end
 

@@ -22,13 +22,17 @@ Zammad::Application.routes.draw do
   match '/tests_form_ticket_perform_action',  to: 'tests#form_ticket_perform_action', via: :get
   match '/tests_form_sla_times',              to: 'tests#form_sla_times',             via: :get
   match '/tests_form_skip_rendering',         to: 'tests#form_skip_rendering',        via: :get
+  match '/tests_form_datetime',               to: 'tests#form_datetime',              via: :get
   match '/tests_table',                       to: 'tests#table',                      via: :get
   match '/tests_table_extended',              to: 'tests#table_extended',             via: :get
   match '/tests_html_utils',                  to: 'tests#html_utils',                 via: :get
+  match '/tests_ticket_macro',                to: 'tests#ticket_macro',               via: :get
   match '/tests_ticket_selector',             to: 'tests#ticket_selector',            via: :get
   match '/tests_taskbar',                     to: 'tests#taskbar',                    via: :get
+  match '/tests_image_service',               to: 'tests#image_service',              via: :get
   match '/tests_text_module',                 to: 'tests#text_module',                via: :get
   match '/tests_color_object',                to: 'tests#color_object',               via: :get
+  match '/tests_kb_video_embeding',           to: 'tests#kb_video_embeding',          via: :get
   match '/tests/wait/:sec',                   to: 'tests#wait',                       via: :get
   match '/tests/raised_exception',            to: 'tests#error_raised_exception',     via: :get
 

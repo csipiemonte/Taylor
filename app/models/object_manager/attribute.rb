@@ -455,116 +455,6 @@ get the attribute model based on object and name
 
 =begin
 
-get user based list of used object attributes
-
-  attribute_list = ObjectManager::Attribute.by_object('Ticket', user)
-
-returns:
-
-  [
-    { name: 'api_key', display: 'API KEY', tag: 'input', null: true, edit: true, maxlength: 32 },
-    { name: 'api_ip_regexp', display: 'API IP RegExp', tag: 'input', null: true, edit: true },
-    { name: 'api_ip_max', display: 'API IP Max', tag: 'input', null: true, edit: true },
-  ]
-
-=end
-
-  def self.by_object(object, user)
-
-    # lookups
-    if object
-      object_lookup_id = ObjectLookup.by_name(object)
-    end
-
-    # get attributes in right order
-    result = ObjectManager::Attribute.where(
-      object_lookup_id: object_lookup_id,
-      active:           true,
-      to_create:        false,
-      to_delete:        false,
-    ).order('position ASC, name ASC')
-    attributes = []
-    result.each do |item|
-      data = {
-        name:    item.name,
-        display: item.display,
-        tag:     item.data_type,
-        #:null     => item.null,
-      }
-      if item.data_option[:permission]&.any?
-        next if !user
-
-        hint = false
-        item.data_option[:permission].each do |permission|
-          next if !user.permissions?(permission)
-
-          hint = true
-          break
-        end
-        next if !hint
-      end
-
-      if item.screens
-        data[:screen] = {}
-        item.screens.each do |screen, permission_options|
-          data[:screen][screen] = {}
-
-          if permission_options['-all-']
-            data[:screen][screen] = permission_options['-all-']
-            next
-          end
-
-          permission_options.each do |permission, options|
-            next if !user&.permissions?(permission)
-
-            options.each do |key, value|
-              if [true, false].include?(data[:screen][screen][key])
-                data[:screen][screen][key] = data[:screen][screen][key].nil? ? false : data[:screen][screen][key]
-                if options[key]
-                  data[:screen][screen][key] = true
-                end
-              else
-                data[:screen][screen][key] = value
-              end
-            end
-          end
-        end
-      end
-      if item.data_option
-        data = data.merge(item.data_option.symbolize_keys)
-      end
-      attributes.push data
-    end
-    attributes
-  end
-
-=begin
-
-get user based list of object attributes as hash
-
-  attribute_list = ObjectManager::Attribute.by_object_as_hash('Ticket', user)
-
-returns:
-
-  {
-    'api_key'       => { name: 'api_key', display: 'API KEY', tag: 'input', null: true, edit: true, maxlength: 32 },
-    'api_ip_regexp' => { name: 'api_ip_regexp', display: 'API IP RegExp', tag: 'input', null: true, edit: true },
-    'api_ip_max'    => { name: 'api_ip_max', display: 'API IP Max', tag: 'input', null: true, edit: true },
-  }
-
-=end
-
-  def self.by_object_as_hash(object, user)
-    list = by_object(object, user)
-    hash = {}
-    list.each do |item|
-      hash[ item[:name] ] = item
-    end
-    hash
-  end
-
-=begin
-
 discard migration changes
 
   ObjectManager::Attribute.discard_changes
@@ -677,21 +567,23 @@ to send no browser reload event, pass false
       end
 
       data_type = nil
-      if attribute.data_type.match?(/^input|select|tree_select|richtext|textarea|checkbox$/)
+      case attribute.data_type
+      when /^input|select|tree_select|richtext|textarea|checkbox$/
         data_type = :string
-      elsif attribute.data_type.match?(/^integer|user_autocompletion$/)
+      when /^integer|user_autocompletion$/
         data_type = :integer
-      elsif attribute.data_type.match?(/^boolean|active$/)
+      when /^boolean|active$/
         data_type = :boolean
-      elsif attribute.data_type.match?(/^datetime$/)
+      when /^datetime$/
         data_type = :datetime
-      elsif attribute.data_type.match?(/^date$/)
+      when /^date$/
         data_type = :date
       end
 
       # change field
       if model.column_names.include?(attribute.name)
-        if attribute.data_type.match?(/^input|select|tree_select|richtext|textarea|checkbox$/)
+        case attribute.data_type
+        when /^input|select|tree_select|richtext|textarea|checkbox$/
           ActiveRecord::Migration.change_column(
             model.table_name,
             attribute.name,
@@ -699,7 +591,7 @@ to send no browser reload event, pass false
             limit: attribute.data_option[:maxlength],
             null:  true
           )
-        elsif attribute.data_type.match?(/^integer|user_autocompletion|datetime|date$/)
+        when /^integer|user_autocompletion|datetime|date$/
           ActiveRecord::Migration.change_column(
             model.table_name,
             attribute.name,
@@ -707,7 +599,7 @@ to send no browser reload event, pass false
             default: attribute.data_option[:default],
             null:    true
           )
-        elsif attribute.data_type.match?(/^boolean|active$/)
+        when /^boolean|active$/
           ActiveRecord::Migration.change_column(
             model.table_name,
             attribute.name,
@@ -730,7 +622,8 @@ to send no browser reload event, pass false
       end
 
       # create field
-      if attribute.data_type.match?(/^input|select|tree_select|richtext|textarea|checkbox$/)
+      case attribute.data_type
+      when /^input|select|tree_select|richtext|textarea|checkbox$/
         ActiveRecord::Migration.add_column(
           model.table_name,
           attribute.name,
@@ -738,7 +631,7 @@ to send no browser reload event, pass false
           limit: attribute.data_option[:maxlength],
           null:  true
         )
-      elsif attribute.data_type.match?(/^integer|user_autocompletion$/)
+      when /^integer|user_autocompletion$/
         ActiveRecord::Migration.add_column(
           model.table_name,
           attribute.name,
@@ -746,7 +639,7 @@ to send no browser reload event, pass false
           default: attribute.data_option[:default],
           null:    true
         )
-      elsif attribute.data_type.match?(/^boolean|active$/)
+      when /^boolean|active$/
         ActiveRecord::Migration.add_column(
           model.table_name,
           attribute.name,
@@ -754,7 +647,7 @@ to send no browser reload event, pass false
           default: attribute.data_option[:default],
           null:    true
         )
-      elsif attribute.data_type.match?(/^datetime|date$/)
+      when /^datetime|date$/
         ActiveRecord::Migration.add_column(
           model.table_name,
           attribute.name,
@@ -932,7 +825,7 @@ is certain attribute used by triggers, overviews or schedulers
     # fixes issue #2236 - Naming an attribute "attribute" causes ActiveRecord failure
     begin
       ObjectLookup.by_id(object_lookup_id).constantize.instance_method_already_implemented? name
-    rescue  ActiveRecord::DangerousAttributeError
+    rescue ActiveRecord::DangerousAttributeError
       errors.add(:name, "#{name} is a reserved word! (2)")
     end
 

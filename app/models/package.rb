@@ -64,7 +64,7 @@ install all packages located under auto_install/*.zpm
 
     data = []
     Dir.foreach(path) do |entry|
-      if entry =~ /\.zpm/ && entry !~ /^\./
+      if entry.include?('.zpm') && entry !~ /^\./
         data.push entry
       end
     end
@@ -408,9 +408,10 @@ execute all pending package migrations at once
   end
 
   def self._read_file(file, fullpath = false)
-    location = if fullpath == false
+    location = case fullpath
+               when false
                  @@root + '/' + file
-               elsif fullpath == true
+               when true
                  file
                else
                  fullpath + '/' + file

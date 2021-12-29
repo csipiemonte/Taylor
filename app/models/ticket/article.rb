@@ -21,6 +21,7 @@ class Ticket::Article < ApplicationModel
 
   before_create :check_subject, :check_body, :check_message_id_md5
   before_update :check_subject, :check_body, :check_message_id_md5
+  before_save   :touch_ticket_if_needed
   after_destroy :store_delete
 
   store :preferences
@@ -304,7 +305,7 @@ returns
     current_length = body.length
     return true if body.length <= limit
 
-    raise Exceptions::UnprocessableEntity, "body of article is too large, #{current_length} chars - only #{limit} allowed" if !ApplicationHandleInfo.postmaster?
+    raise Exceptions::UnprocessableEntity, "body of article is too large, #{current_length} chars - only #{limit} allowed" if !ApplicationHandleInfo.postmaster? && !Setting.get('import_mode')
 
     logger.warn "WARNING: cut string because of database length #{self.class}.body(#{limit} but is #{current_length})"
     self.body = body[0, limit]
@@ -338,4 +339,9 @@ returns
     )
   end
 
+  def touch_ticket_if_needed
+    return if !internal_changed?
+
+    ticket&.touch # rubocop:disable Rails/SkipsModelValidations
+  end
 end

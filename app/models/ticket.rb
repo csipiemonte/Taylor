@@ -15,12 +15,14 @@ class Ticket < ApplicationModel
   include HasKarmaActivityLog
   include HasLinks
   include HasObjectManagerAttributesValidation
+  include HasTaskbars
 
   include Ticket::Escalation
   include Ticket::Subject
   include Ticket::Assets
   include Ticket::SearchIndex
   include Ticket::Search
+  include Ticket::MergeHistory
 
   store          :preferences
   before_create  :check_generate, :check_defaults, :check_title, :set_default_state, :set_default_priority
@@ -64,6 +66,7 @@ class Ticket < ApplicationModel
   belongs_to    :organization, optional: true
   has_many      :articles,               class_name: 'Ticket::Article', after_add: :cache_update, after_remove: :cache_update, dependent: :destroy, inverse_of: :ticket
   has_many      :ticket_time_accounting, class_name: 'Ticket::TimeAccounting', dependent: :destroy, inverse_of: :ticket
+  has_many      :flags,                  class_name: 'Ticket::Flag', dependent: :destroy
   belongs_to    :state,                  class_name: 'Ticket::State', optional: true
   belongs_to    :priority,               class_name: 'Ticket::Priority', optional: true
   belongs_to    :owner,                  class_name: 'User', optional: true
@@ -75,7 +78,7 @@ class Ticket < ApplicationModel
 
   belongs_to    :type,                  class_name: 'Ticket::Type', optional: true
 
-  has_many      :external_activities,   class_name: 'ExternalActivity', dependent: :destroy
+  association_attributes_ignored :flags
 
   self.inheritance_column = nil
 
@@ -94,13 +97,28 @@ returns
 =end
 
   def self.access_condition(user, access)
+    sql  = []
+    bind = []
+
     if user.permissions?('ticket.agent')
-      ['group_id IN (?)', user.group_ids_access(access)]
-    elsif !user.organization || ( !user.organization.shared || user.organization.shared == false )
-      ['tickets.customer_id = ?', user.id]
-    else
-      ['(tickets.customer_id = ? OR tickets.organization_id = ?)', user.id, user.organization.id]
+      sql.push('group_id IN (?)')
+      bind.push(user.group_ids_access(access))
     end
+
+    if user.permissions?('ticket.customer')
+      if !user.organization || ( !user.organization.shared || user.organization.shared == false )
+        sql.push('tickets.customer_id = ?')
+        bind.push(user.id)
+      else
+        sql.push('(tickets.customer_id = ? OR tickets.organization_id = ?)')
+        bind.push(user.id)
+        bind.push(user.organization.id)
+      end
+    end
+
+    return if sql.blank?
+
+    [ sql.join(' OR ') ].concat(bind)
   end
 
 =begin
@@ -555,19 +573,20 @@ condition example
       if query != ''
         query += ' AND '
       end
-      if selector[0] == 'customer'
+      case selector[0]
+      when 'customer'
         tables += ', users customers'
         query += 'tickets.customer_id = customers.id'
-      elsif selector[0] == 'organization'
+      when 'organization'
         tables += ', organizations'
         query += 'tickets.organization_id = organizations.id'
-      elsif selector[0] == 'owner'
+      when 'owner'
         tables += ', users owners'
         query += 'tickets.owner_id = owners.id'
-      elsif selector[0] == 'article'
+      when 'article'
         tables += ', ticket_articles articles'
         query += 'tickets.id = articles.ticket_id'
-      elsif selector[0] == 'ticket_state'
+      when 'ticket_state'
         tables += ', ticket_states'
         query += 'tickets.state_id = ticket_states.id'
       else
@@ -794,15 +813,16 @@ condition example
       elsif selector['operator'] == 'within last (relative)'
         query += "#{attribute} >= ?"
         time = nil
-        if selector['range'] == 'minute'
+        case selector['range']
+        when 'minute'
           time = Time.zone.now - selector['value'].to_i.minutes
-        elsif selector['range'] == 'hour'
+        when 'hour'
           time = Time.zone.now - selector['value'].to_i.hours
-        elsif selector['range'] == 'day'
+        when 'day'
           time = Time.zone.now - selector['value'].to_i.days
-        elsif selector['range'] == 'month'
+        when 'month'
           time = Time.zone.now - selector['value'].to_i.months
-        elsif selector['range'] == 'year'
+        when 'year'
           time = Time.zone.now - selector['value'].to_i.years
         else
           raise "Unknown selector attributes '#{selector.inspect}'"
@@ -811,15 +831,16 @@ condition example
       elsif selector['operator'] == 'within next (relative)'
         query += "#{attribute} <= ?"
         time = nil
-        if selector['range'] == 'minute'
+        case selector['range']
+        when 'minute'
           time = Time.zone.now + selector['value'].to_i.minutes
-        elsif selector['range'] == 'hour'
+        when 'hour'
           time = Time.zone.now + selector['value'].to_i.hours
-        elsif selector['range'] == 'day'
+        when 'day'
           time = Time.zone.now + selector['value'].to_i.days
-        elsif selector['range'] == 'month'
+        when 'month'
           time = Time.zone.now + selector['value'].to_i.months
-        elsif selector['range'] == 'year'
+        when 'year'
           time = Time.zone.now + selector['value'].to_i.years
         else
           raise "Unknown selector attributes '#{selector.inspect}'"
@@ -828,15 +849,16 @@ condition example
       elsif selector['operator'] == 'before (relative)'
         query += "#{attribute} <= ?"
         time = nil
-        if selector['range'] == 'minute'
+        case selector['range']
+        when 'minute'
           time = Time.zone.now - selector['value'].to_i.minutes
-        elsif selector['range'] == 'hour'
+        when 'hour'
           time = Time.zone.now - selector['value'].to_i.hours
-        elsif selector['range'] == 'day'
+        when 'day'
           time = Time.zone.now - selector['value'].to_i.days
-        elsif selector['range'] == 'month'
+        when 'month'
           time = Time.zone.now - selector['value'].to_i.months
-        elsif selector['range'] == 'year'
+        when 'year'
           time = Time.zone.now - selector['value'].to_i.years
         else
           raise "Unknown selector attributes '#{selector.inspect}'"
@@ -845,15 +867,16 @@ condition example
       elsif selector['operator'] == 'after (relative)'
         query += "#{attribute} >= ?"
         time = nil
-        if selector['range'] == 'minute'
+        case selector['range']
+        when 'minute'
           time = Time.zone.now + selector['value'].to_i.minutes
-        elsif selector['range'] == 'hour'
+        when 'hour'
           time = Time.zone.now + selector['value'].to_i.hours
-        elsif selector['range'] == 'day'
+        when 'day'
           time = Time.zone.now + selector['value'].to_i.days
-        elsif selector['range'] == 'month'
+        when 'month'
           time = Time.zone.now + selector['value'].to_i.months
-        elsif selector['range'] == 'year'
+        when 'year'
           time = Time.zone.now + selector['value'].to_i.years
         else
           raise "Unknown selector attributes '#{selector.inspect}'"
@@ -925,16 +948,49 @@ perform changes on ticket
         next
       end
 
+      # Apply pending_time changes
+      if key == 'ticket.pending_time'
+        new_value = case value['operator']
+                    when 'static'
+                      value['value']
+                    when 'relative'
+                      pendtil = Time.zone.now
+                      val     = value['value'].to_i
+
+                      case value['range']
+                      when 'day'
+                        pendtil += val.days
+                      when 'minute'
+                        pendtil += val.minutes
+                      when 'hour'
+                        pendtil += val.hours
+                      when 'month'
+                        pendtil += val.months
+                      when 'year'
+                        pendtil += val.years
+                      end
+
+                      pendtil
+                    end
+
+        if new_value
+          self[attribute] = new_value
+          changed = true
+          next
+        end
+      end
+
       # update tags
       if key == 'ticket.tags'
         next if value['value'].blank?
 
         tags = value['value'].split(/,/)
-        if value['operator'] == 'add'
+        case value['operator']
+        when 'add'
           tags.each do |tag|
             tag_add(tag, current_user_id || 1)
           end
-        elsif value['operator'] == 'remove'
+        when 'remove'
           tags.each do |tag|
             tag_remove(tag, current_user_id || 1)
           end
@@ -1506,7 +1562,8 @@ result
 
     recipients_raw = []
     value_recipient.each do |recipient|
-      if recipient == 'article_last_sender'
+      case recipient
+      when 'article_last_sender'
         if article.present?
           if article.reply_to.present?
             recipients_raw.push(article.reply_to)
@@ -1520,21 +1577,21 @@ result
             recipients_raw.push(email)
           end
         end
-      elsif recipient == 'ticket_customer'
+      when 'ticket_customer'
         email = User.find_by(id: customer_id).email
         recipients_raw.push(email)
-      elsif recipient == 'ticket_owner'
+      when 'ticket_owner'
         email = User.find_by(id: owner_id).email
         recipients_raw.push(email)
-      elsif recipient == 'ticket_agents'
+      when 'ticket_agents'
         User.group_access(group_id, 'full').sort_by(&:login).each do |user|
           recipients_raw.push(user.email)
         end
-      elsif recipient == 'notification_email'
+      when 'notification_email'
         # CSI Custom
         email = Ticket.find_by(id: article.ticket_id).notification_email
         recipients_raw.push(email)
-      elsif recipient =~ /\Auserid_(\d+)\z/
+      when /\Auserid_(\d+)\z/
         user = User.lookup(id: $1)
         if !user
           logger.warn "Can't find configured Trigger Email recipient User with ID '#{$1}'"
@@ -1811,7 +1868,7 @@ result
   def build_sms_recipients_list(value, article)
     Array(value['recipient'])
       .each_with_object([]) { |recipient_type, sum| sum.concat(Array(sms_recipients_by_type(recipient_type, article))) }
-      .map { |user_or_id| User.lookup(id: user_or_id) }
+      .map { |user_or_id| user_or_id.is_a?(User) ? user_or_id : User.lookup(id: user_or_id) }
       .uniq(&:id)
       .select { |user| user.mobile.present? }
   end

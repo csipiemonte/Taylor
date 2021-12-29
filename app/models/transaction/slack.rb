@@ -60,17 +60,18 @@ class Transaction::Slack
     # if create, send create message / block update messages
     template = nil
     sent_value = nil
-    if @item[:type] == 'create'
+    case @item[:type]
+    when 'create'
       template = 'ticket_create'
-    elsif @item[:type] == 'update'
+    when 'update'
       template = 'ticket_update'
-    elsif @item[:type] == 'reminder_reached'
+    when 'reminder_reached'
       template = 'ticket_reminder_reached'
       sent_value = ticket.pending_time
-    elsif @item[:type] == 'escalation'
+    when 'escalation'
       template = 'ticket_escalation'
       sent_value = ticket.escalation_at
-    elsif @item[:type] == 'escalation_warning'
+    when 'escalation_warning'
       template = 'ticket_escalation_warning'
       sent_value = ticket.escalation_at
     else
@@ -207,7 +208,7 @@ class Transaction::Slack
     locale = user.preferences[:locale] || Setting.get('locale_default') || 'en-us'
 
     # only show allowed attributes
-    attribute_list = ObjectManager::Attribute.by_object_as_hash('Ticket', user)
+    attribute_list = ObjectManager::Object.new('Ticket').attributes(user).index_by { |item| item[:name] }
     #puts "AL #{attribute_list.inspect}"
     user_related_changes = {}
     @item[:changes].each do |key, value|

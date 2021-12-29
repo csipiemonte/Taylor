@@ -42,9 +42,9 @@ RSpec.describe Channel::EmailParser, type: :model do
   end
 
   describe '#process' do
-    let(:raw_mail)  { File.read(mail_file) }
+    let(:raw_mail) { File.read(mail_file) }
 
-    before { Trigger.destroy_all }  # triggers may cause additional articles to be created
+    before { Trigger.destroy_all } # triggers may cause additional articles to be created
 
     describe 'auto-creating new users' do
       context 'with one unrecognized email address' do
@@ -125,7 +125,7 @@ RSpec.describe Channel::EmailParser, type: :model do
         end
 
         context 'when from address matches an existing agent' do
-          let!(:agent) { create(:agent_user, email: 'foo@bar.com') }
+          let!(:agent) { create(:agent, email: 'foo@bar.com') }
 
           it 'sets article.sender to "Agent"' do
             described_class.new.process({}, raw_mail)
@@ -140,8 +140,26 @@ RSpec.describe Channel::EmailParser, type: :model do
           end
         end
 
+        context 'when from address matches an existing agent customer' do
+          let!(:agent_customer) { create(:agent_and_customer, email: 'foo@bar.com') }
+          let!(:ticket) { create(:ticket, customer: agent_customer) }
+          let!(:raw_email) { <<~RAW.chomp }
+            From: foo@bar.com
+            To: myzammad@example.com
+            Subject: [#{Setting.get('ticket_hook') + Setting.get('ticket_hook_divider') + ticket.number}] test
+            
+            Lorem ipsum dolor
+          RAW
+
+          it 'sets article.sender to "Customer"' do
+            described_class.new.process({}, raw_email)
+
+            expect(Ticket::Article.last.sender.name).to eq('Customer')
+          end
+        end
+
         context 'when from address matches an existing customer' do
-          let!(:customer) { create(:customer_user, email: 'foo@bar.com') }
+          let!(:customer) { create(:customer, email: 'foo@bar.com') }
 
           it 'sets article.sender to "Customer"' do
             described_class.new.process({}, raw_mail)
@@ -161,6 +179,43 @@ RSpec.describe Channel::EmailParser, type: :model do
             described_class.new.process({}, raw_mail)
 
             expect(Ticket.last.articles.first.sender.name).to eq('Customer')
+          end
+        end
+      end
+
+      context 'when email contains x-headers' do
+        let(:raw_mail) { <<~RAW.chomp }
+          From: foo@bar.com
+          To: baz@qux.net
+          Subject: Foo
+          X-Zammad-Ticket-priority: 3 high
+
+          Lorem ipsum dolor
+        RAW
+
+        context 'when channel is not trusted' do
+          let(:channel) { create(:channel, options: { inbound: { trusted: false } }) }
+
+          it 'does not change the priority of the ticket (no channel)' do
+            described_class.new.process({}, raw_mail)
+
+            expect(Ticket.last.priority.name).to eq('2 normal')
+          end
+
+          it 'does not change the priority of the ticket (untrusted)' do
+            described_class.new.process(channel, raw_mail)
+
+            expect(Ticket.last.priority.name).to eq('2 normal')
+          end
+        end
+
+        context 'when channel is trusted' do
+          let(:channel) { create(:channel, options: { inbound: { trusted: true } }) }
+
+          it 'does not change the priority of the ticket' do
+            described_class.new.process(channel, raw_mail)
+
+            expect(Ticket.last.priority.name).to eq('3 high')
           end
         end
       end
@@ -816,8 +871,8 @@ RSpec.describe Channel::EmailParser, type: :model do
     end
 
     describe 'assigning ticket.customer' do
-      let(:agent) { create(:agent_user) }
-      let(:customer) { create(:customer_user) }
+      let(:agent) { create(:agent) }
+      let(:customer) { create(:customer) }
 
       let(:raw_mail) { <<~RAW.chomp }
         From: #{agent.email}
@@ -1211,7 +1266,7 @@ RSpec.describe Channel::EmailParser, type: :model do
 
     describe 'suppressing normal Ticket::Article callbacks' do
       context 'from sender: "Agent"' do
-        let(:agent) { create(:agent_user) }
+        let(:agent) { create(:agent) }
 
         it 'does not dispatch an email on article creation' do
           expect(TicketArticleCommunicateEmailJob).not_to receive(:perform_later)

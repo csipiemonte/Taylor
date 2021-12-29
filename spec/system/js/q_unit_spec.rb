@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe 'QUnit', type: :system, authenticated: false, set_up: true, websocket: false do
+RSpec.describe 'QUnit', type: :system, authenticated_as: false, set_up: true, websocket: false do
 
   def q_unit_tests(test_name)
 
@@ -62,6 +62,10 @@ RSpec.describe 'QUnit', type: :system, authenticated: false, set_up: true, webso
     it 'Ticket selector' do
       q_unit_tests('ticket_selector')
     end
+
+    it 'Image Service' do
+      q_unit_tests('image_service')
+    end
   end
 
   context 'Form' do
@@ -106,6 +110,10 @@ RSpec.describe 'QUnit', type: :system, authenticated: false, set_up: true, webso
       q_unit_tests('form_ticket_perform_action')
     end
 
+    it 'Ticket macro' do
+      q_unit_tests('ticket_macro')
+    end
+
     it 'Validation' do
       q_unit_tests('form_validation')
     end
@@ -116,6 +124,10 @@ RSpec.describe 'QUnit', type: :system, authenticated: false, set_up: true, webso
 
     it 'SLA times' do
       q_unit_tests('form_sla_times')
+    end
+
+    it 'DateTime' do
+      q_unit_tests('form_datetime')
     end
   end
 
@@ -135,6 +147,12 @@ RSpec.describe 'QUnit', type: :system, authenticated: false, set_up: true, webso
 
     it 'Taskbar' do
       q_unit_tests('taskbar')
+    end
+  end
+
+  context 'Knowlede Base Editor' do
+    it 'Vdeo Embeding' do
+      q_unit_tests('kb_video_embeding')
     end
   end
 end
