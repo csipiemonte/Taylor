@@ -3065,7 +3065,7 @@ Content-Type: text/html; charset=us-ascii; format=flowed
           },
           1 => {
             content_type: 'text/html',
-            body: 'test%C3%A4%C3%B6%C3%BC@example.com',
+            body: 'testäöü@example.com',
             sender: 'Customer',
             type: 'email',
             internal: false,
@@ -3235,6 +3235,28 @@ Content-Type: text/html; charset=us-ascii; format=flowed
               lastname: 'Smith',
               fullname: 'Martin Smith',
               email: 'martin088@example.de',
+            },
+          ],
+        },
+      },
+      { # See https://github.com/zammad/zammad/issues/3293
+        data: File.read(Rails.root.join('test', 'data', 'mail', 'mail094.box')),
+        success: true,
+        result: {
+          1 => {
+            from: '"Jo B. USER1 - Noreply 131231 23123123 123 123 123 12" <noreply@example.com>',
+            sender: 'Customer',
+            type: 'email',
+            body: 'no visible content',
+          },
+        },
+        verify: {
+          users: [
+            {
+              firstname: 'Jo',
+              lastname: 'B. USER1 - Noreply 131231 23123123 123 123 123 12',
+              fullname: 'Jo B. USER1 - Noreply 131231 23123123 123 123 123 12',
+              email: 'noreply@example.com',
             },
           ],
         },

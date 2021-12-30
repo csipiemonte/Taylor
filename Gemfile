@@ -2,7 +2,7 @@ source 'https://rubygems.org'
 
 # core - base
 ruby '2.6.6'
-gem 'rails', '5.2.4.4'
+gem 'rails', '5.2.4.5'
 
 # fix temporaneneo in attesa di passare a rails 5.2.6: vedi https://gitlab.csi.it/prodotti/nextcrm/nextcrm/issues/84
 gem 'mimemagic', git: 'https://github.com/mimemagicrb/mimemagic', ref: '01f92d86d15d85cfd0f20dabd025dcbd36a8a60f'
@@ -224,6 +224,9 @@ group :development, :test do
 
   # image comparison in tests
   gem 'chunky_png'
+
+  # refresh ENVs in CI environment
+  gem 'dotenv', require: false
 end
 
 # Want to extend Zammad with additional gems?

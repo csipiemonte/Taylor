@@ -1,9 +1,5 @@
 FactoryBot.define do
   factory :channel do
-    # ensure the `refresh_xoaut2!` `after_initialize` callback gets executed
-    # https://stackoverflow.com/questions/5916162/problem-with-factory-girl-association-and-after-initialize#comment51639005_28057070
-    initialize_with { new(attributes) }
-
     area          { 'Email::Dummy' }
     group         { ::Group.find(1) }
     active        { true }
@@ -16,13 +12,23 @@ FactoryBot.define do
       area { 'Email::Account' }
       options do
         {
-          inbound:  {
+          inbound:  inbound,
+          outbound: outbound,
+        }
+      end
+
+      transient do
+        inbound do
+          {
             adapter: 'null', options: {}
-          },
-          outbound: {
+          }
+        end
+
+        outbound do
+          {
             adapter: 'sendmail'
           }
-        }
+        end
       end
     end
 
@@ -78,6 +84,91 @@ FactoryBot.define do
         transient do
           external_credential { create(:twitter_credential, :invalid) }
         end
+      end
+    end
+
+    factory :google_channel do
+      area { 'Google::Account' }
+      options do
+        {
+          'inbound'  => {
+            'adapter' => 'imap',
+            'options' => {
+              'auth_type'      => 'XOAUTH2',
+              'host'           => 'imap.gmail.com',
+              'ssl'            => true,
+              'user'           => ENV['GMAIL_USER'],
+              'folder'         => '',
+              'keep_on_server' => false,
+            }
+          },
+          'outbound' => {
+            'adapter' => 'smtp',
+            'options' => {
+              'host'           => 'smtp.gmail.com',
+              'domain'         => 'gmail.com',
+              'port'           => 465,
+              'ssl'            => true,
+              'user'           => ENV['GMAIL_USER'],
+              'authentication' => 'xoauth2',
+            }
+          },
+          'auth'     => {
+            'type'          => 'XOAUTH2',
+            'provider'      => 'google',
+            'access_token'  => 'xxx',
+            'expires_in'    => 3599,
+            'refresh_token' => ENV['GMAIL_REFRESH_TOKEN'],
+            'scope'         => 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://mail.google.com/ openid',
+            'token_type'    => 'Bearer',
+            'id_token'      => 'xxx',
+            'created_at'    => 30.days.ago,
+            'client_id'     => ENV['GMAIL_CLIENT_ID'],
+            'client_secret' => ENV['GMAIL_CLIENT_SECRET'],
+          }
+        }
+      end
+    end
+
+    factory :microsoft365_channel do
+      area { 'Microsoft365::Account' }
+      options do
+        {
+          'inbound'  => {
+            'adapter' => 'imap',
+            'options' => {
+              'auth_type'      => 'XOAUTH2',
+              'host'           => 'outlook.office365.com',
+              'ssl'            => true,
+              'user'           => ENV['MICROSOFT365_USER'],
+              'folder'         => '',
+              'keep_on_server' => false,
+            }
+          },
+          'outbound' => {
+            'adapter' => 'smtp',
+            'options' => {
+              'host'           => 'smtp.office365.com',
+              'domain'         => 'office365.com',
+              'port'           => 587,
+              'user'           => ENV['MICROSOFT365_USER'],
+              'authentication' => 'xoauth2',
+            }
+          },
+          'auth'     => {
+            'type'          => 'XOAUTH2',
+            'provider'      => 'microsoft365',
+            'access_token'  => 'xxx',
+            'expires_in'    => 3599,
+            'refresh_token' => ENV['MICROSOFT365_REFRESH_TOKEN'],
+            'scope'         => 'https://outlook.office.com/IMAP.AccessAsUser.All https://outlook.office.com/SMTP.Send offline_access openid profile email',
+            'token_type'    => 'Bearer',
+            'id_token'      => 'xxx',
+            'created_at'    => 30.days.ago,
+            'client_id'     => ENV['MICROSOFT365_CLIENT_ID'],
+            'client_secret' => ENV['MICROSOFT365_CLIENT_SECRET'],
+          }
+        }
       end
     end
   end

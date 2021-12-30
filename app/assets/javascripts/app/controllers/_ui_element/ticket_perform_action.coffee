@@ -310,12 +310,14 @@ class App.UiElement.ticket_perform_action
       options =
         'current_user.id': App.i18n.translateInline('current user')
         'specific': App.i18n.translateInline('specific user')
-        #'set': App.i18n.translateInline('set')
+
+      if attributeSelected.null is true
+        options['not_set'] = App.i18n.translateInline('unassign user')
+
     else if preCondition is 'org'
       options =
         'current_user.organization_id': App.i18n.translateInline('current user organization')
         'specific': App.i18n.translateInline('specific organization')
-        #'set': App.i18n.translateInline('set')
 
     for key, value of options
       selected = ''
@@ -405,7 +407,7 @@ class App.UiElement.ticket_perform_action
       for recipient in meta.recipient
         if key is recipient
           selected = true
-      columnSelectOptions.push({ value: key, name: App.i18n.translateInline(value), selected: selected })
+      columnSelectOptions.push({ value: key, name: App.i18n.translatePlain(value), selected: selected })
 
     columnSelectRecipientUserOptions = []
     for user in App.User.all()
