@@ -75,14 +75,10 @@ returns
     user = token.user
 
     # persistent token not valid if user is inactive
-    if !data[:inactive_user]
-      return if token.persistent && user.active == false
-    end
+    return if !data[:inactive_user] && token.persistent && user.active == false
 
     # add permission check
-    if data[:permission]
-      return if !token.permissions?(data[:permission])
-    end
+    return if data[:permission] && !token.permissions?(data[:permission])
 
     # return token user
     user
@@ -112,17 +108,6 @@ cleanup old token
     return false if !effective_user.permissions?(names)
 
     super(names)
-  end
-
-  # allows to evaluate token permissions in context of given user instead of owner
-  # @param [User] user to use as context for the given block
-  # @param block to evaluate in given context
-  def with_context(user:, &block)
-    @effective_user = user
-
-    instance_eval(&block) if block_given?
-  ensure
-    @effective_user = nil
   end
 
   # allows to evaluate token permissions in context of given user instead of owner

@@ -19,10 +19,10 @@ class Ticket::Article < ApplicationModel
   belongs_to :updated_by, class_name: 'User', optional: true
   belongs_to :origin_by,  class_name: 'User', optional: true
 
+  before_save   :touch_ticket_if_needed
   before_create :check_subject, :check_body, :check_message_id_md5
   before_update :check_subject, :check_body, :check_message_id_md5
-  before_save   :touch_ticket_if_needed
-  after_destroy :store_delete
+  after_destroy :store_delete, :update_time_units
 
   store :preferences
 
@@ -337,6 +337,11 @@ returns
       object: 'Ticket::Article::Mail',
       o_id:   id,
     )
+  end
+
+  # recalculate time accounting
+  def update_time_units
+    Ticket::TimeAccounting.update_ticket(ticket)
   end
 
   def touch_ticket_if_needed

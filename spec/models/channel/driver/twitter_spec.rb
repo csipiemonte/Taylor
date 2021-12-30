@@ -237,7 +237,7 @@ RSpec.describe Channel::Driver::Twitter do
           ]
         end
 
-        let(:user_ids) { payload[:users].values.map { |u| u[:id] } }
+        let(:user_ids) { payload[:users].values.pluck(:id) }
 
         it 'creates a new article' do
           expect { channel.process(payload) }
@@ -336,7 +336,7 @@ RSpec.describe Channel::Driver::Twitter do
           ]
         end
 
-        let(:user_ids) { payload[:users].values.map { |u| u[:id] } }
+        let(:user_ids) { payload[:users].values.pluck(:id) }
 
         it 'creates a new article' do
           expect { channel.process(payload) }
@@ -490,7 +490,7 @@ RSpec.describe Channel::Driver::Twitter do
 
         let(:twitter_prefs) do
           {
-            'mention_ids'         => payload[:tweet_create_events].first[:entities][:user_mentions].map { |um| um[:id] },
+            'mention_ids'         => payload[:tweet_create_events].first[:entities][:user_mentions].pluck(:id),
             'geo'                 => payload[:tweet_create_events].first[:geo].to_h,
             'retweeted'           => payload[:tweet_create_events].first[:retweeted],
             'possibly_sensitive'  => payload[:tweet_create_events].first[:possibly_sensitive],
@@ -522,7 +522,7 @@ RSpec.describe Channel::Driver::Twitter do
         context 'when message mentions multiple users' do
           let(:payload_file) { Rails.root.join('test/data/twitter/webhook_events/tweet_create-user_mention_multiple.yml') }
 
-          let(:mentionees) { "@#{payload[:tweet_create_events].first[:entities][:user_mentions].map { |um| um[:screen_name] }.join(', @')}" }
+          let(:mentionees) { "@#{payload[:tweet_create_events].first[:entities][:user_mentions].pluck(:screen_name).join(', @')}" }
 
           it 'records all mentionees in comma-separated "to" attribute' do
             expect { channel.process(payload) }
@@ -642,7 +642,7 @@ RSpec.describe Channel::Driver::Twitter do
 
         let(:twitter_prefs) do
           {
-            'mention_ids'         => payload[:tweet_create_events].first[:entities][:user_mentions].map { |um| um[:id] },
+            'mention_ids'         => payload[:tweet_create_events].first[:entities][:user_mentions].pluck(:id),
             'geo'                 => payload[:tweet_create_events].first[:geo].to_h,
             'retweeted'           => payload[:tweet_create_events].first[:retweeted],
             'possibly_sensitive'  => payload[:tweet_create_events].first[:possibly_sensitive],
@@ -677,7 +677,7 @@ RSpec.describe Channel::Driver::Twitter do
   describe '#send', :use_vcr do
     shared_examples 'for #send' do
       # Channel#deliver takes a hash in the following format
-      # (see Observer::Ticket::Article::CommunicateTwitter::BackgroundJob#perform)
+      # (see CommunicateTwitterJob#perform)
       #
       # Why not just accept the whole article?
       # Presumably so all channels have a consistent interface...
@@ -990,10 +990,7 @@ RSpec.describe Channel::Driver::Twitter do
               # and then manually copied into the existing VCR cassette for this example.
 
               context '…but before the BG job has "synced" article.message_id with tweet.id)' do
-                let(:twitter_job) { Delayed::Job.find_by(handler: <<~YML) }
-                  --- !ruby/object:Observer::Ticket::Article::CommunicateTwitter::BackgroundJob
-                  article_id: #{tweet.id}
-                YML
+                let(:twitter_job) { Delayed::Job.where("handler LIKE '%job_class: CommunicateTwitterJob%#{tweet.id}%'").first }
 
                 around do |example|
                   # Run BG job (Why not use Scheduler.worker?

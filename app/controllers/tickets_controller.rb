@@ -80,7 +80,7 @@ class TicketsController < ApplicationController
   # POST /api/v1/tickets
   def create
     customer = {}
-    if params[:customer].class == ActionController::Parameters
+    if params[:customer].instance_of?(ActionController::Parameters)
       customer = params[:customer]
       params.delete(:customer)
     end
@@ -313,10 +313,10 @@ class TicketsController < ApplicationController
     ticket_lists = Ticket
                    .where(
                      customer_id: ticket.customer_id,
-                     state_id:    Ticket::State.by_category(:open).pluck(:id),
+                     state_id:    Ticket::State.by_category(:open).pluck(:id), # rubocop:disable Rails/PluckInWhere
                    )
                    .where(access_condition)
-                   .where('id != ?', [ ticket.id ])
+                   .where.not(id: [ ticket.id ])
                    .order(created_at: :desc)
                    .limit(6)
 
@@ -329,7 +329,7 @@ class TicketsController < ApplicationController
                        state_id: Ticket::State.by_category(:merged).pluck(:id),
                      )
                      .where(access_condition)
-                     .where('id != ?', [ ticket.id ])
+                     .where.not(id: [ ticket.id ])
                      .order(created_at: :desc)
                      .limit(6)
     end

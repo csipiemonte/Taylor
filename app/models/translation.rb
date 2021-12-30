@@ -226,7 +226,7 @@ or
 
   def self.timestamp(locale, timezone, timestamp)
 
-    if timestamp.class == String
+    if timestamp.instance_of?(String)
       begin
         timestamp_parsed = Time.zone.parse(timestamp)
         return timestamp.to_s if !timestamp_parsed
@@ -272,7 +272,7 @@ or
 
   def self.date(locale, date)
 
-    if date.class == String
+    if date.instance_of?(String)
       begin
         date_parsed = Date.parse(date)
         return date.to_s if !date_parsed
@@ -470,13 +470,13 @@ Get source file at https://i18n.zammad.com/api/v1/translations_empty_translation
 
   private_class_method def self.locals_to_sync(dedicated_locale = nil)
     locales_list = []
-    if !dedicated_locale
+    if dedicated_locale
+      locales_list = [dedicated_locale]
+    else
       locales = Locale.to_sync
       locales.each do |locale|
         locales_list.push locale.locale
       end
-    else
-      locales_list = [dedicated_locale]
     end
     locales_list
   end
@@ -492,17 +492,17 @@ Get source file at https://i18n.zammad.com/api/v1/translations_empty_translation
   end
 
   def cache_clear
-    Cache.delete('TranslationMapOnlyContent::' + locale.downcase)
+    Cache.delete("TranslationMapOnlyContent::#{locale.downcase}")
     true
   end
 
   def self.cache_set(locale, data)
-    Cache.write('TranslationMapOnlyContent::' + locale.downcase, data)
+    Cache.write("TranslationMapOnlyContent::#{locale.downcase}", data)
   end
   private_class_method :cache_set
 
   def self.cache_get(locale)
-    Cache.get('TranslationMapOnlyContent::' + locale.downcase)
+    Cache.get("TranslationMapOnlyContent::#{locale.downcase}")
   end
   private_class_method :cache_get
 end

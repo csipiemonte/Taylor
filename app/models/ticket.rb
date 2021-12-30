@@ -182,7 +182,7 @@ returns
         end
 
         # send notification
-        Transaction::BackgroundJob.run(
+        TransactionJob.perform_now(
           object:     'Ticket',
           type:       'reminder_reached',
           object_id:  ticket.id,
@@ -223,7 +223,7 @@ returns
 
       # send escalation
       if ticket.escalation_at < Time.zone.now
-        Transaction::BackgroundJob.run(
+        TransactionJob.perform_now(
           object:     'Ticket',
           type:       'escalation',
           object_id:  ticket.id,
@@ -235,7 +235,7 @@ returns
       end
 
       # check if warning need to be sent
-      Transaction::BackgroundJob.run(
+      TransactionJob.perform_now(
         object:     'Ticket',
         type:       'escalation_warning',
         object_id:  ticket.id,
@@ -415,11 +415,7 @@ returns
     state_type = Ticket::StateType.lookup(id: state.state_type_id)
 
     # always to set unseen for ticket owner and users which did not the update
-    if state_type.name != 'merged'
-      if user_id_check
-        return false if user_id_check == owner_id && user_id_check != updated_by_id
-      end
-    end
+    return false if state_type.name != 'merged' && user_id_check && user_id_check == owner_id && user_id_check != updated_by_id
 
     # set all to seen if pending action state is a closed or merged state
     if state_type.name == 'pending action' && state.next_state_id
@@ -608,7 +604,7 @@ condition example
 
       # validate value / allow blank but only if pre_condition exists and is not specific
       if !selector.key?('value') ||
-         (selector['value'].class == Array && selector['value'].respond_to?(:blank?) && selector['value'].blank?) ||
+         (selector['value'].instance_of?(Array) && selector['value'].respond_to?(:blank?) && selector['value'].blank?) ||
          (selector['operator'].start_with?('contains') && selector['value'].respond_to?(:blank?) && selector['value'].blank?)
         return nil if selector['pre_condition'].nil?
         return nil if selector['pre_condition'].respond_to?(:blank?) && selector['pre_condition'].blank?
@@ -896,19 +892,25 @@ condition example
 
 perform changes on ticket
 
-  ticket.perform_changes({}, 'trigger', item, current_user_id, ext_activity_comment)
+  ticket.perform_changes(trigger, 'trigger', item, current_user_id)
+
+  # or
+
+  ticket.perform_changes(job, 'job', item, current_user_id)
 
 =end
 
-  # perform: attributo perform della tabella trigger
-  def perform_changes(perform, perform_origin, item = nil, current_user_id = nil, ext_activity_comment = nil)
-    logger.debug { "perform_changes - Perform #{perform_origin} #{perform.inspect} on Ticket.find(#{id})" }
+  def perform_changes(performable, perform_origin, item = nil, current_user_id = nil, ext_activity_comment = nil)
+
+    # perform: attributo perform della tabella trigger
+    perform = performable.perform
+    logger.debug { "Perform #{perform_origin} #{perform.inspect} on Ticket.find(#{id})" }
 
     article = begin
-                Ticket::Article.find_by(id: item.try(:dig, :article_id))
-              rescue ArgumentError
-                nil
-              end
+      Ticket::Article.find_by(id: item.try(:dig, :article_id))
+    rescue ArgumentError
+      nil
+    end
 
     # if the configuration contains the deletion of the ticket then
     # we skip all other ticket changes because they does not matter
@@ -1034,24 +1036,13 @@ perform changes on ticket
       save!
     end
 
+    objects = build_notification_template_objects(article)
+
     perform_article.each do |key, value|
       raise 'Unable to create article, we only support article.note and article.note_ext_act' if key != 'article.note' && key != 'article.note_ext_act'
 
       if key == 'article.note'
-        Ticket::Article.create!(
-          ticket_id:     id,
-          subject:       value[:subject],
-          content_type:  'text/html',
-          body:          value[:body],
-          internal:      value[:internal],
-          sender:        Ticket::Article::Sender.find_by(name: 'System'),
-          type:          Ticket::Article::Type.find_by(name: 'note'),
-          preferences:   {
-            perform_origin: perform_origin,
-          },
-          updated_by_id: 1,
-          created_by_id: 1,
-        )
+        add_trigger_note(id, value, objects, perform_origin)
       else
         # CSI custom, key = article.note_ext_act
         next if ext_activity_comment.nil?
@@ -1100,6 +1091,8 @@ perform changes on ticket
         next
       when 'notification.email'
         send_email_notification(value, article, perform_origin)
+      when 'notification.webhook'
+        TriggerWebhookJob.perform_later(performable, self, article)
       end
     end
 
@@ -1117,6 +1110,43 @@ perform changes on ticket
     # custom CSI external activity -- end
 
     true
+  end
+
+=begin
+
+perform changes on ticket
+
+  ticket.add_trigger_note(ticket_id, note, objects, perform_origin)
+
+=end
+
+  def add_trigger_note(ticket_id, note, objects, perform_origin)
+    rendered_subject = NotificationFactory::Mailer.template(
+      templateInline: note[:subject],
+      objects:        objects,
+      quote:          true,
+    )
+
+    rendered_body = NotificationFactory::Mailer.template(
+      templateInline: note[:body],
+      objects:        objects,
+      quote:          true,
+    )
+
+    Ticket::Article.create!(
+      ticket_id:     ticket_id,
+      subject:       rendered_subject,
+      content_type:  'text/html',
+      body:          rendered_body,
+      internal:      note[:internal],
+      sender:        Ticket::Article::Sender.find_by(name: 'System'),
+      type:          Ticket::Article::Type.find_by(name: 'note'),
+      preferences:   {
+        perform_origin: perform_origin,
+      },
+      updated_by_id: 1,
+      created_by_id: 1,
+    )
   end
 
 =begin
@@ -1142,7 +1172,7 @@ perform active triggers on ticket
     local_options[:reset_user_id] = true
     local_options[:disable] = ['Transaction::Notification']
     local_options[:trigger_ids] ||= {}
-    local_options[:trigger_ids][ticket.id] ||= []
+    local_options[:trigger_ids][ticket.id.to_s] ||= []
     local_options[:loop_count] ||= 0
     local_options[:loop_count] += 1
 
@@ -1375,11 +1405,11 @@ perform active triggers on ticket
           end
         end
 
-        if local_options[:trigger_ids][ticket.id].include?(trigger.id)
+        if local_options[:trigger_ids][ticket.id.to_s].include?(trigger.id)
           logger.info { "Skip trigger (#{trigger.name}/#{trigger.id}) because was already executed for this object (Ticket:#{ticket.id}/Loop:#{local_options[:loop_count]})" }
           next
         end
-        local_options[:trigger_ids][ticket.id].push trigger.id
+        local_options[:trigger_ids][ticket.id.to_s].push trigger.id
         logger.info { "Execute trigger (#{trigger.name}/#{trigger.id}) for this object (Ticket:#{ticket.id}/Loop:#{local_options[:loop_count]})" }
 
         # se e' definito l'array con i nuovi commenti
@@ -1391,11 +1421,11 @@ perform active triggers on ticket
 
             # scateno l'action del trigger passando il commento i-esimo
             logger.info { "Invoke ticket.perform_changes, comment text: #{comment['text']}" }
-            ticket.perform_changes(trigger.perform, 'trigger', item, user_id, comment)
+            ticket.perform_changes(trigger, 'trigger', item, user_id, comment)
           end
         else
           # scateno l'action del trigger in modo "standard" (senza passare il commento)
-          ticket.perform_changes(trigger.perform, 'trigger', item, user_id)
+          ticket.perform_changes(trigger, 'trigger', item, user_id)
         end
 
         if recursive == true
@@ -1916,7 +1946,6 @@ result
       updated_by_id: 1,
       created_by_id: 1,
     )
-
   end
 
   # CSI custom external activity

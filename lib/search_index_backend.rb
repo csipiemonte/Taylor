@@ -473,6 +473,12 @@ example for aggregations within one year
   def self.selector2query(selector, options, aggs_interval)
     options = DEFAULT_QUERY_OPTIONS.merge(options.deep_symbolize_keys)
 
+    current_user = options[:current_user]
+    current_user_id = UserInfo.current_user_id
+    if current_user
+      current_user_id = current_user.id
+    end
+
     query_must = []
     query_must_not = []
     relative_map = {
@@ -493,6 +499,32 @@ example for aggregations within one year
 
         # use .keyword in case of compare exact values
         if data['operator'] == 'is' || data['operator'] == 'is not'
+
+          case data['pre_condition']
+          when 'not_set'
+            data['value'] = if key_tmp.match?(/^(created_by|updated_by|owner|customer|user)_id/)
+                              1
+                            else
+                              'NULL'
+                            end
+          when 'current_user.id'
+            raise "Use current_user.id in selector, but no current_user is set #{data.inspect}" if !current_user_id
+
+            data['value']    = []
+            wildcard_or_term = 'terms'
+
+            if key_tmp == 'out_of_office_replacement_id'
+              data['value'].push User.find(current_user_id).out_of_office_agent_of.pluck(:id)
+            else
+              data['value'].push current_user_id
+            end
+          when 'current_user.organization_id'
+            raise "Use current_user.id in selector, but no current_user is set #{data.inspect}" if !current_user_id
+
+            user = User.find_by(id: current_user_id)
+            data['value'] = user.organization_id
+          end
+
           if data['value'].is_a?(Array)
             data['value'].each do |value|
               next if !value.is_a?(String) || value !~ /[A-z]/
@@ -728,7 +760,7 @@ generate url for index or document access (only for internal use)
     # prepare url params
     params_string = ''
     if url_params.present?
-      params_string = '?' + url_params.map { |key, value| "#{key}=#{value}" }.join('&')
+      params_string = "?#{URI.encode_www_form(url_params)}"
     end
 
     url = Setting.get('es_url')
@@ -755,7 +787,7 @@ generate url for index or document access (only for internal use)
     "#{url}#{params_string}"
   end
 
-  def self.humanized_error(verb:, url:, payload: nil, response:)
+  def self.humanized_error(verb:, url:, response:, payload: nil)
     prefix = "Unable to process #{verb} request to elasticsearch URL '#{url}'."
     suffix = "\n\nResponse:\n#{response.inspect}\n\n"
 
@@ -782,7 +814,7 @@ generate url for index or document access (only for internal use)
   # add * on simple query like "somephrase23"
   def self.append_wildcard_to_simple_query(query)
     query.strip!
-    query += '*' if !query.include?(':')
+    query += '*' if query.exclude?(':')
     query
   end
 
@@ -817,7 +849,7 @@ generate url for index or document access (only for internal use)
       }
     }
 
-    if (extension = options.dig(:query_extension))
+    if (extension = options[:query_extension])
       data[:query].deep_merge! extension.deep_dup
     end
 

@@ -123,14 +123,14 @@ returns
 
     message = "Can't process email, you will find it for bug reporting under #{filename}, please create an issue at https://github.com/zammad/zammad/issues"
 
-    p 'ERROR: ' + message # rubocop:disable Rails/Output
-    p 'ERROR: ' + e.inspect # rubocop:disable Rails/Output
+    p "ERROR: #{message}" # rubocop:disable Rails/Output
+    p "ERROR: #{e.inspect}" # rubocop:disable Rails/Output
     Rails.logger.error message
     Rails.logger.error e
 
     return false if exception == false
 
-    raise e.inspect + "\n" + e.backtrace.join("\n")
+    raise %(#{e.inspect}\n#{e.backtrace.join("\n")})
   end
 
   def _process(channel, msg)
@@ -142,6 +142,11 @@ returns
 
     # run postmaster pre filter
     UserInfo.current_user_id = 1
+
+    # set interface handle
+    original_interface_handle = ApplicationHandleInfo.current
+    transaction_params = { interface_handle: "#{original_interface_handle}.postmaster", disable: [] }
+
     filters = {}
     Setting.where(area: 'Postmaster::PreFilter').order(:name).each do |setting|
       filters[setting.name] = Setting.get(setting.name).constantize
@@ -149,7 +154,7 @@ returns
     filters.each do |key, backend|
       Rails.logger.debug { "run postmaster pre filter #{key}: #{backend}" }
       begin
-        backend.run(channel, mail)
+        backend.run(channel, mail, transaction_params)
       rescue => e
         Rails.logger.error "can't run postmaster pre filter #{key}: #{backend}"
         Rails.logger.error e.inspect
@@ -163,15 +168,12 @@ returns
       return
     end
 
-    # set interface handle
-    original_interface_handle = ApplicationHandleInfo.current
-
     ticket       = nil
     article      = nil
     session_user = nil
 
     # use transaction
-    Transaction.execute(interface_handle: "#{original_interface_handle}.postmaster") do
+    Transaction.execute(transaction_params) do
 
       # get sender user
       session_user_id = mail[:'x-zammad-session-user-id']
@@ -226,6 +228,11 @@ returns
         group = nil
         if channel[:group_id]
           group = Group.lookup(id: channel[:group_id])
+        else
+          mail_to_group = self.class.mail_to_group(mail[:to])
+          if mail_to_group.present?
+            group = mail_to_group
+          end
         end
         if group.blank? || group.active == false
           group = Group.where(active: true).order(id: :asc).first
@@ -322,6 +329,20 @@ returns
     [ticket, article, session_user, mail]
   end
 
+  def self.mail_to_group(to)
+    begin
+      to = Mail::AddressList.new(to)&.addresses&.first&.address
+    rescue
+      Rails.logger.error 'Can not parse :to field for group destination!'
+    end
+    return if to.blank?
+
+    email = EmailAddress.find_by(email: to)
+    return if email&.channel.blank?
+
+    email.channel&.group
+  end
+
   def self.check_attributes_by_x_headers(header_name, value)
     class_name = nil
     attribute = nil
@@ -365,13 +386,13 @@ returns
 
     from = from.gsub('<>', '').strip
     mail_address = begin
-                     Mail::AddressList.new(from).addresses
-                                      .select { |a| a.address.present? }
-                                      .partition { |a| a.address.match?(EMAIL_REGEX) }
-                                      .flatten.first
-                   rescue Mail::Field::ParseError => e
-                     STDOUT.puts e
-                   end
+      Mail::AddressList.new(from).addresses
+                       .select { |a| a.address.present? }
+                       .partition { |a| a.address.match?(EMAIL_REGEX) }
+                       .flatten.first
+    rescue Mail::Field::ParseError => e
+      $stdout.puts e
+    end
 
     if mail_address&.address.present?
       data[:from_email]        = mail_address.address
@@ -512,13 +533,27 @@ process unprocessable_mails (tmp/unprocessable_mail/*.eml) again
   def force_single_part_encoding_if_needed(part)
     return if part.charset != 'iso-2022-jp'
 
-    part.body = part.body.encoded.unpack1('M').tr('_', ' ').force_encoding('ISO-2022-JP').encode('UTF-8')
+    part.body = part.body.encoded.unpack1('M').force_encoding('ISO-2022-JP').encode('UTF-8')
+  end
+
+  ISO2022JP_REGEXP = /=\?ISO-2022-JP\?B\?(.+?)\?=/.freeze
+
+  # https://github.com/zammad/zammad/issues/3115
+  def header_field_unpack_japanese(field)
+    field.value.gsub ISO2022JP_REGEXP do
+      Base64.decode64($1).force_encoding('SJIS').encode('UTF-8')
+    end
   end
 
   def message_header_hash(mail)
     imported_fields = mail.header.fields.map do |f|
       begin
-        value = f.to_utf8
+        value = if f.value.match?(ISO2022JP_REGEXP)
+                  header_field_unpack_japanese(f)
+                else
+                  f.to_utf8
+                end
+
         if value.blank?
           value = f.decoded.to_utf8
         end
@@ -569,10 +604,10 @@ process unprocessable_mails (tmp/unprocessable_mail/*.eml) again
 
   def body_text(message, **options)
     body_text = begin
-                  message.body.to_s
-                rescue Mail::UnknownEncodingType # see test/data/mail/mail043.box / issue #348
-                  message.body.raw_source
-                end
+      message.body.to_s
+    rescue Mail::UnknownEncodingType # see test/data/mail/mail043.box / issue #348
+      message.body.raw_source
+    end
 
     body_text = body_text.utf8_encode(from: message.charset, fallback: :read_as_sanitized_binary)
     body_text = Mail::Utilities.to_lf(body_text)
@@ -664,11 +699,12 @@ process unprocessable_mails (tmp/unprocessable_mail/*.eml) again
       filename = file.header[:content_disposition].try(:filename)
     rescue
       begin
-        if file.header[:content_disposition].to_s =~ /(filename|name)(\*{0,1})="(.+?)"/i
+        case file.header[:content_disposition].to_s
+        when /(filename|name)(\*{0,1})="(.+?)"/i
           filename = $3
-        elsif file.header[:content_disposition].to_s =~ /(filename|name)(\*{0,1})='(.+?)'/i
+        when /(filename|name)(\*{0,1})='(.+?)'/i
           filename = $3
-        elsif file.header[:content_disposition].to_s =~ /(filename|name)(\*{0,1})=(.+?);/i
+        when /(filename|name)(\*{0,1})=(.+?);/i
           filename = $3
         end
       rescue
@@ -677,11 +713,12 @@ process unprocessable_mails (tmp/unprocessable_mail/*.eml) again
     end
 
     begin
-      if file.header[:content_disposition].to_s =~ /(filename|name)(\*{0,1})="(.+?)"/i
+      case file.header[:content_disposition].to_s
+      when /(filename|name)(\*{0,1})="(.+?)"/i
         filename = $3
-      elsif file.header[:content_disposition].to_s =~ /(filename|name)(\*{0,1})='(.+?)'/i
+      when /(filename|name)(\*{0,1})='(.+?)'/i
         filename = $3
-      elsif file.header[:content_disposition].to_s =~ /(filename|name)(\*{0,1})=(.+?);/i
+      when /(filename|name)(\*{0,1})=(.+?);/i
         filename = $3
       end
     rescue
@@ -690,11 +727,12 @@ process unprocessable_mails (tmp/unprocessable_mail/*.eml) again
 
     # as fallback, use raw values
     if filename.blank?
-      if headers_store['Content-Disposition'].to_s =~ /(filename|name)(\*{0,1})="(.+?)"/i
+      case headers_store['Content-Disposition'].to_s
+      when /(filename|name)(\*{0,1})="(.+?)"/i
         filename = $3
-      elsif headers_store['Content-Disposition'].to_s =~ /(filename|name)(\*{0,1})='(.+?)'/i
+      when /(filename|name)(\*{0,1})='(.+?)'/i
         filename = $3
-      elsif headers_store['Content-Disposition'].to_s =~ /(filename|name)(\*{0,1})=(.+?);/i
+      when /(filename|name)(\*{0,1})=(.+?);/i
         filename = $3
       end
     end
@@ -703,10 +741,8 @@ process unprocessable_mails (tmp/unprocessable_mail/*.eml) again
     filename ||= file.header[:content_location].to_s.force_encoding('utf-8')
 
     # generate file name based on content-id
-    if filename.blank? && headers_store['Content-ID'].present?
-      if headers_store['Content-ID'] =~ /(.+?)@.+?/i
-        filename = $1
-      end
+    if filename.blank? && headers_store['Content-ID'].present? && headers_store['Content-ID'] =~ /(.+?)@.+?/i
+      filename = $1
     end
 
     file_body = String.new(file.body.to_s)
@@ -845,7 +881,7 @@ process unprocessable_mails (tmp/unprocessable_mail/*.eml) again
     begin
       reply_mail = compose_postmaster_reply(msg)
     rescue NotificationFactory::FileNotFoundError => e
-      Rails.logger.error 'No valid postmaster email_oversized template found. Skipping postmaster reply. ' + e.inspect
+      Rails.logger.error "No valid postmaster email_oversized template found. Skipping postmaster reply. #{e.inspect}"
       return
     end
 
@@ -907,12 +943,11 @@ module Mail
   # https://github.com/zammad/zammad/issues/348
   class Body
     def decoded
-      if !Encodings.defined?(encoding)
-        #raise UnknownEncodingType, "Don't know how to decode #{encoding}, please call #encoded and decode it yourself."
+      if Encodings.defined?(encoding)
+        Encodings.get_encoding(encoding).decode(raw_source)
+      else
         Rails.logger.info "UnknownEncodingType: Don't know how to decode #{encoding}!"
         raw_source
-      else
-        Encodings.get_encoding(encoding).decode(raw_source)
       end
     end
   end

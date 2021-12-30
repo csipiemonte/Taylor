@@ -30,6 +30,7 @@ class App.UiElement.ticket_perform_action
         if groupKey is 'notification'
           elements["#{groupKey}.email"] = { name: 'email', display: 'Email' }
           elements["#{groupKey}.sms"] = { name: 'sms', display: 'SMS' }
+          elements["#{groupKey}.webhook"] = { name: 'webhook', display: 'Webhook' }
         else if groupKey is 'article'
           elements["#{groupKey}.note"] = { name: 'note', display: 'Note' }
           elements["#{groupKey}.note_ext_act"] = { name: 'note_ext_act', display: 'Nota External Activity' }
@@ -350,7 +351,7 @@ class App.UiElement.ticket_perform_action
       if attribute.value && attribute.value[groupAndAttribute]
         config['value'] = _.clone(attribute.value[groupAndAttribute]['value'])
       config.multiple = false
-      config.nulloption = false
+      config.nulloption = config.null
       if config.tag is 'checkbox'
         config.tag = 'select'
       tagSearch = "#{config.tag}_search"
@@ -431,12 +432,17 @@ class App.UiElement.ticket_perform_action
 
     selectionRecipient = columnSelectRecipient.element()
 
-    notificationElement = $( App.view('generic/ticket_perform_action/notification')(
+    elementTemplate = 'notification'
+    if notificationType is 'webhook'
+      elementTemplate =  'webhook'
+
+    notificationElement = $( App.view("generic/ticket_perform_action/#{elementTemplate}")(
       attribute: attribute
       name: name
       notificationType: notificationType
       meta: meta || {}
     ))
+
     notificationElement.find('.js-recipient select').replaceWith(selectionRecipient)
 
     visibilitySelection = App.UiElement.select.render(

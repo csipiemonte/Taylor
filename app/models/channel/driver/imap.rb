@@ -174,10 +174,45 @@ example
       if content_messages >= content_max_check
         content_messages = message_ids.count
       end
+
+      archive_possible   = false
+      archive_check      = 0
+      archive_max_check  = 500
+      archive_days_range = 14
+      archive_week_range = archive_days_range / 7
+      message_ids.reverse_each do |message_id|
+        message_meta = nil
+        timeout(1.minute) do
+          message_meta = @imap.fetch(message_id, ['RFC822.HEADER'])[0]
+        end
+
+        headers = self.class.extract_rfc822_headers(message_meta)
+        next if messages_is_verify_message?(headers)
+        next if messages_is_ignore_message?(headers)
+        next if headers['Date'].blank?
+
+        archive_check += 1
+        break if archive_check >= archive_max_check
+
+        begin
+          date = Time.zone.parse(headers['Date'])
+        rescue => e
+          Rails.logger.error e
+          next
+        end
+        break if date >= Time.zone.now - archive_days_range.days
+
+        archive_possible = true
+
+        break
+      end
+
       disconnect
       return {
-        result:           'ok',
-        content_messages: content_messages,
+        result:             'ok',
+        content_messages:   content_messages,
+        archive_possible:   archive_possible,
+        archive_week_range: archive_week_range,
       }
     end
 
@@ -229,9 +264,7 @@ example
     message_ids.each do |message_id|
       count += 1
 
-      if (count % active_check_interval).zero?
-        break if channel_has_changed?(channel)
-      end
+      break if (count % active_check_interval).zero? && channel_has_changed?(channel)
       break if max_process_count_has_reached?(channel, count, count_max)
 
       Rails.logger.info " - message #{count}/#{count_all}"
@@ -240,7 +273,7 @@ example
       timeout(FETCH_METADATA_TIMEOUT) do
         message_meta = @imap.fetch(message_id, ['RFC822.SIZE', 'FLAGS', 'INTERNALDATE', 'RFC822.HEADER'])[0]
       rescue Net::IMAP::ResponseParseError => e
-        raise if !e.message.include?('unknown token')
+        raise if e.message.exclude?('unknown token')
 
         result = 'error'
         notice += <<~NOTICE
@@ -296,10 +329,10 @@ example
 
       begin
         timeout(FETCH_MSG_TIMEOUT) do
-          if !keep_on_server
-            @imap.store(message_id, '+FLAGS', [:Deleted])
-          else
+          if keep_on_server
             @imap.store(message_id, '+FLAGS', [:Seen])
+          else
+            @imap.store(message_id, '+FLAGS', [:Deleted])
           end
         end
       rescue Timeout::Error => e
@@ -363,7 +396,7 @@ returns
   # @return [Hash<String=>String>]
   def self.parse_rfc822_headers(string)
     array = string
-              .gsub("\r\n\t", ' ') # Some servers (e.g. office365) may put attribute value on a separate line and tab it
+              .gsub("\r\n\t", ' ') # Some servers (e.g. microsoft365) may put attribute value on a separate line and tab it
               .lines(chomp: true)
               .map { |line| line.split(/:\s*/, 2).map(&:strip) }
 
@@ -444,9 +477,7 @@ returns
 
     # verify if message is already imported via same channel, if not, import it again
     ticket = article.ticket
-    if ticket&.preferences && ticket.preferences[:channel_id].present? && channel.present?
-      return false if ticket.preferences[:channel_id] != channel[:id]
-    end
+    return false if ticket&.preferences && ticket.preferences[:channel_id].present? && channel.present? && ticket.preferences[:channel_id] != channel[:id]
 
     timeout(1.minute) do
       @imap.store(message_id, '+FLAGS', [:Seen])
@@ -468,7 +499,7 @@ returns
 =end
 
   def deleted?(message_meta, count, count_all)
-    return false if !message_meta.attr['FLAGS'].include?(:Deleted)
+    return false if message_meta.attr['FLAGS'].exclude?(:Deleted)
 
     Rails.logger.info "  - ignore message #{count}/#{count_all} - because message has already delete flag"
     true
@@ -539,10 +570,8 @@ returns
     true
   end
 
-  def timeout(seconds)
-    Timeout.timeout(seconds) do
-      yield
-    end
+  def timeout(seconds, &block)
+    Timeout.timeout(seconds, &block)
   end
 
 end

@@ -48,13 +48,19 @@ returns
     http = get_http(uri, options)
 
     # prepare request
-    request = Net::HTTP::Get.new(uri, { 'User-Agent' => 'Zammad User Agent' })
+    request = Net::HTTP::Get.new(uri)
+
+    # set headers
+    request = set_headers(request, options)
 
     # http basic auth (if needed)
     request = set_basic_auth(request, options)
 
     # set params
     request = set_params(request, params, options)
+
+    # add signature
+    request = set_signature(request, options)
 
     # start http call
     begin
@@ -104,13 +110,19 @@ returns
     http = get_http(uri, options)
 
     # prepare request
-    request = Net::HTTP::Post.new(uri, { 'User-Agent' => 'Zammad User Agent' })
+    request = Net::HTTP::Post.new(uri)
+
+    # set headers
+    request = set_headers(request, options)
 
     # set params
     request = set_params(request, params, options)
 
     # http basic auth (if needed)
     request = set_basic_auth(request, options)
+
+    # add signature
+    request = set_signature(request, options)
 
     # start http call
     begin
@@ -159,13 +171,19 @@ returns
     http = get_http(uri, options)
 
     # prepare request
-    request = Net::HTTP::Put.new(uri, { 'User-Agent' => 'Zammad User Agent' })
+    request = Net::HTTP::Put.new(uri)
+
+    # set headers
+    request = set_headers(request, options)
 
     # set params
     request = set_params(request, params, options)
 
     # http basic auth (if needed)
     request = set_basic_auth(request, options)
+
+    # add signature
+    request = set_signature(request, options)
 
     # start http call
     begin
@@ -210,10 +228,16 @@ returns
     http = get_http(uri, options)
 
     # prepare request
-    request = Net::HTTP::Delete.new(uri, { 'User-Agent' => 'Zammad User Agent' })
+    request = Net::HTTP::Delete.new(uri)
+
+    # set headers
+    request = set_headers(request, options)
 
     # http basic auth (if needed)
     request = set_basic_auth(request, options)
+
+    # add signature
+    request = set_signature(request, options)
 
     # start http call
     begin
@@ -277,7 +301,7 @@ returns
     proxy_no = options['proxy_no'] || Setting.get('proxy_no') || ''
     proxy_no = proxy_no.split(',').map(&:strip) || []
     proxy_no.push('localhost', '127.0.0.1', '::1')
-    if proxy.present? && !proxy_no.include?(uri.host.downcase)
+    if proxy.present? && proxy_no.exclude?(uri.host.downcase)
       if proxy =~ /^(.+?):(.+?)$/
         proxy_host = $1
         proxy_port = $2
@@ -306,8 +330,10 @@ returns
 
     if uri.scheme.match?(/https/i)
       http.use_ssl = true
-      # @TODO verify_mode should be configurable
-      http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+      if !options.fetch(:verify_ssl, false)
+        http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      end
     end
 
     http
@@ -334,6 +360,27 @@ returns
     request
   end
 
+  def self.set_headers(request, options)
+    defaults = { 'User-Agent' => 'Zammad User Agent' }
+    headers  = defaults.merge(options.fetch(:headers, {}))
+
+    headers.each do |header, value|
+      request[header] = value
+    end
+
+    request
+  end
+
+  def self.set_signature(request, options)
+    return request if options[:signature_token].blank?
+    return request if request.body.blank?
+
+    signature = OpenSSL::HMAC.hexdigest('sha1', options[:signature_token], request.body)
+    request['X-Hub-Signature'] = "sha1=#{signature}"
+
+    request
+  end
+
   def self.log(url, request, response, options)
     return if !options[:log]
 
@@ -349,7 +396,7 @@ returns
     end
     body = request.body
     if body
-      request_data[:content] += "\n" + body
+      request_data[:content] += "\n#{body}"
     end
     request_data[:content] = request_data[:content].slice(0, 8000)
 
@@ -371,7 +418,7 @@ returns
       end
       body = response.body
       if body
-        response_data[:content] += "\n" + body
+        response_data[:content] += "\n#{body}"
       end
       response_data[:content] = response_data[:content].slice(0, 8000)
     end

@@ -25,7 +25,7 @@ examples how to use
 
 =end
 
-  def initialize(objects:, locale: nil, timezone: nil, template:, escape: true)
+  def initialize(objects:, template:, locale: nil, timezone: nil, escape: true)
     @objects  = objects
     @locale   = locale || Locale.default
     @timezone = timezone || Setting.get('timezone_default')
@@ -139,11 +139,7 @@ examples how to use
         break
       end
     end
-    placeholder = if !value
-                    object_refs
-                  else
-                    value
-                  end
+    placeholder = value || object_refs
 
     escaping(convert_to_timezone(placeholder), escape)
   end
@@ -173,8 +169,8 @@ examples how to use
   private
 
   def convert_to_timezone(value)
-    return Translation.timestamp(@locale, @timezone, value) if value.class == ActiveSupport::TimeWithZone
-    return Translation.date(@locale, value) if value.class == Date
+    return Translation.timestamp(@locale, @timezone, value) if value.instance_of?(ActiveSupport::TimeWithZone)
+    return Translation.date(@locale, value) if value.instance_of?(Date)
 
     value
   end

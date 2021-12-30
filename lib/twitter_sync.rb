@@ -122,7 +122,7 @@ class TwitterSync
     # normalize message
     message = {}
 
-    if tweet.class == Twitter::Tweet
+    if tweet.instance_of?(Twitter::Tweet)
       message = {
         type: 'tweet',
         text: tweet.text,
@@ -253,10 +253,10 @@ class TwitterSync
       if item['entities']
 
         item['entities']['user_mentions']&.each do |local_user|
-          if !to
-            to = ''
-          else
+          if to
             to += ', '
+          else
+            to = ''
           end
           to += "@#{local_user['screen_name']}"
           mention_ids.push local_user['id']
@@ -380,10 +380,10 @@ class TwitterSync
     from = "@#{tweet.user.screen_name}"
     mention_ids = []
     tweet.user_mentions&.each do |local_user|
-      if !to
-        to = ''
-      else
+      if to
         to += ', '
+      else
+        to = ''
       end
       to += "@#{local_user.screen_name}"
       mention_ids.push local_user.id
@@ -549,8 +549,9 @@ create a tweet or direct message from an article
     # no changes in post is from page user it self
     if channel.options[:user][:id].to_s == user_id.to_s
       if !ticket
-        return Ticket::State.find_by(name: 'closed') if !ticket
+        return Ticket::State.find_by(name: 'closed')
       end
+
       return ticket.state
     end
 
@@ -609,11 +610,11 @@ or
     # replace Twitter::NullObject with nill to prevent elasticsearch index issue
     preferences.each do |key, value|
 
-      if value.class == Twitter::Place || value.class == Twitter::Geo
+      if value.instance_of?(Twitter::Place) || value.instance_of?(Twitter::Geo)
         preferences[key] = value.to_h
         next
       end
-      if value.class == Twitter::NullObject
+      if value.instance_of?(Twitter::NullObject)
         preferences[key] = nil
         next
       end
@@ -621,11 +622,11 @@ or
       next if !value.is_a?(Hash)
 
       value.each do |sub_key, sub_level|
-        if sub_level.class == NilClass
+        if sub_level.instance_of?(NilClass)
           value[sub_key] = nil
           next
         end
-        if sub_level.class == Twitter::Place || sub_level.class == Twitter::Geo
+        if sub_level.instance_of?(Twitter::Place) || sub_level.instance_of?(Twitter::Geo)
           value[sub_key] = sub_level.to_h
           next
         end

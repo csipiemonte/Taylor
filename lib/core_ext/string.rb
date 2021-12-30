@@ -32,7 +32,7 @@ class String
     quote = split("\n")
     body_quote = ''
     quote.each do |line|
-      body_quote = body_quote + '> ' + line + "\n"
+      body_quote = "#{body_quote}> #{line}\n"
     end
     body_quote
   end
@@ -124,16 +124,7 @@ class String
     # find <a href=....> and replace it with [x]
     link_list = ''
     counter   = 0
-    if !string_only
-      if string.scan(/<a[[:space:]]/i).count < 5_000
-        string.gsub!(/<a[[:space:]].*?href=("|')(.+?)("|').*?>/ix) do
-          link = $2
-          counter = counter + 1
-          link_list += "[#{counter}] #{link}\n"
-          "[#{counter}] "
-        end
-      end
-    else
+    if string_only
       string.gsub!(%r{<a[[:space:]]+(|\S+[[:space:]]+)href=("|')(.+?)("|')([[:space:]]*|[[:space:]]+[^>]*)>(.+?)<[[:space:]]*/a[[:space:]]*>}mxi) do |_placeholder|
         link = $3
         text = $6
@@ -168,6 +159,13 @@ class String
           "#{link} (######LINKRAW:#{text}######)"
         end
       end
+    elsif string.scan(/<a[[:space:]]/i).count < 5_000
+      string.gsub!(/<a[[:space:]].*?href=("|')(.+?)("|').*?>/ix) do
+        link = $2
+        counter = counter + 1
+        link_list += "[#{counter}] #{link}\n"
+        "[#{counter}] "
+      end
     end
 
     # remove style tags with content
@@ -195,7 +193,7 @@ class String
 
     # blockquote handling
     string.gsub!(%r{<blockquote(| [^>]*)>(.+?)</blockquote>}m) do
-      "\n" + $2.html2text(true).gsub(/^(.*)$/, '&gt; \1') + "\n"
+      "\n#{$2.html2text(true).gsub(/^(.*)$/, '&gt; \1')}\n"
     end
 
     # pre/code handling 2/2
@@ -294,7 +292,7 @@ class String
 
     # add extracted links
     if link_list != ''
-      string += "\n\n\n" + link_list
+      string += "\n\n\n#{link_list}"
     end
 
     # remove double multiple empty lines

@@ -7,11 +7,13 @@ RSpec.describe 'Signup', type: :system, authenticated_as: false do
     fill_in 'firstname',        with: 'Test'
     fill_in 'lastname',         with: 'Test'
     fill_in 'email',            with: 'test@example.com'
-    fill_in 'password',         with: 'badpw'
-    fill_in 'password_confirm', with: 'badpw'
+    fill_in 'password',         with: 'asdasdasdasd'
+    fill_in 'password_confirm', with: 'asdasdasdasd'
 
     click '.js-submit'
 
-    expect(page).to have_text 'Invalid password,'
+    within '.js-danger' do
+      expect(page).to have_text('Invalid password,').and(have_no_text('["'))
+    end
   end
 end

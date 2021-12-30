@@ -122,7 +122,7 @@ returns
         local_caller_ids = Cti::CallerId.extract_numbers(value)
         next if local_caller_ids.blank?
 
-        caller_ids = caller_ids.concat(local_caller_ids)
+        caller_ids.concat(local_caller_ids)
       end
 
       # search for caller ids to keep
@@ -226,7 +226,7 @@ returns
       # see specs for example
       return [] if !text.is_a?(String)
 
-      text.scan(/([\d|\s|\-|(|)]{6,26})/).map do |match|
+      text.scan(/([\d\s\-(|)]{6,26})/).map do |match|
         normalize_number(match[0])
       end
     end

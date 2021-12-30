@@ -21,14 +21,15 @@ class Sessions::Event::Base
   end
 
   def self.inherited(subclass)
+    super
     subclass.instance_variable_set(:@database_connection, @database_connection)
   end
 
   def websocket_send(recipient_client_id, data)
-    msg = if data.class != Array
-            "[#{data.to_json}]"
-          else
+    msg = if data.instance_of?(Array)
             data.to_json
+          else
+            "[#{data.to_json}]"
           end
     if @clients[recipient_client_id]
       log 'debug', "ws send #{msg}", recipient_client_id
@@ -131,9 +132,8 @@ class Sessions::Event::Base
   end
 
   def log(level, data, client_id = nil)
-    if !@options[:v]
-      return if level == 'debug'
-    end
+    return if !@options[:v] && level == 'debug'
+
     if !client_id
       client_id = @client_id
     end

@@ -9,6 +9,8 @@ require 'models/concerns/has_xss_sanitized_note_examples'
 require 'models/concerns/has_object_manager_attributes_validation_examples'
 
 RSpec.describe Ticket, type: :model do
+  subject(:ticket) { create(:ticket) }
+
   it_behaves_like 'ApplicationModel'
   it_behaves_like 'CanBeImported'
   it_behaves_like 'CanCsvImport'
@@ -17,8 +19,6 @@ RSpec.describe Ticket, type: :model do
   it_behaves_like 'HasTaskbars'
   it_behaves_like 'HasXssSanitizedNote', model_factory: :ticket
   it_behaves_like 'HasObjectManagerAttributesValidation'
-
-  subject(:ticket) { create(:ticket) }
 
   describe 'Class methods:' do
     describe '.selectors' do
@@ -131,7 +131,7 @@ RSpec.describe Ticket, type: :model do
         context 'and deleting the origin ticket' do
           it 'adds reference number and title to the target ticket' do
             expect { ticket.destroy }
-              .to change { target_ticket.history_get.find { |elem| elem.fetch('type') == 'received_merge' }.dig('value_from') }
+              .to change { target_ticket.history_get.find { |elem| elem.fetch('type') == 'received_merge' }['value_from'] }
               .to("##{ticket.number} #{ticket.title}")
           end
         end
@@ -140,7 +140,7 @@ RSpec.describe Ticket, type: :model do
         context 'and deleting the target ticket' do
           it 'adds reference number and title to the origin ticket' do
             expect { target_ticket.destroy }
-              .to change { ticket.history_get.find { |elem| elem.fetch('type') == 'merged_into' }.dig('value_to') }
+              .to change { ticket.history_get.find { |elem| elem.fetch('type') == 'merged_into' }['value_to'] }
               .to("##{target_ticket.number} #{target_ticket.title}")
           end
         end
@@ -148,6 +148,12 @@ RSpec.describe Ticket, type: :model do
     end
 
     describe '#perform_changes' do
+
+      # a `performable` can be a Trigger or a Job
+      # we use DuckTyping and expect that a performable
+      # implements the following interface
+      let(:performable) { OpenStruct.new(id: 1, perform: perform) }
+
       # Regression test for https://github.com/zammad/zammad/issues/2001
       describe 'argument handling' do
         let(:perform) do
@@ -161,7 +167,7 @@ RSpec.describe Ticket, type: :model do
         end
 
         it 'does not mutate contents of "perform" hash' do
-          expect { ticket.perform_changes(perform, 'trigger', {}, 1) }
+          expect { ticket.perform_changes(performable, 'trigger', {}, 1) }
             .not_to change { perform }
         end
       end
@@ -176,7 +182,7 @@ RSpec.describe Ticket, type: :model do
         end
 
         it 'changes #state to specified value' do
-          expect { ticket.perform_changes(perform, 'trigger', ticket, User.first) }
+          expect { ticket.perform_changes(performable, 'trigger', ticket, User.first) }
             .to change { ticket.reload.state.name }.to('closed')
         end
       end
@@ -198,7 +204,7 @@ RSpec.describe Ticket, type: :model do
 
         it 'changes pending date to given date' do
           freeze_time do
-            expect { ticket.perform_changes(perform, 'trigger', ticket, User.first) }
+            expect { ticket.perform_changes(performable, 'trigger', ticket, User.first) }
               .to change(ticket, :pending_time).to(be_within(1.minute).of(timestamp))
           end
         end
@@ -211,7 +217,7 @@ RSpec.describe Ticket, type: :model do
             freeze_time do
               interval = relative_value.send(relative_range).from_now
 
-              expect { ticket.perform_changes(perform, 'trigger', ticket, User.first) }
+              expect { ticket.perform_changes(performable, 'trigger', ticket, User.first) }
                 .to change(ticket, :pending_time).to(be_within(1.minute).of(interval))
             end
           end
@@ -256,7 +262,7 @@ RSpec.describe Ticket, type: :model do
         end
 
         it 'performs a ticket deletion on a ticket' do
-          expect { ticket.perform_changes(perform, 'trigger', ticket, User.first) }
+          expect { ticket.perform_changes(performable, 'trigger', ticket, User.first) }
             .to change(ticket, :destroyed?).to(true)
         end
       end
@@ -300,7 +306,7 @@ RSpec.describe Ticket, type: :model do
               .not_to receive(:template)
               .with(hash_including(objects: { ticket: ticket, article: new_article }))
 
-            ticket.perform_changes(trigger.perform, 'trigger', { article_id: article.id }, 1)
+            ticket.perform_changes(trigger, 'trigger', { article_id: article.id }, 1)
           end
         end
       end
@@ -329,12 +335,12 @@ RSpec.describe Ticket, type: :model do
         shared_examples 'verify log visibility status' do
           shared_examples 'notification trigger' do
             it 'adds Ticket::Article' do
-              expect { ticket.perform_changes(perform, 'trigger', ticket, user) }
+              expect { ticket.perform_changes(performable, 'trigger', ticket, user) }
                 .to change { ticket.articles.count }.by(1)
             end
 
             it 'new Ticket::Article visibility reflects setting' do
-              ticket.perform_changes(perform, 'trigger', ticket, User.first)
+              ticket.perform_changes(performable, 'trigger', ticket, User.first)
               new_article = ticket.articles.reload.last
               expect(new_article.internal).to be target_internal_value
             end
@@ -391,6 +397,22 @@ RSpec.describe Ticket, type: :model do
           before { create(:channel, area: 'Sms::Notification') }
 
           include_examples 'verify log visibility status'
+        end
+      end
+
+      context 'with a "notification.webhook" trigger', performs_jobs: true do
+        let(:trigger) do
+          create(:trigger,
+                 perform: {
+                   'notification.webhook' => {
+                     endpoint: 'http://api.example.com/webhook',
+                     token:    '53CR3t'
+                   }
+                 })
+        end
+
+        it 'schedules the webhooks notification job' do
+          expect { ticket.perform_changes(trigger, 'trigger', {}, 1) }.to have_enqueued_job(TriggerWebhookJob).with(trigger, ticket, nil)
         end
       end
     end
@@ -1192,6 +1214,29 @@ RSpec.describe Ticket, type: :model do
             end
           end
         end
+      end
+    end
+
+    describe 'Ticket lifecycle order-of-operations:' do
+      subject!(:ticket) { create(:ticket) }
+
+      let!(:agent) { create(:agent, groups: [group]) }
+      let(:group) { create(:group) }
+
+      before do
+        create(
+          :trigger,
+          condition: { 'ticket.action' => { 'operator' => 'is', 'value' => 'create' } },
+          perform:   { 'ticket.group_id' => { 'value' => group.id } }
+        )
+      end
+
+      it 'fires triggers before new ticket notifications are sent' do
+        expect { Observer::Transaction.commit }
+          .to change { ticket.reload.group }.to(group)
+
+        expect { Scheduler.worker(true) }
+          .to change { NotificationFactory::Mailer.already_sent?(ticket, agent, 'email') }.to(1)
       end
     end
   end

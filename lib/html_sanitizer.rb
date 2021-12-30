@@ -64,10 +64,8 @@ satinize html string based on whiltelist
         end
 
         # check if href is different to text
-        if node.name == 'a' && !url_same?(node['href'], node.text)
-          if node['title'].blank?
-            node['title'] = node['href']
-          end
+        if node.name == 'a' && !url_same?(node['href'], node.text) && node['title'].blank?
+          node['title'] = node['href']
         end
       end
 
@@ -89,7 +87,7 @@ satinize html string based on whiltelist
         end
 
         # replace tags, keep subtree
-        if !tags_whitelist.include?(node.name)
+        if tags_whitelist.exclude?(node.name)
           node.replace node.children.to_s
           Loofah::Scrubber::STOP
         end
@@ -108,17 +106,17 @@ satinize html string based on whiltelist
           classes = node['class'].gsub(/\t|\n|\r/, '').split(' ')
           class_new = ''
           classes.each do |local_class|
-            next if !classes_whitelist.include?(local_class.to_s.strip)
+            next if classes_whitelist.exclude?(local_class.to_s.strip)
 
             if class_new != ''
               class_new += ' '
             end
             class_new += local_class
           end
-          if class_new != ''
-            node['class'] = class_new
-          else
+          if class_new == ''
             node.delete('class')
+          else
+            node['class'] = class_new
           end
         end
 
@@ -148,8 +146,8 @@ satinize html string based on whiltelist
             next if !prop[0]
 
             key = prop[0].strip
-            next if !css_properties_whitelist.include?(node.name)
-            next if !css_properties_whitelist[node.name].include?(key)
+            next if css_properties_whitelist.exclude?(node.name)
+            next if css_properties_whitelist[node.name].exclude?(key)
             next if css_values_blacklist[node.name]&.include?(local_pear.gsub(/[[:space:]]/, '').strip)
 
             style += "#{local_pear};"
@@ -252,7 +250,7 @@ cleanup html string:
     #return string
     tags_backlist = %w[span center]
     scrubber = Loofah::Scrubber.new do |node|
-      next if !tags_backlist.include?(node.name)
+      next if tags_backlist.exclude?(node.name)
 
       hit = false
       local_node = nil
@@ -332,8 +330,8 @@ cleanup html string:
       end
 
       # remove not needed new lines
-      if node.class == Nokogiri::XML::Text
-        if !node.parent || (node.parent.name != 'pre' && node.parent.name != 'code')
+      if node.instance_of?(Nokogiri::XML::Text)
+        if !node.parent || (node.parent.name != 'pre' && node.parent.name != 'code') # rubocop:disable Style/SoleNestedConditional
           content = node.content
           if content
             if content != ' ' && content != "\n"

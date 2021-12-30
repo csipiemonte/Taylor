@@ -22,6 +22,11 @@ class App.ControllerGenericNew extends App.ControllerModal
     object = new App[ @genericObject ]
     object.load(params)
 
+    # validate form using HTML5 validity check
+    element = $(e.target).closest('form').get(0)
+    if element && element.reportValidity && !element.reportValidity()
+      return false
+
     # validate
     errors = object.validate()
     if errors
@@ -69,6 +74,11 @@ class App.ControllerGenericEdit extends App.ControllerModal
   onSubmit: (e) ->
     params = @formParam(e.target)
     @item.load(params)
+
+    # validate form using HTML5 validity check
+    element = $(e.target).closest('form').get(0)
+    if element && element.reportValidity && !element.reportValidity()
+      return false
 
     # validate
     errors = @item.validate()
@@ -128,7 +138,7 @@ class App.ControllerGenericIndex extends App.Controller
     @render()
 
     # fetch all
-    if !@disableInitFetch
+    if !@disableInitFetch && !@pageData.pagerAjax
       App[ @genericObject ].fetchFull(
         ->
         clear: true
@@ -146,12 +156,45 @@ class App.ControllerGenericIndex extends App.Controller
     if @subscribeId
       App[ @genericObject ].unsubscribe(@subscribeId)
 
+  paginate: (page) =>
+    return if page is @pageData.pagerSelected
+    @pageData.pagerSelected = page
+    @render()
+
   render: =>
+    if @pageData.pagerAjax
+      sortBy  = @table?.customOrderBy || @table?.orderBy || @defaultSortBy  || 'id'
+      orderBy = @table?.customOrderDirection || @table?.orderDirection || @defaultOrder || 'ASC'
+
+      fallbackSortBy  = sortBy
+      fallbackOrderBy = orderBy
+      if sortBy isnt 'id'
+        fallbackSortBy  = "#{sortBy}, id"
+        fallbackOrderBy = "#{orderBy}, ASC"
+
+      @startLoading()
+      App[@genericObject].indexFull(
+        (collection, data) =>
+          @pageData.pagerTotalCount = data.total_count
+          @stopLoading()
+          @renderObjects(collection)
+        {
+          refresh: false
+          sort_by: fallbackSortBy
+          order_by:  fallbackOrderBy
+          page: @pageData.pagerSelected
+          per_page: @pageData.pagerPerPage
+        }
+      )
+      return
 
     objects = App[@genericObject].search(
       sortBy: @defaultSortBy || 'name'
       order:  @defaultOrder
     )
+    @renderObjects(objects)
+
+  renderObjects: (objects) =>
 
     # remove ignored items from collection
     if @ignoreObjectIDs
@@ -198,10 +241,24 @@ class App.ControllerGenericIndex extends App.Controller
       },
       @pageData.tableExtend
     )
+
+    if @pageData.pagerAjax
+      params = _.extend(
+        {
+          pagerAjax: @pageData.pagerAjax
+          pagerBaseUrl: @pageData.pagerBaseUrl
+          pagerSelected: @pageData.pagerSelected
+          pagerPerPage: @pageData.pagerPerPage
+          pagerTotalCount: @pageData.pagerTotalCount
+          sortRenderCallback: @render
+        },
+        params
+      )
+
     if !@table
       @table = new App.ControllerTable(params)
     else
-      @table.update(objects: objects)
+      @table.update(objects: objects, pagerSelected: @pageData.pagerSelected, pagerTotalCount: @pageData.pagerTotalCount)
 
   edit: (id, e) =>
     e.preventDefault()
@@ -678,8 +735,10 @@ class App.GenericHistory extends App.ControllerModal
 
         if item.value_to
           if item.value_from
-            content += " #{ @T( 'to' ) }"
+            content += ' 🡒'
           content += " '#{ App.Utils.htmlEscape(item.value_to) }'"
+        else if item.value_from
+          content += " 🡒 '-'"
 
       newItem.records.push content
 

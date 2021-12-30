@@ -2,7 +2,7 @@
 
 module Channel::Filter::SenderIsSystemAddress
 
-  def self.run(_channel, mail)
+  def self.run(_channel, mail, _transaction_params)
 
     # if attributes already set by header
     return if mail[:'x-zammad-ticket-create-article-sender']
@@ -26,7 +26,7 @@ module Channel::Filter::SenderIsSystemAddress
         return true
       end
     rescue => e
-      Rails.logger.error 'SenderIsSystemAddress: ' + e.inspect
+      Rails.logger.error "SenderIsSystemAddress: #{e.inspect}"
     end
 
     # check if sender is agent
@@ -53,7 +53,7 @@ module Channel::Filter::SenderIsSystemAddress
       end
       return true
     rescue => e
-      Rails.logger.error 'SenderIsSystemAddress: ' + e.inspect
+      Rails.logger.error "SenderIsSystemAddress: #{e.inspect}"
     end
 
     true
