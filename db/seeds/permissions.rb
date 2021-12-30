@@ -249,75 +249,85 @@ Permission.create_if_not_exists(
   },
 )
 Permission.create_if_not_exists(
-  name:        'user_preferences',
-  note:        'User Preferences',
-  preferences: {},
+  name:         'user_preferences',
+  note:         'User Preferences',
+  preferences:  {},
+  allow_signup: true,
 )
 Permission.create_if_not_exists(
-  name:        'user_preferences.password',
-  note:        'Change %s',
-  preferences: {
+  name:         'user_preferences.password',
+  note:         'Change %s',
+  preferences:  {
     translations: ['Password']
   },
+  allow_signup: true,
 )
 Permission.create_if_not_exists(
-  name:        'user_preferences.notifications',
-  note:        'Manage %s',
-  preferences: {
+  name:         'user_preferences.notifications',
+  note:         'Manage %s',
+  preferences:  {
     translations: ['Notifications'],
     required:     ['ticket.agent'],
   },
+  allow_signup: true,
 )
 Permission.create_if_not_exists(
-  name:        'user_preferences.access_token',
-  note:        'Manage %s',
-  preferences: {
+  name:         'user_preferences.access_token',
+  note:         'Manage %s',
+  preferences:  {
     translations: ['Token Access']
   },
+  allow_signup: true,
 )
 Permission.create_if_not_exists(
-  name:        'user_preferences.language',
-  note:        'Change %s',
-  preferences: {
+  name:         'user_preferences.language',
+  note:         'Change %s',
+  preferences:  {
     translations: ['Language']
   },
+  allow_signup: true,
 )
 Permission.create_if_not_exists(
-  name:        'user_preferences.linked_accounts',
-  note:        'Manage %s',
-  preferences: {
+  name:         'user_preferences.linked_accounts',
+  note:         'Manage %s',
+  preferences:  {
     translations: ['Linked Accounts']
   },
+  allow_signup: true,
 )
 Permission.create_if_not_exists(
-  name:        'user_preferences.device',
-  note:        'Manage %s',
-  preferences: {
+  name:         'user_preferences.device',
+  note:         'Manage %s',
+  preferences:  {
     translations: ['Devices']
   },
+  allow_signup: true,
 )
 Permission.create_if_not_exists(
-  name:        'user_preferences.avatar',
-  note:        'Manage %s',
-  preferences: {
+  name:         'user_preferences.avatar',
+  note:         'Manage %s',
+  preferences:  {
     translations: ['Avatar']
   },
+  allow_signup: true,
 )
 Permission.create_if_not_exists(
-  name:        'user_preferences.calendar',
-  note:        'Access to %s',
-  preferences: {
+  name:         'user_preferences.calendar',
+  note:         'Access to %s',
+  preferences:  {
     translations: ['Calendars'],
     required:     ['ticket.agent'],
   },
+  allow_signup: true,
 )
 Permission.create_if_not_exists(
-  name:        'user_preferences.out_of_office',
-  note:        'Change %s',
-  preferences: {
+  name:         'user_preferences.out_of_office',
+  note:         'Change %s',
+  preferences:  {
     translations: ['Out of Office'],
     required:     ['ticket.agent'],
   },
+  allow_signup: true,
 )
 
 Permission.create_if_not_exists(
@@ -336,16 +346,14 @@ Permission.create_if_not_exists(
   name:        'ticket.agent',
   note:        'Access to Agent Tickets based on Group Access',
   preferences: {
-    not:    ['ticket.customer'],
     plugin: ['groups']
   },
 )
 Permission.create_if_not_exists(
-  name:        'ticket.customer',
-  note:        'Access to Customer Tickets based on current_user and organization',
-  preferences: {
-    not: ['ticket.agent'],
-  },
+  name:         'ticket.customer',
+  note:         'Access to Customer Tickets based on current_user and organization',
+  preferences:  {},
+  allow_signup: true,
 )
 Permission.create_if_not_exists(
   name:        'chat',
@@ -359,7 +367,6 @@ Permission.create_if_not_exists(
   note:        'Access to %s',
   preferences: {
     translations: ['Chat'],
-    not:          ['chat.customer'],
   },
 )
 Permission.create_if_not_exists(
@@ -374,7 +381,6 @@ Permission.create_if_not_exists(
   note:        'Access to %s',
   preferences: {
     translations: ['CTI'],
-    not:          ['cti.customer'],
   },
 )
 
