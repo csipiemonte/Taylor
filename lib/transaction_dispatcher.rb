@@ -54,15 +54,9 @@ class TransactionDispatcher
     end
   end
 
-<<<<<<< HEAD:app/models/observer/transaction.rb
-  def self.execute_singel_backend(backend, item, params)
-    Rails.logger.info { "Execute singel backend: #{backend}, item: #{item.slice(:object,:object_id,:user_id,:type, :created_at)}" }
-     # l'oggetto item contiene a volte nei :changes il file in attachment che viene stampato interamente nei log, non mettere a livello info
-    Rails.logger.debug { "Execute singel backend item and params: #{backend}, item: #{item}, params: #{params}" }
-=======
   def self.execute_single_backend(backend, item, params)
-    Rails.logger.debug { "Execute single backend #{backend}" }
->>>>>>> zammad-community/4.1.0:lib/transaction_dispatcher.rb
+     # l'oggetto item contiene a volte nei :changes il file in attachment che viene stampato interamente nei log, non mettere a livello info
+    Rails.logger.debug { "Execute single backend item and params: #{backend}, item: #{item}, params: #{params}" }
     begin
       UserInfo.current_user_id = nil
       integration = backend.new(item, params)

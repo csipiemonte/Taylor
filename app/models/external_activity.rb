@@ -1,4 +1,6 @@
 class ExternalActivity < ApplicationModel
+  include HasTransactionDispatcher # e' l'equivalente del precente observer
+
   belongs_to :ticket
   belongs_to :external_ticketing_system
   after_update :check_needs_attention
