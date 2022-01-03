@@ -378,7 +378,6 @@ class CreateTicket < ActiveRecord::Migration[4.2]
     add_foreign_key :postmaster_filters, :users, column: :updated_by_id
 
     create_table :text_modules do |t|
-      t.references :user,                                    null: true
       t.column :name,                 :string,  limit: 250,  null: false
       t.column :keywords,             :string,  limit: 500,  null: true
       t.column :content,              :text,    limit: 10.megabytes + 1, null: false
@@ -389,9 +388,7 @@ class CreateTicket < ActiveRecord::Migration[4.2]
       t.column :created_by_id,        :integer,              null: false
       t.timestamps limit: 3, null: false
     end
-    add_index :text_modules, [:user_id]
     add_index :text_modules, [:name]
-    add_foreign_key :text_modules, :users
     add_foreign_key :text_modules, :users, column: :created_by_id
     add_foreign_key :text_modules, :users, column: :updated_by_id
 
@@ -405,16 +402,13 @@ class CreateTicket < ActiveRecord::Migration[4.2]
     add_foreign_key :text_modules_groups, :groups
 
     create_table :templates do |t|
-      t.references :user,                                    null: true
       t.column :name,                 :string,  limit: 250,  null: false
       t.column :options,              :text,    limit: 10.megabytes + 1, null: false
       t.column :updated_by_id,        :integer,              null: false
       t.column :created_by_id,        :integer,              null: false
       t.timestamps limit: 3, null: false
     end
-    add_index :templates, [:user_id]
     add_index :templates, [:name]
-    add_foreign_key :templates, :users
     add_foreign_key :templates, :users, column: :created_by_id
     add_foreign_key :templates, :users, column: :updated_by_id
 
@@ -592,6 +586,19 @@ class CreateTicket < ActiveRecord::Migration[4.2]
     add_index :karma_activity_logs, %i[o_id object_lookup_id]
     add_foreign_key :karma_activity_logs, :users
     add_foreign_key :karma_activity_logs, :karma_activities, column: :activity_id
+
+    create_table :webhooks do |t|
+      t.column :name,                       :string, limit: 250,  null: false
+      t.column :endpoint,                   :string, limit: 300,  null: false
+      t.column :signature_token,            :string, limit: 200,  null: true
+      t.column :ssl_verify,                 :boolean,             null: false, default: true
+      t.column :note,                       :string, limit: 500,  null: true
+      t.column :active,                     :boolean,             null: false, default: true
+      t.column :updated_by_id,              :integer,             null: false
+      t.column :created_by_id,              :integer,             null: false
+      t.timestamps limit: 3, null: false
+    end
+
   end
 
   def self.down
@@ -629,5 +636,6 @@ class CreateTicket < ActiveRecord::Migration[4.2]
     drop_table :ticket_priorities
     drop_table :ticket_states
     drop_table :ticket_state_types
+    drop_table :webhooks
   end
 end

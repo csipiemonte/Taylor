@@ -7,6 +7,7 @@ require 'models/concerns/has_groups_permissions_examples'
 require 'models/concerns/has_xss_sanitized_note_examples'
 require 'models/concerns/can_be_imported_examples'
 require 'models/concerns/has_object_manager_attributes_validation_examples'
+require 'models/concerns/user/performs_geo_lookup_examples'
 require 'models/user/has_ticket_create_screen_impact_examples'
 require 'models/user/can_lookup_search_index_attributes_examples'
 require 'models/concerns/has_taskbars_examples'
@@ -29,6 +30,7 @@ RSpec.describe User, type: :model do
   it_behaves_like 'User::HasTicketCreateScreenImpact'
   it_behaves_like 'CanLookupSearchIndexAttributes'
   it_behaves_like 'HasTaskbars'
+  it_behaves_like 'UserPerformsGeoLookup'
 
   describe 'Class methods:' do
     describe '.authenticate' do
@@ -835,7 +837,7 @@ RSpec.describe User, type: :model do
                      'OnlineNotification'                 => { 'user_id' => 1, 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'Ticket'                             =>
                                                              { 'created_by_id' => 0, 'updated_by_id' => 0, 'owner_id' => 1, 'customer_id' => 3 },
-                     'Template'                           => { 'user_id' => 1, 'created_by_id' => 0, 'updated_by_id' => 0 },
+                     'Template'                           => { 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'Avatar'                             => { 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'Scheduler'                          => { 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'Chat'                               => { 'created_by_id' => 0, 'updated_by_id' => 0 },
@@ -867,13 +869,15 @@ RSpec.describe User, type: :model do
                      'User'                               => { 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'Organization'                       => { 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'Macro'                              => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+                     'Mention'                            => { 'created_by_id' => 1, 'updated_by_id' => 0, 'user_id' => 1 },
                      'Channel'                            => { 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'Role'                               => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'History'                            => { 'created_by_id' => 2 },
+                     'History'                            => { 'created_by_id' => 3 },
+                     'Webhook'                            => { 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'Overview'                           => { 'created_by_id' => 1, 'updated_by_id' => 0 },
                      'ActivityStream'                     => { 'created_by_id' => 0 },
                      'StatsStore'                         => { 'created_by_id' => 0 },
-                     'TextModule'                         => { 'user_id' => 1, 'created_by_id' => 0, 'updated_by_id' => 0 },
+                     'TextModule'                         => { 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'Calendar'                           => { 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'UserGroup'                          => { 'user_id' => 1 },
                      'Signature'                          => { 'created_by_id' => 0, 'updated_by_id' => 0 },
@@ -882,16 +886,16 @@ RSpec.describe User, type: :model do
       # delete objects
       token               = create(:token, user: user)
       online_notification = create(:online_notification, user: user)
-      template            = create(:template, :dummy_data, user: user)
       taskbar             = create(:taskbar, user: user)
       user_device         = create(:user_device, user: user)
       karma_activity_log  = create(:karma_activity_log, user: user)
       cti_caller_id       = create(:cti_caller_id, user: user)
-      text_module         = create(:text_module, user: user)
       authorization       = create(:twitter_authorization, user: user)
       recent_view         = create(:recent_view, created_by: user)
       avatar              = create(:avatar, o_id: user.id)
       overview            = create(:overview, created_by_id: user.id, user_ids: [user.id])
+      mention             = create(:mention, mentionable: create(:ticket), user: user)
+      mention_created_by  = create(:mention, mentionable: create(:ticket), user: create(:agent), created_by: user)
       expect(overview.reload.user_ids).to eq([user.id])
 
       # create a chat agent for admin user (id=1) before agent user
@@ -918,12 +922,10 @@ RSpec.describe User, type: :model do
 
       expect { token.reload }.to raise_exception(ActiveRecord::RecordNotFound)
       expect { online_notification.reload }.to raise_exception(ActiveRecord::RecordNotFound)
-      expect { template.reload }.to raise_exception(ActiveRecord::RecordNotFound)
       expect { taskbar.reload }.to raise_exception(ActiveRecord::RecordNotFound)
       expect { user_device.reload }.to raise_exception(ActiveRecord::RecordNotFound)
       expect { karma_activity_log.reload }.to raise_exception(ActiveRecord::RecordNotFound)
       expect { cti_caller_id.reload }.to raise_exception(ActiveRecord::RecordNotFound)
-      expect { text_module.reload }.to raise_exception(ActiveRecord::RecordNotFound)
       expect { authorization.reload }.to raise_exception(ActiveRecord::RecordNotFound)
       expect { recent_view.reload }.to raise_exception(ActiveRecord::RecordNotFound)
       expect { avatar.reload }.to raise_exception(ActiveRecord::RecordNotFound)
@@ -931,6 +933,8 @@ RSpec.describe User, type: :model do
       expect { customer_ticket2.reload }.to raise_exception(ActiveRecord::RecordNotFound)
       expect { customer_ticket3.reload }.to raise_exception(ActiveRecord::RecordNotFound)
       expect { chat_agent_user.reload }.to raise_exception(ActiveRecord::RecordNotFound)
+      expect { mention.reload }.to raise_exception(ActiveRecord::RecordNotFound)
+      expect(mention_created_by.reload.created_by_id).not_to eq(user.id)
       expect(overview.reload.user_ids).to eq([])
 
       # move ownership objects

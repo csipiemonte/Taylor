@@ -143,6 +143,7 @@ class TicketsController < ApplicationController
 
     clean_params = Ticket.param_cleanup(clean_params, true)
     ticket = Ticket.new(clean_params)
+    authorize!(ticket, :create?)
 
     # check if article is given
     if !params[:article]
@@ -156,9 +157,17 @@ class TicketsController < ApplicationController
 
       # create tags if given
       if params[:tags].present?
-        tags = params[:tags].split(/,/)
+        tags = params[:tags].split(',')
         tags.each do |tag|
           ticket.tag_add(tag)
+        end
+      end
+
+      # create mentions if given
+      if params[:mentions].present?
+        authorize!(Mention.new, :create?)
+        Array(params[:mentions]).each do |user_id|
+          Mention.where(mentionable: ticket, user_id: user_id).first_or_create(mentionable: ticket, user_id: user_id)
         end
       end
 
@@ -242,7 +251,7 @@ class TicketsController < ApplicationController
 
     ticket.with_lock do
       ticket.update!(clean_params)
-      if params[:article]
+      if params[:article].present?
         article_create(ticket, params[:article])
       end
     end
@@ -432,6 +441,7 @@ class TicketsController < ApplicationController
 
     # get attributes to update
     attributes_to_change = Ticket::ScreenOptions.attributes_to_change(
+      view:         'ticket_create',
       current_user: current_user,
     )
     render json: attributes_to_change
@@ -650,7 +660,7 @@ class TicketsController < ApplicationController
   # @example          curl -u 'me@example.com:test' http://localhost:3000/api/v1/tickets/import_example
   #
   # @response_message 200 File download.
-  # @response_message 401 Invalid session.
+  # @response_message 403 Forbidden / Invalid session.
   def import_example
     csv_string = Ticket.csv_example(
       col_sep: ',',
@@ -672,7 +682,7 @@ class TicketsController < ApplicationController
   # @example          curl -u 'me@example.com:test' -F 'file=@/path/to/file/tickets.csv' 'https://your.zammad/api/v1/tickets/import'
   #
   # @response_message 201 Import started.
-  # @response_message 401 Invalid session.
+  # @response_message 403 Forbidden / Invalid session.
   def import_start
     if Setting.get('import_mode') != true
       raise 'Only can import tickets if system is in import mode.'
@@ -728,6 +738,12 @@ class TicketsController < ApplicationController
     # get tags
     tags = ticket.tag_list
 
+    # get mentions
+    mentions = Mention.where(mentionable: ticket).order(created_at: :desc)
+    mentions.each do |mention|
+      assets = mention.assets(assets)
+    end
+
     # return result
     {
       ticket_id:          ticket.id,
@@ -735,6 +751,7 @@ class TicketsController < ApplicationController
       assets:             assets,
       links:              links,
       tags:               tags,
+      mentions:           mentions.pluck(:id),
       form_meta:          attributes_to_change[:form_meta],
     }
   end

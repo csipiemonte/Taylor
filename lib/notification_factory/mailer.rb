@@ -48,6 +48,7 @@ returns
 
     owned_by_nobody = false
     owned_by_me = false
+    subscribed = false
     case ticket.owner_id
     when 1
       owned_by_nobody = true
@@ -69,14 +70,17 @@ returns
       end
     end
 
+    # always trigger notifications for user if he is subscribed
+    if owned_by_me == false && ticket.mentions.exists?(user: user)
+      subscribed = true
+    end
+
     # check if group is in selected groups
     if !owned_by_me
       selected_group_ids = user_preferences['notification_config']['group_ids']
       if selected_group_ids.is_a?(Array)
         hit = nil
-        if selected_group_ids.blank?
-          hit = true
-        elsif selected_group_ids[0] == '-' && selected_group_ids.count == 1
+        if selected_group_ids.blank? || (selected_group_ids[0] == '-' && selected_group_ids.count == 1)
           hit = true
         else
           hit = false
@@ -106,6 +110,12 @@ returns
       }
     end
     if data['criteria']['owned_by_nobody'] && owned_by_nobody
+      return {
+        user:     user,
+        channels: channels
+      }
+    end
+    if data['criteria']['subscribed'] && subscribed
       return {
         user:     user,
         channels: channels

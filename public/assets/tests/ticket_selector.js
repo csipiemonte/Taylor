@@ -131,6 +131,7 @@ window.onload = function() {
         "id": 434
       },
       "tags": ["tag a", "tag b"],
+      "mention_user_ids": [1,3,5,6],
       "escalation_at": "2017-02-09T09:16:56.192Z",
       "last_contact_agent_at": "2017-02-09T09:16:56.192Z",
       "last_contact_agent_at": "2017-02-09T09:16:56.192Z",
@@ -457,7 +458,7 @@ window.onload = function() {
       "condition": {
         "ticket.tags": {
           "operator": "contains all",
-          "value": ["tag a", "not existing"],
+          "value": "tag a, not existing",
         },
       }
     };
@@ -479,7 +480,7 @@ window.onload = function() {
       "condition": {
         "ticket.tags": {
           "operator": "contains all not",
-          "value": ["tag a", "tag b"],
+          "value": "tag a, tag b",
         },
       }
     };
@@ -490,7 +491,7 @@ window.onload = function() {
       "condition": {
         "ticket.tags": {
           "operator": "contains all not",
-          "value": ["tag a", "tag b", "tag c"],
+          "value": "tag a, tag b, tag c",
         },
       }
     };
@@ -501,7 +502,7 @@ window.onload = function() {
       "condition": {
         "ticket.tags": {
           "operator": "contains all not",
-          "value": ["tag c", "tag d"],
+          "value": "tag c, tag d",
         },
       }
     };
@@ -516,7 +517,6 @@ window.onload = function() {
         },
       }
     };
-
     result = App.Ticket.selector(ticket, setting['condition']);
     equal(result, true, result);
 
@@ -524,7 +524,7 @@ window.onload = function() {
       "condition": {
         "ticket.tags": {
           "operator": "contains one not",
-          "value": ["tag a", "tag b"],
+          "value": "tag a, tag b",
         },
       }
     };
@@ -535,7 +535,7 @@ window.onload = function() {
       "condition": {
         "ticket.tags": {
           "operator": "contains one not",
-          "value": ["tag a", "tag c"],
+          "value": "tag a, tag c",
         },
       }
     };
@@ -546,7 +546,7 @@ window.onload = function() {
       "condition": {
         "ticket.tags": {
           "operator": "contains one not",
-          "value": ["tag c"],
+          "value": "tag c",
         },
       }
     };
@@ -1107,4 +1107,12 @@ window.onload = function() {
 
     testContains('organization.domain', 'cool', ticket);
   });
+
+  test("ticket mention user_id", function() {
+    ticket = new App.Ticket();
+    ticket.load(ticketData);
+
+    testPreConditionUser('ticket.mention_user_ids', '6', ticket, sessionData);
+  });
+
 }

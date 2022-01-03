@@ -61,10 +61,12 @@ class App.TicketZoomArticleView extends App.Controller
     false
 
   updateFormId: (newFormId) ->
+    @form_id = newFormId
+
     for id, viewItem of @articleController
       viewItem.updateFormId(newFormId)
 
-class ArticleViewItem extends App.ObserverController
+class ArticleViewItem extends App.ControllerObserver
   model: 'TicketArticle'
   observe:
     from: true
@@ -94,7 +96,7 @@ class ArticleViewItem extends App.ObserverController
     @seeMore = false
 
     # set expand of text area only once
-    @bind('ui::ticket::shown', (data) =>
+    @controllerBind('ui::ticket::shown', (data) =>
       return if data.ticket_id.toString() isnt @ticket.id.toString()
 
       # set highlighter
@@ -345,6 +347,11 @@ class ArticleViewItem extends App.ObserverController
     # allow double click select
     # by adding a delay to the toggle
     delay = 300
+
+    article = $(e.target).closest('.ticket-article-item')
+    if @elementContainsSelection(article.get(0))
+      @stopPropagation(e)
+      return false
 
     if @lastClick and +new Date - @lastClick < delay
       clearTimeout(@toggleMetaTimeout)

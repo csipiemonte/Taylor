@@ -4,9 +4,16 @@ require 'models/concerns/can_be_imported_examples'
 require 'models/concerns/can_csv_import_examples'
 require 'models/concerns/has_history_examples'
 require 'models/concerns/has_tags_examples'
+require 'models/concerns/tag/writes_to_ticket_history_examples'
 require 'models/concerns/has_taskbars_examples'
 require 'models/concerns/has_xss_sanitized_note_examples'
 require 'models/concerns/has_object_manager_attributes_validation_examples'
+require 'models/concerns/ticket/calls_stats_ticket_reopen_log_examples'
+require 'models/concerns/ticket/enqueues_user_ticket_counter_job_examples'
+require 'models/concerns/ticket/resets_pending_time_seconds_examples'
+require 'models/concerns/ticket/sets_close_time_examples'
+require 'models/concerns/ticket/sets_last_owner_update_time_examples'
+require 'models/ticket/escalation_examples'
 
 RSpec.describe Ticket, type: :model do
   subject(:ticket) { create(:ticket) }
@@ -14,11 +21,18 @@ RSpec.describe Ticket, type: :model do
   it_behaves_like 'ApplicationModel'
   it_behaves_like 'CanBeImported'
   it_behaves_like 'CanCsvImport'
-  it_behaves_like 'HasHistory', history_relation_object: 'Ticket::Article'
+  it_behaves_like 'HasHistory', history_relation_object: ['Ticket::Article', 'Mention']
   it_behaves_like 'HasTags'
+  it_behaves_like 'TagWritesToTicketHistory'
   it_behaves_like 'HasTaskbars'
   it_behaves_like 'HasXssSanitizedNote', model_factory: :ticket
   it_behaves_like 'HasObjectManagerAttributesValidation'
+  it_behaves_like 'Ticket::Escalation'
+  it_behaves_like 'TicketCallsStatsTicketReopenLog'
+  it_behaves_like 'TicketEnqueuesTicketUserTicketCounterJob'
+  it_behaves_like 'TicketResetsPendingTimeSeconds'
+  it_behaves_like 'TicketSetsCloseTime'
+  it_behaves_like 'TicketSetsLastOwnerUpdateTime'
 
   describe 'Class methods:' do
     describe '.selectors' do
@@ -80,6 +94,119 @@ RSpec.describe Ticket, type: :model do
         it 'raises an error' do
           expect { ticket.merge_to(ticket_id: ticket.id, user_id: 1) }
             .to raise_error("Can't merge ticket with it self!")
+        end
+      end
+
+      context 'when both tickets are linked with the same parent (parent->child)' do
+        let(:parent) { create(:ticket) }
+
+        before do
+          create(:link,
+                 link_type:                'child',
+                 link_object_source_value: ticket.id,
+                 link_object_target_value: parent.id)
+          create(:link,
+                 link_type:                'child',
+                 link_object_source_value: target_ticket.id,
+                 link_object_target_value: parent.id)
+
+          ticket.merge_to(ticket_id: target_ticket.id, user_id: 1)
+        end
+
+        it 'does remove the link from the merged ticket' do
+          links = Link.list(
+            link_object:       'Ticket',
+            link_object_value: ticket.id
+          )
+          expect(links.count).to eq(1) # one link to the source ticket (no parent link)
+        end
+
+        it 'does not remove the link from the target ticket' do
+          links = Link.list(
+            link_object:       'Ticket',
+            link_object_value: target_ticket.id
+          )
+          expect(links.count).to eq(2) # one link to the merged ticket + parent link
+        end
+      end
+
+      context 'when both tickets are linked with the same parent (child->parent)' do
+        let(:parent) { create(:ticket) }
+
+        before do
+          create(:link,
+                 link_type:                'child',
+                 link_object_source_value: parent.id,
+                 link_object_target_value: ticket.id)
+          create(:link,
+                 link_type:                'child',
+                 link_object_source_value: parent.id,
+                 link_object_target_value: target_ticket.id)
+
+          ticket.merge_to(ticket_id: target_ticket.id, user_id: 1)
+        end
+
+        it 'does remove the link from the merged ticket' do
+          links = Link.list(
+            link_object:       'Ticket',
+            link_object_value: ticket.id
+          )
+          expect(links.count).to eq(1) # one link to the source ticket (no parent link)
+        end
+
+        it 'does not remove the link from the target ticket' do
+          links = Link.list(
+            link_object:       'Ticket',
+            link_object_value: target_ticket.id
+          )
+          expect(links.count).to eq(2) # one link to the merged ticket + parent link
+        end
+      end
+
+      context 'when both tickets are linked with the same parent (different link types)' do
+        let(:parent) { create(:ticket) }
+
+        before do
+          create(:link,
+                 link_type:                'normal',
+                 link_object_source_value: parent.id,
+                 link_object_target_value: ticket.id)
+          create(:link,
+                 link_type:                'child',
+                 link_object_source_value: parent.id,
+                 link_object_target_value: target_ticket.id)
+
+          ticket.merge_to(ticket_id: target_ticket.id, user_id: 1)
+        end
+
+        it 'does remove the link from the merged ticket' do
+          links = Link.list(
+            link_object:       'Ticket',
+            link_object_value: ticket.id
+          )
+          expect(links.count).to eq(1) # one link to the source ticket (no normal link)
+        end
+
+        it 'does not remove the link from the target ticket' do
+          links = Link.list(
+            link_object:       'Ticket',
+            link_object_value: target_ticket.id
+          )
+          expect(links.count).to eq(3) # one lin to the merged ticket + parent link + normal link
+        end
+      end
+
+      context 'when both tickets having mentions to the same user' do
+        let(:watcher) { create(:agent) }
+
+        before do
+          create(:mention, mentionable: ticket, user: watcher)
+          create(:mention, mentionable: target_ticket, user: watcher)
+          ticket.merge_to(ticket_id: target_ticket.id, user_id: 1)
+        end
+
+        it 'does remove the link from the merged ticket' do
+          expect(target_ticket.mentions.count).to eq(1) # one mention to watcher user
         end
       end
 
@@ -401,13 +528,11 @@ RSpec.describe Ticket, type: :model do
       end
 
       context 'with a "notification.webhook" trigger', performs_jobs: true do
+        let(:webhook) { create(:webhook, endpoint: 'http://api.example.com/webhook', signature_token: '53CR3t') }
         let(:trigger) do
           create(:trigger,
                  perform: {
-                   'notification.webhook' => {
-                     endpoint: 'http://api.example.com/webhook',
-                     token:    '53CR3t'
-                   }
+                   'notification.webhook' => { 'webhook_id' => webhook.id }
                  })
         end
 
@@ -532,6 +657,52 @@ RSpec.describe Ticket, type: :model do
             expect(ticket.subject_build("[Ticket#: #{ticket.number}] foo"))
               .to eq("[Ticket##{ticket.number}] foo")
           end
+        end
+      end
+    end
+
+    describe '#last_original_update_at' do
+      let(:result) { ticket.last_original_update_at }
+
+      it 'returns initial customer enquiry time when customer contacted repeatedly' do
+        ticket
+
+        target = create(:ticket_article, :inbound_email, ticket: ticket)
+        travel 10.minutes
+        create(:ticket_article, :inbound_email, ticket: ticket)
+
+        expect(result).to eq target.created_at
+      end
+
+      it 'returns agent contact time when customer did not respond to agent reach out' do
+        ticket
+        create(:ticket_article, :outbound_email, ticket: ticket)
+
+        expect(result).to eq ticket.last_contact_agent_at
+      end
+
+      it 'returns nil if no customer response' do
+        ticket
+        expect(result).to be_nil
+      end
+
+      context 'with customer enquiry and agent response' do
+        before do
+          ticket
+          create(:ticket_article, :inbound_email, ticket: ticket)
+          travel 10.minutes
+          create(:ticket_article, :outbound_email, ticket: ticket)
+          travel 10.minutes
+        end
+
+        it 'returns last customer enquiry time when agent did not respond yet' do
+          target = create(:ticket_article, :inbound_email, ticket: ticket)
+
+          expect(result).to eq target.created_at
+        end
+
+        it 'returns agent response time when agent responded to customer enquiry' do
+          expect(result).to eq ticket.last_contact_agent_at
         end
       end
     end
@@ -738,12 +909,12 @@ RSpec.describe Ticket, type: :model do
 
           let(:article) { create(:ticket_article, ticket: ticket, sender_name: 'Agent') }
 
-          it 'is updated based on the SLA’s #update_time' do
+          it 'is updated based on the SLA’s #close_escalation_at' do
             travel(1.minute) # time is frozen: if we don't travel forward, pre- and post-update values will be the same
 
             expect { article }
-              .to change { ticket.reload.escalation_at.to_i }
-              .to eq(3.hours.from_now.to_i)
+              .to change { ticket.reload.escalation_at }
+              .to(ticket.reload.close_escalation_at)
           end
 
           context 'when new #update_time is later than original #solution_time' do
@@ -751,8 +922,8 @@ RSpec.describe Ticket, type: :model do
               travel(2.hours) # time is frozen: if we don't travel forward, pre- and post-update values will be the same
 
               expect { article }
-                .to change { ticket.reload.escalation_at.to_i }
-                .to eq(4.hours.after(ticket.created_at).to_i)
+                .to change { ticket.reload.escalation_at }
+                .to(4.hours.after(ticket.created_at))
             end
           end
         end
@@ -782,6 +953,76 @@ RSpec.describe Ticket, type: :model do
             .to change { ticket.reload.escalation_at }.to(nil)
         end
       end
+
+      context 'when within last (relative)' do
+        let(:first_response_time) { 5 }
+        let(:sla) { create(:sla, calendar: calendar, first_response_time: first_response_time) }
+        let(:within_condition) do
+          { 'ticket.escalation_at'=>{ 'operator' => 'within last (relative)', 'value' => '30', 'range' => 'minute' } }
+        end
+
+        before do
+          sla
+
+          travel_to '2020-11-05 11:37:00'
+
+          ticket = create(:ticket)
+          create(:ticket_article, :inbound_email, ticket: ticket)
+
+          travel_to '2020-11-05 11:50:00'
+        end
+
+        context 'when in range' do
+          it 'does find the ticket' do
+            count, _tickets = described_class.selectors(within_condition, limit: 2_000, execution_time: true)
+            expect(count).to eq(1)
+          end
+        end
+
+        context 'when out of range' do
+          let(:first_response_time) { 500 }
+
+          it 'does not find the ticket' do
+            count, _tickets = described_class.selectors(within_condition, limit: 2_000, execution_time: true)
+            expect(count).to eq(0)
+          end
+        end
+      end
+
+      context 'when within next (relative)' do
+        let(:first_response_time) { 5 }
+        let(:sla) { create(:sla, calendar: calendar, first_response_time: first_response_time) }
+        let(:within_condition) do
+          { 'ticket.escalation_at'=>{ 'operator' => 'within next (relative)', 'value' => '30', 'range' => 'minute' } }
+        end
+
+        before do
+          sla
+
+          travel_to '2020-11-05 11:50:00'
+
+          ticket = create(:ticket)
+          create(:ticket_article, :inbound_email, ticket: ticket)
+
+          travel_to '2020-11-05 11:37:00'
+        end
+
+        context 'when in range' do
+          it 'does find the ticket' do
+            count, _tickets = described_class.selectors(within_condition, limit: 2_000, execution_time: true)
+            expect(count).to eq(1)
+          end
+        end
+
+        context 'when out of range' do
+          let(:first_response_time) { 500 }
+
+          it 'does not find the ticket' do
+            count, _tickets = described_class.selectors(within_condition, limit: 2_000, execution_time: true)
+            expect(count).to eq(0)
+          end
+        end
+      end
     end
 
     describe '#first_response_escalation_at' do
@@ -809,8 +1050,8 @@ RSpec.describe Ticket, type: :model do
 
           let(:article) { create(:ticket_article, ticket: ticket, sender_name: 'Agent') }
 
-          it 'does not change' do
-            expect { article }.not_to change(ticket, :first_response_escalation_at)
+          it 'is cleared' do
+            expect { article }.to change { ticket.reload.first_response_escalation_at }.to(nil)
           end
         end
       end
@@ -832,6 +1073,9 @@ RSpec.describe Ticket, type: :model do
         before { sla } # create sla
 
         it 'is set based on SLA’s #update_time' do
+          travel 1.minute
+          create(:ticket_article, ticket: ticket, sender_name: 'Customer')
+
           expect(ticket.reload.update_escalation_at.to_i)
             .to eq(3.hours.from_now.to_i)
         end
@@ -842,11 +1086,12 @@ RSpec.describe Ticket, type: :model do
           let(:article) { create(:ticket_article, ticket: ticket, sender_name: 'Agent') }
 
           it 'is updated based on the SLA’s #update_time' do
-            travel(1.minute) # time is frozen: if we don't travel forward, pre- and post-update values will be the same
+            create(:ticket_article, ticket: ticket, sender_name: 'Customer')
+            travel(1.minute)
 
             expect { article }
-              .to change { ticket.reload.update_escalation_at.to_i }
-              .to(3.hours.from_now.to_i)
+              .to change { ticket.reload.update_escalation_at }
+              .to(nil)
           end
         end
       end
@@ -1277,4 +1522,393 @@ RSpec.describe Ticket, type: :model do
       end
     end
   end
+
+  describe 'Mentions:', sends_notification_emails: true do
+    context 'when notifications' do
+      let(:prefs_matrix_no_mentions) do
+        { 'notification_config' =>
+                                   { 'matrix' =>
+                                                 { 'create'           => { 'criteria' => { 'owned_by_me' => true, 'owned_by_nobody' => true, 'subscribed' => false, 'no' => true }, 'channel' => { 'email' => true, 'online' => true } },
+                                                   'update'           => { 'criteria' => { 'owned_by_me' => true, 'owned_by_nobody' => true, 'subscribed' => false, 'no' => true }, 'channel' => { 'email' => true, 'online' => true } },
+                                                   'reminder_reached' => { 'criteria' => { 'owned_by_me' => false, 'owned_by_nobody' => false, 'subscribed' => false, 'no' => false }, 'channel' => { 'email' => false, 'online' => false } },
+                                                   'escalation'       => { 'criteria' => { 'owned_by_me' => false, 'owned_by_nobody' => false, 'subscribed' => false, 'no' => false }, 'channel' => { 'email' => false, 'online' => false } } } } }
+      end
+
+      let(:prefs_matrix_only_mentions) do
+        { 'notification_config' =>
+                                   { 'matrix' =>
+                                                 { 'create'           => { 'criteria' => { 'owned_by_me' => false, 'owned_by_nobody' => false, 'subscribed' => true, 'no' => false }, 'channel' => { 'email' => true, 'online' => true } },
+                                                   'update'           => { 'criteria' => { 'owned_by_me' => false, 'owned_by_nobody' => false, 'subscribed' => true, 'no' => false }, 'channel' => { 'email' => true, 'online' => true } },
+                                                   'reminder_reached' => { 'criteria' => { 'owned_by_me' => false, 'owned_by_nobody' => false, 'subscribed' => true, 'no' => false }, 'channel' => { 'email' => false, 'online' => false } },
+                                                   'escalation'       => { 'criteria' => { 'owned_by_me' => false, 'owned_by_nobody' => false, 'subscribed' => true, 'no' => false }, 'channel' => { 'email' => false, 'online' => false } } } } }
+      end
+
+      let(:mention_group) { create(:group) }
+      let(:no_access_group) { create(:group) }
+      let(:user_only_mentions) { create(:agent, groups: [mention_group], preferences: prefs_matrix_only_mentions) }
+      let(:user_no_mentions) { create(:agent, groups: [mention_group], preferences: prefs_matrix_no_mentions) }
+      let(:ticket) { create(:ticket, group: mention_group, owner: user_no_mentions) }
+
+      it 'does inform mention user about the ticket update' do
+        create(:mention, mentionable: ticket, user: user_only_mentions)
+        create(:mention, mentionable: ticket, user: user_no_mentions)
+        Observer::Transaction.commit
+        Scheduler.worker(true)
+
+        check_notification do
+          ticket.update(priority: Ticket::Priority.find_by(name: '3 high'))
+          Observer::Transaction.commit
+          Scheduler.worker(true)
+          sent(
+            template: 'ticket_update',
+            user:     user_no_mentions,
+          )
+          sent(
+            template: 'ticket_update',
+            user:     user_only_mentions,
+          )
+        end
+      end
+
+      it 'does not inform mention user about the ticket update' do
+        ticket
+        Observer::Transaction.commit
+        Scheduler.worker(true)
+
+        check_notification do
+          ticket.update(priority: Ticket::Priority.find_by(name: '3 high'))
+          Observer::Transaction.commit
+          Scheduler.worker(true)
+          sent(
+            template: 'ticket_update',
+            user:     user_no_mentions,
+          )
+          not_sent(
+            template: 'ticket_update',
+            user:     user_only_mentions,
+          )
+        end
+      end
+
+      it 'does inform mention user about ticket creation' do
+        check_notification do
+          ticket = create(:ticket, owner: user_no_mentions, group: mention_group)
+          create(:mention, mentionable: ticket, user: user_only_mentions)
+          Observer::Transaction.commit
+          Scheduler.worker(true)
+          sent(
+            template: 'ticket_create',
+            user:     user_no_mentions,
+          )
+          sent(
+            template: 'ticket_create',
+            user:     user_only_mentions,
+          )
+        end
+      end
+
+      it 'does not inform mention user about ticket creation' do
+        check_notification do
+          create(:ticket, owner: user_no_mentions, group: mention_group)
+          Observer::Transaction.commit
+          Scheduler.worker(true)
+          sent(
+            template: 'ticket_create',
+            user:     user_no_mentions,
+          )
+          not_sent(
+            template: 'ticket_create',
+            user:     user_only_mentions,
+          )
+        end
+      end
+
+      it 'does not inform mention user about ticket creation because of no permissions' do
+        check_notification do
+          ticket = create(:ticket, group: no_access_group)
+          create(:mention, mentionable: ticket, user: user_only_mentions)
+          Observer::Transaction.commit
+          Scheduler.worker(true)
+          not_sent(
+            template: 'ticket_create',
+            user:     user_only_mentions,
+          )
+        end
+      end
+    end
+
+    context 'selectors' do
+      let(:mention_group) { create(:group) }
+      let(:ticket_mentions) { create(:ticket, group: mention_group) }
+      let(:ticket_normal) { create(:ticket, group: mention_group) }
+      let(:user_mentions) { create(:agent, groups: [mention_group]) }
+      let(:user_no_mentions) { create(:agent, groups: [mention_group]) }
+
+      before do
+        described_class.destroy_all
+        ticket_normal
+        user_no_mentions
+        create(:mention, mentionable: ticket_mentions, user: user_mentions)
+      end
+
+      it 'pre condition is not_set' do
+        condition = {
+          'ticket.mention_user_ids' => {
+            pre_condition: 'not_set',
+            operator:      'is',
+          },
+        }
+
+        expect(described_class.selectors(condition, limit: 100, access: 'full'))
+          .to match_array([1, [ticket_normal].to_a])
+      end
+
+      it 'pre condition is not not_set' do
+        condition = {
+          'ticket.mention_user_ids' => {
+            pre_condition: 'not_set',
+            operator:      'is not',
+          },
+        }
+
+        expect(described_class.selectors(condition, limit: 100, access: 'full'))
+          .to match_array([1, [ticket_mentions].to_a])
+      end
+
+      it 'pre condition is current_user.id' do
+        condition = {
+          'ticket.mention_user_ids' => {
+            pre_condition: 'current_user.id',
+            operator:      'is',
+          },
+        }
+
+        expect(described_class.selectors(condition, limit: 100, access: 'full', current_user: user_mentions))
+          .to match_array([1, [ticket_mentions].to_a])
+      end
+
+      it 'pre condition is not current_user.id' do
+        condition = {
+          'ticket.mention_user_ids' => {
+            pre_condition: 'current_user.id',
+            operator:      'is not',
+          },
+        }
+
+        expect(described_class.selectors(condition, limit: 100, access: 'full', current_user: user_mentions))
+          .to match_array([0, []])
+      end
+
+      it 'pre condition is specific' do
+        condition = {
+          'ticket.mention_user_ids' => {
+            pre_condition: 'specific',
+            operator:      'is',
+            value:         user_mentions.id
+          },
+        }
+
+        expect(described_class.selectors(condition, limit: 100, access: 'full'))
+          .to match_array([1, [ticket_mentions].to_a])
+      end
+
+      it 'pre condition is not specific' do
+        condition = {
+          'ticket.mention_user_ids' => {
+            pre_condition: 'specific',
+            operator:      'is not',
+            value:         user_mentions.id
+          },
+        }
+
+        expect(described_class.selectors(condition, limit: 100, access: 'full'))
+          .to match_array([0, []])
+      end
+    end
+  end
+
+  describe '.search_index_attribute_lookup_oversized?' do
+    subject!(:ticket) { create(:ticket) }
+
+    context 'when payload is ok' do
+      let(:current_payload_size) { 3.megabyte }
+
+      it 'return false' do
+        expect(ticket.send(:search_index_attribute_lookup_oversized?, current_payload_size)).to eq false
+      end
+    end
+
+    context 'when payload is bigger' do
+      let(:current_payload_size) { 350.megabyte }
+
+      it 'return true' do
+        expect(ticket.send(:search_index_attribute_lookup_oversized?, current_payload_size)).to eq true
+      end
+    end
+  end
+
+  describe '.search_index_attribute_lookup_file_oversized?' do
+    subject!(:store) do
+      Store.add(
+        object:        'SomeObject',
+        o_id:          1,
+        data:          (1024**800_000).to_s, # with 2.4 mb
+        filename:      'test.TXT',
+        created_by_id: 1,
+      )
+    end
+
+    context 'when total payload is ok' do
+      let(:current_payload_size) { 200.megabyte }
+
+      it 'return false' do
+        expect(ticket.send(:search_index_attribute_lookup_file_oversized?, store, current_payload_size)).to eq false
+      end
+    end
+
+    context 'when total payload is oversized' do
+      let(:current_payload_size) { 299.megabyte }
+
+      it 'return true' do
+        expect(ticket.send(:search_index_attribute_lookup_file_oversized?, store, current_payload_size)).to eq true
+      end
+    end
+  end
+
+  describe '.search_index_attribute_lookup_file_ignored?' do
+    context 'when attachment is indexable' do
+      subject!(:store_with_indexable_extention) do
+        Store.add(
+          object:        'SomeObject',
+          o_id:          1,
+          data:          'some content',
+          filename:      'test.TXT',
+          created_by_id: 1,
+        )
+      end
+
+      it 'return false' do
+        expect(ticket.send(:search_index_attribute_lookup_file_ignored?, store_with_indexable_extention)).to eq false
+      end
+    end
+
+    context 'when attachment is no indexable' do
+      subject!(:store_without_indexable_extention) do
+        Store.add(
+          object:        'SomeObject',
+          o_id:          1,
+          data:          'some content',
+          filename:      'test.BIN',
+          created_by_id: 1,
+        )
+      end
+
+      it 'return true' do
+        expect(ticket.send(:search_index_attribute_lookup_file_ignored?, store_without_indexable_extention)).to eq true
+      end
+    end
+  end
+
+  describe '.search_index_attribute_lookup' do
+    subject!(:ticket) { create(:ticket) }
+
+    let(:search_index_attribute_lookup) do
+      article1 = create(:ticket_article, ticket: ticket)
+      Store.add(
+        object:        'Ticket::Article',
+        o_id:          article1.id,
+        data:          'some content',
+        filename:      'some_file.bin',
+        preferences:   {
+          'Content-Type' => 'text/plain',
+        },
+        created_by_id: 1,
+      )
+      Store.add(
+        object:        'Ticket::Article',
+        o_id:          article1.id,
+        data:          (1024**800_000).to_s, # with 2.4 mb
+        filename:      'some_file.pdf',
+        preferences:   {
+          'Content-Type' => 'image/pdf',
+        },
+        created_by_id: 1,
+      )
+      Store.add(
+        object:        'Ticket::Article',
+        o_id:          article1.id,
+        data:          (1024**2_000_000).to_s, # with 5,8 mb
+        filename:      'some_file.txt',
+        preferences:   {
+          'Content-Type' => 'text/plain',
+        },
+        created_by_id: 1,
+      )
+      create(:ticket_article, ticket: ticket, body: (1024**400_000).to_s.split(/(.{100})/).join(' ')) # body with 1,2 mb
+      create(:ticket_article, ticket: ticket)
+      ticket.search_index_attribute_lookup
+    end
+
+    context 'when es_attachment_max_size_in_mb takes all attachments' do
+      before { Setting.set('es_attachment_max_size_in_mb', 15) }
+
+      it 'verify count of articles' do
+        expect(search_index_attribute_lookup['article'].count).to eq 3
+      end
+
+      it 'verify count of attachments' do
+        expect(search_index_attribute_lookup['article'][0]['attachment'].count).to eq 2
+      end
+
+      it 'verify if pdf exists' do
+        expect(search_index_attribute_lookup['article'][0]['attachment'][0]['_name']).to eq 'some_file.pdf'
+      end
+
+      it 'verify if txt exists' do
+        expect(search_index_attribute_lookup['article'][0]['attachment'][1]['_name']).to eq 'some_file.txt'
+      end
+    end
+
+    context 'when es_attachment_max_size_in_mb takes only one attachment' do
+      before { Setting.set('es_attachment_max_size_in_mb', 4) }
+
+      it 'verify count of articles' do
+        expect(search_index_attribute_lookup['article'].count).to eq 3
+      end
+
+      it 'verify count of attachments' do
+        expect(search_index_attribute_lookup['article'][0]['attachment'].count).to eq 1
+      end
+
+      it 'verify if pdf exists' do
+        expect(search_index_attribute_lookup['article'][0]['attachment'][0]['_name']).to eq 'some_file.pdf'
+      end
+    end
+
+    context 'when es_attachment_max_size_in_mb takes no attachment' do
+      before { Setting.set('es_attachment_max_size_in_mb', 2) }
+
+      it 'verify count of articles' do
+        expect(search_index_attribute_lookup['article'].count).to eq 3
+      end
+
+      it 'verify count of attachments' do
+        expect(search_index_attribute_lookup['article'][0]['attachment'].count).to eq 0
+      end
+    end
+
+    context 'when es_total_max_size_in_mb takes no attachment and no oversized article' do
+      before { Setting.set('es_total_max_size_in_mb', 1) }
+
+      it 'verify count of articles' do
+        expect(search_index_attribute_lookup['article'].count).to eq 2
+      end
+
+      it 'verify count of attachments' do
+        expect(search_index_attribute_lookup['article'][0]['attachment'].count).to eq 0
+      end
+    end
+
+  end
+
 end

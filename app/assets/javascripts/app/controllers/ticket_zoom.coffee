@@ -19,7 +19,7 @@ class App.TicketZoom extends App.Controller
     @authenticateCheckRedirect()
 
     @formMeta     = undefined
-    @ticket_id    = params.ticket_id
+    @ticket_id    = parseInt(params.ticket_id)
     @article_id   = params.article_id
     @sidebarState = {}
 
@@ -43,7 +43,7 @@ class App.TicketZoom extends App.Controller
     @interval(update, 1800000, 'pull_check')
 
     # fetch new data if triggered
-    @bind('Ticket:update Ticket:touch', (data) =>
+    @controllerBind('Ticket:update Ticket:touch', (data) =>
 
       # check if current ticket has changed
       return if data.id.toString() isnt @ticket_id.toString()
@@ -54,7 +54,7 @@ class App.TicketZoom extends App.Controller
     )
 
     # after a new websocket connection, check if ticket has changed
-    @bind('spool:sent', =>
+    @controllerBind('spool:sent', =>
       if @initSpoolSent
         @fetch(true)
         return
@@ -62,7 +62,7 @@ class App.TicketZoom extends App.Controller
     )
 
     # listen to rerender sidebars
-    @bind('ui::ticket::sidebarRerender', (data) =>
+    @controllerBind('ui::ticket::sidebarRerender', (data) =>
       return if data.taskKey isnt @taskKey
       return if !@sidebarWidget
       @sidebarWidget.render(@formCurrent())
@@ -115,8 +115,8 @@ class App.TicketZoom extends App.Controller
           return
 
         # show error message
-        if status is 401 || statusText is 'Unauthorized'
-          @taskHead      = '» ' + App.i18n.translateInline('Unauthorized') + ' «'
+        if status is 403 || statusText is 'Not authorized'
+          @taskHead      = '» ' + App.i18n.translateInline('Not authorized') + ' «'
           @taskIconClass = 'diagonal-cross'
           @renderScreenUnauthorized(objectName: 'Ticket')
         else if status is 404 || statusText is 'Not Found'
@@ -158,6 +158,10 @@ class App.TicketZoom extends App.Controller
     else
       @ticketUpdatedAtLastCall = newTicketRaw.updated_at
 
+    # make sure to load assets for mentions if cache is not up to date
+    if !_.isEqual(data.mentions, @mentions)
+      loadAssets = true
+
     # load assets
     if loadAssets
 
@@ -174,23 +178,26 @@ class App.TicketZoom extends App.Controller
       # remember article ids
       @ticket_article_ids = data.ticket_article_ids
 
-    ticket = data.assets.Ticket[data.ticket_id]
-    # remember not verified customer's data
-    @not_verified_info = {
-      not_verified_user_firstname : ticket.not_verified_user_firstname
-      not_verified_user_lastname : ticket.not_verified_user_lastname
-      not_verified_user_codice_fiscale : ticket.not_verified_user_codice_fiscale
-      not_verified_user_mobile : ticket.not_verified_user_mobile
-      not_verified_user_phone : ticket.not_verified_user_phone
-    }
+      # remember link
+      @links = data.links
 
-    # remember link
-    @links = data.links
+      # remember tags
+      @tags = data.tags
 
-    # remember tags
-    @tags = data.tags
+      # remember mentions
+      @mentions = data.mentions
 
-    App.Collection.loadAssets(data.assets, targetModel: 'Ticket')
+      # CSI Piemonte custom, remember not verified customer's data
+      ticket = data.assets.Ticket[data.ticket_id]
+      @not_verified_info = {
+        not_verified_user_firstname : ticket.not_verified_user_firstname
+        not_verified_user_lastname : ticket.not_verified_user_lastname
+        not_verified_user_codice_fiscale : ticket.not_verified_user_codice_fiscale
+        not_verified_user_mobile : ticket.not_verified_user_mobile
+        not_verified_user_phone : ticket.not_verified_user_phone
+      }
+
+      App.Collection.loadAssets(data.assets, targetModel: 'Ticket')
 
     # get ticket
     @ticket         = App.Ticket.fullLocal(@ticket_id)
@@ -251,6 +258,11 @@ class App.TicketZoom extends App.Controller
     # set all notifications to seen
     App.OnlineNotification.seen('Ticket', @ticket_id)
 
+    # initially hide on mobile
+    if window.matchMedia('(max-width: 767px)').matches
+      @el.find('.tabsSidebar').addClass('is-closed')
+      @el.find('.tabsSidebar-sidebarSpacer').addClass('is-closed')
+
     # if controller is executed twice, go to latest article (e. g. click on notification)
     if @activeState
       if @ticket_article_ids
@@ -264,6 +276,11 @@ class App.TicketZoom extends App.Controller
     return if !@attributeBar
     @attributeBar.start()
 
+    if @renderDone && params.overview_id? && @overview_id != params.overview_id
+      @overview_id = params.overview_id
+
+      @renderOverviewNavigator(@el)
+
   # scroll to article if given
   scrollToPosition: (position, delay, article_id) =>
     scrollToDelay = =>
@@ -276,6 +293,7 @@ class App.TicketZoom extends App.Controller
     @delay(scrollToDelay, delay, 'scrollToPosition')
 
   pagePosition: (params = {}) =>
+    return if @el.is(':hidden')
 
     # remember for later
     return if params.type is 'init' && !@shown
@@ -287,24 +305,24 @@ class App.TicketZoom extends App.Controller
       article_id = @pagePositionData
       @pagePositionData = undefined
 
-    # trigger shown to article
-    if !@shown
-      @shown = true
-      App.Event.trigger('ui::ticket::shown', { ticket_id: @ticket_id })
-      @scrollToPosition('bottom', 50, article_id)
-      return
-
     # scroll to article if given
     if article_id && article_id isnt @last_article_id
-      @last_article_id = article_id
       @scrollToPosition('article', 300, article_id)
-      return
 
     # scroll to end if new article has been added
-    if !@last_ticket_article_ids || !_.isEqual(_.sortBy(@last_ticket_article_ids), _.sortBy(@ticket_article_ids))
-      @last_ticket_article_ids = @ticket_article_ids
+    else if !@last_ticket_article_ids || !_.isEqual(_.sortBy(@last_ticket_article_ids), _.sortBy(@ticket_article_ids))
+      App.Event.trigger('ui::ticket::shown', { ticket_id: @ticket_id })
       @scrollToPosition('bottom', 100, article_id)
-      return
+
+    # trigger shown to article
+    else if !@shown
+      App.Event.trigger('ui::ticket::shown', { ticket_id: @ticket_id })
+      @scrollToPosition('bottom', 50, article_id)
+
+    # save page position state
+    @shown                   = true
+    @last_ticket_article_ids = @ticket_article_ids
+    @last_article_id         = article_id
 
   setPosition: (position) =>
     @$('.main').scrollTop(position)
@@ -439,11 +457,7 @@ class App.TicketZoom extends App.Controller
         dir:            App.i18n.dir()
       )
 
-      new App.TicketZoomOverviewNavigator(
-        el:          elLocal.find('.js-overviewNavigatorContainer')
-        ticket_id:   @ticket_id
-        overview_id: @overview_id
-      )
+      @renderOverviewNavigator(elLocal)
 
       new App.TicketZoomTitle(
         object_id:   @ticket_id
@@ -508,18 +522,19 @@ class App.TicketZoom extends App.Controller
       )
 
       @sidebarWidget = new App.TicketZoomSidebar(
-        el:                       elLocal
-        sidebarState:             @sidebarState
-        object_id:                @ticket_id
-        model:                    'Ticket'
-        query:                    @query
-        taskGet:                  @taskGet
-        taskKey:                  @taskKey
-        formMeta:                 @formMeta
-        markForm:                 @markForm
-        tags:                     @tags
-        links:                    @links
-        not_verified_info:        @not_verified_info
+        el:                elLocal
+        sidebarState:      @sidebarState
+        object_id:         @ticket_id
+        model:             'Ticket'
+        query:             @query
+        taskGet:           @taskGet
+        taskKey:           @taskKey
+        formMeta:          @formMeta
+        markForm:          @markForm
+        tags:              @tags
+        mentions:          @mentions
+        links:             @links
+        not_verified_info: @not_verified_info
       )
 
       # check if autolock is needed
@@ -554,8 +569,9 @@ class App.TicketZoom extends App.Controller
 
     if @sidebarWidget
       @sidebarWidget.reload(
-        tags: @tags
-        links: @links
+        tags:     @tags
+        mentions: @mentions
+        links:    @links
       )
 
     @setTicketAdmissibleTransitions(@ticket)
@@ -897,8 +913,17 @@ class App.TicketZoom extends App.Controller
       return
 
     # verify if time accounting is active for ticket
+    selector                 = ticket.clone()
+    selector.tags            = @tags
+    # always have a empy value to make sure that the condition gets checked
+    selector.mentions        = ['']
+    for id in @mentions
+      mention = App.Mention.find(id)
+      continue if !mention
+      selector.mentions.push(mention.user_id)
+
     time_accounting_selector = @Config.get('time_accounting_selector')
-    if !App.Ticket.selector(ticket, time_accounting_selector['condition'])
+    if !App.Ticket.selector(selector, time_accounting_selector['condition'])
       @submitPost(e, ticket, macro)
       return
 
@@ -1059,6 +1084,13 @@ class App.TicketZoom extends App.Controller
           if !data.includes(parseInt($(@).val()))
             $(@).remove()
         )
+    )
+
+  renderOverviewNavigator: (parentEl) ->
+    new App.TicketZoomOverviewNavigator(
+      el:          parentEl.find('.js-overviewNavigatorContainer')
+      ticket_id:   @ticket_id
+      overview_id: @overview_id
     )
 
 class TicketZoomRouter extends App.ControllerPermanent

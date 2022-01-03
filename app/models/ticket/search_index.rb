@@ -2,45 +2,26 @@
 module Ticket::SearchIndex
   extend ActiveSupport::Concern
 
-=begin
-
-lookup name of ref. objects
-
-  ticket = Ticket.find(123)
-  result = ticket.search_index_attribute_lookup
-
-returns
-
-  attributes # object with lookup data
-
-=end
-
-  def search_index_attribute_lookup
+  def search_index_attribute_lookup(include_references: true)
     attributes = super
     return if !attributes
 
     # collect article data
     # add tags
-    tags = tag_list
-    if tags.present?
-      attributes[:tags] = tags
-    end
+    attributes['tags'] = tag_list
 
-    # list ignored file extensions
-    attachments_ignore = Setting.get('es_attachment_ignore') || [ '.png', '.jpg', '.jpeg', '.mpeg', '.mpg', '.mov', '.bin', '.exe' ]
+    # mentions
+    attributes['mention_user_ids'] = mentions.pluck(:user_id)
 
-    # max attachment size
-    attachment_max_size_in_mb = Setting.get('es_attachment_max_size_in_mb') || 10
-    attachment_total_max_size_in_kb = 314_572
-    attachment_total_max_size_in_kb_current = 0
+    # current payload size
+    total_size_current = 0
 
     # collect article data
-    articles = Ticket::Article.where(ticket_id: id).limit(1000)
     attributes['article'] = []
-    articles.each do |article|
+    Ticket::Article.where(ticket_id: id).limit(1000).find_each(batch_size: 50).each do |article|
 
       # lookup attributes of ref. objects (normally name and note)
-      article_attributes = article.search_index_attribute_lookup
+      article_attributes = article.search_index_attribute_lookup(include_references: false)
 
       # remove note needed attributes
       ignore = %w[message_id_md5 ticket]
@@ -53,37 +34,78 @@ returns
         article_attributes['body'] = article_attributes['body'].html2text
       end
 
+      article_attributes_payload_size = article_attributes.to_json.bytes.size
+
+      next if search_index_attribute_lookup_oversized?(total_size_current + article_attributes_payload_size)
+
+      # add body size to totel payload size
+      total_size_current += article_attributes_payload_size
+
       # lookup attachments
       article_attributes['attachment'] = []
-      if attachment_total_max_size_in_kb_current < attachment_total_max_size_in_kb
-        article.attachments.each do |attachment|
 
-          # check file size
-          next if !attachment.content
-          next if attachment.content.size / 1024 > attachment_max_size_in_mb * 1024
+      article.attachments.each do |attachment|
 
-          # check ignored files
-          next if !attachment.filename
+        next if search_index_attribute_lookup_file_ignored?(attachment)
 
-          filename_extention = attachment.filename.downcase
-          filename_extention.gsub!(/^.*(\..+?)$/, '\\1')
+        next if search_index_attribute_lookup_file_oversized?(attachment, total_size_current)
 
-          next if attachments_ignore.include?(filename_extention.downcase)
+        next if search_index_attribute_lookup_oversized?(total_size_current + attachment.content.bytes.size)
 
-          attachment_total_max_size_in_kb_current += (attachment.content.size / 1024).to_i
-          next if attachment_total_max_size_in_kb_current > attachment_total_max_size_in_kb
+        # add attachment size to totel payload size
+        total_size_current += attachment.content.bytes.size
 
-          data = {
-            '_name'    => attachment.filename,
-            '_content' => Base64.encode64(attachment.content).delete("\n")
-          }
-          article_attributes['attachment'].push data
-        end
+        data = {
+          'size'     => attachment.size,
+          '_name'    => attachment.filename,
+          '_content' => Base64.encode64(attachment.content).delete("\n"),
+        }
+
+        article_attributes['attachment'].push data
       end
+
       attributes['article'].push article_attributes
     end
 
     attributes
+  end
+
+  private
+
+  def search_index_attribute_lookup_oversized?(total_size_current)
+
+    # if complete payload is to high
+    total_max_size_in_kb = (Setting.get('es_total_max_size_in_mb') || 300).megabyte
+    return true if total_size_current >= total_max_size_in_kb
+
+    false
+  end
+
+  def search_index_attribute_lookup_file_oversized?(attachment, total_size_current)
+    return true if attachment.content.blank?
+
+    # if attachment size is bigger as configured
+    attachment_max_size = (Setting.get('es_attachment_max_size_in_mb') || 10).megabyte
+    return true if attachment.content.bytes.size > attachment_max_size
+
+    # if complete size is bigger as configured
+    return true if search_index_attribute_lookup_oversized?(total_size_current + attachment.content.bytes.size)
+
+    false
+  end
+
+  def search_index_attribute_lookup_file_ignored?(attachment)
+    return true if attachment.filename.blank?
+
+    filename_extention = attachment.filename.downcase
+    filename_extention.gsub!(/^.*(\..+?)$/, '\\1')
+
+    # list ignored file extensions
+    attachments_ignore = Setting.get('es_attachment_ignore') || [ '.png', '.jpg', '.jpeg', '.mpeg', '.mpg', '.mov', '.bin', '.exe' ]
+
+    return true if attachments_ignore.include?(filename_extention.downcase)
+
+    false
   end
 
 end

@@ -119,7 +119,7 @@ curl http://localhost/api/v1/monitoring/health_check?token=XXX
       handler_attempts_map[job_name][:attempts] += job.attempts
     end
 
-    Hash[handler_attempts_map.sort].each_with_index do |(job_name, job_data), index|
+    handler_attempts_map.sort.to_h.each_with_index do |(job_name, job_data), index|
       issues.push "Failed to run background job ##{index + 1} '#{job_name}' #{job_data[:count]} time(s) with #{job_data[:attempts]} attempt(s)."
     end
 
@@ -249,7 +249,7 @@ curl http://localhost/api/v1/monitoring/status?token=XXX
     end
 
     if ActiveRecord::Base.connection_config[:adapter] == 'postgresql'
-      sql = 'SELECT SUM(CAST(coalesce(size, \'0\') AS INTEGER)) FROM stores WHERE id IN (SELECT MAX(id) FROM stores GROUP BY store_file_id)'
+      sql = 'SELECT SUM(CAST(coalesce(size, \'0\') AS INTEGER)) FROM stores'
       records_array = ActiveRecord::Base.connection.exec_query(sql)
       if records_array[0] && records_array[0]['sum']
         sum = records_array[0]['sum']

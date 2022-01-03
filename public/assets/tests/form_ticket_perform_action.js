@@ -1,5 +1,5 @@
 // ticket_perform_action
-test( "ticket_perform_action check", function() {
+test( "ticket_perform_action check", function(assert) {
 
   App.TicketPriority.refresh([
     {
@@ -251,7 +251,6 @@ test( "ticket_perform_action check", function() {
   row.find('.js-datepicker').datepicker('setDate')
   row.find('.js-timepicker').val(date_parsed.getHours() + ':' + date_parsed.getMinutes()).trigger('blur')
 
-  params = App.ControllerForm.params(el)
   test_params = {
     ticket_perform_action1: {
       'ticket.state_id': {
@@ -288,7 +287,14 @@ test( "ticket_perform_action check", function() {
       }
     }
   }
-  deepEqual(params, test_params, 'form param check')
+
+  var done = assert.async()
+
+  setTimeout(function(){
+    params = App.ControllerForm.params(el)
+    deepEqual(params, test_params, 'form param check')
+    done()
+  }, 0);
 
   // switch pending time to relative
 
@@ -505,6 +511,42 @@ test( "ticket_perform_action backwards check after PR#2862", function() {
   deepEqual(params, test_params, 'form param check')
 });
 
+test( "ticket_perform_action orphan time fields", function() {
+  $('#forms').append('<hr><h1>ticket_perform_action orphan time fields</h1><form id="form4"></form>')
+
+  var el = $('#form4')
+
+  var defaults = {
+    ticket_perform_action4: {
+      'ticket.pending_time': {
+        operator: 'relative',
+        value: '1'
+      }
+    }
+  }
+
+  new App.ControllerForm({
+    el:        el,
+    model:     {
+      configure_attributes: [
+        {
+          name:    'ticket_perform_action4',
+          display: 'TicketPerformAction4',
+          tag:     'ticket_perform_action',
+          null:    true,
+        },
+      ]
+    },
+    params: defaults,
+    autofocus: true
+  })
+
+  // change to another attribute
+  el.find('select:first').val('ticket.tags').trigger('change')
+
+  equal(el.find('.js-valueRangeSelector').length, 0)
+});
+
 test( "ticket_perform_action check possible owner selection", function() {
   $('#forms').append('<hr><h1>ticket_perform_action check possible owner selection</h1><form id="form5"></form>')
 
@@ -562,4 +604,96 @@ test( "ticket_perform_action check possible owner selection", function() {
 
   deepEqual(params, test_params, 'form param check')
 
+});
+
+test( "ticket_perform_action check when there's no available webhook", function() {
+
+  $('#forms').append('<hr><h1>ticket_perform_action check when there\'s no available webhook</h1><form id="form6"></form>')
+  var el = $('#form6')
+  var defaults = {
+    ticket_perform_action6: {
+      'notification.webhook': {
+        value: undefined
+      }
+    }
+  }
+  new App.ControllerForm({
+    el:        el,
+    model:     {
+      configure_attributes: [
+        {
+          name:         'ticket_perform_action6',
+          display:      'TicketPerformAction6',
+          tag:          'ticket_perform_action',
+          null:         true,
+          notification: true,
+        },
+      ]
+    },
+    params: defaults,
+    autofocus: true
+  })
+
+  var params = App.ControllerForm.params(el)
+  deepEqual(params, {}, 'form param check')
+
+  var testNoticeMessage = 'No available webhook, please create a new one or activate an existing one at "Manage > Webhook"'
+  var noticeMessage = el.find('.controls.js-webhooks div').text()
+  equal(noticeMessage, testNoticeMessage, 'form shows message when webhook is not available')
+});
+
+test( "ticket_perform_action check when there's an available webhook", function() {
+
+  $('#forms').append('<hr><h1>ticket_perform_action check when there\'s an available webhook</h1><form id="form7"></form>')
+  var el = $('#form7')
+  var defaults = {
+    ticket_perform_action7: {
+      'notification.webhook': {
+        webhook_id: 'c-1'
+      }
+    }
+  }
+
+  App.Webhook.refresh([
+    {
+      name:     'Webhook test',
+      endpoint: 'https://target.example.com/webhook',
+      active:   true,
+      id:       'c-1'
+    }
+  ], { clear: true })
+
+  new App.ControllerForm({
+    el:        el,
+    model:     {
+      configure_attributes: [
+        {
+          name:         'ticket_perform_action7',
+          display:      'TicketPerformAction7',
+          tag:          'ticket_perform_action',
+          null:         true,
+          notification: true,
+        },
+      ]
+    },
+    params: defaults,
+    autofocus: true
+  })
+
+  var params = App.ControllerForm.params(el)
+  var test_params = {
+    'ticket_perform_action7': {
+      'notification.webhook': {
+        'webhook_id': 'c-1'
+      }
+    }
+  }
+  deepEqual(params, test_params, 'form param check')
+
+  var testNoticeMessage = 'No available webhook, please create a new one or activate an existing one at "Manage > Webhook"'
+  var noticeMessage = el.find('.controls.js-webhooks').text()
+  notEqual(noticeMessage, testNoticeMessage, 'form does not show notice message when webhook is available')
+
+  var noticeMessage = el.find('.controls.js-webhooks select option').eq(1).text()
+  equal(noticeMessage, 'Webhook test (https://target.example.com/webhook)', 'form shows available webhook when webhook is available')
 });

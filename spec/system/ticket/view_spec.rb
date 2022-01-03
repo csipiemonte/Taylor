@@ -5,6 +5,7 @@ RSpec.describe 'Ticket views', type: :system do
     let!(:group1)              { create :group }
     let!(:group2)              { create :group }
     let!(:macro_without_group) { create :macro }
+    let!(:macro_note)          { create :macro, perform: { 'article.note'=>{ 'body' => 'macro body', 'internal' => 'true', 'subject' => 'macro note' } } }
     let!(:macro_group1)        { create :macro, groups: [group1] }
     let!(:macro_group2)        { create :macro, groups: [group2] }
 
@@ -85,6 +86,35 @@ RSpec.describe 'Ticket views', type: :system do
 
       end
     end
+
+    it 'can use macro to create article', authenticated_as: true do
+      refresh
+      visit '#ticket/view/all_open'
+
+      within(:active_content) do
+        ticket = page.find(:table_row, Ticket.first.id).native
+
+        # click and hold first ticket in table
+        click_and_hold(ticket)
+
+        # move ticket to y -ticket.location.y
+        move_mouse_by(0, -ticket.location.y + 5)
+
+        # move a bit to the left to display macro batches
+        move_mouse_by(-250, 0)
+
+        expect(page).to have_selector(:macro_batch, macro_note.id, wait: 10)
+
+        macro = find(:macro_batch, macro_note.id)
+        move_mouse_to(macro)
+
+        release_mouse
+
+        await_empty_ajax_queue
+
+        expect(Ticket.first.articles.last.subject).to eq('macro note')
+      end
+    end
   end
 
   context 'bulk note', authenticated_as: :user do
@@ -110,6 +140,34 @@ RSpec.describe 'Ticket views', type: :system do
                ticket1.articles.last&.body,
                ticket2.articles.last&.body
              ]).to be_all note
+    end
+  end
+
+  context 'Setting "ui_table_group_by_show_count"', authenticated_as: :authenticate, db_strategy: :reset do
+    let!(:ticket1) { create(:ticket, group: Group.find_by(name: 'Users')) }
+    let!(:ticket2) { create(:ticket, group: Group.find_by(name: 'Users')) }
+    let!(:ticket3) { create(:ticket, group: Group.find_by(name: 'Users')) }
+    let!(:ticket4) { create(:ticket, group: Group.find_by(name: 'Users')) }
+
+    def authenticate
+      create :object_manager_attribute_select, name: 'grouptest'
+      ObjectManager::Attribute.migration_execute
+      ticket1
+      ticket2.update(grouptest: 'key_1')
+      ticket3.update(grouptest: 'key_2')
+      ticket4.update(grouptest: 'key_1')
+      Overview.find_by(name: 'Open').update(group_by: 'grouptest')
+      Setting.set('ui_table_group_by_show_count', true)
+      true
+    end
+
+    it 'shows correct ticket counts' do
+      visit 'ticket/view/all_open'
+      within(:active_content) do
+        page.find('.js-tableBody td b', text: '(1)')
+        page.find('.js-tableBody td b', text: 'value_1 (2)')
+        page.find('.js-tableBody td b', text: 'value_2 (1)')
+      end
     end
   end
 end

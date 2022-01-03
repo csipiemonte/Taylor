@@ -3,6 +3,7 @@
 class Calendar < ApplicationModel
   include ChecksClientNotification
   include CanUniqName
+  include HasEscalationCalculationImpact
 
   store :business_hours
   store :public_holidays
@@ -284,20 +285,17 @@ returns
 =end
 
   def business_hours_to_hash
-    hours = {}
-    business_hours.each do |day, meta|
-      next if !meta[:active]
-      next if !meta[:timeframes]
+    business_hours
+      .filter { |_, value| value[:active] && value[:timeframes] }
+      .each_with_object({}) do |(day, meta), days_memo|
+        days_memo[day.to_sym] = meta[:timeframes]
+          .each_with_object({}) do |(from, to), hours_memo|
+            next if !from || !to
 
-      hours[day.to_sym] = {}
-      meta[:timeframes].each do |frame|
-        next if !frame[0]
-        next if !frame[1]
-
-        hours[day.to_sym][frame[0]] = frame[1]
+            # convert "last minute of the day" format from Zammad/UI to biz-gem
+            hours_memo[from] = to == '23:59' ? '24:00' : to
+          end
       end
-    end
-    hours
   end
 
 =begin
@@ -327,7 +325,7 @@ returns
     holidays
   end
 
-  def biz
+  def biz(breaks: {})
     Biz::Schedule.new do |config|
 
       # get business hours
@@ -338,7 +336,10 @@ returns
 
       # get holidays
       config.holidays = public_holidays_to_array
+
       config.time_zone = timezone
+
+      config.breaks = breaks
     end
   end
 

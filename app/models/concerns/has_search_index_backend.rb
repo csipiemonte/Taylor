@@ -63,14 +63,23 @@ returns
 =end
 
   def search_index_update_associations_full
-    return if self.class.to_s != 'Organization'
+    update_class = {
+      'Organization'     => :organization_id,
+      'Group'            => :group_id,
+      'Ticket::State'    => :state_id,
+      'Ticket::Priority' => :priority_id,
+    }
+    update_column = update_class[self.class.to_s]
+    return if update_column.blank?
 
-    # reindex all organization tickets for the given organization id
+    # reindex all object related tickets for the given object id
     # we can not use the delta function for this because of the excluded
     # ticket article attachments. see explain in delta function
-    Ticket.select('id').where(organization_id: id).order(id: :desc).limit(10_000).pluck(:id).each do |ticket_id|
+    Ticket.select('id').where(update_column => id).order(id: :desc).limit(10_000).pluck(:id).each do |ticket_id|
       SearchIndexJob.perform_later('Ticket', ticket_id)
     end
+
+    true
   end
 
 =begin
@@ -92,7 +101,7 @@ returns
     # start background job to transfer data to search index
     return true if !SearchIndexBackend.enabled?
 
-    new_search_index_value = search_index_value
+    new_search_index_value = search_index_attribute_lookup(include_references: false)
     return if new_search_index_value.blank?
 
     Models.indexable.each do |local_object|
@@ -172,36 +181,6 @@ returns
     # update backend
     SearchIndexBackend.add(self.class.to_s, attributes)
     true
-  end
-
-=begin
-
-get data to store in search index
-
-  ticket = Ticket.find(123)
-  result = ticket.search_index_data
-
-returns
-
-  result = {
-    attribute1: 'some value',
-    attribute2: ['value 1', 'value 2'],
-    ...
-  }
-
-=end
-
-  def search_index_data
-    attributes = {}
-    %w[name note].each do |key|
-      next if !self[key]
-      next if self[key].respond_to?('blank?') && self[key].blank?
-
-      attributes[key] = self[key]
-    end
-    return true if attributes.blank?
-
-    attributes
   end
 
   def ignore_search_indexing?(_action)

@@ -262,12 +262,12 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
       expect(ticket.articles[4].attachments.count).to eq(0)
 
       get "/api/v1/ticket_articles/#{article.id}", params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to eq('Not authorized')
 
       put "/api/v1/ticket_articles/#{article.id}", params: { internal: false }, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to eq('Not authorized')
 
@@ -485,6 +485,36 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['attachments']).to be_truthy
       expect(json_response['attachments'].count).to eq(0)
+    end
+
+    it 'does ticket create with mentions' do
+      params = {
+        title:       'a new ticket #1',
+        group:       'Users',
+        customer_id: customer.id,
+        article:     {
+          body: "some body <a data-mention-user-id=\"#{agent.id}\">agent</a>",
+        }
+      }
+      authenticated_as(agent)
+      post '/api/v1/tickets', params: params, as: :json
+      expect(response).to have_http_status(:created)
+      expect(Mention.where(mentionable: Ticket.last).count).to eq(1)
+    end
+
+    it 'does not ticket create with mentions when customer' do
+      params = {
+        title:       'a new ticket #1',
+        group:       'Users',
+        customer_id: customer.id,
+        article:     {
+          body: "some body <a data-mention-user-id=\"#{agent.id}\">agent</a>",
+        }
+      }
+      authenticated_as(customer)
+      post '/api/v1/tickets', params: params, as: :json
+      expect(response).to have_http_status(:internal_server_error)
+      expect(Mention.count).to eq(0)
     end
   end
 

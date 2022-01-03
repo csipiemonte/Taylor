@@ -317,4 +317,136 @@ RSpec.describe 'Ticket Create', type: :system do
       end
     end
   end
+
+  describe 'object manager attributes maxlength', authenticated_as: :authenticate, db_strategy: :reset do
+    def authenticate
+      create :object_manager_attribute_text, name: 'maxtest', display: 'maxtest', screens: attributes_for(:required_screen), data_option: {
+        'type'      => 'text',
+        'maxlength' => 3,
+        'null'      => true,
+        'translate' => false,
+        'default'   => '',
+        'options'   => {},
+        'relation'  => '',
+      }
+      ObjectManager::Attribute.migration_execute
+      true
+    end
+
+    it 'checks ticket create' do
+      visit 'ticket/create'
+      within(:active_content) do
+        fill_in 'maxtest', with: 'hellu'
+        expect(page.find_field('maxtest').value).to eq('hel')
+      end
+    end
+  end
+
+  describe 'GitLab Integration', :integration, authenticated_as: :authenticate do
+    let(:customer) { create(:customer) }
+    let(:agent) { create(:agent, groups: [Group.find_by(name: 'Users')]) }
+    let!(:template) { create(:template, :dummy_data, group: Group.find_by(name: 'Users'), owner: agent, customer: customer) }
+
+    before(:all) do # rubocop:disable RSpec/BeforeAfterAll
+      required_envs = %w[GITLAB_ENDPOINT GITLAB_APITOKEN]
+      required_envs.each do |key|
+        skip("NOTICE: Missing environment variable #{key} for test! (Please fill up: #{required_envs.join(' && ')})") if ENV[key].blank?
+      end
+    end
+
+    def authenticate
+      Setting.set('gitlab_integration', true)
+      Setting.set('gitlab_config', {
+                    api_token: ENV['GITLAB_APITOKEN'],
+                    endpoint:  ENV['GITLAB_ENDPOINT'],
+                  })
+      true
+    end
+
+    it 'creates a ticket with links' do
+      visit 'ticket/create'
+      within(:active_content) do
+        use_template(template)
+
+        # switch to gitlab sidebar
+        click('.tabsSidebar-tab[data-tab=gitlab]')
+        click('.sidebar-header-headline.js-headline')
+
+        # add issue
+        click_on 'Link issue'
+        fill_in 'link', with: ENV['GITLAB_ISSUE_LINK']
+        click_on 'Submit'
+        await_empty_ajax_queue
+
+        # verify issue
+        content = find('.sidebar-git-issue-content')
+        expect(content).to have_text('#1 Example issue')
+        expect(content).to have_text('critical')
+        expect(content).to have_text('special')
+        expect(content).to have_text('important milestone')
+        expect(content).to have_text('zammad-robot')
+
+        # create Ticket
+        click '.js-submit'
+        await_empty_ajax_queue
+
+        # check stored data
+        expect(Ticket.last.preferences[:gitlab][:issue_links][0]).to eq(ENV['GITLAB_ISSUE_LINK'])
+      end
+    end
+  end
+
+  describe 'GitHub Integration', :integration, authenticated_as: :authenticate do
+    let(:customer) { create(:customer) }
+    let(:agent) { create(:agent, groups: [Group.find_by(name: 'Users')]) }
+    let!(:template) { create(:template, :dummy_data, group: Group.find_by(name: 'Users'), owner: agent, customer: customer) }
+
+    before(:all) do # rubocop:disable RSpec/BeforeAfterAll
+      required_envs = %w[GITHUB_ENDPOINT GITHUB_APITOKEN]
+      required_envs.each do |key|
+        skip("NOTICE: Missing environment variable #{key} for test! (Please fill up: #{required_envs.join(' && ')})") if ENV[key].blank?
+      end
+    end
+
+    def authenticate
+      Setting.set('github_integration', true)
+      Setting.set('github_config', {
+                    api_token: ENV['GITHUB_APITOKEN'],
+                    endpoint:  ENV['GITHUB_ENDPOINT'],
+                  })
+      true
+    end
+
+    it 'creates a ticket with links' do
+      visit 'ticket/create'
+      within(:active_content) do
+        use_template(template)
+
+        # switch to github sidebar
+        click('.tabsSidebar-tab[data-tab=github]')
+        click('.sidebar-header-headline.js-headline')
+
+        # add issue
+        click_on 'Link issue'
+        fill_in 'link', with: ENV['GITHUB_ISSUE_LINK']
+        click_on 'Submit'
+        await_empty_ajax_queue
+
+        # verify issue
+        content = find('.sidebar-git-issue-content')
+        expect(content).to have_text('#1575 GitHub integration')
+        expect(content).to have_text('feature backlog')
+        expect(content).to have_text('integration')
+        expect(content).to have_text('4.0')
+        expect(content).to have_text('Thorsten')
+
+        # create Ticket
+        click '.js-submit'
+        await_empty_ajax_queue
+
+        # check stored data
+        expect(Ticket.last.preferences[:github][:issue_links][0]).to eq(ENV['GITHUB_ISSUE_LINK'])
+      end
+    end
+  end
 end

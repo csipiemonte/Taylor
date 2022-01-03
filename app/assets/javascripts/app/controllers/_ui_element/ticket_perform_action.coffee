@@ -370,7 +370,15 @@ class App.UiElement.ticket_perform_action
       'relative'
     ]
 
-    if _.include(relative_operators, meta.operator)
+    upcoming_operator = meta.operator
+
+    if !_.include(config.operator, upcoming_operator)
+      if Array.isArray(config.operator)
+        upcoming_operator = config.operator[0]
+      else
+        upcoming_operator = null
+
+    if _.include(relative_operators, upcoming_operator)
       config['name'] = "#{attribute.name}::#{groupAndAttribute}"
       if attribute.value && attribute.value[groupAndAttribute]
         config['value'] = _.clone(attribute.value[groupAndAttribute])
@@ -434,55 +442,78 @@ class App.UiElement.ticket_perform_action
 
     selectionRecipient = columnSelectRecipient.element()
 
-    elementTemplate = 'notification'
     if notificationType is 'webhook'
-      elementTemplate =  'webhook'
+      notificationElement = $( App.view('generic/ticket_perform_action/webhook')(
+        attribute: attribute
+        name: name
+        notificationType: notificationType
+        meta: meta || {}
+      ))
 
-    notificationElement = $( App.view("generic/ticket_perform_action/#{elementTemplate}")(
-      attribute: attribute
-      name: name
-      notificationType: notificationType
-      meta: meta || {}
-    ))
+      notificationElement.find('.js-recipient select').replaceWith(selectionRecipient)
 
-    notificationElement.find('.js-recipient select').replaceWith(selectionRecipient)
 
-    visibilitySelection = App.UiElement.select.render(
-      name: "#{name}::internal"
-      multiple: false
-      null: false
-      options: { true: 'internal', false: 'public' }
-      value: meta.internal || 'false'
-      translate: true
-    )
+      if App.Webhook.search(filter: { active: true }).length isnt 0 || !_.isEmpty(meta.webhook_id)
+        webhookSelection = App.UiElement.select.render(
+          name: "#{name}::webhook_id"
+          multiple: false
+          null: false
+          relation: 'Webhook'
+          value: meta.webhook_id
+          translate: false
+          nulloption: true
+        )
+      else
+        webhookSelection = App.view('generic/ticket_perform_action/webhook_not_available')( attribute: attribute )
 
-    notificationElement.find('.js-internal').html(visibilitySelection)
+      notificationElement.find('.js-webhooks').html(webhookSelection)
 
-    notificationElement.find('.js-body div[contenteditable="true"]').ce(
-      mode: 'richtext'
-      placeholder: 'message'
-      maxlength: messageLength
-    )
-    new App.WidgetPlaceholder(
-      el: notificationElement.find('.js-body div[contenteditable="true"]').parent()
-      objects: [
-        {
-          prefix: 'ticket'
-          object: 'Ticket'
-          display: 'Ticket'
-        },
-        {
-          prefix: 'article'
-          object: 'TicketArticle'
-          display: 'Article'
-        },
-        {
-          prefix: 'user'
-          object: 'User'
-          display: 'Current User'
-        },
-      ]
-    )
+    else
+      notificationElement = $( App.view('generic/ticket_perform_action/notification')(
+        attribute: attribute
+        name: name
+        notificationType: notificationType
+        meta: meta || {}
+      ))
+
+      notificationElement.find('.js-recipient select').replaceWith(selectionRecipient)
+
+      visibilitySelection = App.UiElement.select.render(
+        name: "#{name}::internal"
+        multiple: false
+        null: false
+        options: { true: 'internal', false: 'public' }
+        value: meta.internal || 'false'
+        translate: true
+      )
+
+      notificationElement.find('.js-internal').html(visibilitySelection)
+
+      notificationElement.find('.js-body div[contenteditable="true"]').ce(
+        mode: 'richtext'
+        placeholder: 'message'
+        maxlength: messageLength
+      )
+      new App.WidgetPlaceholder(
+        el: notificationElement.find('.js-body div[contenteditable="true"]').parent()
+        objects: [
+          {
+            prefix: 'ticket'
+            object: 'Ticket'
+            display: 'Ticket'
+          },
+          {
+            prefix: 'article'
+            object: 'TicketArticle'
+            display: 'Article'
+          },
+          {
+            prefix: 'user'
+            object: 'User'
+            display: 'Current User'
+          },
+        ]
+      )
 
     elementRow.find('.js-setNotification').html(notificationElement).removeClass('hide')
 
@@ -522,7 +553,6 @@ class App.UiElement.ticket_perform_action
     elementRow.find('.js-setArticle').empty()
 
     name = "#{attribute.name}::article.#{articleType}"
-
     selection = App.UiElement.select.render(
       name: "#{name}::internal"
       multiple: false

@@ -23,10 +23,10 @@ AllCops:
     - 'node_modules/**/*'
     - 'public/assets/**/*'
     - 'public/packs/**/*'
-  RSpec:
-    Patterns:
-      - '_spec.rb$'
-      - '_examples.rb$'
+RSpec:
+  Include:
+    - "**/*_spec.rb"
+    - "**/*_examples.rb"
 
 Rails:
   Enabled: true
@@ -312,3 +312,13 @@ Lint/UnusedMethodArgument:
 Zammad/PreferNegatedIfOverUnless:
   Exclude:
     - 'bin/rspec'
+
+Zammad/ExistsDateTimePrecision:
+  Include:
+    - "db/migrate/*.rb"
+    - "**/db/addon/**/*.rb"
+
+Zammad/ExistsResetColumnInformation:
+  Include:
+    - "db/migrate/*.rb"
+    - "**/db/addon/**/*.rb"

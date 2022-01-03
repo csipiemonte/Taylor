@@ -1,6 +1,7 @@
-class Index extends App.ControllerContent
+class Login extends App.ControllerFullPage
   events:
     'submit #login': 'login'
+  className: 'login'
 
   constructor: ->
     super
@@ -15,14 +16,12 @@ class Index extends App.ControllerContent
       @navigate '#'
       return
 
-    @navHide()
-
     @title 'Sign in'
     @render()
     @navupdate '#login'
 
     # observe config changes related to login page
-    @bind('config_update_local', (data) =>
+    @controllerBind('config_update_local', (data) =>
       return if !data.name.match(/^maintenance/) &&
         !data.name.match(/^auth/) &&
         data.name != 'user_lost_password' &&
@@ -33,7 +32,7 @@ class Index extends App.ControllerContent
       @render()
       'rerender'
     )
-    @bind('ui:rerender', =>
+    @controllerBind('ui:rerender', =>
       @render()
     )
 
@@ -45,7 +44,7 @@ class Index extends App.ControllerContent
         console.log(key)
         auth_providers.push provider
 
-    @html App.view('login')(
+    @replaceWith App.view('login')(
       item:           data
       logoUrl:        @logoUrl()
       auth_providers: auth_providers
@@ -78,18 +77,11 @@ class Index extends App.ControllerContent
     )
 
   success: (data, status, xhr) =>
+    App.Plugin.init()
 
     # redirect to #
-    requested_url = @Config.get('requested_url')
-    if requested_url && requested_url isnt '#login' && requested_url isnt '#logout'
-      @log 'notice', "REDIRECT to '#{requested_url}'"
-      @navigate requested_url
-
-      # reset
-      @Config.set('requested_url', '')
-    else
-      @log 'notice', 'REDIRECT to -#/-'
-      @navigate '#/'
+    @log 'notice', 'REDIRECT to -#/-'
+    @navigate '#/'
 
   error: (xhr, statusText, error) =>
     detailsRaw = xhr.responseText
@@ -111,4 +103,4 @@ class Index extends App.ControllerContent
       600
     )
 
-App.Config.set('login', Index, 'Routes')
+App.Config.set('login', Login, 'Routes')

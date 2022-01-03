@@ -1,4 +1,4 @@
-class Index extends App.ControllerSubContent
+class ProfileLinkedAccounts extends App.ControllerSubContent
   requiredPermission: 'user_preferences.linked_accounts'
   header: 'Linked Accounts'
   events:
@@ -59,7 +59,7 @@ class Index extends App.ControllerSubContent
       msg:  App.i18n.translateContent(data.message)
     )
 
-App.Config.set('LinkedAccounts', { prio: 4000, name: 'Linked Accounts', parent: '#profile', target: '#profile/linked', controller: Index, permission: ['user_preferences.linked_accounts'] }, 'NavBarProfile')
+App.Config.set('LinkedAccounts', { prio: 4000, name: 'Linked Accounts', parent: '#profile', target: '#profile/linked', controller: ProfileLinkedAccounts, permission: ['user_preferences.linked_accounts'] }, 'NavBarProfile')
 App.Config.set('auth_provider_all', {
   facebook:
     url:    '/auth/facebook'
@@ -96,11 +96,6 @@ App.Config.set('auth_provider_all', {
     name:   'Google'
     config: 'auth_google_oauth2'
     class:  'google'
-  oauth2:
-    url:    '/auth/oauth2'
-    name:   'OAuth2'
-    config: 'auth_oauth2'
-    class:  'oauth2'
   weibo:
     url:    '/auth/weibo'
     name:   'Weibo'

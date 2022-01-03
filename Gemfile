@@ -84,7 +84,6 @@ gem 'omniauth-gitlab'
 gem 'omniauth-google-oauth2'
 gem 'omniauth-linkedin-oauth2'
 gem 'omniauth-microsoft-office365'
-gem 'omniauth-oauth2'
 gem 'omniauth-saml'
 gem 'omniauth-twitter'
 gem 'omniauth-weibo-oauth2'
@@ -203,7 +202,7 @@ group :development, :test do
   gem 'rubocop'
   gem 'rubocop-performance'
   gem 'rubocop-rails'
-  gem 'rubocop-rspec', '2.0.0.pre' # see: https://github.com/rubocop-hq/rubocop-rspec/issues/1051
+  gem 'rubocop-rspec'
 
   # changelog generation
   gem 'github_changelog_generator'

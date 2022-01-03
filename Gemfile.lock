@@ -125,7 +125,7 @@ GEM
     argon2 (2.0.2)
       ffi (~> 1.9)
       ffi-compiler (>= 0.1)
-    ast (2.4.1)
+    ast (2.4.2)
     autoprefixer-rails (9.5.1)
       execjs
     binding_of_caller (0.8.0)
@@ -380,8 +380,8 @@ GEM
       omniauth (~> 1.5)
       omniauth-oauth2 (>= 1.4.0)
     openssl (2.1.2)
-    parallel (1.19.2)
-    parser (2.7.2.0)
+    parallel (1.20.1)
+    parser (3.0.0.0)
       ast (~> 2.4.1)
     pg (0.21.0)
     pluginator (1.5.0)
@@ -476,29 +476,30 @@ GEM
       rspec-support (~> 3.9.0)
     rspec-support (3.9.3)
     rszr (0.5.2)
-    rubocop (1.2.0)
+    rubocop (1.11.0)
       parallel (~> 1.10)
-      parser (>= 2.7.1.5)
+      parser (>= 3.0.0.0)
       rainbow (>= 2.2.2, < 4.0)
-      regexp_parser (>= 1.8)
+      regexp_parser (>= 1.8, < 3.0)
       rexml
-      rubocop-ast (>= 1.0.1)
+      rubocop-ast (>= 1.2.0, < 2.0)
       ruby-progressbar (~> 1.7)
-      unicode-display_width (>= 1.4.0, < 2.0)
-    rubocop-ast (1.1.1)
+      unicode-display_width (>= 1.4.0, < 3.0)
+    rubocop-ast (1.4.1)
       parser (>= 2.7.1.5)
-    rubocop-performance (1.8.1)
-      rubocop (>= 0.87.0)
+    rubocop-performance (1.10.0)
+      rubocop (>= 0.90.0, < 2.0)
       rubocop-ast (>= 0.4.0)
-    rubocop-rails (2.8.1)
+    rubocop-rails (2.9.1)
       activesupport (>= 4.2.0)
       rack (>= 1.1)
-      rubocop (>= 0.87.0)
-    rubocop-rspec (2.0.0.pre)
+      rubocop (>= 0.90.0, < 2.0)
+    rubocop-rspec (2.2.0)
       rubocop (~> 1.0)
+      rubocop-ast (>= 1.1.0)
     ruby-debug-ide (0.7.2)
       rake (>= 0.8.1)
-    ruby-progressbar (1.10.1)
+    ruby-progressbar (1.11.0)
     ruby-saml (1.10.2)
       nokogiri (>= 1.5.10)
     ruby_dep (1.5.0)
@@ -566,7 +567,7 @@ GEM
     unf (0.1.4)
       unf_ext
     unf_ext (0.0.7.5)
-    unicode-display_width (1.7.0)
+    unicode-display_width (2.0.0)
     unicorn (5.5.0)
       kgio (~> 2.6)
       raindrops (~> 0.7)
@@ -663,7 +664,6 @@ DEPENDENCIES
   omniauth-google-oauth2
   omniauth-linkedin-oauth2
   omniauth-microsoft-office365
-  omniauth-oauth2
   omniauth-rails_csrf_protection
   omniauth-saml
   omniauth-twitter
@@ -689,7 +689,7 @@ DEPENDENCIES
   rubocop
   rubocop-performance
   rubocop-rails
-  rubocop-rspec (= 2.0.0.pre)
+  rubocop-rspec
   ruby-debug-ide
   rubyntlm!
   sassc-rails

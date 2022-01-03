@@ -5,11 +5,21 @@ RSpec.describe 'Ticket', type: :request do
   let!(:ticket_group) do
     create(:group, email_address: create(:email_address) )
   end
+  let!(:ticket_group_without_create) do
+    create(:group, email_address: create(:email_address) )
+  end
   let(:admin) do
     create(:admin, groups: Group.all, firstname: 'Tickets', lastname: 'Admin')
   end
   let!(:agent) do
     create(:agent, groups: Group.all, firstname: 'Tickets', lastname: 'Agent')
+  end
+  let!(:agent_change_only) do
+    user = create(:agent, groups: Group.all, firstname: 'Tickets', lastname: 'Agent')
+    user.group_names_access_map = {
+      ticket_group_without_create.name => %w[read change],
+    }
+    user
   end
   let!(:customer) do
     create(
@@ -56,6 +66,27 @@ RSpec.describe 'Ticket', type: :request do
       expect(response).to have_http_status(:unprocessable_entity)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to eq('No lookup value found for \'group\': "not_existing"')
+    end
+
+    it 'does ticket create with agent - valid group but no create permissions (01.02a)' do
+      params = {
+        title:       'a new ticket #1',
+        group:       ticket_group_without_create.name,
+        priority:    '2 normal',
+        state:       'new',
+        customer_id: customer.id,
+        article:     {
+          content_type: 'text/plain', # or text/html
+          body:         'some body',
+          sender:       'Customer',
+          type:         'note',
+        },
+      }
+      authenticated_as(agent_change_only)
+      post '/api/v1/tickets', params: params, as: :json
+      expect(response).to have_http_status(:forbidden)
+      expect(json_response).to be_a_kind_of(Hash)
+      expect(json_response['error']).to eq('Not authorized')
     end
 
     it 'does ticket create with agent - missing article.body (01.03)' do
@@ -116,6 +147,30 @@ RSpec.describe 'Ticket', type: :request do
       expect(json_response['customer_id']).to eq(customer.id)
       expect(json_response['updated_by_id']).to eq(agent.id)
       expect(json_response['created_by_id']).to eq(agent.id)
+    end
+
+    it 'does ticket create with empty article body' do
+      params = {
+        title:    'a new ticket with empty article body',
+        group:    ticket_group.name,
+        priority: '2 normal',
+        state:    'new',
+        customer: customer.email,
+        article:  { body: '' }
+      }
+      authenticated_as(agent)
+      post '/api/v1/tickets', params: params, as: :json
+      expect(response).to have_http_status(:created)
+      expect(json_response).to be_a_kind_of(Hash)
+      expect(json_response['state_id']).to eq(Ticket::State.lookup(name: 'new').id)
+      expect(json_response['title']).to eq('a new ticket with empty article body')
+      expect(json_response['customer_id']).to eq(customer.id)
+      expect(json_response['updated_by_id']).to eq(agent.id)
+      expect(json_response['created_by_id']).to eq(agent.id)
+      ticket = Ticket.find(json_response['id'])
+      expect(ticket.articles.count).to eq(1)
+      article = ticket.articles.first
+      expect(article.body).to eq('')
     end
 
     it 'does ticket create with agent - wrong owner_id - 0 (01.05)' do
@@ -741,7 +796,7 @@ RSpec.describe 'Ticket', type: :request do
       )
       authenticated_as(agent)
       get "/api/v1/tickets/#{ticket.id}", params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to eq('Not authorized')
 
@@ -749,12 +804,12 @@ RSpec.describe 'Ticket', type: :request do
         title: 'ticket with wrong ticket id - 2',
       }
       put "/api/v1/tickets/#{ticket.id}", params: params, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to eq('Not authorized')
 
       delete "/api/v1/tickets/#{ticket.id}", params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to eq('Not authorized')
     end
@@ -892,12 +947,12 @@ RSpec.describe 'Ticket', type: :request do
       expect(json_response['internal']).to eq(false)
 
       delete "/api/v1/ticket_articles/#{json_response['id']}", params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to eq('Not authorized (communication articles cannot be deleted)!')
 
       delete "/api/v1/tickets/#{ticket.id}", params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to eq('Not authorized (admin permission required)!')
     end
@@ -991,7 +1046,7 @@ RSpec.describe 'Ticket', type: :request do
       expect(json_response['type_id']).to eq(Ticket::Article::Type.lookup(name: 'email').id)
 
       delete "/api/v1/ticket_articles/#{json_response['id']}", params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
 
       delete "/api/v1/tickets/#{ticket.id}", params: {}, as: :json
       expect(response).to have_http_status(:ok)
@@ -1146,7 +1201,7 @@ RSpec.describe 'Ticket', type: :request do
       )
       authenticated_as(customer)
       get "/api/v1/tickets/#{ticket.id}", params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to eq('Not authorized')
 
@@ -1154,12 +1209,12 @@ RSpec.describe 'Ticket', type: :request do
         title: 'ticket with wrong ticket id - 2',
       }
       put "/api/v1/tickets/#{ticket.id}", params: params, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to eq('Not authorized')
 
       delete "/api/v1/tickets/#{ticket.id}", params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to eq('Not authorized')
     end
@@ -1235,7 +1290,7 @@ RSpec.describe 'Ticket', type: :request do
       expect(json_response['tickets_count']).to eq(1)
 
       delete "/api/v1/ticket_articles/#{article_json_response['id']}", params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to eq('Not authorized (agent permission required)!')
 
@@ -1259,7 +1314,7 @@ RSpec.describe 'Ticket', type: :request do
       expect(json_response['type_id']).to eq(Ticket::Article::Type.lookup(name: 'note').id)
 
       delete "/api/v1/ticket_articles/#{json_response['id']}", params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to eq('Not authorized (agent permission required)!')
 
@@ -1290,12 +1345,12 @@ RSpec.describe 'Ticket', type: :request do
         subject: 'new subject',
       }
       put "/api/v1/ticket_articles/#{json_response['id']}", params: params, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to eq('Not authorized (ticket.agent or admin permission required)!')
 
       delete "/api/v1/tickets/#{ticket.id}", params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to eq('Not authorized (admin permission required)!')
     end
@@ -1711,6 +1766,40 @@ RSpec.describe 'Ticket', type: :request do
       expect(json_response['assets']['Ticket'][ticket.id.to_s]['number']).to eq(expected_ticket_number)
     end
 
+    it 'does ticket update with empty article param' do
+      title = 'a new ticket'
+      ticket = create(
+        :ticket,
+        title:         title,
+        group:         ticket_group,
+        customer_id:   customer.id,
+        updated_by_id: agent.id,
+        created_by_id: agent.id,
+      )
+
+      params = {
+        state:   Ticket::State.lookup(name: 'close'),
+        article: {}
+      }
+      authenticated_as(agent)
+      put "/api/v1/tickets/#{ticket.id}", params: params, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json_response).to be_a_kind_of(Hash)
+
+      expect(json_response['state_id']).to eq(ticket.state_id)
+      expect(json_response['state']).to be_falsey
+      expect(json_response['priority_id']).to eq(ticket.priority_id)
+      expect(json_response['priority']).to be_falsey
+      expect(json_response['group_id']).to eq(ticket.group_id)
+      expect(json_response['group']).to be_falsey
+      expect(json_response['customer_id']).to eq(customer.id)
+      expect(json_response['updated_by_id']).to eq(agent.id)
+      expect(json_response['created_by_id']).to eq(agent.id)
+      expect(json_response['state_id']).to eq(Ticket::State.lookup(name: 'new').id)
+      expect(json_response['title']).to eq(ticket.title)
+      expect(ticket.articles.count).to eq(0)
+    end
+
     it 'does ticket split with html - check attachments (05.01)' do
       ticket = create(
         :ticket,
@@ -1795,7 +1884,7 @@ RSpec.describe 'Ticket', type: :request do
 
       authenticated_as(customer)
       get "/api/v1/ticket_split?ticket_id=#{ticket.id}&article_id=#{article.id}&form_id=new_form_id123", params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
 
       authenticated_as(agent)
       get "/api/v1/ticket_split?ticket_id=#{ticket.id}&article_id=#{article.id}&form_id=new_form_id123", params: {}, as: :json
@@ -1924,7 +2013,7 @@ RSpec.describe 'Ticket', type: :request do
 
       authenticated_as(customer)
       put "/api/v1/ticket_merge/#{ticket2.id}/#{ticket1.id}", params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
 
       authenticated_as(agent)
       put "/api/v1/ticket_merge/#{ticket2.id}/#{ticket1.id}", params: {}, as: :json
@@ -1934,13 +2023,13 @@ RSpec.describe 'Ticket', type: :request do
       expect(json_response['message']).to eq('No such master ticket number!')
 
       put "/api/v1/ticket_merge/#{ticket3.id}/#{ticket1.number}", params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to eq('Not authorized')
       expect(json_response['error_human']).to eq('Not authorized')
 
       put "/api/v1/ticket_merge/#{ticket1.id}/#{ticket3.number}", params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to eq('Not authorized')
       expect(json_response['error_human']).to eq('Not authorized')
@@ -2079,7 +2168,7 @@ RSpec.describe 'Ticket', type: :request do
 
       authenticated_as(customer)
       get "/api/v1/ticket_history/#{ticket1.id}", params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
     end
 
     it 'does ticket related' do
@@ -2096,7 +2185,7 @@ RSpec.describe 'Ticket', type: :request do
 
       authenticated_as(customer)
       get "/api/v1/ticket_related/#{ticket1.id}", params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
     end
 
     it 'does ticket recent' do
@@ -2106,9 +2195,50 @@ RSpec.describe 'Ticket', type: :request do
 
       authenticated_as(customer)
       get '/api/v1/ticket_recent', params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
     end
 
+  end
+
+  describe 'mentions' do
+    let(:user1) { create(:agent, groups: [ticket_group]) }
+    let(:user2) { create(:agent, groups: [ticket_group]) }
+    let(:user3) { create(:agent, groups: [ticket_group]) }
+
+    def new_ticket_with_mentions
+      params = {
+        title:    'a new ticket #11',
+        group:    ticket_group.name,
+        customer: {
+          firstname: 'some firstname',
+          lastname:  'some lastname',
+          email:     'some_new_customer@example.com',
+        },
+        article:  {
+          body: 'some test 123',
+        },
+        mentions: [user1.id, user2.id, user3.id]
+      }
+      authenticated_as(agent)
+      post '/api/v1/tickets', params: params, as: :json
+      expect(response).to have_http_status(:created)
+
+      json_response
+    end
+
+    it 'create ticket with mentions' do
+      new_ticket_with_mentions
+      expect(Mention.all.count).to eq(3)
+    end
+
+    it 'check ticket get' do
+      ticket = new_ticket_with_mentions
+
+      get "/api/v1/tickets/#{ticket['id']}?all=true", params: {}, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json_response['mentions'].count).to eq(3)
+      expect(json_response['assets']['Mention'].count).to eq(3)
+    end
   end
 
   describe 'stats' do

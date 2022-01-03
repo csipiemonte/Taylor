@@ -1,4 +1,4 @@
-class Index extends App.ControllerSubContent
+class ProfileOutOfOffice extends App.ControllerSubContent
   requiredPermission: 'user_preferences.out_of_office+ticket.agent'
   header: 'Out of Office'
   events:
@@ -148,8 +148,8 @@ class Index extends App.ControllerSubContent
     data = JSON.parse(xhr.responseText)
 
     # show error message
-    if xhr.status is 401 || error is 'Unauthorized'
-      message     = '» ' + App.i18n.translateInline('Unauthorized') + ' «'
+    if xhr.status is 403 || error is 'Not authorized'
+      message     = '» ' + App.i18n.translateInline('Not authorized') + ' «'
     else if xhr.status is 404 || error is 'Not Found'
       message     = '» ' + App.i18n.translateInline('Not Found') + ' «'
     else if data.error
@@ -161,4 +161,4 @@ class Index extends App.ControllerSubContent
       msg:       App.i18n.translateContent(message)
       removeAll: true
 
-App.Config.set('OutOfOffice', { prio: 2800, name: 'Out of Office', parent: '#profile', target: '#profile/out_of_office', permission: ['user_preferences.out_of_office+ticket.agent'], controller: Index }, 'NavBarProfile')
+App.Config.set('OutOfOffice', { prio: 2800, name: 'Out of Office', parent: '#profile', target: '#profile/out_of_office', permission: ['user_preferences.out_of_office+ticket.agent'], controller: ProfileOutOfOffice }, 'NavBarProfile')

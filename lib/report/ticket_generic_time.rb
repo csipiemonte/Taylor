@@ -33,7 +33,7 @@ returns
     }
 
     without_merged_tickets = {
-      'state' => {
+      'state.name' => {
         'operator' => 'is not',
         'value'    => 'merged'
       }
@@ -96,9 +96,7 @@ returns
         case params[:interval]
         when 'month'
           params[:range_start] = params[:range_start].next_month
-        when 'week'
-          params[:range_start] = params[:range_start].next_day
-        when 'day'
+        when 'week', 'day'
           params[:range_start] = params[:range_start].next_day
         when 'hour'
           params[:range_start] = params[:range_start] + 1.hour
@@ -158,7 +156,7 @@ returns
     end
 
     without_merged_tickets = {
-      'state' => {
+      'state.name' => {
         'operator' => 'is not',
         'value'    => 'merged'
       }

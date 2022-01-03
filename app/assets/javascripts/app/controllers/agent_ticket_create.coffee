@@ -3,6 +3,7 @@ class App.TicketCreate extends App.Controller
 
   elements:
     '.tabsSidebar': 'sidebar'
+    '.tabsSidebar-sidebarSpacer': 'sidebarSpacer'
 
   events:
     'click .type-tabs .tab':   'changeFormType'
@@ -54,14 +55,14 @@ class App.TicketCreate extends App.Controller
     @bindId = App.TicketCreateCollection.one(load)
 
     # rerender view, e. g. on langauge change
-    @bind('ui:rerender', =>
+    @controllerBind('ui:rerender', =>
       return if !@authenticateCheck()
       @renderQueue()
       @tokanice()
     )
 
     # listen to rerender sidebars
-    @bind('ui::ticket::sidebarRerender', (data) =>
+    @controllerBind('ui::ticket::sidebarRerender', (data) =>
       return if data.taskKey isnt @taskKey
       return if !@sidebarWidget
       @sidebarWidget.render(@params())
@@ -169,11 +170,16 @@ class App.TicketCreate extends App.Controller
   show: =>
     @navupdate("#ticket/create/id/#{@id}#{@split}", type: 'menu')
     @autosaveStart()
-    @bind('ticket_create_rerender', (template) => @renderQueue(template))
+    @controllerBind('ticket_create_rerender', (template) => @renderQueue(template))
+
+    # initially hide sidebar on mobile
+    if window.matchMedia('(max-width: 767px)').matches
+      @sidebar.addClass('is-closed')
+      @sidebarSpacer.addClass('is-closed')
 
   hide: =>
     @autosaveStop()
-    @unbind('ticket_create_rerender', (template) => @renderQueue(template))
+    @controllerUnbind('ticket_create_rerender', (template) => @renderQueue(template))
 
   changed: =>
     formCurrent = @formParam( @$('.ticket-create') )

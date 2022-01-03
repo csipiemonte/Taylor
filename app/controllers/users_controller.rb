@@ -15,7 +15,7 @@ class UsersController < ApplicationController
   #                   role 'Customer' only just the own User record will be returned.
   #
   # @response_message 200 [Array<User>] List of matching User records.
-  # @response_message 401               Invalid session.
+  # @response_message 403               Forbidden / Invalid session.
   def index
     offset = 0
     per_page = 500
@@ -71,7 +71,7 @@ class UsersController < ApplicationController
   # @parameter        full         [Bool]    If set a Asset structure with all connected Assets gets returned.
   #
   # @response_message 200 [User] User record matching the requested identifier.
-  # @response_message 401        Invalid session.
+  # @response_message 403        Forbidden / Invalid session.
   def show
     user = User.find(params[:id])
     authorize!(user)
@@ -120,7 +120,7 @@ class UsersController < ApplicationController
   # @parameter        User(required,body) [User]    The attribute value structure needed to update a User record.
   #
   # @response_message 200 [User] Updated User record.
-  # @response_message 401        Invalid session.
+  # @response_message 403        Forbidden / Invalid session.
   def update
     user = User.find(params[:id])
     authorize!(user)
@@ -169,7 +169,7 @@ class UsersController < ApplicationController
   # @parameter        id(required) [User] The identifier matching the requested User record.
   #
   # @response_message 200 User successfully deleted.
-  # @response_message 401 Invalid session.
+  # @response_message 403 Forbidden / Invalid session.
   def destroy
     user = User.find(params[:id])
     authorize!(user)
@@ -186,7 +186,7 @@ class UsersController < ApplicationController
   # @parameter        full         [Bool]    If set a Asset structure with all connected Assets gets returned.
   #
   # @response_message 200 [User] User record matching the requested identifier.
-  # @response_message 401        Invalid session.
+  # @response_message 403        Forbidden / Invalid session.
   def me
 
     if response_expand?
@@ -217,15 +217,16 @@ class UsersController < ApplicationController
   #                   The requester has to be in the role 'Admin' or 'Agent' to
   #                   be able to search for User records.
   #
-  # @parameter        query           [String]        The search query.
-  # @parameter        limit           [Integer]       The limit of search results.
-  # @parameter        role_ids(multi) [Array<String>] A list of Role identifiers to which the Users have to be allocated to.
-  # @parameter        full            [Boolean]       Defines if the result should be
-  #                                                   true: { user_ids => [1,2,...], assets => {...} }
-  #                                                   or false: [{:id => user.id, :label => "firstname lastname <email>", :value => "firstname lastname <email>"},...].
+  # @parameter        query            [String]                             The search query.
+  # @parameter        limit            [Integer]                            The limit of search results.
+  # @parameter        role_ids(multi)  [Array<String>]                      A list of Role identifiers to which the Users have to be allocated to.
+  # @parameter        group_ids(multi) [Hash<String=>String,Array<String>>] A list of Group identifiers to which the Users have to be allocated to.
+  # @parameter        full             [Boolean]                            Defines if the result should be
+  #                                                                         true: { user_ids => [1,2,...], assets => {...} }
+  #                                                                         or false: [{:id => user.id, :label => "firstname lastname <email>", :value => "firstname lastname <email>"},...].
   #
   # @response_message 200 [Array<User>] A list of User records matching the search term.
-  # @response_message 401               Invalid session.
+  # @response_message 403               Forbidden / Invalid session.
   def search
     per_page = params[:per_page] || params[:limit] || 100
     per_page = per_page.to_i
@@ -254,7 +255,7 @@ class UsersController < ApplicationController
       order_by:     params[:order_by],
       current_user: current_user,
     }
-    %i[role_ids permissions].each do |key|
+    %i[role_ids group_ids permissions].each do |key|
       next if params[key].blank?
 
       query_params[key] = params[key]
@@ -328,7 +329,7 @@ class UsersController < ApplicationController
   # @parameter        id(required) [Integer] The identifier matching the requested User record.
   #
   # @response_message 200 [History] The History records of the requested User record.
-  # @response_message 401           Invalid session.
+  # @response_message 403           Forbidden / Invalid session.
   def history
     # get user data
     user = User.find(params[:id])
@@ -847,7 +848,7 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
   # @example          curl -u 'me@example.com:test' http://localhost:3000/api/v1/users/import_example
   #
   # @response_message 200 File download.
-  # @response_message 401 Invalid session.
+  # @response_message 403 Forbidden / Invalid session.
   def import_example
     send_data(
       User.csv_example,
@@ -865,7 +866,7 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
   # @example          curl -u 'me@example.com:test' -F 'file=@/path/to/file/users.csv' 'https://your.zammad/api/v1/users/import'
   #
   # @response_message 201 Import started.
-  # @response_message 401 Invalid session.
+  # @response_message 403 Forbidden / Invalid session.
   def import_start
     string = params[:data]
     if string.blank? && params[:file].present?
@@ -896,7 +897,7 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
   # @parameter        User(required,body) [User] The attribute value structure needed to create a User record.
   #
   # @response_message 200 [User] Created User record.
-  # @response_message 401        Invalid session.
+  # @response_message 403        Forbidden / Invalid session.
   def create_internal
     # permission check
     check_attributes_by_current_user_permission(params)
@@ -947,7 +948,7 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
   # @parameter        User(required,body) [User] The attribute value structure needed to create a User record.
   #
   # @response_message 200 [User] Created User record.
-  # @response_message 401        Invalid session.
+  # @response_message 403        Forbidden / Invalid session.
   def create_signup
     # check if feature is enabled
     if !Setting.get('user_create_account')
@@ -1013,7 +1014,7 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
   # @parameter        User(required,body) [User] The attribute value structure needed to create a User record.
   #
   # @response_message 200 [User] Created User record.
-  # @response_message 401        Invalid session.
+  # @response_message 403        Forbidden / Invalid session.
   def create_admin
     if User.count > 4 # system and example users; ATTENZIONE: 4 sono gli utenti creati con db:seed
       raise Exceptions::UnprocessableEntity, 'Administrator account already created'

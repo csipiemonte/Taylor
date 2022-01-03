@@ -4,6 +4,7 @@ require 'models/concerns/can_be_imported_examples'
 require 'models/concerns/can_csv_import_examples'
 require 'models/concerns/has_history_examples'
 require 'models/concerns/has_object_manager_attributes_validation_examples'
+require 'models/ticket/article/has_ticket_contact_attributes_impact_examples'
 
 RSpec.describe Ticket::Article, type: :model do
   subject(:article) { create(:ticket_article) }
@@ -13,6 +14,8 @@ RSpec.describe Ticket::Article, type: :model do
   it_behaves_like 'CanCsvImport'
   it_behaves_like 'HasHistory'
   it_behaves_like 'HasObjectManagerAttributesValidation'
+
+  it_behaves_like 'Ticket::Article::HasTicketContactAttributesImpact'
 
   describe 'Callbacks, Observers, & Async Transactions -' do
     describe 'NULL byte handling (via ChecksAttributeValuesAndLength concern):' do
@@ -24,6 +27,22 @@ RSpec.describe Ticket::Article, type: :model do
       it 'removes them from #body on creation, if necessary (postgres doesn’t like them)' do
         expect(create(:ticket_article, body: "some\u0000message 123"))
           .to be_persisted
+      end
+    end
+
+    describe 'Setting of ticket_define_email_from' do
+      subject(:article) do
+        create(:ticket_article, sender_name: 'Agent', type_name: 'email')
+      end
+
+      context 'when AgentName' do
+        before do
+          Setting.set('ticket_define_email_from', 'AgentName')
+        end
+
+        it 'sets the from based on the setting' do
+          expect(article.reload.from).to eq("\"#{article.created_by.firstname} #{article.created_by.lastname}\" <#{article.ticket.group.email_address.email}>")
+        end
       end
     end
 

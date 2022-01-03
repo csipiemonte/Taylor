@@ -479,9 +479,9 @@ example for aggregations within one year
       current_user_id = current_user.id
     end
 
-    query_must = []
+    query_must     = []
     query_must_not = []
-    relative_map = {
+    relative_map   = {
       day:    'd',
       year:   'y',
       month:  'M',
@@ -489,8 +489,17 @@ example for aggregations within one year
       minute: 'm',
     }
     if selector.present?
+      operators_is_isnot = ['is', 'is not']
+
       selector.each do |key, data|
-        key_tmp = key.sub(/^.+?\./, '')
+
+        data = data.clone
+        table, key_tmp = key.split('.')
+        if key_tmp.blank?
+          key_tmp = table
+          table   = 'ticket'
+        end
+
         wildcard_or_term = 'term'
         if data['value'].is_a?(Array)
           wildcard_or_term = 'terms'
@@ -504,8 +513,6 @@ example for aggregations within one year
           when 'not_set'
             data['value'] = if key_tmp.match?(/^(created_by|updated_by|owner|customer|user)_id/)
                               1
-                            else
-                              'NULL'
                             end
           when 'current_user.id'
             raise "Use current_user.id in selector, but no current_user is set #{data.inspect}" if !current_user_id
@@ -539,20 +546,41 @@ example for aggregations within one year
 
         # use .keyword and wildcard search in cases where query contains non A-z chars
         if data['operator'] == 'contains' || data['operator'] == 'contains not'
+
           if data['value'].is_a?(Array)
             data['value'].each_with_index do |value, index|
-              next if !value.is_a?(String) || value !~ /[A-z]/ || value !~ /\W/
+              next if !value.is_a?(String) || value !~ /[A-z]/
 
               data['value'][index] = "*#{value}*"
               key_tmp += '.keyword'
               wildcard_or_term = 'wildcards'
               break
             end
-          elsif data['value'].is_a?(String) && /[A-z]/.match?(data['value']) && data['value'] =~ /\W/
+          elsif data['value'].is_a?(String) && /[A-z]/.match?(data['value'])
             data['value'] = "*#{data['value']}*"
             key_tmp += '.keyword'
             wildcard_or_term = 'wildcard'
           end
+        end
+
+        # for pre condition not_set we want to check if values are defined for the object by exists
+        if data['pre_condition'] == 'not_set' && operators_is_isnot.include?(data['operator']) && data['value'].nil?
+          t['exists'] = {
+            field: key_tmp,
+          }
+
+          case data['operator']
+          when 'is'
+            query_must_not.push t
+          when 'is not'
+            query_must.push t
+          end
+          next
+
+        end
+
+        if table != 'ticket'
+          key_tmp = "#{table}.#{key_tmp}"
         end
 
         # is/is not/contains/contains not
@@ -702,25 +730,8 @@ return true if backend is configured
   def self.build_index_name(index = nil)
     local_index = "#{Setting.get('es_index')}_#{Rails.env}"
     return local_index if index.blank?
-    return "#{local_index}/#{index}" if lower_equal_es56?
 
     "#{local_index}_#{index.underscore.tr('/', '_')}"
-  end
-
-=begin
-
-return true if the elastic search version is lower equal 5.6
-
-  result = SearchIndexBackend.lower_equal_es56?
-
-returns
-
-  result = true
-
-=end
-
-  def self.lower_equal_es56?
-    Setting.get('es_multi_index') == false
   end
 
 =begin
@@ -770,7 +781,7 @@ generate url for index or document access (only for internal use)
     url = "#{url}/#{index}"
 
     # add document type
-    if with_document_type && !lower_equal_es56?
+    if with_document_type
       url = "#{url}/_doc"
     end
 
@@ -801,7 +812,7 @@ generate url for index or document access (only for internal use)
     message = if response&.error&.match?('Connection refused')
                 "Elasticsearch is not reachable, probably because it's not running or even installed."
               elsif url.end_with?('pipeline/zammad-attachment', 'pipeline=zammad-attachment') && response.code == 400
-                'The installed attachment plugin could not handle the request payload. Ensure that the correct attachment plugin is installed (5.6 => ingest-attachment, 2.4 - 5.5 => mapper-attachments).'
+                'The installed attachment plugin could not handle the request payload. Ensure that the correct attachment plugin is installed (ingest-attachment).'
               else
                 'Check the response and payload for detailed information: '
               end
@@ -929,6 +940,251 @@ helper method for making HTTP calls and raising error if response was not succes
       url:      url,
       payload:  args[:data],
       response: response
+    )
+  end
+
+=begin
+
+  This function will return a index mapping based on the
+  attributes of the database table of the existing object.
+
+  mapping = SearchIndexBackend.get_mapping_properties_object(Ticket)
+
+  Returns:
+
+  mapping = {
+    User: {
+      properties: {
+        firstname: {
+          type: 'keyword',
+        },
+      }
+    }
+  }
+
+=end
+
+  def self.get_mapping_properties_object(object)
+    name = '_doc'
+    result = {
+      name => {
+        properties: {}
+      }
+    }
+
+    store_columns = %w[preferences data]
+
+    # for elasticsearch 6.x and later
+    string_type = 'text'
+    string_raw  = { type: 'keyword', ignore_above: 5012 }
+    boolean_raw = { type: 'boolean' }
+
+    object.columns_hash.each do |key, value|
+      if value.type == :string && value.limit && value.limit <= 5000 && store_columns.exclude?(key)
+        result[name][:properties][key] = {
+          type:   string_type,
+          fields: {
+            keyword: string_raw,
+          }
+        }
+      elsif value.type == :integer
+        result[name][:properties][key] = {
+          type: 'integer',
+        }
+      elsif value.type == :datetime || value.type == :date
+        result[name][:properties][key] = {
+          type: 'date',
+        }
+      elsif value.type == :boolean
+        result[name][:properties][key] = {
+          type:   'boolean',
+          fields: {
+            keyword: boolean_raw,
+          }
+        }
+      elsif value.type == :binary
+        result[name][:properties][key] = {
+          type: 'binary',
+        }
+      elsif value.type == :bigint
+        result[name][:properties][key] = {
+          type: 'long',
+        }
+      elsif value.type == :decimal
+        result[name][:properties][key] = {
+          type: 'float',
+        }
+      end
+    end
+
+    case object.name
+    when 'Ticket'
+      result[name][:_source] = {
+        excludes: ['article.attachment']
+      }
+      result[name][:properties][:article] = {
+        type:              'nested',
+        include_in_parent: true,
+      }
+    when 'KnowledgeBase::Answer::Translation'
+      result[name][:_source] = {
+        excludes: ['attachment']
+      }
+    end
+
+    return result if type_in_mapping?
+
+    result[name]
+  end
+
+  # get es version
+  def self.version
+    @version ||= begin
+      info = SearchIndexBackend.info
+      number = nil
+      if info.present?
+        number = info['version']['number'].to_s
+      end
+      number
+    end
+  end
+
+  def self.version_int
+    number = version
+    return 0 if !number
+
+    number_split = version.split('.')
+    "#{number_split[0]}#{format('%<minor>03d', minor: number_split[1])}#{format('%<patch>03d', patch: number_split[2])}".to_i
+  end
+
+  def self.version_supported?
+
+    # only versions greater/equal than 6.5.0 are supported
+    return if version_int < 6_005_000
+
+    true
+  end
+
+  # no type in mapping
+  def self.type_in_mapping?
+    return true if version_int < 7_000_000
+
+    false
+  end
+
+  # is es configured?
+  def self.configured?
+    return false if Setting.get('es_url').blank?
+
+    true
+  end
+
+  def self.settings
+    {
+      'index.mapping.total_fields.limit': 2000,
+    }
+  end
+
+  def self.create_index(models = Models.indexable)
+    models.each do |local_object|
+      SearchIndexBackend.index(
+        action: 'create',
+        name:   local_object.name,
+        data:   {
+          mappings: SearchIndexBackend.get_mapping_properties_object(local_object),
+          settings: SearchIndexBackend.settings,
+        }
+      )
+    end
+  end
+
+  def self.drop_index(models = Models.indexable)
+    models.each do |local_object|
+      SearchIndexBackend.index(
+        action: 'delete',
+        name:   local_object.name,
+      )
+    end
+  end
+
+  def self.create_object_index(object)
+    models = Models.indexable.select { |c| c.to_s == object }
+    create_index(models)
+  end
+
+  def self.drop_object_index(object)
+    models = Models.indexable.select { |c| c.to_s == object }
+    drop_index(models)
+  end
+
+  def self.pipeline(create: false)
+    pipeline = Setting.get('es_pipeline')
+    if create && pipeline.blank?
+      pipeline = "zammad#{rand(999_999_999_999)}"
+      Setting.set('es_pipeline', pipeline)
+    end
+    pipeline
+  end
+
+  def self.pipeline_settings
+    {
+      ignore_failure: true,
+      ignore_missing: true,
+    }
+  end
+
+  def self.create_pipeline
+    SearchIndexBackend.processors(
+      "_ingest/pipeline/#{pipeline(create: true)}": [
+        {
+          action: 'delete',
+        },
+        {
+          action:      'create',
+          description: 'Extract zammad-attachment information from arrays',
+          processors:  [
+            {
+              foreach: {
+                field:     'article',
+                processor: {
+                  foreach: {
+                    field:     '_ingest._value.attachment',
+                    processor: {
+                      attachment: {
+                        target_field: '_ingest._value',
+                        field:        '_ingest._value._content',
+                      }.merge(pipeline_settings),
+                    }
+                  }.merge(pipeline_settings),
+                }
+              }.merge(pipeline_settings),
+            },
+            {
+              foreach: {
+                field:     'attachment',
+                processor: {
+                  attachment: {
+                    target_field: '_ingest._value',
+                    field:        '_ingest._value._content',
+                  }.merge(pipeline_settings),
+                }
+              }.merge(pipeline_settings),
+            }
+          ]
+        }
+      ]
+    )
+  end
+
+  def self.drop_pipeline
+    return if pipeline.blank?
+
+    SearchIndexBackend.processors(
+      "_ingest/pipeline/#{pipeline}": [
+        {
+          action: 'delete',
+        },
+      ]
     )
   end
 

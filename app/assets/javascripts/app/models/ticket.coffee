@@ -124,7 +124,7 @@ class App.Ticket extends App.Model
 
         # apply tag changes
         if attributes[1] is 'tags'
-          tags = content.value.split(',')
+          tags = content.value.split(/\s*,\s*/)
           for tag in tags
             if content.operator is 'remove'
               if params.callback && params.callback.tagRemove
@@ -171,7 +171,7 @@ class App.Ticket extends App.Model
       else if attributes[0] is 'article'
 
         # preload required attributes
-        if attributes[1]
+        if !content.type_id
           type = App.TicketArticleType.findByAttribute('name', attributes[1])
           if type
             params.article.type_id = type.id
@@ -199,6 +199,15 @@ class App.Ticket extends App.Model
       if objectAttribute == 'article.subject' && !ticket['article']['subject']
         objectName    = 'ticket'
         attributeName = 'title'
+
+      if objectAttribute == 'ticket.mention_user_ids'
+        if condition['pre_condition'] isnt 'not_set'
+          if condition['pre_condition'] is 'specific'
+            condition.value = parseInt(condition.value)
+          if condition.operator is 'is'
+            condition.operator = 'contains one'
+          else if condition.operator is 'is not'
+            condition.operator = 'contains all not'
 
       # for new articles there is no created_by_id so we set the current user
       # if no id is given
@@ -250,6 +259,9 @@ class App.Ticket extends App.Model
     contains_regex = new RegExp(App.Utils.escapeRegExp(conditionValue.toString()), 'i')
 
     # move value to array if it is not already
+    if objectName is 'ticket' && attributeName is 'tags'
+      conditionValue = conditionValue.split(/\s*,\s*/)
+
     if !_.isArray(objectValue)
       objectValue = [objectValue]
     # move value to array if it is not already
@@ -316,7 +328,31 @@ class App.Ticket extends App.Model
     return @userGroupAccess(permission)
 
   userGroupAccess: (permission) ->
-    user      = App.User.current()
+    user = App.User.current()
+    return @isAccessibleByGroup(user, permission)
+
+  userIsCustomer: ->
+    user = App.User.current()
+    return true if user.id is @customer_id
+    false
+
+  userIsOwner: ->
+    user = App.User.current()
+    return @isAccessibleByOwner(user)
+
+  currentView: ->
+    return 'agent' if App.User.current()?.permission('ticket.agent') && @userGroupAccess('read')
+    return 'customer' if App.User.current()?.permission('ticket.customer')
+    return
+
+  isAccessibleByOwner: (user) ->
+    return false if !user
+    return true if user.id is @owner_id
+    false
+
+  isAccessibleByGroup: (user, permission) ->
+    return false if !user
+
     group_ids = user.allGroupIds(permission)
     return false if !@group_id
 
@@ -326,17 +362,8 @@ class App.Ticket extends App.Model
 
     return false
 
-  userIsCustomer: ->
-    user = App.User.current()
-    return true if user.id is @customer_id
-    false
-
-  userIsOwner: ->
-    user = App.User.current()
-    return true if user.id is @owner_id
-    false
-
-  currentView: ->
-    return 'agent' if App.User.current()?.permission('ticket.agent') && @userGroupAccess('read')
-    return 'customer' if App.User.current()?.permission('ticket.customer')
-    return
+  isAccessibleBy: (user, permission) ->
+    return false if !user
+    return false if !user.permission('ticket.agent')
+    return true if @isAccessibleByOwner(user)
+    return @isAccessibleByGroup(user, permission)

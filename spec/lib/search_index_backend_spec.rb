@@ -75,7 +75,7 @@ RSpec.describe SearchIndexBackend, searchindex: true do
       QUERIES
 
       it 'appends a * to the original query' do
-        expect(queries.map(&described_class.method(:append_wildcard_to_simple_query)))
+        expect(queries.map { |query| described_class.append_wildcard_to_simple_query(query) })
           .to eq(queries.map { |q| "#{q}*" })
       end
     end
@@ -117,7 +117,7 @@ RSpec.describe SearchIndexBackend, searchindex: true do
       QUERIES
 
       it 'returns the original query verbatim' do
-        expect(queries.map(&described_class.method(:append_wildcard_to_simple_query)))
+        expect(queries.map { |query| described_class.append_wildcard_to_simple_query(query) })
           .to eq(queries)
       end
     end
@@ -164,39 +164,140 @@ RSpec.describe SearchIndexBackend, searchindex: true do
 
   describe '.selectors' do
 
-    let(:organization1) { create :organization }
-    let(:agent1) { create :agent, organization: organization1 }
-    let(:customer1) { create :customer, organization: organization1 }
-    let(:ticket1) { create :ticket, title: 'some-title1', state_id: 1, created_by: agent1 }
-    let(:ticket2) { create :ticket, title: 'some_title2', state_id: 4 }
-    let(:ticket3) { create :ticket, title: 'some::title3', state_id: 1 }
+    let(:group1) { create :group }
+    let(:organization1) { create :organization, note: 'hihi' }
+    let(:agent1) { create :agent, organization: organization1, groups: [group1] }
+    let(:customer1) { create :customer, organization: organization1, firstname: 'special-first-name' }
+    let(:ticket1) do
+      ticket = create :ticket, title: 'some-title1', state_id: 1, created_by: agent1
+      ticket.tag_add('t1', 1)
+      ticket
+    end
+    let(:ticket2) do
+      ticket = create :ticket, title: 'some_title2', state_id: 4
+      ticket.tag_add('t2', 1)
+      ticket
+    end
+    let(:ticket3) do
+      ticket = create :ticket, title: 'some::title3', state_id: 1
+      ticket.tag_add('t1', 1)
+      ticket.tag_add('t2', 1)
+      ticket
+    end
     let(:ticket4) { create :ticket, title: 'phrase some-title4', state_id: 1 }
     let(:ticket5) { create :ticket, title: 'phrase some_title5', state_id: 1 }
     let(:ticket6) { create :ticket, title: 'phrase some::title6', state_id: 1 }
     let(:ticket7) { create :ticket, title: 'some title7', state_id: 1 }
-    let(:ticket8) { create :ticket, title: 'sometitle', state_id: 1, owner: agent1, customer: customer1 }
+    let(:ticket8) { create :ticket, title: 'sometitle', group: group1, state_id: 1, owner: agent1, customer: customer1, organization: organization1 }
+    let(:article8) { create :ticket_article, ticket: ticket8, subject: 'lorem ipsum' }
 
     before do
       Ticket.destroy_all # needed to remove not created tickets
-      described_class.add('Ticket', ticket1)
+      create(:mention, mentionable: ticket1, user: agent1)
+      ticket1.search_index_update_backend
       travel 1.second
-      described_class.add('Ticket', ticket2)
+      ticket2.search_index_update_backend
       travel 1.second
-      described_class.add('Ticket', ticket3)
+      ticket3.search_index_update_backend
       travel 1.second
-      described_class.add('Ticket', ticket4)
+      ticket4.search_index_update_backend
       travel 1.second
-      described_class.add('Ticket', ticket5)
+      ticket5.search_index_update_backend
       travel 1.second
-      described_class.add('Ticket', ticket6)
+      ticket6.search_index_update_backend
       travel 1.second
-      described_class.add('Ticket', ticket7)
+      ticket7.search_index_update_backend
       travel 1.second
-      described_class.add('Ticket', ticket8)
+      article8.ticket.search_index_update_backend
       described_class.refresh
     end
 
     context 'query with contains' do
+      it 'finds records with tags which contains all' do
+        result = described_class.selectors('Ticket',
+                                           { 'ticket.tags'=>{ 'operator' => 'contains all', 'value' => 't1, t2' } },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 1, ticket_ids: [ticket3.id.to_s] })
+      end
+
+      it 'finds records with tags which contains one' do
+        result = described_class.selectors('Ticket',
+                                           { 'ticket.tags'=>{ 'operator' => 'contains one', 'value' => 't1, t2' } },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 3, ticket_ids: [ticket3.id.to_s, ticket2.id.to_s, ticket1.id.to_s] })
+      end
+
+      it 'finds records with tags which contains all not' do
+        result = described_class.selectors('Ticket',
+                                           { 'ticket.tags'=>{ 'operator' => 'contains all not', 'value' => 't2' } },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 6, ticket_ids: [ticket8.id.to_s, ticket7.id.to_s, ticket6.id.to_s, ticket5.id.to_s, ticket4.id.to_s, ticket1.id.to_s] })
+      end
+
+      it 'finds records with tags which contains one not' do
+        result = described_class.selectors('Ticket',
+                                           { 'ticket.tags'=>{ 'operator' => 'contains one not', 'value' => 't1' } },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 6, ticket_ids: [ticket8.id.to_s, ticket7.id.to_s, ticket6.id.to_s, ticket5.id.to_s, ticket4.id.to_s, ticket2.id.to_s] })
+      end
+
+      it 'finds records with organization note' do
+        result = described_class.selectors('Ticket',
+                                           {
+                                             'organization.note' => {
+                                               'operator' => 'contains',
+                                               'value'    => 'hihi',
+                                             },
+                                           },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 1, ticket_ids: [ticket8.id.to_s] })
+      end
+
+      it 'finds records with customer firstname' do
+        result = described_class.selectors('Ticket',
+                                           {
+                                             'customer.firstname' => {
+                                               'operator' => 'contains',
+                                               'value'    => 'special',
+                                             },
+                                           },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 1, ticket_ids: [ticket8.id.to_s] })
+      end
+
+      it 'finds records with article subject' do
+        result = described_class.selectors('Ticket',
+                                           {
+                                             'article.subject' => {
+                                               'operator' => 'contains',
+                                               'value'    => 'ipsum',
+                                             },
+                                           },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 1, ticket_ids: [ticket8.id.to_s] })
+      end
+
       it 'finds records with pre_condition not_set' do
         result = described_class.selectors('Ticket',
                                            {
@@ -530,6 +631,100 @@ RSpec.describe SearchIndexBackend, searchindex: true do
         expect(result).to eq({ count: 1, ticket_ids: [ticket8.id.to_s] })
       end
 
+    end
+
+    context 'mentions' do
+      it 'finds records with pre_condition is not_set' do
+        result = described_class.selectors('Ticket',
+                                           {
+                                             'ticket.mention_user_ids' => {
+                                               'pre_condition' => 'not_set',
+                                               'operator'      => 'is',
+                                             },
+                                           },
+                                           { current_user: agent1 },
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 7, ticket_ids: [ticket8.id.to_s, ticket7.id.to_s, ticket6.id.to_s, ticket5.id.to_s, ticket4.id.to_s, ticket3.id.to_s, ticket2.id.to_s] })
+      end
+
+      it 'finds records with pre_condition is not not_set' do
+        result = described_class.selectors('Ticket',
+                                           {
+                                             'ticket.mention_user_ids' => {
+                                               'pre_condition' => 'not_set',
+                                               'operator'      => 'is not',
+                                             },
+                                           },
+                                           { current_user: agent1 },
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 1, ticket_ids: [ticket1.id.to_s] })
+      end
+
+      it 'finds records with pre_condition is current_user.id' do
+        result = described_class.selectors('Ticket',
+                                           {
+                                             'ticket.mention_user_ids' => {
+                                               'pre_condition' => 'current_user.id',
+                                               'operator'      => 'is',
+                                             },
+                                           },
+                                           { current_user: agent1 },
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 1, ticket_ids: [ticket1.id.to_s] })
+      end
+
+      it 'finds records with pre_condition is not current_user.id' do
+        result = described_class.selectors('Ticket',
+                                           {
+                                             'ticket.mention_user_ids' => {
+                                               'pre_condition' => 'current_user.id',
+                                               'operator'      => 'is not',
+                                             },
+                                           },
+                                           { current_user: agent1 },
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 7, ticket_ids: [ticket8.id.to_s, ticket7.id.to_s, ticket6.id.to_s, ticket5.id.to_s, ticket4.id.to_s, ticket3.id.to_s, ticket2.id.to_s] })
+      end
+
+      it 'finds records with pre_condition is specific' do
+        result = described_class.selectors('Ticket',
+                                           {
+                                             'ticket.mention_user_ids' => {
+                                               'pre_condition' => 'specific',
+                                               'operator'      => 'is',
+                                               'value'         => agent1.id,
+                                             },
+                                           },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 1, ticket_ids: [ticket1.id.to_s] })
+      end
+
+      it 'finds records with pre_condition is not specific' do
+        result = described_class.selectors('Ticket',
+                                           {
+                                             'ticket.mention_user_ids' => {
+                                               'pre_condition' => 'specific',
+                                               'operator'      => 'is not',
+                                               'value'         => agent1.id,
+                                             },
+                                           },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 7, ticket_ids: [ticket8.id.to_s, ticket7.id.to_s, ticket6.id.to_s, ticket5.id.to_s, ticket4.id.to_s, ticket3.id.to_s, ticket2.id.to_s] })
+      end
     end
   end
 end

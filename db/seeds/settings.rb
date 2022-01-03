@@ -209,9 +209,9 @@ Setting.create_or_update(
         name:    'pretty_date_format',
         tag:     'select',
         options: {
-          'relative':  'relative - e. g. "2 hours ago" or "2 days and 15 minutes ago"',
-          'absolute':  'absolute - e. g. "Monday 09:30" or "Tuesday 23. Feb 14:20"',
-          'timestamp': 'timestamp - e. g. "2018-08-30 14:30"',
+          relative:  'relative - e. g. "2 hours ago" or "2 days and 15 minutes ago"',
+          absolute:  'absolute - e. g. "Monday 09:30" or "Tuesday 23. Feb 14:20"',
+          timestamp: 'timestamp - e. g. "2018-08-30 14:30"',
         },
       },
     ],
@@ -1427,18 +1427,18 @@ Setting.create_if_not_exists(
   preferences: {
     controller:       'SettingsAreaSwitch',
     sub:              ['auth_gitlab_credentials'],
-    title_i18n:       ['Gitlab'],
-    description_i18n: ['Gitlab', 'Gitlab Applications', 'https://your-gitlab-host/admin/applications'],
+    title_i18n:       ['GitLab'],
+    description_i18n: ['GitLab', 'GitLab Applications', 'https://your-gitlab-host/admin/applications'],
     permission:       ['admin.security'],
   },
   state:       false,
   frontend:    true
 )
 Setting.create_if_not_exists(
-  title:       'Gitlab App Credentials',
+  title:       'GitLab App Credentials',
   name:        'auth_gitlab_credentials',
-  area:        'Security::ThirdPartyAuthentication::Gitlab',
-  description: 'Enables user authentication via Gitlab.',
+  area:        'Security::ThirdPartyAuthentication::GitLab',
+  description: 'Enables user authentication via GitLab.',
   options:     {
     form: [
       {
@@ -1525,91 +1525,6 @@ Setting.create_if_not_exists(
   },
   frontend:    false
 )
-
-Setting.create_if_not_exists(
-  title:       'Authentication via %s',
-  name:        'auth_oauth2',
-  area:        'Security::ThirdPartyAuthentication',
-  description: 'Enables user authentication via generic OAuth2. Register your app first.',
-  options:     {
-    form: [
-      {
-        display: '',
-        null:    true,
-        name:    'auth_oauth2',
-        tag:     'boolean',
-        options: {
-          true  => 'yes',
-          false => 'no',
-        },
-      },
-    ],
-  },
-  preferences: {
-    controller: 'SettingsAreaSwitch',
-    sub:        ['auth_oauth2_credentials'],
-    title_i18n: ['Generic OAuth2'],
-    permission: ['admin.security'],
-  },
-  state:       false,
-  frontend:    true
-)
-Setting.create_if_not_exists(
-  title:       'Generic OAuth2 App Credentials',
-  name:        'auth_oauth2_credentials',
-  area:        'Security::ThirdPartyAuthentication::GenericOAuth',
-  description: 'Enables user authentication via generic OAuth2.',
-  options:     {
-    form: [
-      {
-        display:     'Name',
-        null:        true,
-        name:        'name',
-        tag:         'input',
-        placeholder: 'Some Provider Name',
-      },
-      {
-        display: 'App ID',
-        null:    true,
-        name:    'app_id',
-        tag:     'input',
-      },
-      {
-        display: 'App Secret',
-        null:    true,
-        name:    'app_secret',
-        tag:     'input',
-      },
-      {
-        display:     'Site',
-        null:        true,
-        name:        'site',
-        tag:         'input',
-        placeholder: 'https://oauth.YOURDOMAIN.com',
-      },
-      {
-        display:     'authorize_url',
-        null:        true,
-        name:        'authorize_url',
-        tag:         'input',
-        placeholder: '/oauth/authorize',
-      },
-      {
-        display:     'token_url',
-        null:        true,
-        name:        'token_url',
-        tag:         'input',
-        placeholder: '/oauth/token',
-      },
-    ],
-  },
-  state:       {},
-  preferences: {
-    permission: ['admin.security'],
-  },
-  frontend:    false
-)
-
 Setting.create_if_not_exists(
   title:       'Authentication via %s',
   name:        'auth_weibo',
@@ -2524,6 +2439,7 @@ Setting.create_if_not_exists(
         options: {
           SystemAddressName:          'System Address Display Name',
           AgentNameSystemAddressName: 'Agent Name + FromSeparator + System Address Display Name',
+          AgentName:                  'Agent Name',
         },
       },
     ],
@@ -2971,20 +2887,20 @@ Setting.create_if_not_exists(
   frontend:    false
 )
 Setting.create_if_not_exists(
+  title:       'Elasticsearch Total Payload Size',
+  name:        'es_total_max_size_in_mb',
+  area:        'SearchIndex::Elasticsearch',
+  description: 'Define max. payload size for Elasticsearch.',
+  state:       300,
+  preferences: { online_service_disable: true },
+  frontend:    false
+)
+Setting.create_if_not_exists(
   title:       'Elasticsearch Pipeline Name',
   name:        'es_pipeline',
   area:        'SearchIndex::Elasticsearch',
   description: 'Define pipeline name for Elasticsearch.',
   state:       '',
-  preferences: { online_service_disable: true },
-  frontend:    false
-)
-Setting.create_if_not_exists(
-  title:       'Elasticsearch Multi Index',
-  name:        'es_multi_index',
-  area:        'SearchIndex::Elasticsearch',
-  description: 'Define if Elasticsearch is using multiple indexes.',
-  state:       false,
   preferences: { online_service_disable: true },
   frontend:    false
 )
@@ -4039,6 +3955,90 @@ Setting.create_if_not_exists(
   description: 'Defines the i-doit config.',
   options:     {},
   state:       {},
+  preferences: {
+    prio:       2,
+    permission: ['admin.integration'],
+  },
+  frontend:    false,
+)
+Setting.create_if_not_exists(
+  title:       'GitLab integration',
+  name:        'gitlab_integration',
+  area:        'Integration::Switch',
+  description: 'Defines if the GitLab (http://www.gitlab.com) integration is enabled or not.',
+  options:     {
+    form: [
+      {
+        display: '',
+        null:    true,
+        name:    'gitlab_integration',
+        tag:     'boolean',
+        options: {
+          true  => 'yes',
+          false => 'no',
+        },
+      },
+    ],
+  },
+  state:       false,
+  preferences: {
+    prio:           1,
+    authentication: true,
+    permission:     ['admin.integration'],
+  },
+  frontend:    true
+)
+Setting.create_if_not_exists(
+  title:       'GitLab config',
+  name:        'gitlab_config',
+  area:        'Integration::GitLab',
+  description: 'Stores the GitLab configuration.',
+  options:     {},
+  state:       {
+    endpoint: 'https://gitlab.com/api/graphql',
+  },
+  preferences: {
+    prio:       2,
+    permission: ['admin.integration'],
+  },
+  frontend:    false,
+)
+Setting.create_if_not_exists(
+  title:       'GitHub integration',
+  name:        'github_integration',
+  area:        'Integration::Switch',
+  description: 'Defines if the GitHub (http://www.github.com) integration is enabled or not.',
+  options:     {
+    form: [
+      {
+        display: '',
+        null:    true,
+        name:    'github_integration',
+        tag:     'boolean',
+        options: {
+          true  => 'yes',
+          false => 'no',
+        },
+      },
+    ],
+  },
+  state:       false,
+  preferences: {
+    prio:           1,
+    authentication: true,
+    permission:     ['admin.integration'],
+  },
+  frontend:    true
+)
+Setting.create_if_not_exists(
+  title:       'GitHub config',
+  name:        'github_config',
+  area:        'Integration::GitHub',
+  description: 'Stores the GitHub configuration.',
+  options:     {},
+  state:       {
+    endpoint: 'https://api.github.com/graphql',
+  },
   preferences: {
     prio:       2,
     permission: ['admin.integration'],

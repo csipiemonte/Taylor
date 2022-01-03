@@ -1,4 +1,4 @@
-class Edit extends App.ObserverController
+class Edit extends App.ControllerObserver
   model: 'Ticket'
   observeNot:
     created_at: true
@@ -50,7 +50,7 @@ class Edit extends App.ObserverController
 
     return if @resetBind
     @resetBind = true
-    @bind('ui::ticket::taskReset', (data) =>
+    @controllerBind('ui::ticket::taskReset', (data) =>
       return if data.ticket_id.toString() isnt ticket.id.toString()
       @render(ticket)
     )
@@ -58,7 +58,7 @@ class Edit extends App.ObserverController
 class SidebarTicket extends App.Controller
   constructor: ->
     super
-    @bind 'config_update_local', (data) => @configUpdated(data)
+    @controllerBind('config_update_local', (data) => @configUpdated(data))
 
   configUpdated: (data) ->
     if data.name != 'kb_active'
@@ -102,6 +102,8 @@ class SidebarTicket extends App.Controller
     if @tagWidget
       if args.tags
         @tagWidget.reload(args.tags)
+      if args.mentions
+        @mentionWidget.reload(args.mentions)
       if args.tagAdd
         @tagWidget.add(args.tagAdd, args.source)
       if args.tagRemove
@@ -128,14 +130,19 @@ class SidebarTicket extends App.Controller
     )
 
     if @ticket.currentView() is 'agent'
+      @mentionWidget = new App.WidgetMention(
+        el:       localEl.filter('.js-subscriptions')
+        object:   @ticket
+        mentions: @mentions
+      )
       @tagWidget = new App.WidgetTag(
-        el:          localEl.filter('.tags')
+        el:          localEl.filter('.js-tags')
         object_type: 'Ticket'
         object:      @ticket
         tags:        @tags
       )
       @linkWidget = new App.WidgetLink.Ticket(
-        el:          localEl.filter('.links')
+        el:          localEl.filter('.js-links')
         object_type: 'Ticket'
         object:      @ticket
         links:       @links
@@ -152,7 +159,7 @@ class SidebarTicket extends App.Controller
 
       if @permissionCheck('knowledge_base.*') and App.Config.get('kb_active')
         @linkKbAnswerWidget = new App.WidgetLinkKbAnswer(
-          el:          localEl.filter('.link_kb_answers')
+          el:          localEl.filter('.js-linkKbAnswers')
           object_type: 'Ticket'
           object:      @ticket
           links:       @links

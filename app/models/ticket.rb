@@ -16,17 +16,26 @@ class Ticket < ApplicationModel
   include HasLinks
   include HasObjectManagerAttributesValidation
   include HasTaskbars
+  include Ticket::CallsStatsTicketReopenLog
+  include Ticket::EnqueuesUserTicketCounterJob
+  include Ticket::ResetsPendingTimeSeconds
+  include Ticket::SetsCloseTime
+  include Ticket::SetsOnlineNotificationSeen
+  include Ticket::TouchesAssociations
 
-  include Ticket::Escalation
-  include Ticket::Subject
-  include Ticket::Assets
-  include Ticket::SearchIndex
-  include Ticket::Search
-  include Ticket::MergeHistory
+  include ::Ticket::Escalation
+  include ::Ticket::Subject
+  include ::Ticket::Assets
+  include ::Ticket::SearchIndex
+  include ::Ticket::Search
+  include ::Ticket::MergeHistory
 
   store          :preferences
   before_create  :check_generate, :check_defaults, :check_title, :set_default_state, :set_default_priority
   before_update  :check_defaults, :check_title, :reset_pending_time, :check_owner_active
+
+  # This must be loaded late as it depends on the internal before_create and before_update handlers of ticket.rb.
+  include Ticket::SetsLastOwnerUpdateTime
 
   validates :group_id, presence: true
 
@@ -58,7 +67,7 @@ class Ticket < ApplicationModel
                              :article_count,
                              :preferences
 
-  history_relation_object 'Ticket::Article'
+  history_relation_object 'Ticket::Article', 'Mention'
 
   sanitized_html :note
 
@@ -67,6 +76,7 @@ class Ticket < ApplicationModel
   has_many      :articles,               class_name: 'Ticket::Article', after_add: :cache_update, after_remove: :cache_update, dependent: :destroy, inverse_of: :ticket
   has_many      :ticket_time_accounting, class_name: 'Ticket::TimeAccounting', dependent: :destroy, inverse_of: :ticket
   has_many      :flags,                  class_name: 'Ticket::Flag', dependent: :destroy
+  has_many      :mentions,               as: :mentionable, dependent: :destroy
   belongs_to    :state,                  class_name: 'Ticket::State', optional: true
   belongs_to    :priority,               class_name: 'Ticket::Priority', optional: true
   belongs_to    :owner,                  class_name: 'User', optional: true
@@ -78,7 +88,7 @@ class Ticket < ApplicationModel
 
   belongs_to    :type,                  class_name: 'Ticket::Type', optional: true
 
-  association_attributes_ignored :flags
+  association_attributes_ignored :flags, :mentions
 
   self.inheritance_column = nil
 
@@ -358,14 +368,27 @@ returns
         updated_by_id: data[:user_id],
       )
 
+      # search for mention duplicates and destroy them before moving mentions
+      Mention.duplicates(self, target_ticket).destroy_all
+      Mention.where(mentionable: self).update_all(mentionable_id: target_ticket.id) # rubocop:disable Rails/SkipsModelValidations
+
       # reassign links to the new ticket
       # rubocop:disable Rails/SkipsModelValidations
+      ticket_source_id = Link::Object.find_by(name: 'Ticket').id
+
+      # search for all duplicate source and target links and destroy them
+      # before link merging
+      Link.duplicates(
+        object1_id:    ticket_source_id,
+        object1_value: id,
+        object2_value: data[:ticket_id]
+      ).destroy_all
       Link.where(
-        link_object_source_id:    Link::Object.find_by(name: 'Ticket').id,
+        link_object_source_id:    ticket_source_id,
         link_object_source_value: id,
       ).update_all(link_object_source_value: data[:ticket_id])
       Link.where(
-        link_object_target_id:    Link::Object.find_by(name: 'Ticket').id,
+        link_object_target_id:    ticket_source_id,
         link_object_target_value: id,
       ).update_all(link_object_target_value: data[:ticket_id])
       # rubocop:enable Rails/SkipsModelValidations
@@ -559,17 +582,19 @@ condition example
 
     # get tables to join
     tables = ''
-    selectors.each_key do |attribute|
-      selector = attribute.split(/\./)
-      next if !selector[1]
-      next if selector[0] == 'ticket'
-      next if selector[0] == 'execution_time'
-      next if tables.include?(selector[0])
+    selectors.each do |attribute, selector_raw|
+      attributes = attribute.split('.')
+      selector = selector_raw.stringify_keys
+      next if !attributes[1]
+      next if attributes[0] == 'execution_time'
+      next if tables.include?(attributes[0])
+      next if attributes[0] == 'ticket' && attributes[1] != 'mention_user_ids'
+      next if attributes[0] == 'ticket' && attributes[1] == 'mention_user_ids' && selector['pre_condition'] == 'not_set'
 
       if query != ''
         query += ' AND '
       end
-      case selector[0]
+      case attributes[0]
       when 'customer'
         tables += ', users customers'
         query += 'tickets.customer_id = customers.id'
@@ -585,8 +610,13 @@ condition example
       when 'ticket_state'
         tables += ', ticket_states'
         query += 'tickets.state_id = ticket_states.id'
+      when 'ticket'
+        if attributes[1] == 'mention_user_ids'
+          tables += ', mentions'
+          query += "tickets.id = mentions.mentionable_id AND mentions.mentionable_type = 'Ticket'"
+        end
       else
-        raise "invalid selector #{attribute.inspect}->#{selector.inspect}"
+        raise "invalid selector #{attribute.inspect}->#{attributes.inspect}"
       end
     end
 
@@ -615,7 +645,7 @@ condition example
       return nil if selector['pre_condition'] && selector['pre_condition'] !~ /^(not_set|current_user\.|specific)/
 
       # get attributes
-      attributes = attribute.split(/\./)
+      attributes = attribute.split('.')
       attribute = "#{ActiveRecord::Base.connection.quote_table_name("#{attributes[0]}s")}.#{ActiveRecord::Base.connection.quote_column_name(attributes[1])}"
 
       # magic selectors
@@ -624,7 +654,7 @@ condition example
       end
 
       if attributes[0] == 'ticket' && attributes[1] == 'tags'
-        selector['value'] = selector['value'].split(/,/).collect(&:strip)
+        selector['value'] = selector['value'].split(',').collect(&:strip)
       end
 
       if selector['operator'].include?('in working time')
@@ -645,6 +675,29 @@ condition example
 
       if query != ''
         query += ' AND '
+      end
+
+      # because of no grouping support we select not_set by sub select for mentions
+      if attributes[0] == 'ticket' && attributes[1] == 'mention_user_ids'
+        if selector['pre_condition'] == 'not_set'
+          query += if selector['operator'] == 'is'
+                     "(SELECT 1 FROM mentions mentions_sub WHERE mentions_sub.mentionable_type = 'Ticket' AND mentions_sub.mentionable_id = tickets.id) IS NULL"
+                   else
+                     "1 = (SELECT 1 FROM mentions mentions_sub WHERE mentions_sub.mentionable_type = 'Ticket' AND mentions_sub.mentionable_id = tickets.id)"
+                   end
+        else
+          query += if selector['operator'] == 'is'
+                     'mentions.user_id IN (?)'
+                   else
+                     'mentions.user_id NOT IN (?)'
+                   end
+          if selector['pre_condition'] == 'current_user.id'
+            bind_params.push current_user_id
+          else
+            bind_params.push selector['value']
+          end
+        end
+        next
       end
 
       if selector['operator'] == 'is'
@@ -807,7 +860,7 @@ condition example
         query += "#{attribute} >= ?"
         bind_params.push selector['value']
       elsif selector['operator'] == 'within last (relative)'
-        query += "#{attribute} >= ?"
+        query += "#{attribute} BETWEEN ? AND ?"
         time = nil
         case selector['range']
         when 'minute'
@@ -824,8 +877,9 @@ condition example
           raise "Unknown selector attributes '#{selector.inspect}'"
         end
         bind_params.push time
+        bind_params.push Time.zone.now
       elsif selector['operator'] == 'within next (relative)'
-        query += "#{attribute} <= ?"
+        query += "#{attribute} BETWEEN ? AND ?"
         time = nil
         case selector['range']
         when 'minute'
@@ -841,6 +895,7 @@ condition example
         else
           raise "Unknown selector attributes '#{selector.inspect}'"
         end
+        bind_params.push Time.zone.now
         bind_params.push time
       elsif selector['operator'] == 'before (relative)'
         query += "#{attribute} <= ?"
@@ -986,7 +1041,7 @@ perform changes on ticket
       if key == 'ticket.tags'
         next if value['value'].blank?
 
-        tags = value['value'].split(/,/)
+        tags = value['value'].split(',')
         case value['operator']
         when 'add'
           tags.each do |tag|
@@ -1486,6 +1541,24 @@ result
 
   def articles
     Ticket::Article.where(ticket_id: id).order(:created_at, :id)
+  end
+
+  # Get whichever #last_contact_* was later
+  # This is not identical to #last_contact_at
+  # It returns time to last original (versus follow up) contact
+  # @return [Time, nil]
+  def last_original_update_at
+    [last_contact_agent_at, last_contact_customer_at].compact.max
+  end
+
+  # true if conversation did happen and agent responded
+  # false if customer is waiting for response or agent reached out and customer did not respond yet
+  # @return [Bool]
+  def agent_responded?
+    return false if last_contact_customer_at.blank?
+    return false if last_contact_agent_at.blank?
+
+    last_contact_customer_at < last_contact_agent_at
   end
 
   private

@@ -1094,24 +1094,231 @@ RSpec.describe 'Ticket zoom', type: :system do
     end
   end
 
-  describe 'Macros', authenticated_as: :authenticate do
-    let(:macro_body) { 'macro <b>body</b>' }
-    let(:macro) { create :macro, perform: { 'article.note' => { 'body' => macro_body, 'internal' => 'true', 'subject' => 'macro note' } } }
-    let!(:ticket) { create(:ticket, group: Group.find_by(name: 'Users')) }
+  # https://github.com/zammad/zammad/issues/3260
+  describe 'next in overview macro changes URL', authenticated_as: :authenticate do
+    let(:next_ticket) { create(:ticket, title: 'next Ticket', group: Group.first) }
+    let(:macro)       { create(:macro, name: 'next macro', ux_flow_next_up: 'next_from_overview') }
 
     def authenticate
-      macro
+      next_ticket && macro
+
       true
     end
 
-    it 'does html macro by default' do
-      visit "ticket/zoom/#{ticket.id}"
-      find('.js-openDropdownMacro').click
+    it 'to next Ticket ID' do
+      visit 'ticket/view/all_unassigned'
+      click_on 'Welcome to Zammad!'
+      click '.js-openDropdownMacro'
       find(:macro, macro.id).click
+      wait(5, interval: 1).until_constant { current_url }
+
+      expect(current_url).to include("ticket/zoom/#{next_ticket.id}")
+    end
+  end
+
+  # https://github.com/zammad/zammad/issues/3279
+  describe 'previous/next clickability when at last or first ticket' do
+    let(:ticket_a)          { create(:ticket, title: 'ticket a', group: Group.first) }
+    let(:ticket_b)          { create(:ticket, title: 'ticket b', group: Group.first) }
+
+    before do
+      ticket_a && ticket_b
+
+      visit 'ticket/view/all_unassigned'
+    end
+
+    it 'previous is not clickable for the first item' do
+      open_nth_item(0)
+
+      expect { click '.pagination .previous' }.not_to change { current_url }
+    end
+
+    it 'next is clickable for the first item' do
+      open_nth_item(0)
+
+      expect { click '.pagination .next' }.to change { current_url }
+    end
+
+    it 'previous is clickable for the middle item' do
+      open_nth_item(1)
+
+      expect { click '.pagination .previous' }.to change { current_url }
+    end
+
+    it 'next is clickable for the middle item' do
+      open_nth_item(1)
+
+      expect { click '.pagination .next' }.to change { current_url }
+    end
+
+    it 'previous is clickable for the last item' do
+      open_nth_item(2)
+
+      expect { click '.pagination .previous' }.to change { current_url }
+    end
+
+    it 'next is not clickable for the last item' do
+      open_nth_item(2)
+
+      expect { click '.pagination .next' }.not_to change { current_url }
+    end
+
+    def open_nth_item(nth)
+      within :active_content do
+        find_all('.table tr.item .user-popover')[nth].click
+      end
+    end
+  end
+
+  # https://github.com/zammad/zammad/issues/3267
+  describe 'previous/next buttons are added when open ticket is opened from overview' do
+    let(:ticket_a)          { create(:ticket, title: 'ticket a', group: Group.first) }
+    let(:ticket_b)          { create(:ticket, title: 'ticket b', group: Group.first) }
+
+    # prepare an opened ticket and go to overview
+    before do
+      ticket_a && ticket_b
+
+      visit "ticket/zoom/#{ticket_a.id}"
+
       await_empty_ajax_queue
 
-      expect(ticket.reload.articles.last.body).to eq(macro_body)
-      expect(ticket.reload.articles.last.content_type).to eq('text/html')
+      visit 'ticket/view/all_unassigned'
+    end
+
+    it 'adds previous/next buttons to existing ticket' do
+      within :active_content do
+        click_on ticket_a.title
+
+        expect(page).to have_css('.pagination-counter')
+      end
+    end
+
+    it 'keeps previous/next buttons when navigating to overview ticket from elsewhere' do
+      within :active_content do
+        click_on ticket_a.title
+        visit 'dashboard'
+        visit "ticket/zoom/#{ticket_a.id}"
+
+        expect(page).to have_css('.pagination-counter')
+      end
+    end
+  end
+
+  # https://github.com/zammad/zammad/issues/2942
+  describe 'attachments are lost in specific conditions' do
+    let(:ticket) { create(:ticket, group: Group.first) }
+
+    it 'attachment is retained when forwarding a fresh article' do
+      ensure_websocket do
+        visit "ticket/zoom/#{ticket.id}"
+      end
+
+      # add an article, forcing reset of form_id
+
+      # click in the upper most upper left corner of the article create textbox
+      # (that works for both Firefox and Chrome)
+      # to avoid clicking on attachment upload
+      find('.js-writeArea').click({ x: 5, y: 5 })
+
+      # wait for propagateOpenTextarea to be completed
+      find('.attachmentPlaceholder-label').in_fixed_position
+      expect(page).to have_no_css('.attachmentPlaceholder-hint')
+
+      # write article content
+      find('.articleNewEdit-body').send_keys('Some reply')
+      click '.js-submit'
+
+      # wait for article to be added to the page
+      expect(page).to have_css('.ticket-article-item', count: 1)
+      await_empty_ajax_queue
+
+      # create a on-the-fly article with attachment that will get pushed to open browser
+      article1 = create(:ticket_article, ticket: ticket)
+      Store.add(
+        object:        'Ticket::Article',
+        o_id:          article1.id,
+        data:          'some content',
+        filename:      'some_file.txt',
+        preferences:   {
+          'Content-Type' => 'text/plain',
+        },
+        created_by_id: 1,
+      )
+
+      # wait for article to be added to the page
+      expect(page).to have_css('.ticket-article-item', count: 2, wait: 10)
+      await_empty_ajax_queue
+
+      # click on forward of created article
+      within :active_ticket_article, article1 do
+        find('a[data-type=emailForward]').click
+      end
+
+      # wait for propagateOpenTextarea to be completed
+      find('.attachmentPlaceholder-label').in_fixed_position
+      expect(page).to have_no_css('.attachmentPlaceholder-hint')
+
+      # fill forward information and create article
+      fill_in 'To', with: 'forward@example.org'
+      find('.articleNewEdit-body').send_keys('Forwarding with the attachment')
+      click '.js-submit'
+
+      # wait for article to be added to the page
+      await_empty_ajax_queue
+      expect(page).to have_css('.ticket-article-item', count: 3)
+
+      # check if attachment was forwarded successfully
+      within :active_ticket_article, ticket.reload.articles.last do
+        within '.attachments--list' do
+          expect(page).to have_text('some_file.txt')
+        end
+      end
+    end
+  end
+
+  describe 'mentions' do
+    context 'when logged in as agent' do
+      let(:ticket) { create(:ticket, group: Group.find_by(name: 'Users')) }
+      let!(:other_agent) { create(:agent, groups: [Group.find_by(name: 'Users')]) }
+
+      it 'can subscribe and unsubscribe' do
+        ensure_websocket do
+          visit "ticket/zoom/#{ticket.id}"
+
+          click '.js-subscriptions .js-subscribe input'
+          expect(page).to have_selector('.js-subscriptions .js-unsubscribe input', wait: 10)
+          expect(page).to have_selector('.js-subscriptions span.avatar', wait: 10)
+
+          click '.js-subscriptions .js-unsubscribe input'
+          expect(page).to have_selector('.js-subscriptions .js-subscribe input', wait: 10)
+          expect(page).to have_no_selector('.js-subscriptions span.avatar', wait: 10)
+
+          create(:mention, mentionable: ticket, user: other_agent)
+          expect(page).to have_selector('.js-subscriptions span.avatar', wait: 10)
+
+          # check history for mention entries
+          click 'h2.sidebar-header-headline.js-headline'
+          click 'li[data-type=ticket-history] a'
+          expect(page).to have_text('created Mention', wait: 10)
+          expect(page).to have_text('removed Mention', wait: 10)
+        end
+      end
+    end
+  end
+
+  # https://github.com/zammad/zammad/issues/2671
+  describe 'Pending time field in ticket sidebar', authenticated_as: :customer do
+    let(:customer) { create(:customer) }
+    let(:ticket)   { create(:ticket, customer: customer, pending_time: 1.day.from_now, state: Ticket::State.lookup(name: 'pending reminder')) }
+
+    it 'not shown to customer' do
+      visit "ticket/zoom/#{ticket.id}"
+      await_empty_ajax_queue
+
+      within :active_content do
+        expect(page).to have_no_css('.controls[data-name=pending_time]')
+      end
     end
   end
 
@@ -1154,6 +1361,266 @@ RSpec.describe 'Ticket zoom', type: :system do
 
       def ends_at
         actual.evaluate_script 'this.selectionEnd'
+      end
+    end
+  end
+
+  describe 'Article ID URL / link' do
+    let(:ticket) { create(:ticket, group: Group.first) }
+    let!(:article) { create(:'ticket/article', ticket: ticket) }
+    let(:url) { "#{Setting.get('http_type')}://#{Setting.get('fqdn')}/#ticket/zoom/#{ticket.id}/#{article.id}" }
+
+    it 'shows Article direct link' do
+
+      ensure_websocket do
+        visit "ticket/zoom/#{ticket.id}"
+        await_empty_ajax_queue
+
+        within :active_ticket_article, article do
+          expect(page).to have_css(%(a[href="#{url}"]))
+        end
+      end
+    end
+
+    context 'when multiple Articles are present' do
+
+      let(:article_count) { 20 }
+      let(:article_at_the_top) { ticket.articles.first }
+      let(:article_in_the_middle) { ticket.articles[ article_count / 2 ] }
+      let(:article_at_the_bottom) { ticket.articles.last }
+
+      before do
+        article_count.times do
+          create(:'ticket/article', ticket: ticket, body: SecureRandom.uuid)
+        end
+      end
+
+      it 'scrolls to given Article ID' do
+        ensure_websocket do
+          visit "ticket/zoom/#{ticket.id}/#{article_in_the_middle.id}"
+          await_empty_ajax_queue
+          # workaround because browser scrolls in test initially to the bottom
+          # maybe because the articles are not present?!
+          refresh
+
+          # scroll to article in the middle of the page
+          within :active_content do
+            find("div#article-content-#{article_in_the_middle.id}").in_fixed_position(wait: 0.5)
+
+            expect(find("div#article-content-#{article_at_the_top.id}")).to be_obscured
+            expect(find("div#article-content-#{article_in_the_middle.id}")).not_to be_obscured
+            expect(find("div#article-content-#{article_at_the_bottom.id}")).to be_obscured
+          end
+
+          # scroll to article at the top of the page
+          visit "ticket/zoom/#{ticket.id}/#{article_at_the_top.id}"
+          await_empty_ajax_queue
+          within :active_content do
+            find("div#article-content-#{article_in_the_middle.id}").in_fixed_position(wait: 0.5)
+
+            expect(find("div#article-content-#{article_at_the_top.id}")).not_to be_obscured
+            expect(find("div#article-content-#{article_in_the_middle.id}")).to be_obscured
+            expect(find("div#article-content-#{article_at_the_bottom.id}")).to be_obscured
+          end
+
+          # scroll to article at the bottom of the page
+          visit "ticket/zoom/#{ticket.id}/#{article_at_the_bottom.id}"
+          await_empty_ajax_queue
+          within :active_content do
+            find("div#article-content-#{article_in_the_middle.id}").in_fixed_position(wait: 0.5)
+
+            expect(find("div#article-content-#{article_at_the_top.id}")).to be_obscured
+            expect(find("div#article-content-#{article_in_the_middle.id}")).to be_obscured
+            expect(find("div#article-content-#{article_at_the_bottom.id}")).not_to be_obscured
+          end
+        end
+      end
+    end
+
+    context 'when long articles are present' do
+      it 'will properly show the "See more" link if you switch between the ticket and the dashboard on new articles' do
+        ensure_websocket do
+          visit "ticket/zoom/#{ticket.id}"
+          await_empty_ajax_queue
+
+          visit 'dashboard'
+          expect(page).to have_css("a.js-dashboardMenuItem[data-key='Dashboard'].is-active", wait: 10)
+          article_id = create(:'ticket/article', ticket: ticket, body: "#{SecureRandom.uuid} #{"lorem ipsum\n" * 200}")
+          expect(page).to have_css('div.tasks a.is-modified', wait: 10)
+
+          visit "ticket/zoom/#{ticket.id}"
+          within :active_content do
+            expect(find("div#article-content-#{article_id.id}")).to have_text('See more')
+          end
+        end
+      end
+    end
+  end
+
+  describe 'Macros', authenticated_as: :authenticate do
+    let(:macro_body) { 'macro <b>body</b>' }
+    let(:macro) { create :macro, perform: { 'article.note' => { 'body' => macro_body, 'internal' => 'true', 'subject' => 'macro note' } } }
+    let!(:ticket) { create(:ticket, group: Group.find_by(name: 'Users')) }
+
+    def authenticate
+      macro
+      true
+    end
+
+    it 'does html macro by default' do
+      visit "ticket/zoom/#{ticket.id}"
+      find('.js-openDropdownMacro').click
+      find(:macro, macro.id).click
+      await_empty_ajax_queue
+
+      expect(ticket.reload.articles.last.body).to eq(macro_body)
+      expect(ticket.reload.articles.last.content_type).to eq('text/html')
+    end
+  end
+
+  describe 'object manager attributes maxlength', authenticated_as: :authenticate, db_strategy: :reset do
+    let(:ticket) { create(:ticket, group: Group.find_by(name: 'Users')) }
+
+    def authenticate
+      ticket
+      create :object_manager_attribute_text, name: 'maxtest', display: 'maxtest', screens: attributes_for(:required_screen), data_option: {
+        'type'      => 'text',
+        'maxlength' => 3,
+        'null'      => true,
+        'translate' => false,
+        'default'   => '',
+        'options'   => {},
+        'relation'  => '',
+      }
+      ObjectManager::Attribute.migration_execute
+      true
+    end
+
+    it 'checks ticket zoom' do
+      visit "ticket/zoom/#{ticket.id}"
+      within(:active_content) do
+        fill_in 'maxtest', with: 'hellu'
+        expect(page.find_field('maxtest').value).to eq('hel')
+      end
+    end
+  end
+
+  describe 'GitLab Integration', :integration, authenticated_as: :authenticate do
+    let!(:ticket) { create(:ticket, group: Group.find_by(name: 'Users')) }
+
+    before(:all) do # rubocop:disable RSpec/BeforeAfterAll
+      required_envs = %w[GITLAB_ENDPOINT GITLAB_APITOKEN]
+      required_envs.each do |key|
+        skip("NOTICE: Missing environment variable #{key} for test! (Please fill up: #{required_envs.join(' && ')})") if ENV[key].blank?
+      end
+    end
+
+    def authenticate
+      Setting.set('gitlab_integration', true)
+      Setting.set('gitlab_config', {
+                    api_token: ENV['GITLAB_APITOKEN'],
+                    endpoint:  ENV['GITLAB_ENDPOINT'],
+                  })
+      true
+    end
+
+    it 'creates links and removes them' do
+      visit "#ticket/zoom/#{ticket.id}"
+      within(:active_content) do
+
+        # switch to GitLab sidebar
+        click('.tabsSidebar-tab[data-tab=gitlab]')
+        click('.sidebar-header-headline.js-headline')
+
+        # add issue
+        click_on 'Link issue'
+        fill_in 'link', with: ENV['GITLAB_ISSUE_LINK']
+        click_on 'Submit'
+        await_empty_ajax_queue
+
+        # verify issue
+        content = find('.sidebar-git-issue-content')
+        expect(content).to have_text('#1 Example issue')
+        expect(content).to have_text('critical')
+        expect(content).to have_text('special')
+        expect(content).to have_text('important milestone')
+        expect(content).to have_text('zammad-robot')
+
+        expect(ticket.reload.preferences[:gitlab][:issue_links][0]).to eq(ENV['GITLAB_ISSUE_LINK'])
+
+        # check sidebar counter increased to 1
+        expect(find('.tabsSidebar-tab[data-tab=gitlab] .js-tabCounter')).to have_text('1')
+
+        # delete issue
+        click(".sidebar-git-issue-delete span[data-issue-id='#{ENV['GITLAB_ISSUE_LINK']}']")
+        await_empty_ajax_queue
+
+        content = find('.sidebar[data-tab=gitlab] .sidebar-content')
+        expect(content).to have_text('No linked issues')
+        expect(ticket.reload.preferences[:gitlab][:issue_links][0]).to be nil
+
+        # check that counter got removed
+        expect(page).to have_no_selector('.tabsSidebar-tab[data-tab=gitlab] .js-tabCounter')
+      end
+    end
+  end
+
+  describe 'GitHub Integration', :integration, authenticated_as: :authenticate do
+    let!(:ticket) { create(:ticket, group: Group.find_by(name: 'Users')) }
+
+    before(:all) do # rubocop:disable RSpec/BeforeAfterAll
+      required_envs = %w[GITHUB_ENDPOINT GITHUB_APITOKEN]
+      required_envs.each do |key|
+        skip("NOTICE: Missing environment variable #{key} for test! (Please fill up: #{required_envs.join(' && ')})") if ENV[key].blank?
+      end
+    end
+
+    def authenticate
+      Setting.set('github_integration', true)
+      Setting.set('github_config', {
+                    api_token: ENV['GITHUB_APITOKEN'],
+                    endpoint:  ENV['GITHUB_ENDPOINT'],
+                  })
+      true
+    end
+
+    it 'creates links and removes them' do
+      visit "#ticket/zoom/#{ticket.id}"
+      within(:active_content) do
+
+        # switch to GitHub sidebar
+        click('.tabsSidebar-tab[data-tab=github]')
+        click('.sidebar-header-headline.js-headline')
+
+        # add issue
+        click_on 'Link issue'
+        fill_in 'link', with: ENV['GITHUB_ISSUE_LINK']
+        click_on 'Submit'
+        await_empty_ajax_queue
+
+        # verify issue
+        content = find('.sidebar-git-issue-content')
+        expect(content).to have_text('#1575 GitHub integration')
+        expect(content).to have_text('feature backlog')
+        expect(content).to have_text('integration')
+        expect(content).to have_text('4.0')
+        expect(content).to have_text('Thorsten')
+
+        expect(ticket.reload.preferences[:github][:issue_links][0]).to eq(ENV['GITHUB_ISSUE_LINK'])
+
+        # check sidebar counter increased to 1
+        expect(find('.tabsSidebar-tab[data-tab=github] .js-tabCounter')).to have_text('1')
+
+        # delete issue
+        click(".sidebar-git-issue-delete span[data-issue-id='#{ENV['GITHUB_ISSUE_LINK']}']")
+        await_empty_ajax_queue
+
+        content = find('.sidebar[data-tab=github] .sidebar-content')
+        expect(content).to have_text('No linked issues')
+        expect(ticket.reload.preferences[:github][:issue_links][0]).to be nil
+
+        # check that counter got removed
+        expect(page).to have_no_selector('.tabsSidebar-tab[data-tab=github] .js-tabCounter')
       end
     end
   end

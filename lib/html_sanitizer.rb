@@ -13,7 +13,9 @@ satinize html string based on whiltelist
 
   def self.strict(string, external = false, timeout: true)
     Timeout.timeout(timeout ? PROCESSING_TIMEOUT : nil) do
-      @fqdn = Setting.get('fqdn')
+      @fqdn              = Setting.get('fqdn')
+      http_type          = Setting.get('http_type')
+      web_app_url_prefix = "#{http_type}://#{@fqdn}/\#".downcase
 
       # config
       tags_remove_content = Rails.configuration.html_sanitizer_tags_remove_content
@@ -141,16 +143,6 @@ satinize html string based on whiltelist
           node.delete(attribute)
         end
 
-        # remove mailto links
-        if node['href']
-          href = cleanup_target(node['href'])
-          if href =~ /mailto:(.*)$/i
-            text = Nokogiri::XML::Text.new(CGI.unescape($1), node.document)
-            node.add_next_sibling(text)
-            node.remove
-            Loofah::Scrubber::STOP
-          end
-        end
       end
 
       done = true
@@ -179,7 +171,7 @@ satinize html string based on whiltelist
         if node['href']
           href                = cleanup_target(node['href'], keep_spaces: true)
           href_without_spaces = href.gsub(/[[:space:]]/, '')
-          if external && href_without_spaces.present? && !href_without_spaces.downcase.start_with?('//') && href_without_spaces.downcase !~ %r{^.{1,6}://.+?}
+          if external && href_without_spaces.present? && !href_without_spaces.downcase.start_with?('mailto:') && !href_without_spaces.downcase.start_with?('//') && href_without_spaces.downcase !~ %r{^.{1,6}://.+?}
             node['href']        = "http://#{node['href']}"
             href                = node['href']
             href_without_spaces = href.gsub(/[[:space:]]/, '')
@@ -189,7 +181,11 @@ satinize html string based on whiltelist
 
           node.set_attribute('href', href)
           node.set_attribute('rel', 'nofollow noreferrer noopener')
-          node.set_attribute('target', '_blank')
+
+          # do not "target=_blank" WebApp URLs (e.g. mentions)
+          if !href.downcase.start_with?(web_app_url_prefix)
+            node.set_attribute('target', '_blank')
+          end
         end
 
         if node.name == 'a' && node['href'].blank?
@@ -234,7 +230,6 @@ cleanup html string:
       string.gsub!(/\n\n\n+/, "\n\n")
 
       string = cleanup_structure(string, 'pre')
-      string = cleanup_replace_tags(string)
       string = cleanup_structure(string)
       string
     end
@@ -250,7 +245,6 @@ cleanup html string:
         child = node.children.first
 
         # replace not needed node (parent <- child)
-        replaceable_node_names = ['span', child.name]
         if local_name == child.name && node.attributes.present? && node.children.first.attributes.blank?
           local_node_child = node.children.first
           node.attributes.each do |k|
@@ -260,7 +254,7 @@ cleanup html string:
           Loofah::Scrubber::STOP
 
         # replace not needed node (parent replace with child node)
-        elsif replaceable_node_names.include?(local_name) && node.attributes.blank?
+        elsif (local_name == 'span' || local_name == child.name) && node.attributes.blank?
           node.replace node.children.to_s
           Loofah::Scrubber::STOP
         end
@@ -276,34 +270,6 @@ cleanup html string:
       node.remove
       Loofah::Scrubber::STOP
     end
-  end
-
-  def self.cleanup_replace_tags(string)
-    #return string
-    tags_backlist = %w[span center]
-    scrubber = Loofah::Scrubber.new do |node|
-      next if tags_backlist.exclude?(node.name)
-
-      #next if !node.parent.present?
-      hit = false
-      local_node = nil
-      (1..5).each do |_count|
-        local_node = if local_node
-                       local_node.parent
-                     else
-                       node.parent
-                     end
-        break if !local_node
-        next if local_node.name != 'td'
-
-        hit = true
-      end
-      next if hit && node.keys.count.positive?
-
-      node.replace cleanup_replace_tags(node.children.to_s)
-      Loofah::Scrubber::STOP
-    end
-    Loofah.fragment(string).scrub!(scrubber).to_s
   end
 
   def self.cleanup_structure(string, type = 'all')
@@ -329,17 +295,6 @@ cleanup html string:
     end
 
     scrubber_cleanup = Loofah::Scrubber.new do |node|
-
-      # remove mailto links
-      if node['href']
-        href = cleanup_target(node['href'])
-        if href =~ /mailto:(.*)$/i
-          text = Nokogiri::XML::Text.new($1, node.document)
-          node.add_next_sibling(text)
-          node.remove
-          Loofah::Scrubber::STOP
-        end
-      end
 
       # remove not needed new lines
       if node.instance_of?(Nokogiri::XML::Text)

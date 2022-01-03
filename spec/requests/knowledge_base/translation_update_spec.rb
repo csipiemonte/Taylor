@@ -8,11 +8,11 @@ RSpec.describe 'KnowledgeBase translation update', type: :request, authenticated
 
   let(:params_for_updating) do
     {
-      "translations_attributes": [
+      translations_attributes: [
         {
-          "title":       new_title,
-          "footer_note": 'new footer',
-          "id":          knowledge_base.kb_locales.first.id
+          title:       new_title,
+          footer_note: 'new footer',
+          id:          knowledge_base.kb_locales.first.id
         }
       ]
     }
@@ -67,17 +67,17 @@ RSpec.describe 'KnowledgeBase translation update', type: :request, authenticated
     describe 'as reader' do
       let(:user_identifier) { :agent }
 
-      it { expect(response).to have_http_status(:unauthorized) }
+      it { expect(response).to have_http_status(:forbidden) }
     end
 
     describe 'as non-KB user' do
       let(:user_identifier) { :customer }
 
-      it { expect(response).to have_http_status(:unauthorized) }
+      it { expect(response).to have_http_status(:forbidden) }
     end
 
     describe 'as a guest' do
-      it { expect(response).to have_http_status(:unauthorized) }
+      it { expect(response).to have_http_status(:forbidden) }
     end
   end
 end

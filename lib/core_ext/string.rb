@@ -95,7 +95,7 @@ class String
       end
       c
     end
-             .join('')
+             .join
   end
 
 =begin
@@ -147,9 +147,7 @@ class String
 
         if link_compare.present? && text_compare.blank?
           link
-        elsif link_compare.blank? && text_compare.present?
-          text
-        elsif link_compare && link_compare =~ /^mailto/i
+        elsif (link_compare.blank? && text_compare.present?) || (link_compare && link_compare =~ /^mailto/i)
           text
         elsif link_compare.present? && text_compare.present? && (link_compare == text_compare || link_compare == "mailto:#{text}".downcase || link_compare == "http://#{text}".downcase)
           "######LINKEXT:#{link}/TEXT:#{text}######"
@@ -321,7 +319,6 @@ class String
 
   def html2html_strict
     string = dup
-    string = HtmlSanitizer.cleanup_replace_tags(string)
     string = HtmlSanitizer.strict(string, true).strip
     string = HtmlSanitizer.cleanup(string).strip
 

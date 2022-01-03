@@ -98,22 +98,22 @@ RSpec.describe 'Search', type: :request, searchindex: true do
       }
 
       post '/api/v1/search/ticket', params: params, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response).not_to be_blank
-      expect(json_response['error']).to eq('authentication failed')
+      expect(json_response['error']).to eq('Authentication required')
 
       post '/api/v1/search/user', params: params, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response).not_to be_blank
-      expect(json_response['error']).to eq('authentication failed')
+      expect(json_response['error']).to eq('Authentication required')
 
       post '/api/v1/search', params: params, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response).not_to be_blank
-      expect(json_response['error']).to eq('authentication failed')
+      expect(json_response['error']).to eq('Authentication required')
     end
 
     it 'does settings index with admin' do
@@ -363,7 +363,7 @@ RSpec.describe 'Search', type: :request, searchindex: true do
       expect(json_response['assets']['Organization'][organization_nested.id.to_s]).to be_truthy
       expect(json_response['assets']['User'][customer_nested.id.to_s]).to be_truthy
 
-      post '/api/v1/search/User', params: { query: 'organization:Tomato42' }, as: :json
+      post '/api/v1/search/User', params: { query: 'organization.name:Tomato42' }, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response).to be_truthy
@@ -383,7 +383,7 @@ RSpec.describe 'Search', type: :request, searchindex: true do
       expect(json_response['assets']['Organization'][organization_nested.id.to_s]).to be_truthy
       expect(json_response['assets']['User'][customer_nested.id.to_s]).to be_truthy
 
-      post '/api/v1/search/User', params: { query: 'organization:Cucumber43' }, as: :json
+      post '/api/v1/search/User', params: { query: 'organization.name:Cucumber43' }, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response).to be_truthy
@@ -400,7 +400,7 @@ RSpec.describe 'Search', type: :request, searchindex: true do
       expect(json_response['assets']['Organization'][organization_nested.id.to_s]).to be_truthy
       expect(json_response['assets']['Ticket'][ticket_nested.id.to_s]).to be_truthy
 
-      post '/api/v1/search/Ticket', params: { query: 'organization:Tomato42' }, as: :json
+      post '/api/v1/search/Ticket', params: { query: 'organization.name:Tomato42' }, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response).to be_truthy
@@ -418,12 +418,72 @@ RSpec.describe 'Search', type: :request, searchindex: true do
       expect(json_response['assets']['Organization'][organization_nested.id.to_s]).to be_truthy
       expect(json_response['assets']['Ticket'][ticket_nested.id.to_s]).to be_truthy
 
-      post '/api/v1/search/Ticket', params: { query: 'organization:Cucumber43' }, as: :json
+      post '/api/v1/search/Ticket', params: { query: 'organization.name:Cucumber43' }, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response).to be_truthy
       expect(json_response['assets']['Organization'][organization_nested.id.to_s]).to be_truthy
       expect(json_response['assets']['Ticket'][ticket_nested.id.to_s]).to be_truthy
+    end
+
+    it 'does find the ticket by group name even if the group name changes' do
+      authenticated_as(agent)
+      post '/api/v1/search/Ticket', params: { query: "number:#{ticket1.number} && group.name:ultrasupport" }, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json_response).to be_a_kind_of(Hash)
+      expect(json_response).to be_truthy
+      expect(json_response['assets']['Ticket']).to be_falsey
+      expect(group).not_to eq('ultrasupport')
+
+      group.update(name: 'ultrasupport')
+      Scheduler.worker(true)
+      SearchIndexBackend.refresh
+
+      post '/api/v1/search/Ticket', params: { query: "number:#{ticket1.number} && group.name:ultrasupport" }, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json_response).to be_a_kind_of(Hash)
+      expect(json_response).to be_truthy
+      expect(json_response['assets']['Ticket'][ticket1.id.to_s]).to be_truthy
+    end
+
+    it 'does find the ticket by state name even if the state name changes' do
+      authenticated_as(agent)
+      post '/api/v1/search/Ticket', params: { query: "number:#{ticket1.number} && state.name:ultrastate" }, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json_response).to be_a_kind_of(Hash)
+      expect(json_response).to be_truthy
+      expect(json_response['assets']['Ticket']).to be_falsey
+      expect(ticket1.state.name).not_to eq('ultrastate')
+
+      ticket1.state.update(name: 'ultrastate')
+      Scheduler.worker(true)
+      SearchIndexBackend.refresh
+
+      post '/api/v1/search/Ticket', params: { query: "number:#{ticket1.number} && state.name:ultrastate" }, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json_response).to be_a_kind_of(Hash)
+      expect(json_response).to be_truthy
+      expect(json_response['assets']['Ticket'][ticket1.id.to_s]).to be_truthy
+    end
+
+    it 'does find the ticket by priority name even if the priority name changes' do
+      authenticated_as(agent)
+      post '/api/v1/search/Ticket', params: { query: "number:#{ticket1.number} && priority.name:ultrapriority" }, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json_response).to be_a_kind_of(Hash)
+      expect(json_response).to be_truthy
+      expect(json_response['assets']['Ticket']).to be_falsey
+      expect(ticket1.priority.name).not_to eq('ultrapriority')
+
+      ticket1.priority.update(name: 'ultrapriority')
+      Scheduler.worker(true)
+      SearchIndexBackend.refresh
+
+      post '/api/v1/search/Ticket', params: { query: "number:#{ticket1.number} && priority.name:ultrapriority" }, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json_response).to be_a_kind_of(Hash)
+      expect(json_response).to be_truthy
+      expect(json_response['assets']['Ticket'][ticket1.id.to_s]).to be_truthy
     end
 
     it 'does find the ticket by attachment even after ticket reindex' do

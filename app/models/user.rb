@@ -19,22 +19,24 @@ class User < ApplicationModel
   include User::Assets
   include User::Search
   include User::SearchIndex
+  include User::TouchesOrganization
+  include User::PerformsGeoLookup
+  include User::UpdatesTicketOrganization
 
   has_and_belongs_to_many :organizations,          after_add: :cache_update, after_remove: :cache_update, class_name: 'Organization'
   has_and_belongs_to_many :overviews,              dependent: :nullify
   has_many                :tokens,                 after_add: :cache_update, after_remove: :cache_update, dependent: :destroy
   has_many                :authorizations,         after_add: :cache_update, after_remove: :cache_update, dependent: :destroy
   has_many                :online_notifications,   dependent: :destroy
-  has_many                :templates,              dependent: :destroy
   has_many                :taskbars,               dependent: :destroy
   has_many                :user_devices,           dependent: :destroy
   has_one                 :chat_agent_created_by,  class_name: 'Chat::Agent', foreign_key: :created_by_id, dependent: :destroy, inverse_of: :created_by
   has_one                 :chat_agent_updated_by,  class_name: 'Chat::Agent', foreign_key: :updated_by_id, dependent: :destroy, inverse_of: :updated_by
   has_many                :chat_sessions,          class_name: 'Chat::Session', dependent: :destroy
   has_many                :karma_user,             class_name: 'Karma::User', dependent: :destroy
+  has_many                :mentions,               dependent: :destroy
   has_many                :karma_activity_logs,    class_name: 'Karma::ActivityLog', dependent: :destroy
   has_many                :cti_caller_ids,         class_name: 'Cti::CallerId', dependent: :destroy
-  has_many                :text_modules,           dependent: :destroy
   has_many                :customer_tickets,       class_name: 'Ticket', foreign_key: :customer_id, dependent: :destroy, inverse_of: :customer
   has_many                :owner_tickets,          class_name: 'Ticket', foreign_key: :owner_id, inverse_of: :owner
   has_many                :created_recent_views,   class_name: 'RecentView', foreign_key: :created_by_id, dependent: :destroy, inverse_of: :created_by
@@ -57,7 +59,7 @@ class User < ApplicationModel
 
   store :preferences
 
-  association_attributes_ignored :online_notifications, :templates, :taskbars, :user_devices, :chat_sessions, :karma_activity_logs, :cti_caller_ids, :text_modules, :customer_tickets, :owner_tickets, :created_recent_views, :chat_agents, :data_privacy_tasks, :overviews
+  association_attributes_ignored :online_notifications, :templates, :taskbars, :user_devices, :chat_sessions, :karma_activity_logs, :cti_caller_ids, :text_modules, :customer_tickets, :owner_tickets, :created_recent_views, :chat_agents, :data_privacy_tasks, :overviews, :mentions
 
   activity_stream_permission 'admin.user'
 
@@ -687,7 +689,7 @@ returns
   def self.of_role(role, group_ids = nil)
     roles_ids = Role.where(active: true, name: role).map(&:id)
     if !group_ids
-      return User.where(active: true).joins(:users_roles).where('roles_users.role_id IN (?)', roles_ids).order('users.updated_at DESC')
+      return User.where(active: true).joins(:users_roles).where('roles_users.role_id' => roles_ids).order('users.updated_at DESC')
     end
 
     User.where(active: true)

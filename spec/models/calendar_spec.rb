@@ -149,7 +149,7 @@ RSpec.describe Calendar, type: :model do
         end
 
         it 'does create a background job for escalation rebuild' do
-          expect { calendar.sync }.to have_enqueued_job(SlaTicketRebuildEscalationJob)
+          expect { calendar.sync }.to have_enqueued_job(TicketEscalationRebuildJob)
         end
       end
 
@@ -217,6 +217,226 @@ RSpec.describe Calendar, type: :model do
           create(:calendar,
                  business_hours: {})
         end.to raise_error(Exceptions::UnprocessableEntity, 'No configured business hours found!')
+      end
+    end
+  end
+
+  describe '#biz' do
+    it 'overnight minutes are counted correctly' do
+      travel_to Time.current.noon
+
+      calendar = create(:calendar, '23:59/7')
+      biz      = calendar.biz
+
+      expect(biz.time(24, :hours).after(Time.current)).to eq 1.day.from_now
+    end
+  end
+
+  describe '#business_hours_to_hash' do
+    it 'returns a hash with all weekdays' do
+      calendar = create(:calendar, '23:59/7')
+      hash     = calendar.business_hours_to_hash
+
+      expect(hash.keys).to eq %i[mon tue wed thu fri sat sun]
+    end
+
+    context 'with mocked hours' do
+      let(:calendar) { create(:calendar, '23:59/7') }
+      let(:result)   { calendar.business_hours_to_hash }
+
+      before do
+        calendar.business_hours = {
+          day_1: { active: true, timeframes: [['09:00', '17:00']] },
+          day_2: { active: true, timeframes: [['00:01', '02:00'], ['09:00', '17:00']] },
+          day_3: { active: false, timeframes: [['09:00', '17:00']] }
+        }
+      end
+
+      it { expect(result.keys).to eq %i[day_1 day_2] }
+      it { expect(result[:day_1]).to eq({ '09:00' => '17:00' }) }
+      it { expect(result[:day_2]).to eq({ '09:00' => '17:00', '00:01' => '02:00' }) }
+    end
+  end
+
+  context 'when updated Calendar no longer matches Ticket', :performs_jobs do
+    subject(:ticket) { create(:ticket, created_at: '2016-11-01 13:56:21 UTC', updated_at: '2016-11-01 13:56:21 UTC') }
+
+    let(:calendar) do
+      create(:calendar,
+             business_hours:  {
+               mon: {
+                 active:     true,
+                 timeframes: [ ['08:00', '20:00'] ]
+               },
+               tue: {
+                 active:     true,
+                 timeframes: [ ['08:00', '20:00'] ]
+               },
+               wed: {
+                 active:     true,
+                 timeframes: [ ['08:00', '20:00'] ]
+               },
+               thu: {
+                 active:     true,
+                 timeframes: [ ['08:00', '20:00'] ]
+               },
+               fri: {
+                 active:     true,
+                 timeframes: [ ['08:00', '20:00'] ]
+               },
+               sat: {
+                 active:     false,
+                 timeframes: [ ['08:00', '17:00'] ]
+               },
+               sun: {
+                 active:     false,
+                 timeframes: [ ['08:00', '17:00'] ]
+               },
+             },
+             public_holidays: {
+               '2016-11-01' => {
+                 'active'  => true,
+                 'summary' => 'test 1',
+               },
+             })
+    end
+
+    let(:sla) { create(:sla, condition: {}, calendar: calendar, first_response_time: 60, update_time: 120, solution_time: nil) }
+
+    before do
+      queue_adapter.perform_enqueued_jobs = true
+      queue_adapter.perform_enqueued_at_jobs = true
+
+      sla
+      ticket
+      create(:'ticket/article', :inbound_web, ticket: ticket, created_at: '2016-11-01 13:56:21 UTC', updated_at: '2016-11-01 13:56:21 UTC')
+      ticket.reload
+
+      create(:'ticket/article', :outbound_email, ticket: ticket, created_at: '2016-11-07 13:26:36 UTC', updated_at: '2016-11-07 13:26:36 UTC')
+      ticket.reload
+    end
+
+    it 'calculates escalation_at attributes' do
+
+      expect(ticket.escalation_at).to be_nil
+      expect(ticket.first_response_escalation_at).to be_nil
+      expect(ticket.update_escalation_at).to be_nil
+      expect(ticket.close_escalation_at).to be_nil
+
+      # set sla's for timezone "Europe/Berlin" wintertime (+1), so UTC times are 3:00-18:00
+      calendar.update!(
+        business_hours:  {
+          mon: {
+            active:     true,
+            timeframes: [ ['04:00', '20:00'] ]
+          },
+          tue: {
+            active:     true,
+            timeframes: [ ['04:00', '20:00'] ]
+          },
+          wed: {
+            active:     true,
+            timeframes: [ ['04:00', '20:00'] ]
+          },
+          thu: {
+            active:     true,
+            timeframes: [ ['04:00', '20:00'] ]
+          },
+          fri: {
+            active:     true,
+            timeframes: [ ['04:00', '20:00'] ]
+          },
+          sat: {
+            active:     false,
+            timeframes: [ ['04:00', '13:00'] ] # this changed from '17:00' => '13:00'
+          },
+          sun: {
+            active:     false,
+            timeframes: [ ['04:00', '17:00'] ]
+          },
+        },
+        public_holidays: {
+          '2016-11-01' => {
+            'active'  => true,
+            'summary' => 'test 1',
+          },
+        },
+      )
+
+      ticket.reload
+
+      expect(ticket.escalation_at).to be_nil
+      expect(ticket.first_response_escalation_at).to be_nil
+      expect(ticket.update_escalation_at).to be_nil
+      expect(ticket.close_escalation_at).to be_nil
+    end
+
+  end
+
+  context 'when SLA relevant timezone holidays are configured' do
+
+    let(:calendar) do
+      create(:calendar,
+             public_holidays: {
+               '2015-09-22' => {
+                 'active'  => true,
+                 'summary' => 'test 1',
+               },
+               '2015-09-23' => {
+                 'active'  => false,
+                 'summary' => 'test 2',
+               },
+               '2015-09-24' => {
+                 'removed' => false,
+                 'summary' => 'test 3',
+               },
+             })
+    end
+
+    let(:sla) do
+      create(:sla,
+             calendar:            calendar,
+             condition:           {},
+             first_response_time: 120,
+             update_time:         180,
+             solution_time:       240)
+    end
+
+    before do
+      sla
+      ticket.reload
+    end
+
+    context 'when a Ticket is created in working hours but not affected by the configured holidays' do
+      subject(:ticket) { create(:ticket, created_at: '2013-10-21 09:30:00 UTC', updated_at: '2013-10-21 09:30:00 UTC') }
+
+      it 'calculates escalation_at attributes' do
+        expect(ticket.escalation_at.gmtime.to_s).to eq('2013-10-21 11:30:00 UTC')
+        expect(ticket.first_response_escalation_at.gmtime.to_s).to eq('2013-10-21 11:30:00 UTC')
+        expect(ticket.update_escalation_at).to be_nil
+        expect(ticket.close_escalation_at.gmtime.to_s).to eq('2013-10-21 13:30:00 UTC')
+      end
+    end
+
+    context 'when a Ticket is created before the working hours but not affected by the configured holidays' do
+      subject(:ticket) { create(:ticket, created_at: '2013-10-21 05:30:00 UTC', updated_at: '2013-10-21 05:30:00 UTC') }
+
+      it 'calculates escalation_at attributes' do
+        expect(ticket.escalation_at.gmtime.to_s).to eq('2013-10-21 09:00:00 UTC')
+        expect(ticket.first_response_escalation_at.gmtime.to_s).to eq('2013-10-21 09:00:00 UTC')
+        expect(ticket.update_escalation_at).to be_nil
+        expect(ticket.close_escalation_at.gmtime.to_s).to eq('2013-10-21 11:00:00 UTC')
+      end
+    end
+
+    context 'when a Ticket is created before the holidays but escalation should take place while holidays are' do
+      subject(:ticket) { create(:ticket, created_at: '2015-09-21 14:30:00 UTC', updated_at: '2015-09-21 14:30:00 UTC') }
+
+      it 'calculates escalation_at attributes' do
+        expect(ticket.escalation_at.gmtime.to_s).to eq('2015-09-23 08:30:00 UTC')
+        expect(ticket.first_response_escalation_at.gmtime.to_s).to eq('2015-09-23 08:30:00 UTC')
+        expect(ticket.update_escalation_at).to be_nil
+        expect(ticket.close_escalation_at.gmtime.to_s).to eq('2015-09-23 10:30:00 UTC')
       end
     end
   end

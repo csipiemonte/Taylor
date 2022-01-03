@@ -26,6 +26,7 @@ class ObjectManager::Attribute < ApplicationModel
 
   validates :name, presence: true
   validates :data_type, inclusion: { in: DATA_TYPES, msg: '%{value} is not a valid data type' } # rubocop:disable Style/FormatStringToken
+  validate :inactive_must_be_unused_by_references, unless: :active?
   validate :data_option_must_have_appropriate_values
   validate :data_type_must_not_change, on: :update
 
@@ -466,7 +467,7 @@ returns
 =end
 
   def self.discard_changes
-    ObjectManager::Attribute.where('to_create = ?', true).each(&:destroy)
+    ObjectManager::Attribute.where(to_create: true).each(&:destroy)
     ObjectManager::Attribute.where('to_delete = ? OR to_config = ?', true, true).each do |attribute|
       attribute.to_migrate = false
       attribute.to_delete = false
@@ -591,15 +592,7 @@ to send no browser reload event, pass false
             limit: attribute.data_option[:maxlength],
             null:  true
           )
-        when /^integer|user_autocompletion|datetime|date$/
-          ActiveRecord::Migration.change_column(
-            model.table_name,
-            attribute.name,
-            data_type,
-            default: attribute.data_option[:default],
-            null:    true
-          )
-        when /^boolean|active$/
+        when /^integer|user_autocompletion|datetime|date$/, /^boolean|active$/
           ActiveRecord::Migration.change_column(
             model.table_name,
             attribute.name,
@@ -631,23 +624,7 @@ to send no browser reload event, pass false
           limit: attribute.data_option[:maxlength],
           null:  true
         )
-      when /^integer|user_autocompletion$/
-        ActiveRecord::Migration.add_column(
-          model.table_name,
-          attribute.name,
-          data_type,
-          default: attribute.data_option[:default],
-          null:    true
-        )
-      when /^boolean|active$/
-        ActiveRecord::Migration.add_column(
-          model.table_name,
-          attribute.name,
-          data_type,
-          default: attribute.data_option[:default],
-          null:    true
-        )
-      when /^datetime|date$/
+      when /^integer|user_autocompletion$/, /^boolean|active$/, /^datetime|date$/
         ActiveRecord::Migration.add_column(
           model.table_name,
           attribute.name,
@@ -866,6 +843,16 @@ is certain attribute used by triggers, overviews or schedulers
     data_option_validations
       .select { |validation| validation[:failed] }
       .each { |validation| errors.add(local_data_attr, validation[:message]) }
+  end
+
+  def inactive_must_be_unused_by_references
+    return if !ObjectManager::Attribute.attribute_used_by_references?(object_lookup.name, name)
+
+    human_reference = ObjectManager::Attribute.attribute_used_by_references_humaniced(object_lookup.name, name)
+    text            = "#{object_lookup.name}.#{name} is referenced by #{human_reference} and thus cannot be set to inactive!"
+
+    # Adding as `base` to prevent `Active` prefix which does not look good on error message shown at the top of the form.
+    errors.add(:base, text)
   end
 
   def data_type_must_not_change

@@ -1,4 +1,4 @@
-class Index extends App.ControllerIntegrationBase
+class Slack extends App.ControllerIntegrationBase
   featureIntegration: 'slack_integration'
   featureName: 'Slack'
   featureConfig: 'slack_config'
@@ -83,8 +83,9 @@ App.Config.set(
   {
     name: 'Slack'
     target: '#system/integration/slack'
-    description: 'A team communication tool for the 21st century.'
-    controller: Index
+    description: 'A team communication tool for the 21st century. Compatible with tools like %s.'
+    descriptionSubstitute: 'Mattermost, RocketChat'
+    controller: Slack
     state: State
   }
   'NavBarIntegrations'
