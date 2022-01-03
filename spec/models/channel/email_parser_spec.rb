@@ -234,6 +234,24 @@ RSpec.describe Channel::EmailParser, type: :model do
           end
         end
       end
+
+      context 'Mentions:' do
+        let(:agent) { create(:agent) }
+        let(:raw_mail) { <<~RAW.chomp }
+          From: foo@bar.com
+          To: baz@qux.net
+          Subject: Foo
+
+          Lorem ipsum dolor <a data-mention-user-id=\"#{agent.id}\">agent</a>
+        RAW
+
+        it 'creates a ticket and article without mentions and no exception raised' do
+          expect { described_class.new.process({}, raw_mail) }
+            .to change(Ticket, :count).by(1)
+            .and change(Ticket::Article, :count).by_at_least(1)
+            .and not_change(Mention, :count)
+        end
+      end
     end
 
     describe 'associating emails to existing tickets' do
@@ -1044,6 +1062,49 @@ RSpec.describe Channel::EmailParser, type: :model do
         it 'parses the content correctly' do
           expect(article.attachments.first.filename).to eq('PGP_Cmts_on_12-14-01_Pkg.txt')
           expect(article.attachments.first.content).to eq('Hello Zammad')
+        end
+      end
+
+      # https://github.com/zammad/zammad/issues/3529
+      context 'Attachments sent by Zammad not shown in Outlook' do
+        subject(:mail) do
+          Channel::EmailBuild.build(
+            from:         'sender@example.com',
+            to:           'recipient@example.com',
+            body:         body,
+            content_type: 'text/html',
+            attachments:  Store.where(filename: 'super-seven.jpg')
+          )
+        end
+
+        let(:mail_file) { Rails.root.join('test/data/mail/mail101.box') }
+
+        before do
+          described_class.new.process({}, raw_mail)
+        end
+
+        context 'when no reference in body' do
+          let(:body) { 'no reference here' }
+
+          it 'does not have content disposition inline' do
+            expect(mail.to_s).to include('Content-Disposition: attachment').and not_include('Content-Disposition: inline')
+          end
+        end
+
+        context 'when reference in body' do
+          let(:body) { %(somebody with some text <img src="cid:#{Store.find_by(filename: 'super-seven.jpg').preferences['Content-ID']}">) }
+
+          it 'does have content disposition inline' do
+            expect(mail.to_s).to include('Content-Disposition: inline').and not_include('Content-Disposition: attachment')
+          end
+
+          context 'when encoded as ISO-8859-1' do
+            let(:body) { super().encode('ISO-8859-1') }
+
+            it 'does not raise exception' do
+              expect { mail.to_s }.not_to raise_error
+            end
+          end
         end
       end
     end

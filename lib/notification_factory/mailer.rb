@@ -76,7 +76,7 @@ returns
     end
 
     # check if group is in selected groups
-    if !owned_by_me
+    if !owned_by_me && !subscribed
       selected_group_ids = user_preferences['notification_config']['group_ids']
       if selected_group_ids.is_a?(Array)
         hit = nil
@@ -147,7 +147,7 @@ returns
     raise Exceptions::UnprocessableEntity, "Unable to send mail to user with id #{data[:recipient][:id]} because there is no email available." if data[:recipient][:email].blank?
 
     sender = Setting.get('notification_sender')
-    Rails.logger.info "Send notification to: #{data[:recipient][:email]} (from:#{sender}/subject:#{data[:subject]})"
+    Rails.logger.debug { "Send notification to: #{data[:recipient][:email]} (from:#{sender}/subject:#{data[:subject]})" }
 
     content_type = 'text/plain'
     if data[:content_type]

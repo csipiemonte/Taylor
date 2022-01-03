@@ -4,16 +4,16 @@ require 'models/concerns/can_be_imported_examples'
 require 'models/concerns/can_csv_import_examples'
 require 'models/concerns/has_history_examples'
 require 'models/concerns/has_tags_examples'
-require 'models/concerns/tag/writes_to_ticket_history_examples'
 require 'models/concerns/has_taskbars_examples'
 require 'models/concerns/has_xss_sanitized_note_examples'
 require 'models/concerns/has_object_manager_attributes_validation_examples'
-require 'models/concerns/ticket/calls_stats_ticket_reopen_log_examples'
-require 'models/concerns/ticket/enqueues_user_ticket_counter_job_examples'
-require 'models/concerns/ticket/resets_pending_time_seconds_examples'
-require 'models/concerns/ticket/sets_close_time_examples'
-require 'models/concerns/ticket/sets_last_owner_update_time_examples'
+require 'models/tag/writes_to_ticket_history_examples'
+require 'models/ticket/calls_stats_ticket_reopen_log_examples'
+require 'models/ticket/enqueues_user_ticket_counter_job_examples'
 require 'models/ticket/escalation_examples'
+require 'models/ticket/resets_pending_time_seconds_examples'
+require 'models/ticket/sets_close_time_examples'
+require 'models/ticket/sets_last_owner_update_time_examples'
 
 RSpec.describe Ticket, type: :model do
   subject(:ticket) { create(:ticket) }
@@ -989,6 +989,76 @@ RSpec.describe Ticket, type: :model do
         end
       end
 
+      context 'when till (relative)' do
+        let(:first_response_time) { 5 }
+        let(:sla) { create(:sla, calendar: calendar, first_response_time: first_response_time) }
+        let(:condition) do
+          { 'ticket.escalation_at'=>{ 'operator' => 'till (relative)', 'value' => '30', 'range' => 'minute' } }
+        end
+
+        before do
+          sla
+
+          travel_to '2020-11-05 11:37:00'
+
+          ticket = create(:ticket)
+          create(:ticket_article, :inbound_email, ticket: ticket)
+
+          travel_to '2020-11-05 11:50:00'
+        end
+
+        context 'when in range' do
+          it 'does find the ticket' do
+            count, _tickets = described_class.selectors(condition, limit: 2_000, execution_time: true)
+            expect(count).to eq(1)
+          end
+        end
+
+        context 'when out of range' do
+          let(:first_response_time) { 500 }
+
+          it 'does not find the ticket' do
+            count, _tickets = described_class.selectors(condition, limit: 2_000, execution_time: true)
+            expect(count).to eq(0)
+          end
+        end
+      end
+
+      context 'when from (relative)' do
+        let(:first_response_time) { 5 }
+        let(:sla) { create(:sla, calendar: calendar, first_response_time: first_response_time) }
+        let(:condition) do
+          { 'ticket.escalation_at'=>{ 'operator' => 'from (relative)', 'value' => '30', 'range' => 'minute' } }
+        end
+
+        before do
+          sla
+
+          travel_to '2020-11-05 11:37:00'
+
+          ticket = create(:ticket)
+          create(:ticket_article, :inbound_email, ticket: ticket)
+        end
+
+        context 'when in range' do
+          it 'does find the ticket' do
+            travel_to '2020-11-05 11:50:00'
+            count, _tickets = described_class.selectors(condition, limit: 2_000, execution_time: true)
+            expect(count).to eq(1)
+          end
+        end
+
+        context 'when out of range' do
+          let(:first_response_time) { 5 }
+
+          it 'does not find the ticket' do
+            travel_to '2020-11-05 13:50:00'
+            count, _tickets = described_class.selectors(condition, limit: 2_000, execution_time: true)
+            expect(count).to eq(0)
+          end
+        end
+      end
+
       context 'when within next (relative)' do
         let(:first_response_time) { 5 }
         let(:sla) { create(:sla, calendar: calendar, first_response_time: first_response_time) }
@@ -1543,14 +1613,26 @@ RSpec.describe Ticket, type: :model do
                                                    'escalation'       => { 'criteria' => { 'owned_by_me' => false, 'owned_by_nobody' => false, 'subscribed' => true, 'no' => false }, 'channel' => { 'email' => false, 'online' => false } } } } }
       end
 
+      let(:prefs_matrix_only_mentions_groups) do
+        { 'notification_config' =>
+                                   { 'matrix'    =>
+                                                    { 'create'           => { 'criteria' => { 'owned_by_me' => false, 'owned_by_nobody' => false, 'subscribed' => true, 'no' => false }, 'channel' => { 'email' => true, 'online' => true } },
+                                                      'update'           => { 'criteria' => { 'owned_by_me' => false, 'owned_by_nobody' => false, 'subscribed' => true, 'no' => false }, 'channel' => { 'email' => true, 'online' => true } },
+                                                      'reminder_reached' => { 'criteria' => { 'owned_by_me' => false, 'owned_by_nobody' => false, 'subscribed' => true, 'no' => false }, 'channel' => { 'email' => false, 'online' => false } },
+                                                      'escalation'       => { 'criteria' => { 'owned_by_me' => false, 'owned_by_nobody' => false, 'subscribed' => true, 'no' => false }, 'channel' => { 'email' => false, 'online' => false } } },
+                                     'group_ids' => [create(:group).id, create(:group).id, create(:group).id] } }
+      end
+
       let(:mention_group) { create(:group) }
       let(:no_access_group) { create(:group) }
       let(:user_only_mentions) { create(:agent, groups: [mention_group], preferences: prefs_matrix_only_mentions) }
+      let(:user_read_mentions) { create(:agent, groups: [mention_group], preferences: prefs_matrix_only_mentions_groups) }
       let(:user_no_mentions) { create(:agent, groups: [mention_group], preferences: prefs_matrix_no_mentions) }
       let(:ticket) { create(:ticket, group: mention_group, owner: user_no_mentions) }
 
       it 'does inform mention user about the ticket update' do
         create(:mention, mentionable: ticket, user: user_only_mentions)
+        create(:mention, mentionable: ticket, user: user_read_mentions)
         create(:mention, mentionable: ticket, user: user_no_mentions)
         Observer::Transaction.commit
         Scheduler.worker(true)
@@ -1562,6 +1644,10 @@ RSpec.describe Ticket, type: :model do
           sent(
             template: 'ticket_update',
             user:     user_no_mentions,
+          )
+          sent(
+            template: 'ticket_update',
+            user:     user_read_mentions,
           )
           sent(
             template: 'ticket_update',
@@ -1585,6 +1671,10 @@ RSpec.describe Ticket, type: :model do
           )
           not_sent(
             template: 'ticket_update',
+            user:     user_read_mentions,
+          )
+          not_sent(
+            template: 'ticket_update',
             user:     user_only_mentions,
           )
         end
@@ -1593,12 +1683,17 @@ RSpec.describe Ticket, type: :model do
       it 'does inform mention user about ticket creation' do
         check_notification do
           ticket = create(:ticket, owner: user_no_mentions, group: mention_group)
+          create(:mention, mentionable: ticket, user: user_read_mentions)
           create(:mention, mentionable: ticket, user: user_only_mentions)
           Observer::Transaction.commit
           Scheduler.worker(true)
           sent(
             template: 'ticket_create',
             user:     user_no_mentions,
+          )
+          sent(
+            template: 'ticket_create',
+            user:     user_read_mentions,
           )
           sent(
             template: 'ticket_create',
@@ -1618,6 +1713,10 @@ RSpec.describe Ticket, type: :model do
           )
           not_sent(
             template: 'ticket_create',
+            user:     user_read_mentions,
+          )
+          not_sent(
+            template: 'ticket_create',
             user:     user_only_mentions,
           )
         end
@@ -1626,9 +1725,14 @@ RSpec.describe Ticket, type: :model do
       it 'does not inform mention user about ticket creation because of no permissions' do
         check_notification do
           ticket = create(:ticket, group: no_access_group)
+          create(:mention, mentionable: ticket, user: user_read_mentions)
           create(:mention, mentionable: ticket, user: user_only_mentions)
           Observer::Transaction.commit
           Scheduler.worker(true)
+          not_sent(
+            template: 'ticket_create',
+            user:     user_read_mentions,
+          )
           not_sent(
             template: 'ticket_create',
             user:     user_only_mentions,
@@ -1752,7 +1856,7 @@ RSpec.describe Ticket, type: :model do
       Store.add(
         object:        'SomeObject',
         o_id:          1,
-        data:          (1024**800_000).to_s, # with 2.4 mb
+        data:          'a' * (1024**2 * 2.4), # with 2.4 mb
         filename:      'test.TXT',
         created_by_id: 1,
       )
@@ -1827,7 +1931,7 @@ RSpec.describe Ticket, type: :model do
       Store.add(
         object:        'Ticket::Article',
         o_id:          article1.id,
-        data:          (1024**800_000).to_s, # with 2.4 mb
+        data:          'a' * (1024**2 * 2.4), # with 2.4 mb
         filename:      'some_file.pdf',
         preferences:   {
           'Content-Type' => 'image/pdf',
@@ -1837,14 +1941,14 @@ RSpec.describe Ticket, type: :model do
       Store.add(
         object:        'Ticket::Article',
         o_id:          article1.id,
-        data:          (1024**2_000_000).to_s, # with 5,8 mb
+        data:          'a' * (1024**2 * 5.8), # with 5,8 mb
         filename:      'some_file.txt',
         preferences:   {
           'Content-Type' => 'text/plain',
         },
         created_by_id: 1,
       )
-      create(:ticket_article, ticket: ticket, body: (1024**400_000).to_s.split(/(.{100})/).join(' ')) # body with 1,2 mb
+      create(:ticket_article, ticket: ticket, body: 'a' * (1024**2 * 1.2)) # body with 1,2 mb
       create(:ticket_article, ticket: ticket)
       ticket.search_index_attribute_lookup
     end

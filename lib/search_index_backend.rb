@@ -319,7 +319,7 @@ remove whole data from index
     return [] if !data
 
     data.map do |item|
-      Rails.logger.info "... #{item['_type']} #{item['_id']}"
+      Rails.logger.debug { "... #{item['_type']} #{item['_id']}" }
 
       output = {
         id:   item['_id'],
@@ -644,6 +644,22 @@ example for aggregations within one year
           end
           query_must.push t
 
+        # till/from (relative)
+        when 'till (relative)', 'from (relative)'
+          range = relative_map[data['range'].to_sym]
+          if range.blank?
+            raise "Invalid relative_map for range '#{data['range']}'."
+          end
+
+          t[:range] = {}
+          t[:range][key_tmp] = {}
+          if data['operator'] == 'till (relative)'
+            t[:range][key_tmp][:lt] = "now+#{data['value']}#{range}"
+          else
+            t[:range][key_tmp][:gt] = "now-#{data['value']}#{range}"
+          end
+          query_must.push t
+
         # before/after (absolute)
         when 'before (absolute)', 'after (absolute)'
           t[:range] = {}
@@ -899,7 +915,7 @@ helper method for making HTTP calls
 
 =end
   def self.make_request(url, data: {}, method: :get, open_timeout: 8, read_timeout: 180)
-    Rails.logger.info "# curl -X #{method} \"#{url}\" "
+    Rails.logger.debug { "# curl -X #{method} \"#{url}\" " }
     Rails.logger.debug { "-d '#{data.to_json}'" } if data.present?
 
     options = {
@@ -914,7 +930,7 @@ helper method for making HTTP calls
 
     response = UserAgent.send(method, url, data, options)
 
-    Rails.logger.info "# #{response.code}"
+    Rails.logger.debug { "# #{response.code}" }
 
     response
   end

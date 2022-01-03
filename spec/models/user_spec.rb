@@ -7,9 +7,9 @@ require 'models/concerns/has_groups_permissions_examples'
 require 'models/concerns/has_xss_sanitized_note_examples'
 require 'models/concerns/can_be_imported_examples'
 require 'models/concerns/has_object_manager_attributes_validation_examples'
-require 'models/concerns/user/performs_geo_lookup_examples'
-require 'models/user/has_ticket_create_screen_impact_examples'
 require 'models/user/can_lookup_search_index_attributes_examples'
+require 'models/user/has_ticket_create_screen_impact_examples'
+require 'models/user/performs_geo_lookup_examples'
 require 'models/concerns/has_taskbars_examples'
 
 RSpec.describe User, type: :model do
@@ -813,6 +813,37 @@ RSpec.describe User, type: :model do
         end
       end
     end
+
+    describe '#image' do
+
+      describe 'when value is invalid' do
+        let(:value) { 'Th1515n0t4v4l1dh45h' }
+
+        it 'prevents create' do
+          expect { create(:user, image: value) }.to raise_error(Exceptions::UnprocessableEntity, /#{value}/)
+        end
+
+        it 'prevents update' do
+          expect { create(:user).update!(image: value) }.to raise_error(Exceptions::UnprocessableEntity, /#{value}/)
+        end
+      end
+    end
+
+    describe '#image_source' do
+
+      describe 'when value is invalid' do
+        let(:value) { 'Th1515n0t4v4l1dh45h' }
+        let(:escaped) { Regexp.escape(value) }
+
+        it 'prevents create' do
+          expect { create(:user, image_source: value) }.to raise_error(ActiveRecord::RecordInvalid, /Image source/)
+        end
+
+        it 'prevents update' do
+          expect { create(:user).update!(image_source: value) }.to raise_error(ActiveRecord::RecordInvalid, /Image source/)
+        end
+      end
+    end
   end
 
   describe 'Associations:' do
@@ -866,13 +897,13 @@ RSpec.describe User, type: :model do
                      'Trigger'                            => { 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'Translation'                        => { 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'ObjectManager::Attribute'           => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'User'                               => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+                     'User'                               => { 'created_by_id' => 1, 'out_of_office_replacement_id' => 1, 'updated_by_id' => 1 },
                      'Organization'                       => { 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'Macro'                              => { 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'Mention'                            => { 'created_by_id' => 1, 'updated_by_id' => 0, 'user_id' => 1 },
                      'Channel'                            => { 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'Role'                               => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'History'                            => { 'created_by_id' => 3 },
+                     'History'                            => { 'created_by_id' => 4 },
                      'Webhook'                            => { 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'Overview'                           => { 'created_by_id' => 1, 'updated_by_id' => 0 },
                      'ActivityStream'                     => { 'created_by_id' => 0 },
@@ -896,6 +927,7 @@ RSpec.describe User, type: :model do
       overview            = create(:overview, created_by_id: user.id, user_ids: [user.id])
       mention             = create(:mention, mentionable: create(:ticket), user: user)
       mention_created_by  = create(:mention, mentionable: create(:ticket), user: create(:agent), created_by: user)
+      user_created_by     = create(:customer, created_by_id: user.id, updated_by_id: user.id, out_of_office_replacement_id: user.id)
       expect(overview.reload.user_ids).to eq([user.id])
 
       # create a chat agent for admin user (id=1) before agent user
@@ -949,6 +981,10 @@ RSpec.describe User, type: :model do
         .to change(knowledge_base_answer, :archived_by_id).to(1)
         .and change(knowledge_base_answer, :published_by_id).to(1)
         .and change(knowledge_base_answer, :internal_by_id).to(1)
+      expect { user_created_by.reload }
+        .to change(user_created_by, :created_by_id).to(1)
+        .and change(user_created_by, :updated_by_id).to(1)
+        .and change(user_created_by, :out_of_office_replacement_id).to(1)
     end
 
     it 'does delete cache after user deletion' do
@@ -1296,8 +1332,8 @@ RSpec.describe User, type: :model do
                   user.update(phone: '0123456789')
                   Observer::Transaction.commit
                   Scheduler.worker(true)
-                end.to change { logs.map(&:reload).map(&:preferences) }
-                  .to(Array.new(5) { {} })
+                end.to change { logs.map(&:reload).map { |log| log.preferences[:from] } }
+                  .to(Array.new(5) { nil })
               end
             end
 
@@ -1307,8 +1343,8 @@ RSpec.describe User, type: :model do
                   user.update(phone: '')
                   Observer::Transaction.commit
                   Scheduler.worker(true)
-                end.to change { logs.map(&:reload).map(&:preferences) }
-                  .to(Array.new(5) { {} })
+                end.to change { logs.map(&:reload).map { |log| log.preferences[:from] } }
+                  .to(Array.new(5) { nil })
               end
             end
 
@@ -1318,8 +1354,8 @@ RSpec.describe User, type: :model do
                   user.update(phone: nil)
                   Observer::Transaction.commit
                   Scheduler.worker(true)
-                end.to change { logs.map(&:reload).map(&:preferences) }
-                  .to(Array.new(5) { {} })
+                end.to change { logs.map(&:reload).map { |log| log.preferences[:from] } }
+                  .to(Array.new(5) { nil })
               end
             end
           end

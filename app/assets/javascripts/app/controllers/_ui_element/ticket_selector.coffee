@@ -28,8 +28,8 @@ class App.UiElement.ticket_selector
         name: 'External Activity'
 
     operators_type =
-      '^datetime$': ['before (absolute)', 'after (absolute)', 'before (relative)', 'after (relative)', 'within next (relative)', 'within last (relative)']
-      '^timestamp$': ['before (absolute)', 'after (absolute)', 'before (relative)', 'after (relative)', 'within next (relative)', 'within last (relative)']
+      '^datetime$': ['before (absolute)', 'after (absolute)', 'before (relative)', 'after (relative)', 'within next (relative)', 'within last (relative)', 'till (relative)', 'from (relative)']
+      '^timestamp$': ['before (absolute)', 'after (absolute)', 'before (relative)', 'after (relative)', 'within next (relative)', 'within last (relative)', 'till (relative)', 'from (relative)']
       '^date$': ['before (absolute)', 'after (absolute)', 'before (relative)', 'after (relative)', 'within next (relative)', 'within last (relative)']
       'boolean$': ['is', 'is not']
       'integer$': ['is', 'is not']
@@ -43,9 +43,9 @@ class App.UiElement.ticket_selector
 
     if attribute.hasChanged
       operators_type =
-        '^datetime$': ['before (absolute)', 'after (absolute)', 'before (relative)', 'after (relative)', 'within next (relative)', 'within last (relative)', 'has changed']
-        '^timestamp$': ['before (absolute)', 'after (absolute)', 'before (relative)', 'after (relative)', 'within next (relative)', 'within last (relative)', 'has changed']
-        '^date$': ['before (absolute)', 'after (absolute)', 'before (relative)', 'after (relative)', 'within next (relative)', 'within last (relative)', 'has changed']
+        '^datetime$': ['before (absolute)', 'after (absolute)', 'before (relative)', 'after (relative)', 'within next (relative)', 'within last (relative)', 'till (relative)', 'from (relative)', 'has changed']
+        '^timestamp$': ['before (absolute)', 'after (absolute)', 'before (relative)', 'after (relative)', 'within next (relative)', 'within last (relative)', 'till (relative)', 'from (relative)', 'has changed']
+        '^date$': ['before (absolute)', 'after (absolute)', 'before (relative)', 'after (relative)', 'within next (relative)', 'within last (relative)', 'till (relative)', 'from (relative)', 'has changed']
         'boolean$': ['is', 'is not', 'has changed']
         'integer$': ['is', 'is not', 'has changed']
         '^radio$': ['is', 'is not', 'has changed']
@@ -477,12 +477,12 @@ class App.UiElement.ticket_selector
       attribute.tag = 'autocompletion_ajax'
     if !preCondition
       elementRow.find('.js-preCondition select').html('')
-      elementRow.find('.js-preCondition').addClass('hide')
+      elementRow.find('.js-preCondition').closest('.controls').addClass('hide')
       toggleValue()
       @buildValue(elementFull, elementRow, groupAndAttribute, elements, meta, attribute)
       return
 
-    elementRow.find('.js-preCondition').removeClass('hide')
+    elementRow.find('.js-preCondition').closest('.controls').removeClass('hide')
     name = "#{attribute.name}::#{groupAndAttribute}::pre_condition"
 
     selection = $("<select class=\"form-control\" name=\"#{name}\" ></select>")
@@ -503,7 +503,7 @@ class App.UiElement.ticket_selector
       if key is meta.pre_condition
         selected = 'selected="selected"'
       selection.append("<option value=\"#{key}\" #{selected}>#{App.i18n.translateInline(value)}</option>")
-    elementRow.find('.js-preCondition').removeClass('hide')
+    elementRow.find('.js-preCondition').closest('.controls').removeClass('hide')
     elementRow.find('.js-preCondition select').replaceWith(selection)
 
     elementRow.find('.js-preCondition select').bind('change', (e) ->
@@ -544,12 +544,14 @@ class App.UiElement.ticket_selector
         config.guess = false
       if config.tag is 'checkbox'
         config.tag = 'select'
+      if config.tag is 'datetime'
+        config.validationContainer = 'self'
       tagSearch = "#{config.tag}_search"
       if App.UiElement[tagSearch]
         item = App.UiElement[tagSearch].render(config, {})
       else
         item = App.UiElement[config.tag].render(config, {})
-    if meta.operator is 'before (relative)' || meta.operator is 'within next (relative)' || meta.operator is 'within last (relative)' || meta.operator is 'after (relative)'
+    if meta.operator is 'before (relative)' || meta.operator is 'within next (relative)' || meta.operator is 'within last (relative)' || meta.operator is 'after (relative)' || meta.operator is 'from (relative)' || meta.operator is 'till (relative)'
       config['name'] = "#{attribute.name}::#{groupAndAttribute}"
       if attribute.value && attribute.value[groupAndAttribute]
         config['value'] = _.clone(attribute.value[groupAndAttribute])
@@ -558,7 +560,7 @@ class App.UiElement.ticket_selector
     elementRow.find('.js-value').removeClass('hide').html(item)
     if meta.operator is 'has changed'
       elementRow.find('.js-value').addClass('hide')
-      elementRow.find('.js-preCondition').addClass('hide')
+      elementRow.find('.js-preCondition').closest('.controls').addClass('hide')
     else
       elementRow.find('.js-value').removeClass('hide')
 

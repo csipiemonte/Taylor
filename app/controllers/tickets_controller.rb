@@ -731,6 +731,7 @@ class TicketsController < ApplicationController
     links = Link.list(
       link_object:       'Ticket',
       link_object_value: ticket.id,
+      user:              current_user,
     )
 
     assets = Link.reduce_assets(assets, links)

@@ -16,6 +16,7 @@ class App.TicketArticle extends App.Model
       { name: 'created_at',     display: 'Created',     tag: 'datetime', readonly: 1, searchable: false },
       { name: 'updated_by_id',  display: 'Updated by',  relation: 'User', readonly: 1, searchable: false },
       { name: 'updated_at',     display: 'Updated',     tag: 'datetime', readonly: 1, searchable: false },
+      { name: 'origin_by_id',   display: 'Origin By',   relation: 'User', readonly: 1 },
     ]
 
   uiUrl: ->
@@ -42,6 +43,8 @@ class App.TicketArticle extends App.Model
 
   activityMessage: (item) ->
     return if !item
+    return if !item.created_by
+
     if item.type is 'create'
       return App.i18n.translateContent('%s created Article for |%s|', item.created_by.displayName(), item.title)
     else if item.type is 'update'

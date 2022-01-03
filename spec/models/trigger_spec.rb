@@ -1,10 +1,12 @@
 require 'rails_helper'
 require 'models/application_model_examples'
+require 'models/concerns/has_xss_sanitized_note_examples'
 
 RSpec.describe Trigger, type: :model do
   subject(:trigger) { create(:trigger, condition: condition, perform: perform) }
 
   it_behaves_like 'ApplicationModel', can_assets: { selectors: %i[condition perform] }
+  it_behaves_like 'HasXssSanitizedNote', model_factory: :trigger
 
   describe 'validation' do
 
@@ -63,6 +65,34 @@ RSpec.describe Trigger, type: :model do
           expect { Observer::Transaction.commit }
             .to change(Ticket::Article, :count).by(1)
             .and not_change { ticket.reload.state.name }.from('new')
+        end
+      end
+
+      context 'when ticket has tags' do
+        let(:tag1) { create(:'tag/item', name: 't1') }
+        let(:tag2) { create(:'tag/item', name: 't2') }
+        let(:tag3) { create(:'tag/item', name: 't3') }
+        let!(:ticket) do
+          ticket = create(:ticket)
+          create(:tag, o: ticket, tag_item: tag1)
+          create(:tag, o: ticket, tag_item: tag2)
+          create(:tag, o: ticket, tag_item: tag3)
+          ticket
+        end
+
+        let(:perform) do
+          {
+            'notification.email' => {
+              'recipient' => 'ticket_customer',
+              'subject'   => 'foo',
+              'body'      => 'some body with #{ticket.tags}', # rubocop:disable Lint/InterpolationCheck
+            }
+          }
+        end
+
+        it 'fires body with replaced tags' do
+          Observer::Transaction.commit
+          expect(Ticket::Article.last.body).to eq('some body with t1, t2, t3')
         end
       end
 

@@ -247,9 +247,9 @@ class App.UiElement.ticket_perform_action
     selection = $("<select class=\"form-control\" name=\"#{name}\"></select>")
     attributeConfig = elements[groupAndAttribute]
     if !attributeConfig || !attributeConfig.operator
-      elementRow.find('.js-operator').addClass('hide')
+      elementRow.find('.js-operator').parent().addClass('hide')
     else
-      elementRow.find('.js-operator').removeClass('hide')
+      elementRow.find('.js-operator').parent().removeClass('hide')
     if attributeConfig && attributeConfig.operator
       for operator in attributeConfig.operator
         operatorName = App.i18n.translateInline(operator)
@@ -296,12 +296,12 @@ class App.UiElement.ticket_perform_action
 
     if !preCondition
       elementRow.find('.js-preCondition select').html('')
-      elementRow.find('.js-preCondition').addClass('hide')
+      elementRow.find('.js-preCondition').closest('.controls').addClass('hide')
       toggleValue()
       @buildValue(elementFull, elementRow, groupAndAttribute, elements, meta, attribute)
       return
 
-    elementRow.find('.js-preCondition').removeClass('hide')
+    elementRow.find('.js-preCondition').closest('.controls').removeClass('hide')
     name = "#{attribute.name}::#{groupAndAttribute}::pre_condition"
 
     selection = $("<select class=\"form-control\" name=\"#{name}\" ></select>")
@@ -324,7 +324,7 @@ class App.UiElement.ticket_perform_action
       if key is meta.pre_condition
         selected = 'selected="selected"'
       selection.append("<option value=\"#{key}\" #{selected}>#{App.i18n.translateInline(value)}</option>")
-    elementRow.find('.js-preCondition').removeClass('hide')
+    elementRow.find('.js-preCondition').closest('.controls').removeClass('hide')
     elementRow.find('.js-preCondition select').replaceWith(selection)
 
     elementRow.find('.js-preCondition select').bind('change', (e) ->
@@ -357,6 +357,8 @@ class App.UiElement.ticket_perform_action
       if config.tag is 'checkbox'
         config.tag = 'select'
       tagSearch = "#{config.tag}_search"
+      if config.tag is 'datetime'
+        config.validationContainer = 'self'
       if App.UiElement[tagSearch]
         item = App.UiElement[tagSearch].render(config, {})
       else
@@ -367,6 +369,8 @@ class App.UiElement.ticket_perform_action
       'within next (relative)',
       'within last (relative)',
       'after (relative)',
+      'till (relative)',
+      'from (relative)',
       'relative'
     ]
 

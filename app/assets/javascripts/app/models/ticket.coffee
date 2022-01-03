@@ -16,6 +16,9 @@ class App.Ticket extends App.Model
       { name: 'article_count',            display: 'Article#',     readonly: 1, width: '12%' },
       { name: 'time_unit',                display: 'Accounted Time',          readonly: 1, width: '12%' },
       { name: 'escalation_at',            display: 'Escalation at',           tag: 'datetime', null: true, readonly: 1, width: '110px', class: 'escalation' },
+      { name: 'first_response_escalation_at', display: 'Escalation at (First Response Time)', tag: 'datetime', null: true, readonly: 1, width: '110px', class: 'escalation' },
+      { name: 'update_escalation_at', display: 'Escalation at (Update Time)', tag: 'datetime', null: true, readonly: 1, width: '110px', class: 'escalation' },
+      { name: 'close_escalation_at', display: 'Escalation at (Close Time)', tag: 'datetime', null: true, readonly: 1, width: '110px', class: 'escalation' },
       { name: 'last_contact_at',          display: 'Last contact',            tag: 'datetime', null: true, readonly: 1, width: '110px' },
       { name: 'last_contact_agent_at',    display: 'Last contact (agent)',    tag: 'datetime', null: true, readonly: 1, width: '110px' },
       { name: 'last_contact_customer_at', display: 'Last contact (customer)', tag: 'datetime', null: true, readonly: 1, width: '110px' },
@@ -99,6 +102,8 @@ class App.Ticket extends App.Model
 
   activityMessage: (item) ->
     return if !item
+    return if !item.created_by
+
     if item.type is 'create'
       return App.i18n.translateContent('%s created Ticket |%s|', item.created_by.displayName(), item.title)
     else if item.type is 'update'

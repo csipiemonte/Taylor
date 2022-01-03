@@ -17,6 +17,7 @@ class User < ApplicationModel
   include HasTaskbars
   include User::HasTicketCreateScreenImpact
   include User::Assets
+  include User::Avatar
   include User::Search
   include User::SearchIndex
   include User::TouchesOrganization
@@ -47,9 +48,7 @@ class User < ApplicationModel
   before_validation :check_name, :check_email, :check_login, :ensure_uniq_email, :ensure_password, :ensure_roles, :ensure_identifier
   before_validation :check_mail_delivery_failed, on: :update
   before_create     :check_preferences_default, :validate_preferences, :validate_ooo, :domain_based_assignment, :set_locale
-  after_create      :avatar_for_email_check, unless: -> { BulkImportInfo.enabled? }
   before_update     :check_preferences_default, :validate_preferences, :validate_ooo, :reset_login_failed, :validate_agent_limit_by_attributes, :last_admin_check_by_attribute
-  after_update      :avatar_for_email_check, unless: -> { BulkImportInfo.enabled? }
   before_destroy    :destroy_longer_required_objects, :destroy_move_dependency_ownership
   after_commit      :update_caller_id
   before_destroy    :destroy_longer_required_objects, :destroy_move_dependency_ownership
@@ -1146,33 +1145,6 @@ raise 'Minimum one user need to have admin permissions'
     true
   end
 
-  def avatar_for_email_check
-    return true if Setting.get('import_mode')
-    return true if email.blank?
-
-    email_address_validation = EmailAddressValidation.new(email)
-    return true if !email_address_validation.valid_format?
-
-    return true if !saved_change_to_attribute?('email') && updated_at > Time.zone.now - 10.days
-
-    # save/update avatar
-    avatar = Avatar.auto_detection(
-      object:        'User',
-      o_id:          id,
-      url:           email,
-      source:        'app',
-      updated_by_id: updated_by_id,
-      created_by_id: updated_by_id,
-    )
-
-    # update user link
-    return true if !avatar
-
-    update_column(:image, avatar.store_hash) # rubocop:disable Rails/SkipsModelValidations
-    cache_delete
-    true
-  end
-
   def destroy_longer_required_objects
     ::Avatar.remove(self.class.to_s, id)
     ::UserDevice.remove(id)
@@ -1182,7 +1154,7 @@ raise 'Minimum one user need to have admin permissions'
   def destroy_move_dependency_ownership
     result = Models.references(self.class.to_s, id)
 
-    user_columns = %w[created_by_id updated_by_id origin_by_id owner_id archived_by_id published_by_id internal_by_id]
+    user_columns = %w[created_by_id updated_by_id out_of_office_replacement_id origin_by_id owner_id archived_by_id published_by_id internal_by_id]
     result.each do |class_name, references|
       next if class_name.blank?
       next if references.blank?

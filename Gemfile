@@ -2,12 +2,7 @@ source 'https://rubygems.org'
 
 # core - base
 ruby '2.6.6'
-gem 'rails', '5.2.4.5'
-
-# fix temporaneneo in attesa di passare a rails 5.2.6: vedi https://gitlab.csi.it/prodotti/nextcrm/nextcrm/issues/84
-gem 'mimemagic', git: 'https://github.com/mimemagicrb/mimemagic', ref: '01f92d86d15d85cfd0f20dabd025dcbd36a8a60f'
-
-
+gem 'rails', '5.2.4.6'
 
 # core - rails additions
 gem 'activerecord-import'
@@ -18,7 +13,7 @@ gem 'json'
 gem 'rails-observers'
 
 # core - application servers
-gem 'puma', '~>3.12', group: :puma
+gem 'puma', '~> 4', group: :puma
 gem 'unicorn', group: :unicorn
 
 # core - supported ORMs
