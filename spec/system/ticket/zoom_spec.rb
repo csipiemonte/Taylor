@@ -920,6 +920,38 @@ RSpec.describe 'Ticket zoom', type: :system do
     end
   end
 
+  # https://github.com/zammad/zammad/issues/3335
+  context 'ticket state sort order maintained when locale is de-de', authenticated_as: :authenticate do
+    def authenticate
+      user.preferences[:locale] = 'de-de'
+      user
+    end
+
+    context 'when existing ticket is open' do
+      let(:user) { create(:customer) }
+      let(:ticket) { create(:ticket, customer: user) }
+
+      it 'shows ticket state dropdown options in sorted order, with new at the end' do
+        visit "ticket/zoom/#{ticket.id}"
+
+        await_empty_ajax_queue
+        expect(all('select[name=state_id] option').map(&:text)).to eq(%w[geschlossen offen neu])
+      end
+    end
+
+    context 'when a new ticket is created' do
+      let(:user) { create(:agent, groups: [permitted_group]) }
+      let(:permitted_group) { create(:group) }
+
+      it 'shows ticket state dropdown options in sorted order, with new in sorted position' do
+        visit 'ticket/create'
+
+        await_empty_ajax_queue
+        expect(all('select[name=state_id] option').map(&:text)).to eq ['-', 'geschlossen', 'neu', 'offen', 'warten auf Erinnerung', 'warten auf schliessen']
+      end
+    end
+  end
+
   context 'object manager attribute permission view' do
     let!(:group_users) { Group.find_by(name: 'Users') }
 
@@ -1094,6 +1126,32 @@ RSpec.describe 'Ticket zoom', type: :system do
     end
   end
 
+  # https://github.com/zammad/zammad/issues/3012
+  describe 'article type selection' do
+    context 'when logged in as a customer', authenticated_as: :customer do
+      let(:customer) { create(:customer) }
+      let(:ticket)   { create(:ticket, customer: customer) }
+
+      it 'hides button for single choice' do
+        visit "ticket/zoom/#{ticket.id}"
+
+        find('.articleNewEdit-body').send_keys('Some reply')
+        expect(page).to have_no_selector('.js-selectedArticleType')
+      end
+    end
+
+    context 'when logged in as an agent' do
+      let(:ticket) { create(:ticket, group: Group.find_by(name: 'Users')) }
+
+      it 'shows button for multiple choices' do
+        visit "ticket/zoom/#{ticket.id}"
+
+        find('.articleNewEdit-body').send_keys('Some reply')
+        expect(page).to have_selector('.js-selectedArticleType')
+      end
+    end
+  end
+
   # https://github.com/zammad/zammad/issues/3260
   describe 'next in overview macro changes URL', authenticated_as: :authenticate do
     let(:next_ticket) { create(:ticket, title: 'next Ticket', group: Group.first) }
@@ -1165,8 +1223,10 @@ RSpec.describe 'Ticket zoom', type: :system do
 
     def open_nth_item(nth)
       within :active_content do
-        find_all('.table tr.item .user-popover')[nth].click
+        find_all('.table tr.item a[href^="#ticket/zoom"]')[nth].click
       end
+
+      await_empty_ajax_queue
     end
   end
 
@@ -1622,6 +1682,32 @@ RSpec.describe 'Ticket zoom', type: :system do
         # check that counter got removed
         expect(page).to have_no_selector('.tabsSidebar-tab[data-tab=github] .js-tabCounter')
       end
+    end
+  end
+
+  context 'Sidebar - Open & Closed Tickets', searchindex: true, authenticated_as: :authenticate do
+    let(:customer) { create(:customer, :with_org) }
+    let(:ticket_open) { create(:ticket, group: Group.find_by(name: 'Users'), customer: customer, title: SecureRandom.uuid) }
+    let(:ticket_closed) { create(:ticket, group: Group.find_by(name: 'Users'), customer: customer, state: Ticket::State.find_by(name: 'closed'), title: SecureRandom.uuid) }
+
+    def authenticate
+      ticket_open
+      ticket_closed
+      configure_elasticsearch(required: true, rebuild: true)
+      Scheduler.worker(true)
+      true
+    end
+
+    it 'does show open and closed tickets in advanced search url' do
+      visit "#ticket/zoom/#{ticket_open.id}"
+      click '.tabsSidebar-tab[data-tab=customer]'
+      click '.user-tickets[data-type=open]'
+      expect(page).to have_text(ticket_open.title, wait: 20)
+
+      visit "#ticket/zoom/#{ticket_open.id}"
+      click '.tabsSidebar-tab[data-tab=customer]'
+      click '.user-tickets[data-type=closed]'
+      expect(page).to have_text(ticket_closed.title, wait: 20)
     end
   end
 end

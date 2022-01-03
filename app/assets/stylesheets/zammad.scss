@@ -8381,6 +8381,16 @@ footer {
     }
   }
 
+  .dropdown li.with-category, .dropdown.dropdown--actions li.with-category {
+    line-height: 19.5px;
+  }
+
+  .dropdown.dropdown--actions li.with-category {
+    height: 39px;
+    padding: 0px 15px;
+    display: list-item;
+  }
+
   .dropdown li:not(:first-child) {
     box-shadow: 0 1px rgba(255,255,255,.13) inset;
   }
@@ -9206,6 +9216,14 @@ label + .wizard-buttonList {
   width: 52px;
   border-radius: 0 5px 5px 0;
   background: linear-gradient(to right, rgba(255,255,255,0), white 33%);
+
+  &--no-background {
+    background: none;
+  }
+}
+
+.input-feedback--no-background {
+  background: none;
 }
 
 .input-feedback .icon {
@@ -13079,4 +13097,3 @@ span.is-disabled {
 .text-modules-box {
   max-height: 40vh;
 }
-

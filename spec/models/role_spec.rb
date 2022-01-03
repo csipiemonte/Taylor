@@ -74,13 +74,13 @@ RSpec.describe Role do
 
         it 'cannot be created' do
           expect { create(:role, permissions: [permission]) }
-            .to raise_error(/is disabled/)
+            .to raise_error(%r{is disabled})
             .and change(described_class, :count).by(0)
         end
 
         it 'cannot be added' do
           expect { role.permissions << permission }
-            .to raise_error(/is disabled/)
+            .to raise_error(%r{is disabled})
             .and change { role.permissions.count }.by(0)
         end
       end
@@ -90,7 +90,7 @@ RSpec.describe Role do
 
         it 'cannot be created' do
           expect { create(:role, permissions: [Permission.first, permission]) }
-            .to raise_error(/conflicts with/)
+            .to raise_error(%r{conflicts with})
             .and change(described_class, :count).by(0)
         end
 
@@ -98,7 +98,7 @@ RSpec.describe Role do
           role.permissions << Permission.first
 
           expect { role.permissions << permission }
-            .to raise_error(/conflicts with/)
+            .to raise_error(%r{conflicts with})
             .and change { role.permissions.count }.by(0)
         end
       end
@@ -150,14 +150,14 @@ RSpec.describe Role do
           role.default_at_signup = true
 
           expect { role.save }
-            .to raise_error(Exceptions::UnprocessableEntity, /Cannot set default at signup/)
+            .to raise_error(Exceptions::UnprocessableEntity, %r{Cannot set default at signup})
         end
 
         it 'cannot be changed to true' do
           role.save
 
           expect { role.update(default_at_signup: true) }
-            .to raise_error(Exceptions::UnprocessableEntity, /Cannot set default at signup/)
+            .to raise_error(Exceptions::UnprocessableEntity, %r{Cannot set default at signup})
         end
       end
 
@@ -170,14 +170,14 @@ RSpec.describe Role do
           role.default_at_signup = true
 
           expect { role.save }
-            .to raise_error(Exceptions::UnprocessableEntity, /Cannot set default at signup/)
+            .to raise_error(Exceptions::UnprocessableEntity, %r{Cannot set default at signup})
         end
 
         it 'cannot be changed to true' do
           role.save
 
           expect { role.update(default_at_signup: true) }
-            .to raise_error(Exceptions::UnprocessableEntity, /Cannot set default at signup/)
+            .to raise_error(Exceptions::UnprocessableEntity, %r{Cannot set default at signup})
         end
       end
 
@@ -188,14 +188,14 @@ RSpec.describe Role do
           role.default_at_signup = true
 
           expect { role.save }
-            .to raise_error(Exceptions::UnprocessableEntity, /Cannot set default at signup/)
+            .to raise_error(Exceptions::UnprocessableEntity, %r{Cannot set default at signup})
         end
 
         it 'cannot be changed to true' do
           role.save
 
           expect { role.update(default_at_signup: true) }
-            .to raise_error(Exceptions::UnprocessableEntity, /Cannot set default at signup/)
+            .to raise_error(Exceptions::UnprocessableEntity, %r{Cannot set default at signup})
         end
       end
     end

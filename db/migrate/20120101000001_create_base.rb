@@ -424,7 +424,7 @@ class CreateBase < ActiveRecord::Migration[4.2]
       t.string :name,                   limit: 200,  null: false
       t.string :area,                   limit: 100,  null: false
       t.string :description,            limit: 2000, null: false
-      t.string :options,                limit: 2000, null: true
+      t.text :options, null: true
       t.text :state_current,            limit: 200.kilobytes + 1, null: true
       t.string :state_initial,          limit: 2000, null: true
       t.boolean :frontend,                           null: false
@@ -741,7 +741,7 @@ class CreateBase < ActiveRecord::Migration[4.2]
     create_table :data_privacy_tasks do |t|
       t.column :state,                :string, limit: 150, default: 'in process', null: true
       t.references :deletable,        polymorphic: true
-      t.string :preferences,          limit: 8000,                                null: true
+      t.text :preferences
       t.column :updated_by_id,        :integer,                                   null: false
       t.column :created_by_id,        :integer,                                   null: false
       t.timestamps limit: 3, null: false

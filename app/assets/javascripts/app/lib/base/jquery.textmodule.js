@@ -43,7 +43,9 @@
 
   Plugin.prototype.bindEvents = function () {
     this.$element.on('keydown', this.onKeydown.bind(this))
-    this.$element.on('keypress', this.onKeypress.bind(this))
+    // using onInput event to trigger onKeyPress behavior
+    // since keyPress doesn't work on Mobile Chrome / Android
+    this.$element.on('input', this.onKeypress.bind(this))
     this.$element.on('focus', this.onFocus.bind(this))
   }
 
@@ -150,6 +152,16 @@
 
   Plugin.prototype.onKeypress = function (e) {
     this.log('BUFF', this.buffer, e.keyCode, String.fromCharCode(e.which))
+
+    // gets the character and keycode from event
+    // this event does not have keyCode and which value set
+    // so we take char and set those values to not break the flow
+    // if originalEvent.data is null that means a non char key is pressed like delete, space
+    if(e.originalEvent && e.originalEvent.data) {
+      var char = e.originalEvent.data;
+      var keyCode = char.charCodeAt(0);
+      e.keyCode = e.which = keyCode;
+    }
 
     // shift
     if (e.keyCode === 16) return
@@ -565,7 +577,8 @@
           'flavor':            'agent',
           'index':             'KnowledgeBase::Answer::Translation',
           'url_type':          'agent',
-          'highlight_enabled': false
+          'highlight_enabled': false,
+          'include_locale': true,
         }),
         processData: true,
         success: function(data, status, xhr) {
@@ -573,12 +586,13 @@
 
           var items = data
             .result
-            .map(function(elem){
+            .map(function(elem) {
               if(result = _.find(data.details, function(detailElem) { return detailElem.type == elem.type && detailElem.id == elem.id })) {
                 return {
-                  'name':  result.title,
-                  'value': elem.id,
-                  'url':   result.url
+                  'category': result.subtitle,
+                  'name':     result.title,
+                  'value':    elem.id,
+                  'url':      result.url
                 }
               }
             })
@@ -587,8 +601,11 @@
               var element = $('<li>')
                 .attr('data-id',  elem.value)
                 .attr('data-url', elem.url)
-                .text(elem.name)
-                .addClass('u-clickable u-textTruncate')
+                .addClass('u-clickable u-textTruncate with-category')
+
+              element.append($('<small>').text(elem.category))
+              element.append('<br>')
+              element.append($('<span>').text(elem.name))
 
               if (index == array.length-1) {
                 element.addClass('is-active')

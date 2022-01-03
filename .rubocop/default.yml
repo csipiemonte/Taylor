@@ -273,6 +273,9 @@ Style/StringConcatenation:
   Exclude:
     - "config/routes/**/*"
 
+Style/RegexpLiteral:
+  EnforcedStyle: percent_r
+
 Rails/Output:
   Exclude:
     - "lib/tasks/**/*"
@@ -312,6 +315,9 @@ Layout/MultilineMethodCallIndentation:
 
 Lint/UnusedMethodArgument:
   AllowUnusedKeywordArguments: true
+
+RSpec/NestedGroups:
+  Max: 6
 
 Zammad/PreferNegatedIfOverUnless:
   Exclude:

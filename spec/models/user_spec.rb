@@ -820,11 +820,11 @@ RSpec.describe User, type: :model do
         let(:value) { 'Th1515n0t4v4l1dh45h' }
 
         it 'prevents create' do
-          expect { create(:user, image: value) }.to raise_error(Exceptions::UnprocessableEntity, /#{value}/)
+          expect { create(:user, image: value) }.to raise_error(Exceptions::UnprocessableEntity, %r{#{value}})
         end
 
         it 'prevents update' do
-          expect { create(:user).update!(image: value) }.to raise_error(Exceptions::UnprocessableEntity, /#{value}/)
+          expect { create(:user).update!(image: value) }.to raise_error(Exceptions::UnprocessableEntity, %r{#{value}})
         end
       end
     end
@@ -836,11 +836,11 @@ RSpec.describe User, type: :model do
         let(:escaped) { Regexp.escape(value) }
 
         it 'prevents create' do
-          expect { create(:user, image_source: value) }.to raise_error(ActiveRecord::RecordInvalid, /Image source/)
+          expect { create(:user, image_source: value) }.to raise_error(ActiveRecord::RecordInvalid, %r{Image source})
         end
 
         it 'prevents update' do
-          expect { create(:user).update!(image_source: value) }.to raise_error(ActiveRecord::RecordInvalid, /Image source/)
+          expect { create(:user).update!(image_source: value) }.to raise_error(ActiveRecord::RecordInvalid, %r{Image source})
         end
       end
     end
@@ -1275,7 +1275,7 @@ RSpec.describe User, type: :model do
             it 'populates #preferences[:from] hash in all associated Log records (in a bg job)' do
               expect do
                 user.save
-                Observer::Transaction.commit
+                TransactionDispatcher.commit
                 Scheduler.worker(true)
               end.to change { log.reload.preferences[:from]&.first }
                 .to(hash_including('caller_id' => user.phone))
@@ -1288,7 +1288,7 @@ RSpec.describe User, type: :model do
             it 'populates #preferences[:from] hash in all associated Log records (in a bg job)' do
               expect do
                 user.update(phone: log.from)
-                Observer::Transaction.commit
+                TransactionDispatcher.commit
                 Scheduler.worker(true)
               end.to change { log.reload.preferences[:from]&.first }
                 .to(hash_including('object' => 'User', 'o_id' => user.id))
@@ -1301,7 +1301,7 @@ RSpec.describe User, type: :model do
             it 'does not modify any Log records' do
               expect do
                 user.save
-                Observer::Transaction.commit
+                TransactionDispatcher.commit
                 Scheduler.worker(true)
               end.not_to change { log.reload.attributes }
             end
@@ -1313,7 +1313,7 @@ RSpec.describe User, type: :model do
             it 'does not modify any Log records' do
               expect do
                 user.save
-                Observer::Transaction.commit
+                TransactionDispatcher.commit
                 Scheduler.worker(true)
               end.not_to change { log.reload.attributes }
             end
@@ -1330,7 +1330,7 @@ RSpec.describe User, type: :model do
               it 'empties #preferences[:from] hash in all associated Log records (in a bg job)' do
                 expect do
                   user.update(phone: '0123456789')
-                  Observer::Transaction.commit
+                  TransactionDispatcher.commit
                   Scheduler.worker(true)
                 end.to change { logs.map(&:reload).map { |log| log.preferences[:from] } }
                   .to(Array.new(5) { nil })
@@ -1341,7 +1341,7 @@ RSpec.describe User, type: :model do
               it 'empties #preferences[:from] hash in all associated Log records (in a bg job)' do
                 expect do
                   user.update(phone: '')
-                  Observer::Transaction.commit
+                  TransactionDispatcher.commit
                   Scheduler.worker(true)
                 end.to change { logs.map(&:reload).map { |log| log.preferences[:from] } }
                   .to(Array.new(5) { nil })
@@ -1352,7 +1352,7 @@ RSpec.describe User, type: :model do
               it 'empties #preferences[:from] hash in all associated Log records (in a bg job)' do
                 expect do
                   user.update(phone: nil)
-                  Observer::Transaction.commit
+                  TransactionDispatcher.commit
                   Scheduler.worker(true)
                 end.to change { logs.map(&:reload).map { |log| log.preferences[:from] } }
                   .to(Array.new(5) { nil })
@@ -1364,7 +1364,7 @@ RSpec.describe User, type: :model do
             it 'does not modify any Log records' do
               expect do
                 user.update(mobile: '2345678901')
-                Observer::Transaction.commit
+                TransactionDispatcher.commit
                 Scheduler.worker(true)
               end.not_to change { logs.map(&:reload).map(&:attributes) }
             end

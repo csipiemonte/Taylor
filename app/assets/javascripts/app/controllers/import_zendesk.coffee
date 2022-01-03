@@ -73,14 +73,13 @@ class ImportZendesk extends App.ControllerWizardFullScreen
         success:     (data, status, xhr) =>
 
           # validate form
-          console.log(data)
           if data.result is 'ok'
             @urlStatus.attr('data-state', 'success')
             @linkErrorMessage.text('')
             @nextEnterCredentials.removeClass('hide')
           else
             @urlStatus.attr('data-state', 'error')
-            @linkErrorMessage.text( data.message_human || data.message)
+            @linkErrorMessage.text( data.message_human || data.message)
             @nextEnterCredentials.addClass('hide')
 
       )
@@ -101,14 +100,13 @@ class ImportZendesk extends App.ControllerWizardFullScreen
         success:     (data, status, xhr) =>
 
           # validate form
-          console.log(data)
           if data.result is 'ok'
             @urlStatus.attr('data-state', 'success')
             @apiTokenErrorMessage.text('')
             @nextStartMigration.removeClass('hide')
           else
             @urlStatus.attr('data-state', 'error')
-            @apiTokenErrorMessage.text(data.message_human || data.message)
+            @apiTokenErrorMessage.text(data.message_human || data.message)
             @nextStartMigration.addClass('hide')
 
       )
@@ -139,7 +137,6 @@ class ImportZendesk extends App.ControllerWizardFullScreen
       success:     (data, status, xhr) =>
 
         # validate form
-        console.log(data)
         if data.result is 'ok'
           @delay(@updateMigration, 3000)
     )

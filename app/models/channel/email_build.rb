@@ -90,7 +90,7 @@ generate email with S/MIME
         scrubber = Loofah::Scrubber.new do |node|
           next if node.name != 'img'
           next if node['src'].blank?
-          next if node['src'] !~ /^cid:\s{0,2}(.+?)\s{0,2}$/
+          next if node['src'] !~ %r{^cid:\s{0,2}(.+?)\s{0,2}$}
 
           found_content_ids[$1] = true
         end
@@ -174,7 +174,7 @@ returns
 =end
 
   def self.recipient_line(realname, email)
-    return "#{realname} <#{email}>" if realname.match?(/^[A-z]+$/i)
+    return "#{realname} <#{email}>" if realname.match?(%r{^[A-z]+$}i)
 
     "\"#{realname.gsub('"', '\"')}\" <#{email}>"
   end
@@ -192,7 +192,7 @@ Check if string is a complete html document. If not, add head and css styles.
     # apply mail client fixes
     html = Channel::EmailBuild.html_mail_client_fixes(html)
 
-    return html if html.match?(/<html>/i)
+    return html if html.match?(%r{<html>}i)
 
     html_email_body = File.read(Rails.root.join('app/views/mailer/application_wrapper.html.erb').to_s)
 
@@ -215,7 +215,7 @@ Add/change markup to display html in any mail client nice.
 
     # https://github.com/martini/zammad/issues/165
     new_html = html.gsub('<blockquote type="cite">', '<blockquote type="cite" style="border-left: 2px solid blue; margin: 0 0 16px; padding: 8px 12px 8px 12px;">')
-    new_html.gsub!(/<p>/mxi, '<p style="margin: 0;">')
+    new_html.gsub!(%r{<p>}mxi, '<p style="margin: 0;">')
     new_html.gsub!(%r{</?hr>}mxi, '<hr style="margin-top: 6px; margin-bottom: 6px; border: 0; border-top: 1px solid #dfdfdf;">')
     new_html
   end

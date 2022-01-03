@@ -15,6 +15,8 @@ class Organization < ApplicationModel
   include Organization::Search
   include Organization::SearchIndex
 
+  include HasTransactionDispatcher
+
   has_many :members, class_name: 'User'
   has_many :tickets, class_name: 'Ticket'
   belongs_to :created_by,  class_name: 'User'
@@ -38,8 +40,8 @@ class Organization < ApplicationModel
   def domain_cleanup
     return true if domain.blank?
 
-    domain.gsub!(/@/, '')
-    domain.gsub!(/\s*/, '')
+    domain.gsub!(%r{@}, '')
+    domain.gsub!(%r{\s*}, '')
     domain.strip!
     domain.downcase!
     true

@@ -62,7 +62,7 @@ RSpec.describe Trigger, type: :model do
         let!(:ticket) { create(:ticket) }
 
         it 'fires (without altering ticket state)' do
-          expect { Observer::Transaction.commit }
+          expect { TransactionDispatcher.commit }
             .to change(Ticket::Article, :count).by(1)
             .and not_change { ticket.reload.state.name }.from('new')
         end
@@ -91,7 +91,7 @@ RSpec.describe Trigger, type: :model do
         end
 
         it 'fires body with replaced tags' do
-          Observer::Transaction.commit
+          TransactionDispatcher.commit
           expect(Ticket::Article.last.body).to eq('some body with t1, t2, t3')
         end
       end
@@ -163,7 +163,7 @@ RSpec.describe Trigger, type: :model do
           }
         end
 
-        before { Observer::Transaction.commit }
+        before { TransactionDispatcher.commit }
 
         context 'mix of recipient group keyword and single recipient users' do
           let(:recipient) { [ 'ticket_customer', "userid_#{recipient1.id}", "userid_#{recipient2.id}", "userid_#{recipient3.id}" ] }
@@ -246,7 +246,7 @@ RSpec.describe Trigger, type: :model do
         context 'sending articles' do
 
           before do
-            Observer::Transaction.commit
+            TransactionDispatcher.commit
           end
 
           context 'expired certificate' do
@@ -349,7 +349,7 @@ RSpec.describe Trigger, type: :model do
               let(:group) { create(:group) }
 
               it 'does not fire' do
-                expect { Observer::Transaction.commit }
+                expect { TransactionDispatcher.commit }
                   .to change(Ticket::Article, :count).by(0)
               end
             end
@@ -367,7 +367,7 @@ RSpec.describe Trigger, type: :model do
               let(:customer) { create(:customer) }
 
               it 'does not fire' do
-                expect { Observer::Transaction.commit }
+                expect { TransactionDispatcher.commit }
                   .to change(Ticket::Article, :count).by(0)
               end
             end
@@ -388,7 +388,7 @@ RSpec.describe Trigger, type: :model do
                 let(:group) { create(:group) }
 
                 it 'does not fire' do
-                  expect { Observer::Transaction.commit }
+                  expect { TransactionDispatcher.commit }
                     .to change(Ticket::Article, :count).by(0)
                 end
               end
@@ -407,7 +407,7 @@ RSpec.describe Trigger, type: :model do
                 let(:customer) { create(:customer) }
 
                 it 'does not fire' do
-                  expect { Observer::Transaction.commit }
+                  expect { TransactionDispatcher.commit }
                     .to change(Ticket::Article, :count).by(0)
                 end
               end
@@ -422,14 +422,14 @@ RSpec.describe Trigger, type: :model do
         { 'ticket.action' => { 'operator' => 'is', 'value' => 'update' } }
       end
 
-      let!(:ticket) { create(:ticket).tap { Observer::Transaction.commit } }
+      let!(:ticket) { create(:ticket).tap { TransactionDispatcher.commit } }
 
       context 'when new article is created directly' do
         context 'with empty #preferences hash' do
           let!(:article) { create(:ticket_article, ticket: ticket) }
 
           it 'fires (without altering ticket state)' do
-            expect { Observer::Transaction.commit }
+            expect { TransactionDispatcher.commit }
               .to change { ticket.reload.articles.count }.by(1)
               .and not_change { ticket.reload.state.name }.from('new')
           end
@@ -443,7 +443,7 @@ RSpec.describe Trigger, type: :model do
           end
 
           it 'does not fire' do
-            expect { Observer::Transaction.commit }
+            expect { TransactionDispatcher.commit }
               .not_to change { ticket.reload.articles.count }
           end
         end
@@ -454,8 +454,8 @@ RSpec.describe Trigger, type: :model do
           let!(:article) do
             create(:ticket_article,
                    ticket:     ticket,
-                   message_id: raw_email[/(?<=^References: )\S*/],
-                   subject:    raw_email[/(?<=^Subject: Re: ).*$/])
+                   message_id: raw_email[%r{(?<=^References: )\S*}],
+                   subject:    raw_email[%r{(?<=^Subject: Re: ).*$}])
           end
 
           let(:raw_email) { File.read(Rails.root.join('test/data/mail/mail005.box')) }
@@ -472,7 +472,7 @@ RSpec.describe Trigger, type: :model do
           let!(:article) do
             create(:ticket_article,
                    ticket:     ticket,
-                   message_id: raw_email[/(?<=^Message-ID: )\S*/])
+                   message_id: raw_email[%r{(?<=^Message-ID: )\S*}])
           end
 
           let(:raw_email) { File.read(Rails.root.join('test/data/mail/mail055.box')) }
@@ -499,12 +499,12 @@ RSpec.describe Trigger, type: :model do
 
         it 'does trigger only in working time' do
           travel_to Time.zone.parse('2020-02-12T12:00:00Z0')
-          expect { Observer::Transaction.commit }.to change { ticket.reload.title }.to('triggered')
+          expect { TransactionDispatcher.commit }.to change { ticket.reload.title }.to('triggered')
         end
 
         it 'does not trigger out of working time' do
           travel_to Time.zone.parse('2020-02-12T02:00:00Z0')
-          Observer::Transaction.commit
+          TransactionDispatcher.commit
           expect(ticket.reload.title).to eq('Test Ticket')
         end
       end
@@ -516,13 +516,13 @@ RSpec.describe Trigger, type: :model do
 
         it 'does not trigger in working time' do
           travel_to Time.zone.parse('2020-02-12T12:00:00Z0')
-          Observer::Transaction.commit
+          TransactionDispatcher.commit
           expect(ticket.reload.title).to eq('Test Ticket')
         end
 
         it 'does trigger out of working time' do
           travel_to Time.zone.parse('2020-02-12T02:00:00Z0')
-          expect { Observer::Transaction.commit }.to change { ticket.reload.title }.to('triggered')
+          expect { TransactionDispatcher.commit }.to change { ticket.reload.title }.to('triggered')
         end
       end
     end
@@ -553,7 +553,7 @@ RSpec.describe Trigger, type: :model do
         end
 
         it 'does not trigger because of the last article is created my system address' do
-          expect { Observer::Transaction.commit }.to change { ticket.reload.articles.count }.by(0)
+          expect { TransactionDispatcher.commit }.to change { ticket.reload.articles.count }.by(0)
           expect(Ticket::Article.where(ticket: ticket).last.subject).not_to eq('foo last sender')
           expect(Ticket::Article.where(ticket: ticket).last.to).not_to eq(system_address.email)
         end
@@ -568,7 +568,7 @@ RSpec.describe Trigger, type: :model do
         end
 
         it 'does not trigger because of the last article is created my system address' do
-          expect { Observer::Transaction.commit }.to change { ticket.reload.articles.count }.by(0)
+          expect { TransactionDispatcher.commit }.to change { ticket.reload.articles.count }.by(0)
           expect(Ticket::Article.where(ticket: ticket).last.subject).not_to eq('foo last sender')
           expect(Ticket::Article.where(ticket: ticket).last.to).not_to eq(system_address.email)
         end
@@ -604,7 +604,7 @@ RSpec.describe Trigger, type: :model do
 
       it "for #{attribute}" do
         ticket && trigger
-        expect { Observer::Transaction.commit }.to change { ticket.reload.title }.to('triggered')
+        expect { TransactionDispatcher.commit }.to change { ticket.reload.title }.to('triggered')
       end
     end
 
@@ -663,7 +663,7 @@ RSpec.describe Trigger, type: :model do
 
         context 'in alphabetical order (by name)' do
           it 'fires all triggers in sequence' do
-            expect { Observer::Transaction.commit }
+            expect { TransactionDispatcher.commit }
               .to change { ticket.reload.state.name }.to('merged')
           end
         end
@@ -679,7 +679,7 @@ RSpec.describe Trigger, type: :model do
             before { Setting.set('ticket_trigger_recursive', true) }
 
             it 'evaluates triggers in sequence, then loops back to the start and re-evalutes skipped triggers' do
-              expect { Observer::Transaction.commit }
+              expect { TransactionDispatcher.commit }
                 .to change { ticket.reload.state.name }.to('merged')
             end
           end
@@ -688,7 +688,7 @@ RSpec.describe Trigger, type: :model do
             before { Setting.set('ticket_trigger_recursive', false) }
 
             it 'evaluates triggers in sequence, firing only the ones that match' do
-              expect { Observer::Transaction.commit }
+              expect { TransactionDispatcher.commit }
                 .to change { ticket.reload.state.name }.to('closed')
             end
           end
@@ -736,7 +736,7 @@ RSpec.describe Trigger, type: :model do
           before { Setting.set('ticket_trigger_recursive', true) }
 
           it 'fires each trigger once, without being caught in an endless loop' do
-            expect { Timeout.timeout(2) { Observer::Transaction.commit } }
+            expect { Timeout.timeout(2) { TransactionDispatcher.commit } }
               .to not_change { ticket.reload.priority.name }
               .and not_raise_error
           end
@@ -746,7 +746,7 @@ RSpec.describe Trigger, type: :model do
           before { Setting.set('ticket_trigger_recursive', false) }
 
           it 'fires each trigger once, without being caught in an endless loop' do
-            expect { Timeout.timeout(2) { Observer::Transaction.commit } }
+            expect { Timeout.timeout(2) { TransactionDispatcher.commit } }
               .to not_change { ticket.reload.priority.name }
               .and not_raise_error
           end
@@ -790,7 +790,7 @@ RSpec.describe Trigger, type: :model do
       end
 
       it 'evaluates triggers in sequence, firing only the ones that match' do
-        expect { Observer::Transaction.commit }
+        expect { TransactionDispatcher.commit }
           .to change { ticket.reload.state.name }.to('open')
           .and not_change { ticket.reload.priority.name }
       end

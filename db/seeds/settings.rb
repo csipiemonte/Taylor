@@ -1010,6 +1010,7 @@ Setting.create_if_not_exists(
   },
   state:       true,
   preferences: {
+    prio:       10,
     permission: ['admin.security'],
   },
   frontend:    true
@@ -1035,7 +1036,62 @@ Setting.create_if_not_exists(
   },
   state:       true,
   preferences: {
+    prio:       20,
     permission: ['admin.security'],
+  },
+  frontend:    true
+)
+
+options = [ { value: '0', name: 'disabled' }, { value: 1.hour.seconds, name: '1 hour' }, { value: 2.hours.seconds, name: '2 hours' }, { value: 1.day.seconds, name: '1 day' }, { value: 7.days.seconds, name: '1 week' }, { value: 14.days.seconds, name: '2 weeks' }, { value: 21.days.seconds, name: '3 weeks' }, { value: 28.days.seconds, name: '4 weeks' } ]
+Setting.create_if_not_exists(
+  title:       'Session Timeout',
+  name:        'session_timeout',
+  area:        'Security::Base',
+  description: 'Defines the session timeout for inactivity of users. Based on the assigned permissions the highest timeout value will be used, otherwise the default.',
+  options:     {
+    form: [
+      {
+        display:   'Default',
+        null:      false,
+        name:      'default',
+        tag:       'select',
+        options:   options,
+        translate: true,
+      },
+      {
+        display:   'admin',
+        null:      false,
+        name:      'admin',
+        tag:       'select',
+        options:   options,
+        translate: true,
+      },
+      {
+        display:   'ticket.agent',
+        null:      false,
+        name:      'ticket.agent',
+        tag:       'select',
+        options:   options,
+        translate: true,
+      },
+      {
+        display:   'ticket.customer',
+        null:      false,
+        name:      'ticket.customer',
+        tag:       'select',
+        options:   options,
+        translate: true,
+      },
+    ],
+  },
+  preferences: {
+    prio: 30,
+  },
+  state:       {
+    'default'         => 4.weeks.seconds,
+    'admin'           => 4.weeks.seconds,
+    'ticket.agent'    => 4.weeks.seconds,
+    'ticket.customer' => 4.weeks.seconds,
   },
   frontend:    true
 )
@@ -1516,6 +1572,13 @@ Setting.create_if_not_exists(
         null:    true,
         name:    'app_secret',
         tag:     'input',
+      },
+      {
+        display:     'App Tenant ID',
+        null:        true,
+        name:        'app_tenant',
+        tag:         'input',
+        placeholder: 'common',
       },
     ],
   },
@@ -3089,6 +3152,44 @@ Setting.create_if_not_exists(
   state:       '',
   frontend:    false
 )
+
+Setting.create_if_not_exists(
+  title:       'Import Endpoint',
+  name:        'import_freshdesk_endpoint',
+  area:        'Import::Freshdesk',
+  description: 'Defines Freshdesk endpoint to import users, ticket, states and articles.',
+  options:     {
+    form: [
+      {
+        display: '',
+        null:    false,
+        name:    'import_freshdesk_endpoint',
+        tag:     'input',
+      },
+    ],
+  },
+  state:       'https://yours.freshdesk.com/api/v2',
+  frontend:    false
+)
+Setting.create_if_not_exists(
+  title:       'Import Key for requesting the Freshdesk API',
+  name:        'import_freshdesk_endpoint_key',
+  area:        'Import::Freshdesk',
+  description: 'Defines Freshdesk endpoint authentication key.',
+  options:     {
+    form: [
+      {
+        display: '',
+        null:    false,
+        name:    'import_freshdesk_endpoint_key',
+        tag:     'input',
+      },
+    ],
+  },
+  state:       '',
+  frontend:    false
+)
+
 Setting.create_if_not_exists(
   title:       'Import Backends',
   name:        'import_backends',
@@ -3432,6 +3533,15 @@ Setting.create_if_not_exists(
   description: 'Defines postmaster filter to identify service now mails for correct follow-ups.',
   options:     {},
   state:       'Channel::Filter::ServiceNowCheck',
+  frontend:    false
+)
+Setting.create_if_not_exists(
+  title:       'Define postmaster filter.',
+  name:        '5500_postmaster_internal_article_check',
+  area:        'Postmaster::PreFilter',
+  description: 'Defines the postmaster filter which set the article internal if a forwarded, replied or sent email also exists with the article internal received.',
+  options:     {},
+  state:       'Channel::Filter::InternalArticleCheck',
   frontend:    false
 )
 Setting.create_if_not_exists(

@@ -161,7 +161,7 @@ RSpec.describe Cti::Log do
         before { create(:'cti/log', call_id: '1') }
 
         it 'raises an error' do
-          expect { described_class.process(attributes) }.to raise_error(/call_id \S+ already exists!/)
+          expect { described_class.process(attributes) }.to raise_error(%r{call_id \S+ already exists!})
         end
       end
     end
@@ -171,7 +171,7 @@ RSpec.describe Cti::Log do
 
       context 'with unrecognized "call_id"' do
         it 'raises an error' do
-          expect { described_class.process(attributes) }.to raise_error(/No such call_id/)
+          expect { described_class.process(attributes) }.to raise_error(%r{No such call_id})
         end
       end
 
@@ -202,7 +202,7 @@ RSpec.describe Cti::Log do
 
       context 'with unrecognized "call_id"' do
         it 'raises an error' do
-          expect { described_class.process(attributes) }.to raise_error(/No such call_id/)
+          expect { described_class.process(attributes) }.to raise_error(%r{No such call_id})
         end
       end
 
@@ -257,7 +257,7 @@ RSpec.describe Cti::Log do
       let(:customer_of_ticket) { create(:customer) }
       let(:ticket_sample) do
         create(:ticket_article, created_by_id: customer_of_ticket.id, body: 'some text 0123457')
-        Observer::Transaction.commit
+        TransactionDispatcher.commit
         Scheduler.worker(true)
       end
       let(:caller_id) { '0123456' }

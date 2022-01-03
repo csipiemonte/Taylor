@@ -24,6 +24,8 @@ class User < ApplicationModel
   include User::PerformsGeoLookup
   include User::UpdatesTicketOrganization
 
+  include HasTransactionDispatcher
+
   has_and_belongs_to_many :organizations,          after_add: :cache_update, after_remove: :cache_update, class_name: 'Organization'
   has_and_belongs_to_many :overviews,              dependent: :nullify
   has_many                :tokens,                 after_add: :cache_update, after_remove: :cache_update, dependent: :destroy
@@ -849,7 +851,7 @@ try to find correct name
     end
 
     # "Firstname Lastname"
-    if string =~ /^(((Dr\.|Prof\.)[[:space:]]|).+?)[[:space:]](.+?)$/i
+    if string =~ %r{^(((Dr\.|Prof\.)[[:space:]]|).+?)[[:space:]](.+?)$}i
       if $1.present?
         firstname = $1.strip
       end
@@ -861,7 +863,7 @@ try to find correct name
 
     # -no name- "firstname.lastname@example.com"
     if string.blank? && email.present?
-      scan = email.scan(/^(.+?)\.(.+?)@.+?$/)
+      scan = email.scan(%r{^(.+?)\.(.+?)@.+?$})
       if scan[0].present?
         if scan[0][0].present?
           firstname = scan[0][0].strip
@@ -908,10 +910,10 @@ try to find correct name
     self.firstname = local_firstname if local_firstname.present?
     self.lastname = local_lastname if local_lastname.present?
 
-    if firstname.present? && firstname.match(/^[A-z]+$/) && (firstname.downcase == firstname || firstname.upcase == firstname)
+    if firstname.present? && firstname.match(%r{^[A-z]+$}) && (firstname.downcase == firstname || firstname.upcase == firstname)
       firstname.capitalize!
     end
-    if lastname.present? && lastname.match(/^[A-z]+$/) && (lastname.downcase == lastname || lastname.upcase == lastname)
+    if lastname.present? && lastname.match(%r{^[A-z]+$}) && (lastname.downcase == lastname || lastname.upcase == lastname)
       lastname.capitalize!
     end
     true
