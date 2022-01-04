@@ -17,6 +17,10 @@ class Edit extends App.ObserverController
     if !_.isEmpty(taskState)
       defaults = _.extend(defaults, taskState)
 
+    # CSI custom: get subitems to perform prefiltering
+    subItems = App.ServiceCatalogSubItem.select (item) -> item.parent_service == defaults.service_catalog_item_id
+    @formMeta.filter['service_catalog_sub_item_id'] = (item.id for item in subItems)
+
     if followUpPossible == 'new_ticket' && ticketState != 'closed' ||
        followUpPossible != 'new_ticket' ||
        @permissionCheck('admin') || @permissionCheck('ticket.agent')
@@ -30,6 +34,8 @@ class Edit extends App.ObserverController
         params:         defaults
         isDisabled:     !ticket.editable()
         taskKey:        @taskKey
+        events:
+          "change [name='service_catalog_item_id']": => @filter_service_catalog_sub_items()
         #bookmarkable:  true
       )
     else
@@ -55,6 +61,23 @@ class Edit extends App.ObserverController
       @render(ticket)
     )
 
+  # CSI custom: filter service_catalog_sub_items based on service_catalog_item
+  filter_service_catalog_sub_items: ->
+    catalog_item = $("[name='service_catalog_item_id']")
+    catalog_sub_item = $("[name='service_catalog_sub_item_id']")
+
+    selected_item = catalog_item.val()
+    if !selected_item
+      return
+    selected_item = Number(selected_item)
+
+    catalog_sub_item.empty()
+    subItems = (item for item in App.ServiceCatalogSubItem.all() when item.parent_service == selected_item)
+    subItems.forEach (option) ->
+      o = new Option(option['name'], option['id'])
+      $(o).html(option['name'])
+      catalog_sub_item.append(o)
+    
 class SidebarTicket extends App.Controller
   constructor: ->
     super

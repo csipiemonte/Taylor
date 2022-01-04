@@ -24,6 +24,10 @@ module ExtraCollection
     Ticket::Article::Sender.all.each do |item|
       assets = item.assets(assets)
     end
+    collections[ ServiceCatalogSubItem.to_app_model ] = []
+    ServiceCatalogSubItem.all.each do |item|
+      assets = item.assets(assets)
+    end
     if user.permissions?(['ticket.agent', 'admin.channel_email'])
 
       collections[ Macro.to_app_model ] = []
