@@ -190,6 +190,7 @@ do(window) ->
     showTimeEveryXMinutes: 2
     lastTimestamp: null
     lastAddedType: null
+    inputDisabled: false
     inputTimeout: null
     isTyping: false
     state: 'offline'
@@ -761,7 +762,11 @@ do(window) ->
       console.log('p', docType, text)
       if docType is 'html'
         html = document.createElement('div')
-        html.innerHTML = text
+        # can't log because might contain malicious content
+        # @log.debug 'HTML clipboard', text
+        sanitized = DOMPurify.sanitize(text)
+        @log.debug 'sanitized HTML clipboard', sanitized
+        html.innerHTML = sanitized
         match = false
         htmlTmp = text
         regex = new RegExp('<(/w|w)\:[A-Za-z]')
@@ -819,7 +824,7 @@ do(window) ->
 
     onKeydown: (e) =>
       # check for enter
-      if not e.shiftKey and e.keyCode is 13
+      if not @inputDisabled and not e.shiftKey and e.keyCode is 13
         e.preventDefault()
         @sendMessage()
 
@@ -1142,11 +1147,14 @@ do(window) ->
       @el.classList.add('zammad-chat-is-shown')
 
     disableInput: ->
-      @input.disabled = true
+      @inputDisabled = true
+      @input.setAttribute('contenteditable', false)
       @el.querySelector('.zammad-chat-send').disabled = true
+      @io.close()
 
     enableInput: ->
-      @input.disabled = false
+      @inputDisabled = false
+      @input.setAttribute('contenteditable', true)
       @el.querySelector('.zammad-chat-send').disabled = false
 
     hideModal: ->
@@ -1268,6 +1276,12 @@ do(window) ->
       if params.remove && @el
         @el.remove()
 
+        # Remove button, because it can no longer be used.
+        btn = document.querySelector(".#{ @options.buttonClass }")
+        if btn
+          btn.classList.add @options.inactiveClass
+          btn.style.display = 'none';
+
       # stop all timer
       if @waitingListTimeout
         @waitingListTimeout.stop()
@@ -1377,7 +1391,7 @@ do(window) ->
         url = @options.host
           .replace(/^wss/i, 'https')
           .replace(/^ws/i, 'http')
-          .replace(/\/ws/i, '')
+          .replace(/\/ws$/i, '') # WebSocket may run on example.com/ws path
         url += '/assets/chat/chat.css'
 
       @log.debug "load css from '#{url}'"

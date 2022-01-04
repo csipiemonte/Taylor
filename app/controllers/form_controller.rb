@@ -89,46 +89,49 @@ class FormController < ApplicationController
       )
     end
 
+    ticket = nil
+
     # set current user
     UserInfo.current_user_id = customer.id
-
-    group = Group.find_by(id: Setting.get('form_ticket_create_group_id'))
-    if !group
-      group = Group.where(active: true).first
+    ApplicationHandleInfo.in_context('form') do # rubocop:disable Metrics/BlockLength
+      group = Group.find_by(id: Setting.get('form_ticket_create_group_id'))
       if !group
-        group = Group.first
+        group = Group.where(active: true).first
+        if !group
+          group = Group.first
+        end
       end
-    end
-    ticket = Ticket.create!(
-      group_id:    group.id,
-      customer_id: customer.id,
-      title:       params[:title],
-      preferences: {
-        form: {
-          remote_ip:       request.remote_ip,
-          fingerprint_md5: Digest::MD5.hexdigest(params[:fingerprint]),
-        }
-      }
-    )
-    article = Ticket::Article.create!(
-      ticket_id: ticket.id,
-      type_id:   Ticket::Article::Type.find_by(name: 'web').id,
-      sender_id: Ticket::Article::Sender.find_by(name: 'Customer').id,
-      body:      params[:body],
-      subject:   params[:title],
-      internal:  false,
-    )
-
-    params[:file]&.each do |file|
-      Store.add(
-        object:      'Ticket::Article',
-        o_id:        article.id,
-        data:        file.read,
-        filename:    file.original_filename,
+      ticket = Ticket.create!(
+        group_id:    group.id,
+        customer_id: customer.id,
+        title:       params[:title],
         preferences: {
-          'Mime-Type' => file.content_type,
+          form: {
+            remote_ip:       request.remote_ip,
+            fingerprint_md5: Digest::MD5.hexdigest(params[:fingerprint]),
+          }
         }
       )
+      article = Ticket::Article.create!(
+        ticket_id: ticket.id,
+        type_id:   Ticket::Article::Type.find_by(name: 'web').id,
+        sender_id: Ticket::Article::Sender.find_by(name: 'Customer').id,
+        body:      params[:body],
+        subject:   params[:title],
+        internal:  false,
+      )
+
+      params[:file]&.each do |file|
+        Store.add(
+          object:      'Ticket::Article',
+          o_id:        article.id,
+          data:        file.read,
+          filename:    file.original_filename,
+          preferences: {
+            'Mime-Type' => file.content_type,
+          }
+        )
+      end
     end
 
     UserInfo.current_user_id = 1
@@ -153,7 +156,7 @@ class FormController < ApplicationController
   end
 
   def token_gen(fingerprint)
-    crypt = ActiveSupport::MessageEncryptor.new(Setting.get('application_secret')[0, 32])
+    crypt = ActiveSupport::MessageEncryptor.new(Setting.get('application_secret')[0, 32], serializer: JSON)
     fingerprint = "#{Base64.strict_encode64(Setting.get('fqdn'))}:#{Time.zone.now.to_i}:#{Base64.strict_encode64(fingerprint)}"
     Base64.strict_encode64(crypt.encrypt_and_sign(fingerprint))
   end
@@ -164,7 +167,7 @@ class FormController < ApplicationController
       raise Exceptions::Forbidden
     end
     begin
-      crypt = ActiveSupport::MessageEncryptor.new(Setting.get('application_secret')[0, 32])
+      crypt = ActiveSupport::MessageEncryptor.new(Setting.get('application_secret')[0, 32], serializer: JSON)
       result = crypt.decrypt_and_verify(Base64.decode64(token))
     rescue
       Rails.logger.info 'Invalid token for form!'

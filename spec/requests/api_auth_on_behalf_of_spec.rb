@@ -209,5 +209,63 @@ RSpec.describe 'Api Auth On Behalf Of', type: :request do
         expect(customer.id).to eq(json_response['created_by_id'])
       end
     end
+
+    context 'when customer account has device user permission' do
+      let(:customer_user_devices_role) do
+        create(:role).tap { |role| role.permission_grant('user_preferences.device') }
+      end
+
+      let(:customer) do
+        create(:customer, firstname: 'Behalf of', role_ids: Role.signup_role_ids.push(customer_user_devices_role.id))
+      end
+
+      it 'creates Ticket because of behalf of customer user, which should not trigger a new user device' do
+        params = {
+          title:       'a new ticket #3',
+          group:       'Users',
+          priority:    '2 normal',
+          state:       'new',
+          customer_id: customer.id,
+          article:     {
+            body: 'some test 123',
+          },
+        }
+        authenticated_as(admin, on_behalf_of: customer.email)
+        post '/api/v1/tickets', params: params, as: :json
+        expect(response).to have_http_status(:created)
+        expect(customer.id).to eq(json_response['created_by_id'])
+
+        expect { Scheduler.worker(true) }.to change(UserDevice, :count).by(0)
+      end
+    end
+  end
+
+  describe 'user lookup' do
+    it 'does X-On-Behalf-Of auth - user lookup by ID' do
+      authenticated_as(admin, on_behalf_of: customer.id)
+      get '/api/v1/users/me', as: :json
+      expect(json_response.fetch('id')).to be customer.id
+    end
+
+    it 'does X-On-Behalf-Of auth - user lookup by login' do
+      authenticated_as(admin, on_behalf_of: customer.login)
+      get '/api/v1/users/me', as: :json
+      expect(json_response.fetch('id')).to be customer.id
+    end
+
+    it 'does X-On-Behalf-Of auth - user lookup by email' do
+      authenticated_as(admin, on_behalf_of: customer.email)
+      get '/api/v1/users/me', as: :json
+      expect(json_response.fetch('id')).to be customer.id
+    end
+
+    # https://github.com/zammad/zammad/issues/2851
+    it 'does X-On-Behalf-Of auth - user lookup by email even if email starts with a digit' do
+      customer.update! email: "#{agent.id}#{customer.email}"
+
+      authenticated_as(admin, on_behalf_of: customer.email)
+      get '/api/v1/users/me', as: :json
+      expect(json_response.fetch('id')).to be customer.id
+    end
   end
 end

@@ -1444,9 +1444,9 @@ td .icon-trash {
 
   input[type="checkbox"],
   input[type="radio"] {
-    pointer-events: none;
     position: absolute;
     opacity: 0;
+    cursor: pointer;
 
     &:disabled ~ .icon {
       opacity: 0.33;
@@ -2446,6 +2446,7 @@ input.has-error {
     .navigation.is-hovered ~ &,
     .navigation:active ~ & {
       transform: translateX(#{$mobileNavigationWidthOpen - $mobileNavigationWidth});
+      @include rtl(transform, translateX(-#{$mobileNavigationWidthOpen - $mobileNavigationWidth}));
     }
   }
 }
@@ -2633,6 +2634,7 @@ input.has-error {
 
   &-container {
     display: flex;
+    flex-wrap: wrap;
     justify-content: flex-end;
     border: 1px solid hsl(213,14%,91%);
 
@@ -4976,6 +4978,11 @@ footer {
     }
   }
 
+  &--vacation {
+    filter: grayscale(70%);
+    opacity: 1;
+  }
+
   &--idle {
     filter: grayscale(100%);
     opacity: 0.5;
@@ -4984,11 +4991,6 @@ footer {
   &--inactive {
     filter: grayscale(100%);
     opacity: 0.2;
-  }
-
-  &--vacation {
-    filter: grayscale(70%);
-    opacity: 1;
   }
 
   &--unique {
@@ -5551,15 +5553,21 @@ footer {
   padding: 2px 0 0 50px;
   position: relative;
   min-height: 40px;
-  max-width: 192px;
+  padding-right: 48px;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  min-width: 192px;
 
   .avatar {
     position: absolute;
     left: 0;
     top: 0;
+  }
+
+  .btn.js-newTicket {
+    position: absolute;
+    right: 0;
   }
 }
 

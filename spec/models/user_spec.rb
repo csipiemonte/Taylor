@@ -262,6 +262,84 @@ RSpec.describe User, type: :model do
           end
         end
       end
+
+      context 'date range is inclusive' do
+        before do
+          freeze_time
+
+          agent.update(
+            out_of_office:                true,
+            out_of_office_start_at:       1.day.from_now.to_date,
+            out_of_office_end_at:         1.week.from_now.to_date,
+            out_of_office_replacement_id: 1
+          )
+        end
+
+        it 'today in office' do
+          expect(agent).not_to be_out_of_office
+        end
+
+        it 'tomorrow not in office' do
+          travel 1.day
+          expect(agent).to be_out_of_office
+        end
+
+        it 'after 7 days not in office' do
+          travel 7.days
+          expect(agent).to be_out_of_office
+        end
+
+        it 'after 8 days in office' do
+          travel 8.days
+          expect(agent).not_to be_out_of_office
+        end
+      end
+
+      # https://github.com/zammad/zammad/issues/3590
+      context 'when setting the same date' do
+        before do
+          freeze_time
+
+          target_date = 1.day.from_now.to_date
+          agent.update(
+            out_of_office:                true,
+            out_of_office_start_at:       target_date,
+            out_of_office_end_at:         target_date,
+            out_of_office_replacement_id: 1
+          )
+        end
+
+        it 'agent is out of office tomorrow' do
+          travel 1.day
+          expect(agent).to be_out_of_office
+        end
+
+        it 'agent is not out of office the day after tomorrow' do
+          travel 2.days
+          expect(agent).not_to be_out_of_office
+        end
+
+        it 'agent is not out of office today' do
+          expect(agent).not_to be_out_of_office
+        end
+
+        context 'given it respects system time zone' do
+          before do
+            travel_to Time.current.end_of_day
+          end
+
+          it 'agent is in office if in UTC' do
+            expect(agent).not_to be_out_of_office
+          end
+
+          it 'agent is out of office if ahead of UTC' do
+            travel_to Time.current.end_of_day
+            Setting.set('timezone_default', 'Europe/Vilnius')
+
+            expect(agent).to be_out_of_office
+          end
+        end
+      end
     end
 
     describe '#out_of_office_agent' do
@@ -573,6 +651,38 @@ RSpec.describe User, type: :model do
         end
       end
     end
+
+    describe '#check_login' do
+      let(:agent) { create(:agent) }
+
+      it 'does use the origin login' do
+        new_agent = create(:agent)
+        expect(new_agent.login).not_to end_with('1')
+      end
+
+      it 'does number up agent logins (1)' do
+        new_agent = create(:agent, login: agent.login)
+        expect(new_agent.login).to eq("#{agent.login}1")
+      end
+
+      it 'does number up agent logins (5)' do
+        new_agent = create(:agent, login: agent.login)
+        4.times do
+          new_agent = create(:agent, login: agent.login)
+        end
+
+        expect(new_agent.login).to eq("#{agent.login}5")
+      end
+
+      it 'does backup with uuid in cases of many duplicates' do
+        new_agent = create(:agent, login: agent.login)
+        20.times do
+          new_agent = create(:agent, login: agent.login)
+        end
+
+        expect(new_agent.login.sub!(agent.login, '')).to be_a_uuid
+      end
+    end
   end
 
   describe 'Attributes:' do
@@ -835,12 +945,18 @@ RSpec.describe User, type: :model do
         let(:value) { 'Th1515n0t4v4l1dh45h' }
         let(:escaped) { Regexp.escape(value) }
 
-        it 'prevents create' do
-          expect { create(:user, image_source: value) }.to raise_error(ActiveRecord::RecordInvalid, %r{Image source})
+        it 'valid create' do
+          expect(create(:user, image_source: 'https://zammad.org/avatar.png').image_source).not_to eq(nil)
         end
 
-        it 'prevents update' do
-          expect { create(:user).update!(image_source: value) }.to raise_error(ActiveRecord::RecordInvalid, %r{Image source})
+        it 'removes invalid image source of create' do
+          expect(create(:user, image_source: value).image_source).to eq(nil)
+        end
+
+        it 'removes invalid image source of update' do
+          user = create(:user)
+          user.update!(image_source: value)
+          expect(user.image_source).to eq(nil)
         end
       end
     end
@@ -877,9 +993,9 @@ RSpec.describe User, type: :model do
                      'Taskbar'                            => { 'user_id' => 1 },
                      'Sla'                                => { 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'UserDevice'                         => { 'user_id' => 1 },
-                     'Chat::Message'                      => { 'created_by_id' => 0 },
+                     'Chat::Message'                      => { 'created_by_id' => 1 },
                      'Chat::Agent'                        => { 'created_by_id' => 1, 'updated_by_id' => 1 },
-                     'Chat::Session'                      => { 'user_id' => 0, 'created_by_id' => 0, 'updated_by_id' => 0 },
+                     'Chat::Session'                      => { 'user_id' => 1, 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'Tag'                                => { 'created_by_id' => 0 },
                      'Karma::User'                        => { 'user_id' => 0 },
                      'Karma::ActivityLog'                 => { 'user_id' => 1 },
@@ -928,6 +1044,9 @@ RSpec.describe User, type: :model do
       mention             = create(:mention, mentionable: create(:ticket), user: user)
       mention_created_by  = create(:mention, mentionable: create(:ticket), user: create(:agent), created_by: user)
       user_created_by     = create(:customer, created_by_id: user.id, updated_by_id: user.id, out_of_office_replacement_id: user.id)
+      chat_session        = create(:'chat/session', user: user)
+      chat_message        = create(:'chat/message', chat_session: chat_session)
+      chat_message2       = create(:'chat/message', chat_session: chat_session, created_by: user)
       expect(overview.reload.user_ids).to eq([user.id])
 
       # create a chat agent for admin user (id=1) before agent user
@@ -968,6 +1087,9 @@ RSpec.describe User, type: :model do
       expect { mention.reload }.to raise_exception(ActiveRecord::RecordNotFound)
       expect(mention_created_by.reload.created_by_id).not_to eq(user.id)
       expect(overview.reload.user_ids).to eq([])
+      expect { chat_session.reload }.to raise_exception(ActiveRecord::RecordNotFound)
+      expect { chat_message.reload }.to raise_exception(ActiveRecord::RecordNotFound)
+      expect { chat_message2.reload }.to raise_exception(ActiveRecord::RecordNotFound)
 
       # move ownership objects
       expect { group.reload }.to change(group, :created_by_id).to(1)

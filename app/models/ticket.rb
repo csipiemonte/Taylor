@@ -92,8 +92,6 @@ class Ticket < ApplicationModel
 
   association_attributes_ignored :flags, :mentions
 
-  self.inheritance_column = nil
-
   attr_accessor :callback_loop
 
 =begin
@@ -332,7 +330,7 @@ returns
     raise Exceptions::UnprocessableEntity, 'Can\'t merge ticket with it self!' if id == target_ticket.id
 
     # update articles
-    Transaction.execute do
+    Transaction.execute context: 'merge' do
 
       Ticket::Article.where(ticket_id: id).each(&:touch)
 
@@ -1236,6 +1234,7 @@ perform changes on ticket
       type:          Ticket::Article::Type.find_by(name: 'note'),
       preferences:   {
         perform_origin: perform_origin,
+        notification:   true,
       },
       updated_by_id: 1,
       created_by_id: 1,
@@ -1404,9 +1403,7 @@ perform active triggers on ticket
           user_id = article.updated_by_id
         end
 
-        user = if user_id != 1
-                 User.lookup(id: user_id)
-               end
+        user = User.lookup(id: user_id)
 
         # l'oggetto 'condition' e' un HASH
         if condition.key?('external_activity.system')

@@ -188,6 +188,7 @@ do($ = window.jQuery, window) ->
     showTimeEveryXMinutes: 2
     lastTimestamp: null
     lastAddedType: null
+    inputDisabled: false
     inputTimeout: null
     isTyping: false
     state: 'offline'
@@ -717,7 +718,9 @@ do($ = window.jQuery, window) ->
           text = text.replace(/<div><\/div>/g, '<div><br></div>')
         console.log('p', docType, text)
         if docType is 'html'
-          html = $("<div>#{text}</div>")
+          sanitized = DOMPurify.sanitize(text)
+          @log.debug 'sanitized HTML clipboard', sanitized
+          html = $("<div>#{sanitized}</div>")
           match = false
           htmlTmp = text
           regex = new RegExp('<(/w|w)\:[A-Za-z]')
@@ -852,7 +855,7 @@ do($ = window.jQuery, window) ->
       event.stopPropagation()
 
     checkForEnter: (event) =>
-      if not event.shiftKey and event.keyCode is 13
+      if not @inputDisabled and not event.shiftKey and event.keyCode is 13
         event.preventDefault()
         @sendMessage()
 
@@ -1165,11 +1168,14 @@ do($ = window.jQuery, window) ->
       @el.addClass('zammad-chat-is-shown')
 
     disableInput: ->
-      @input.prop('disabled', true)
+      @inputDisabled = true
+      @input.prop('contenteditable', false)
       @el.find('.zammad-chat-send').prop('disabled', true)
+      @io.close()
 
     enableInput: ->
-      @input.prop('disabled', false)
+      @inputDisabled = false
+      @input.prop('contenteditable', true)
       @el.find('.zammad-chat-send').prop('disabled', false)
 
     hideModal: ->
@@ -1289,6 +1295,9 @@ do($ = window.jQuery, window) ->
 
       if params.remove && @el
         @el.remove()
+        # Remove button, because it can no longer be used.
+        $(".#{ @options.buttonClass }").hide()
+
 
       # stop all timer
       if @waitingListTimeout
@@ -1405,7 +1414,7 @@ do($ = window.jQuery, window) ->
         url = @options.host
           .replace(/^wss/i, 'https')
           .replace(/^ws/i, 'http')
-          .replace(/\/ws/i, '')
+          .replace(/\/ws$/i, '') # WebSocket may run on example.com/ws path
         url += '/assets/chat/chat.css'
 
       @log.debug "load css from '#{url}'"

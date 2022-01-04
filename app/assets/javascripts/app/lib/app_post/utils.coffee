@@ -795,8 +795,8 @@ class App.Utils
     try content = $('<div/>').html(message)
     catch e then content = $('<div/>').html('<div>' + message + '</div>')
 
-    # ignore mail structures of case Ticket#1085048
-    return message if content.find("div:first span:contains('CAUTION:')").css('color') == 'rgb(156, 101, 0)'
+    # Invalid html signature detection for exchange warning boxes #3571
+    return message if content.find("div:first:contains('CAUTION:')").length > 0
 
     content.contents().each (index, node) ->
       text = $(node).text()
@@ -1008,7 +1008,10 @@ class App.Utils
       valueTmp = value.toString().toLowerCase()
       byNames.push valueTmp
       byNamesWithValue[valueTmp] = [i, value]
-    byNames = byNames.sort()
+    
+    # sort() by default doesn't compare non-ascii characters such as ['é', 'a', 'ú', 'c']
+    # hence using localecompare in sorting for translated strings
+    byNames = byNames.sort((a, b) -> a.localeCompare(b))
 
     # do a reverse, if needed
     if order == 'DESC'
@@ -1253,7 +1256,7 @@ class App.Utils
 
       # sender is local
       if senderIsLocal
-        articleNew.to = article.to
+        articleNew.to = article.reply_to || article.to
 
       # sender is agent - sent via system
       else if article.sender.name is 'Agent' && article_created_by_email && article.from && article.from.toString().toLowerCase().match(article_created_by_email) && !recipientIsLocal
@@ -1344,7 +1347,9 @@ class App.Utils
     ctx = canvas.getContext('2d')
     ctx.drawImage(img, 0, 0, img.width, img.height)
     try
-      data = canvas.toDataURL('image/png')
+      # img alt attribute is used to get file type
+      # if not present, then it will default to image/png
+      data = canvas.toDataURL(App.Utils.getMimeTypeFromFilename(img.alt))
       params.success(img, data) if params.success
       return data
     catch e
@@ -1406,6 +1411,7 @@ class App.Utils
     imageCache.onerror = ->
       App.Log.notice('Utils', "Unable to load image from #{originalImage.src}")
       params.fail(originalImage) if params.fail
+    imageCache.alt = originalImage.alt
     imageCache.src = originalImage.src
 
   @baseUrl: ->
@@ -1470,3 +1476,13 @@ class App.Utils
   @safeParseHtml: (input) ->
     try $.parseHTML(input)
     catch e then $.parseHTML('<div>' + input + '</div>')[0].childNodes
+
+
+  # Gets file Mime Type from file name
+  # For e.g. oscar-menu.jpg returns image/jpeg
+  # For other file types it return image/png as default mimeType
+  @getMimeTypeFromFilename: (filename) ->
+    if filename?.match(/\.(jpe?g)$/i)
+      return 'image/jpeg'
+
+    return 'image/png'

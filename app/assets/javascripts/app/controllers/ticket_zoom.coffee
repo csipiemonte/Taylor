@@ -273,6 +273,10 @@ class App.TicketZoom extends App.Controller
     @positionPageHeaderStart()
     @autosaveStart()
     @shortcutNavigationStart()
+
+    if @articleNew
+      @articleNew.show()
+
     return if !@attributeBar
     @attributeBar.start()
 
@@ -442,14 +446,28 @@ class App.TicketZoom extends App.Controller
 
     @scrollHeaderPos = scroll
 
+  pendingTimeReminderReached: =>
+    App.TaskManager.touch(@taskKey)
+
+  setPendingTimeReminderDelay: =>
+    stateType = App.TicketStateType.find @ticket?.state?.state_type_id
+    return if stateType?.name != 'pending reminder'
+
+    delay = new Date(@ticket.pending_time) - new Date()
+
+    @delay @pendingTimeReminderReached, delay, 'pendingTimeReminderDelay'
+
   render: (local) =>
+    @setPendingTimeReminderDelay()
 
     # update taskbar with new meta data
     App.TaskManager.touch(@taskKey)
 
     if !@renderDone
-      @renderDone = true
-      @autosaveLast = {}
+      @renderDone      = true
+      @autosaveLast    = {}
+      @scrollHeaderPos = undefined
+
       elLocal = $(App.view('ticket_zoom')
         ticket:         @ticket
         nav:            @nav
@@ -1052,12 +1070,22 @@ class App.TicketZoom extends App.Controller
 
   taskUpdate: (area, data) =>
     @localTaskData[area] = data
-    App.TaskManager.update(@taskKey, { 'state': @localTaskData })
+
+    taskData = { 'state': @localTaskData }
+    if _.isArray(data.attachments)
+      taskData.attachments = data.attachments
+
+    App.TaskManager.update(@taskKey, taskData)
 
   taskUpdateAll: (data) =>
     @localTaskData = data
     @localTaskData.article['form_id'] = @form_id
-    App.TaskManager.update(@taskKey, { 'state': @localTaskData })
+
+    taskData = { 'state': @localTaskData }
+    if _.isArray(data.attachments)
+      taskData.attachments = data.attachments
+
+    App.TaskManager.update(@taskKey, taskData)
 
   # reset task state
   taskReset: =>

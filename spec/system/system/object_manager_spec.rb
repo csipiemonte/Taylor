@@ -65,4 +65,177 @@ RSpec.describe 'Admin Panel > Objects', type: :system, authenticated_as: true do
 
     expect(ObjectManager::Attribute.last.data_option).to eq(expected_data_options)
   end
+
+  it 'checks smart defaults for select field' do
+    page.find('.js-new').click
+
+    fill_in 'Name', with: 'select1'
+    find('input[name=display]').set('select1')
+
+    page.find('select[name=data_type]').select('Select')
+
+    page.first('div.js-add').click
+    page.first('div.js-add').click
+    page.first('div.js-add').click
+
+    counter = 0
+    page.all('.js-key').each do |field|
+      field.set(counter)
+      counter += 1
+    end
+
+    page.all('.js-value')[-2].set('special 2')
+    page.find('.js-submit').click
+    await_empty_ajax_queue
+
+    expected_data_options = {
+      '0' => '0',
+      '1' => '1',
+      '2' => 'special 2',
+    }
+
+    expect(ObjectManager::Attribute.last.data_option['options']).to eq(expected_data_options)
+  end
+
+  it 'checks smart defaults for boolean field' do
+    page.find('.js-new').click
+
+    fill_in 'Name', with: 'bool1'
+    find('input[name=display]').set('bool1')
+
+    page.find('select[name=data_type]').select('Boolean')
+    page.find('.js-valueFalse').set('HELL NOO')
+    page.find('.js-submit').click
+    await_empty_ajax_queue
+
+    expected_data_options = {
+      true  => 'yes',
+      false => 'HELL NOO',
+    }
+
+    expect(ObjectManager::Attribute.last.data_option['options']).to eq(expected_data_options)
+  end
+
+  it 'checks default boolean value visibility' do
+    page.find('.js-new').click
+
+    fill_in 'Name', with: 'bool1'
+    find('input[name=display]').set('Bool 1')
+
+    page.find('select[name=data_type]').select('Boolean')
+    choose('data_option::default', option: 'true')
+    page.find('.js-submit').click
+
+    td = page.find(:css, 'td', text: 'bool1')
+    tr = td.find(:xpath, './parent::tr')
+
+    tr.click
+
+    expect(page).to have_checked_field('data_option::default', with: 'true')
+  end
+
+  # https://github.com/zammad/zammad/issues/3647
+  context 'when setting Min/Max values for integer' do
+    before do
+      page.find('.js-new').click
+
+      in_modal disappears: false do
+        fill_in 'Name', with: 'integer1'
+        fill_in 'Display', with: 'Integer1'
+        page.find('select[name=data_type]').select('Integer')
+      end
+    end
+
+    it 'verifies max value does not go above limit' do
+      in_modal disappears: false do
+        fill_in 'Maximal', with: '999999999999'
+
+        page.find('.js-submit').click
+
+        expect(page).to have_text 'Data option max must be lower than 2147483648'
+      end
+    end
+
+    it 'verifies max value does not go below limit' do
+      in_modal disappears: false do
+        fill_in 'Maximal', with: '-999999999999'
+
+        page.find('.js-submit').click
+
+        expect(page).to have_text 'Data option max must be higher than -2147483648'
+      end
+    end
+
+    it 'verifies max value can be set' do
+      in_modal do
+        fill_in 'Maximal', with: '128'
+
+        page.find('.js-submit').click
+      end
+
+      expect(page).to have_text 'Integer1'
+    end
+
+    it 'verifies max value can be set to a negative value' do
+      in_modal do
+        fill_in 'Minimal', with: '-256'
+        fill_in 'Maximal', with: '-128'
+
+        page.find('.js-submit').click
+      end
+
+      expect(page).to have_text 'Integer1'
+    end
+
+    it 'verifies min value does not go above limit' do
+      in_modal disappears: false do
+        fill_in 'Minimal', with: '999999999999'
+
+        page.find('.js-submit').click
+
+        expect(page).to have_text 'Data option min must be lower than 2147483648'
+      end
+    end
+
+    it 'verifies min value does not go below limit' do
+      in_modal disappears: false do
+        fill_in 'Minimal', with: '-999999999999'
+
+        page.find('.js-submit').click
+
+        expect(page).to have_text 'Data option min must be higher than -2147483648'
+      end
+    end
+
+    it 'verifies min value can be set' do
+      in_modal do
+        fill_in 'Minimal', with: '128'
+
+        page.find('.js-submit').click
+      end
+
+      expect(page).to have_text 'Integer1'
+    end
+
+    it 'verifies min value can be set to a negative value' do
+      in_modal do
+        fill_in 'Minimal', with: '-128'
+
+        page.find('.js-submit').click
+      end
+
+      expect(page).to have_text 'Integer1'
+    end
+
+    it 'verifies min value must be lower than max' do
+      in_modal disappears: false do
+        fill_in 'Minimal', with: '128'
+        fill_in 'Maximal', with: '-128'
+
+        page.find('.js-submit').click
+
+        expect(page).to have_text 'Data option min must be lower than max'
+      end
+    end
+  end
 end

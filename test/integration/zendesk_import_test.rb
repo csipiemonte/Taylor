@@ -39,13 +39,13 @@ class ZendeskImportTest < ActiveSupport::TestCase
       },
       Users:         {
         skipped:     0,
-        created:     141,
+        created:     142,
         updated:     1,
         unchanged:   0,
         failed:      0,
         deactivated: 0,
-        sum:         142,
-        total:       142
+        sum:         143,
+        total:       143
       },
       Organizations: {
         skipped:     0,
@@ -74,12 +74,12 @@ class ZendeskImportTest < ActiveSupport::TestCase
 
   # check count of imported items
   test 'check counts' do
-    assert_equal(144, User.count, 'users')
+    assert_equal(145, User.count, 'users')
     assert_equal(3, Group.count, 'groups')
     assert_equal(3, Role.count, 'roles')
     assert_equal(2, Organization.count, 'organizations')
     assert_equal(143, Ticket.count, 'tickets')
-    assert_equal(153, Ticket::Article.count, 'ticket articles')
+    assert_equal(152, Ticket::Article.count, 'ticket articles')
     assert_equal(3, Store.count, 'ticket article attachments')
 
     # TODO: Macros, Views, Automations...
@@ -97,7 +97,7 @@ class ZendeskImportTest < ActiveSupport::TestCase
 
     checks = [
       {
-        id:     144,
+        id:     145,
         data:   {
           firstname:     'Bob Smith',
           lastname:      'Smith',
@@ -327,6 +327,7 @@ class ZendeskImportTest < ActiveSupport::TestCase
       {
         id:   2,
         data: {
+          number:                   '2',
           title:                    'test',
           note:                     nil,
           create_article_type_id:   1,
@@ -348,6 +349,7 @@ class ZendeskImportTest < ActiveSupport::TestCase
       {
         id:   3,
         data: {
+          number:                   '3',
           title:                    'Bob Smith, here is the test ticket you requested',
           note:                     nil,
           create_article_type_id:   10,
@@ -369,6 +371,7 @@ class ZendeskImportTest < ActiveSupport::TestCase
       {
         id:   5,
         data: {
+          number:                   '5',
           title:                    'Twitter',
           note:                     nil,
           create_article_type_id:   6,
@@ -385,6 +388,7 @@ class ZendeskImportTest < ActiveSupport::TestCase
       {
         id:   143,
         data: {
+          number:                   '143',
           title:                    'Basti ist cool',
           note:                     nil,
           create_article_type_id:   8,
@@ -401,11 +405,12 @@ class ZendeskImportTest < ActiveSupport::TestCase
       {
         id:   145,
         data: {
+          number:                   '145',
           title:                    'closed ticket - should be archived and imported',
           note:                     nil,
           create_article_type_id:   11,
           create_article_sender_id: 1,
-          article_count:            2,
+          article_count:            1,
           state_id:                 Ticket::State.find_by(name: 'closed').id,
           group_id:                 Group.find_by(name: 'Additional Group').id,
           priority_id:              Ticket::Priority.find_by(name: '2 normal').id,

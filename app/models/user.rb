@@ -200,7 +200,12 @@ returns
     return false if out_of_office_start_at.blank?
     return false if out_of_office_end_at.blank?
 
-    Time.zone.today.between?(out_of_office_start_at, out_of_office_end_at)
+    Time.use_zone(Setting.get('timezone_default').presence) do
+      start  = out_of_office_start_at.beginning_of_day
+      finish = out_of_office_end_at.end_of_day
+
+      Time.zone.now.between? start, finish
+    end
   end
 
 =begin
@@ -952,17 +957,16 @@ try to find correct name
     end
 
     # check if login already exists
-    self.login = login.downcase.strip
-    check      = true
-    while check
+    base_login = login.downcase.strip
+
+    alternatives = [nil] + Array(1..20) + [ SecureRandom.uuid ]
+    alternatives.each do |suffix|
+      self.login = "#{base_login}#{suffix}"
       exists = User.find_by(login: login)
-      if exists && exists.id != id
-        self.login = "#{login}#{rand(999)}"
-      else
-        check = false
-      end
+      return true if !exists || exists.id == id
     end
-    true
+
+    raise Exceptions::UnprocessableEntity, "Invalid user login generation for login #{login}!"
   end
 
   def check_mail_delivery_failed

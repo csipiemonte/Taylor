@@ -7,6 +7,7 @@ Setting.create_if_not_exists(
   state:       SecureRandom.hex(128),
   preferences: {
     permission: ['admin'],
+    protected:  true,
   },
   frontend:    false
 )
@@ -1313,7 +1314,7 @@ Setting.create_if_not_exists(
     controller:       'SettingsAreaSwitch',
     sub:              ['auth_google_oauth2_credentials'],
     title_i18n:       ['Google'],
-    description_i18n: ['Google', 'Google API Console Site', 'https://console.developers.google.com/apis/credentials'],
+    description_i18n: ['Google', 'Google API Console Site', 'https://console.cloud.google.com/apis/credentials'],
     permission:       ['admin.security'],
   },
   state:       false,
@@ -1548,7 +1549,7 @@ Setting.create_if_not_exists(
     controller:       'SettingsAreaSwitch',
     sub:              ['auth_microsoft_office365_credentials'],
     title_i18n:       ['Office 365'],
-    description_i18n: ['Office 365', 'Microsoft Application Registration Portal', 'https://apps.dev.microsoft.com'],
+    description_i18n: ['Office 365', 'Microsoft Application Registration Portal', 'https://portal.azure.com'],
     permission:       ['admin.security'],
   },
   state:       false,
@@ -2439,7 +2440,7 @@ Setting.create_if_not_exists(
   },
   state:       '110',
   preferences: {
-    permission: ['admin.channel_email'],
+    permission: ['admin.channel_email', 'admin.channel_google', 'admin.channel_microsoft365'],
   },
   frontend:    false
 )
@@ -2460,7 +2461,7 @@ Setting.create_if_not_exists(
   },
   state:       'RE',
   preferences: {
-    permission: ['admin.channel_email'],
+    permission: ['admin.channel_email', 'admin.channel_google', 'admin.channel_microsoft365'],
   },
   frontend:    false
 )
@@ -2482,7 +2483,7 @@ Setting.create_if_not_exists(
   },
   state:       'FWD',
   preferences: {
-    permission: ['admin.channel_email'],
+    permission: ['admin.channel_email', 'admin.channel_google', 'admin.channel_microsoft365'],
   },
   frontend:    false
 )
@@ -2509,7 +2510,7 @@ Setting.create_if_not_exists(
   },
   state:       'AgentNameSystemAddressName',
   preferences: {
-    permission: ['admin.channel_email'],
+    permission: ['admin.channel_email', 'admin.channel_google', 'admin.channel_microsoft365'],
   },
   frontend:    false
 )
@@ -2531,7 +2532,7 @@ Setting.create_if_not_exists(
   },
   state:       'via',
   preferences: {
-    permission: ['admin.channel_email'],
+    permission: ['admin.channel_email', 'admin.channel_google', 'admin.channel_microsoft365'],
   },
   frontend:    false
 )
@@ -2581,7 +2582,7 @@ Setting.create_if_not_exists(
   state:       10,
   preferences: {
     online_service_disable: true,
-    permission:             ['admin.channel_email'],
+    permission:             ['admin.channel_email', 'admin.channel_google', 'admin.channel_microsoft365'],
   },
   frontend:    false
 )
@@ -2608,7 +2609,7 @@ Setting.create_if_not_exists(
   },
   state:       [],
   preferences: {
-    permission: ['admin.channel_email'],
+    permission: ['admin.channel_email', 'admin.channel_google', 'admin.channel_microsoft365'],
   },
   frontend:    false
 )
@@ -2635,7 +2636,7 @@ Setting.create_if_not_exists(
   },
   state:       [],
   preferences: {
-    permission: ['admin.channel_email'],
+    permission: ['admin.channel_email', 'admin.channel_google', 'admin.channel_microsoft365'],
   },
   frontend:    false
 )
@@ -2661,7 +2662,7 @@ Setting.create_if_not_exists(
   },
   state:       true,
   preferences: {
-    permission: ['admin.channel_email'],
+    permission: ['admin.channel_email', 'admin.channel_google', 'admin.channel_microsoft365'],
   },
   frontend:    false
 )
@@ -2688,7 +2689,7 @@ Setting.create_if_not_exists(
   state:       true,
   preferences: {
     online_service_disable: true,
-    permission:             ['admin.channel_email'],
+    permission:             ['admin.channel_email', 'admin.channel_google', 'admin.channel_microsoft365'],
   },
   frontend:    false
 )
@@ -2711,7 +2712,7 @@ Setting.create_if_not_exists(
   state:       'Notification Master <noreply@#{config.fqdn}>', # rubocop:disable Lint/InterpolationCheck
   preferences: {
     online_service_disable: true,
-    permission:             ['admin.channel_email'],
+    permission:             ['admin.channel_email', 'admin.channel_google', 'admin.channel_microsoft365'],
   },
   frontend:    false
 )
@@ -2734,7 +2735,7 @@ Setting.create_if_not_exists(
   state:       '(mailer-daemon|postmaster|abuse|root|noreply|noreply.+?|no-reply|no-reply.+?)@.+?',
   preferences: {
     online_service_disable: true,
-    permission:             ['admin.channel_email'],
+    permission:             ['admin.channel_email', 'admin.channel_google', 'admin.channel_microsoft365'],
   },
   frontend:    false
 )
@@ -3799,7 +3800,7 @@ Setting.create_if_not_exists(
       {
         display: '',
         null:    true,
-        name:    'checkmk_auto_close',
+        name:    'check_mk_auto_close',
         tag:     'boolean',
         options: {
           true  => 'yes',

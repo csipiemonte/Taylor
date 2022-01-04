@@ -1083,9 +1083,15 @@ test("identify signature by HTML", function() {
   result  = App.Utils.signatureIdentifyByHtml(message)
   equal(result, should)
 
-  // ignore mail structures of case Ticket#1085048
+  // Invalid html signature detection for exchange warning boxes #3571
   message = '<div><span style="color:#9c6500;">CAUTION:</span> This email originated from outside of the organization. Do not click links or open attachments unless you recognize the sender and know the content is safe.</div><br><div><p>actual content</p><div><p>actual content 2</p></div><p>&nbsp;</p><div><p>actual quote</p></div><div><blockquote><p>actual quote</p></blockquote></div><div><p>&nbsp;</p></div><p>&nbsp;</p></div></div>'
   should  = '<div><span style="color:#9c6500;">CAUTION:</span> This email originated from outside of the organization. Do not click links or open attachments unless you recognize the sender and know the content is safe.</div><br><div><p>actual content</p><div><p>actual content 2</p></div><p>&nbsp;</p><div><p>actual quote</p></div><div><blockquote><p>actual quote</p></blockquote></div><div><p>&nbsp;</p></div><p>&nbsp;</p></div></div>'
+  result  = App.Utils.signatureIdentifyByHtml(message)
+  equal(result, should)
+
+  // Invalid html signature detection for exchange warning boxes #3571
+  message = '<div>CAUTION: This email originated from outside of the organization. Do not click links or open attachments unless you recognize the sender and know the content is safe.</div><br><div><p>actual content</p><div><p>actual content 2</p></div><p>&nbsp;</p><div><p>actual quote</p></div><div><blockquote><p>actual quote</p></blockquote></div><div><p>&nbsp;</p></div><p>&nbsp;</p></div></div>'
+  should  = '<div>CAUTION: This email originated from outside of the organization. Do not click links or open attachments unless you recognize the sender and know the content is safe.</div><br><div><p>actual content</p><div><p>actual content 2</p></div><p>&nbsp;</p><div><p>actual quote</p></div><div><blockquote><p>actual quote</p></blockquote></div><div><p>&nbsp;</p></div><p>&nbsp;</p></div></div>'
   result  = App.Utils.signatureIdentifyByHtml(message)
   equal(result, should)
 
@@ -3142,6 +3148,52 @@ test('check getRecipientArticle format', function() {
   verify = App.Utils.getRecipientArticle(ticket, article, article.created_by, article.type)
   deepEqual(verify, result)
 
+  // https://github.com/zammad/zammad/issues/2551
+  // If "From:" is local address and "Reply-To:" is available, use it
+
+  var article_customer = {
+    login: 'login',
+    firstname: 'article',
+    lastname: 'lastname',
+    email: 'article_customer@example.com',
+  }
+  var ticket_customer = {
+    login: 'login2',
+    firstname: 'ticket',
+    lastname: 'lastname',
+    email: 'ticket_customer@example.com',
+  }
+  ticket = {
+    customer: ticket_customer,
+  }
+  article = {
+    type: {
+      name: 'email',
+    },
+    sender: {
+      name: 'Customer',
+    },
+    from: 'article lastname <article_customer@example.com>',
+    to: 'some group',
+    reply_to: 'asd@example.com',
+    message_id: 'message_id22',
+    created_by: {
+      login: 'login',
+      firstname: 'firstname',
+      lastname: 'lastname',
+      email: 'article_created_by@example.com',
+    },
+  }
+  email_addresses = [{ email: 'article_customer@example.com'}]
+  result = {
+    to:          'asd@example.com',
+    cc:          '',
+    body:        '',
+    in_reply_to: 'message_id22',
+  }
+  verify = App.Utils.getRecipientArticle(ticket, article, article.created_by, article.type, email_addresses)
+  deepEqual(verify, result)
+
 });
 
 test("contentTypeCleanup", function() {
@@ -3304,6 +3356,44 @@ var htmlImage2DataUrlTest2Fail = function() {
     ok(false, 'fail callback is exectuted!')
   });
 }
+
+// Gitlab Issue #3538
+// Jpeg images should convert to jpegs
+// This functionality uses alt attribute present in img tag to get file type
+// if alt attribute is missing then it will default to image/png
+var jpegImageSource = '<img src="/assets/images/8000x300.jpg" alt="test.jpeg">jpeg image'
+$('#jpegImage').html(jpegImageSource)
+var htmlImage2DataUrlTest3 = function() {
+  test("htmlImage2DataUrl3 async", function() {
+    var result = App.Utils.htmlImage2DataUrl(jpegImageSource)
+    ok(result.match(/jpeg image/), jpegImageSource)
+    ok(result.match(/^\<img src=\"data:image\/jpeg;base64,/), jpegImageSource)
+  });
+}
+$('#jpegImage img').one('load', htmlImage2DataUrlTest3)
+
+var pngImageSource = '<img src="/assets/images/1000x1000.png" alt="test.png">png image'
+$('#pngImage').html(pngImageSource)
+var htmlImage2DataUrlTest4 = function() {
+  test("htmlImage2DataUrl4 async", function() {
+    var result = App.Utils.htmlImage2DataUrl(pngImageSource)
+    ok(result.match(/png image/), pngImageSource)
+    ok(result.match(/^\<img src=\"data:image\/png;base64,/), pngImageSource)
+  });
+}
+$('#pngImage img').one('load', htmlImage2DataUrlTest4)
+
+var jpegImageSourceWithoutAlt = '<img src="/assets/images/8000x300.jpg">jpeg image'
+$('#jpegImage2').html(jpegImageSourceWithoutAlt)
+var htmlImage2DataUrlTest5 = function() {
+  test("htmlImage2DataUrl5 async", function() {
+    var result = App.Utils.htmlImage2DataUrl(jpegImageSourceWithoutAlt)
+    ok(result.match(/jpeg image/), jpegImageSourceWithoutAlt)
+    ok(result.match(/^\<img src=\"data:image\/png;base64,/), jpegImageSourceWithoutAlt)
+  });
+}
+$('#jpegImage2 img').one('load', htmlImage2DataUrlTest5)
+
 App.Utils.htmlImage2DataUrlAsyncInline($('#image2data2'), {success: htmlImage2DataUrlTest2Success, fail: htmlImage2DataUrlTest2Fail})
 
 }

@@ -7,6 +7,6 @@ api_client_ruby:
     - bundle exec rake zammad:ci:test:start
     - git clone https://github.com/zammad/zammad-api-client-ruby.git
     - cd zammad-api-client-ruby
+    - git checkout 51d82835ed7d936f79550af55c866d2c230ecd1b   # Version before test user name change.
     - bundle install -j $(nproc)
     - bundle exec rspec
-

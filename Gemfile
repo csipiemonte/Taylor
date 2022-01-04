@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 
 # core - base
-ruby '2.6.6'
+ruby '2.6.8'
 gem 'rails', '5.2.4.6'
 
 # core - rails additions
@@ -225,6 +225,10 @@ group :development, :test do
 
   # refresh ENVs in CI environment
   gem 'dotenv', require: false
+
+  # Can be used to detect for example the current
+  # operating system in tests, to handle things differently.
+  gem 'os'
 end
 
 # Want to extend Zammad with additional gems?
