@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class ApplicationJob
   module HasCustomLogging
     extend ActiveSupport::Concern
@@ -11,7 +13,7 @@ class ApplicationJob
     class LogSubscriber < ActiveJob::Logging::LogSubscriber
 
       # ATTENTION: Uncomment this line to enable info logging again
-      def info(*); end
+      def info(...); end
 
       def enqueue(event)
         super if job_enqueued?(event)

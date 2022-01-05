@@ -50,7 +50,7 @@ class Signup extends App.ControllerFullPage
     user.load(@params)
 
     errors = user.validate(
-      screen: 'signup'
+      controllerForm: @form
     )
 
     if errors
@@ -98,8 +98,6 @@ class Signup extends App.ControllerFullPage
           removeAll: true
         )
 
-        if data.token && @Config.get('developer_mode') is true
-          @navigate "#email_verify/#{data.token}"
       error: @error
     )
 

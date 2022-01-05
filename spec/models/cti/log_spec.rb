@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe Cti::Log do
@@ -121,12 +123,12 @@ RSpec.describe Cti::Log do
               'queue'        => '49123457',
               'from'         => '49123456',
               'from_comment' => nil,
-              'from_pretty'  => '49123456',
+              'from_pretty'  => '+49 491 23456',
               'start_at'     => nil,
               'end_at'       => nil,
               'to'           => '49123457',
               'to_comment'   => 'user 1',
-              'to_pretty'    => '49123457'
+              'to_pretty'    => '+49 491 23457'
             )
         end
 

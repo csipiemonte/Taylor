@@ -1,8 +1,11 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 FactoryBot.define do
   factory :object_manager_attribute, class: 'ObjectManager::Attribute' do
     transient do
       object_name { 'Ticket' }
       additional_data_options { nil }
+      default { nil }
     end
 
     object_lookup_id          { ObjectLookup.by_name(object_name) }
@@ -45,7 +48,7 @@ FactoryBot.define do
         'maxlength' => 200,
         'null'      => true,
         'translate' => false,
-        'default'   => '',
+        'default'   => default || '',
         'options'   => {},
         'relation'  => '',
       }
@@ -56,7 +59,7 @@ FactoryBot.define do
     data_type { 'integer' }
     data_option do
       {
-        'default' => 0,
+        'default' => default || 0,
         'min'     => 0,
         'max'     => 9999,
       }
@@ -67,7 +70,7 @@ FactoryBot.define do
     data_type { 'boolean' }
     data_option do
       {
-        default: false,
+        default: default || false,
         options: {
           true  => 'yes',
           false => 'no',
@@ -81,7 +84,7 @@ FactoryBot.define do
     data_type { 'date' }
     data_option do
       {
-        'diff' => 24,
+        'diff' => default || 24,
         'null' => true,
       }
     end
@@ -94,7 +97,7 @@ FactoryBot.define do
       {
         'future' => true,
         'past'   => true,
-        'diff'   => 24,
+        'diff'   => default || 24,
         'null'   => true,
       }
     end
@@ -104,7 +107,7 @@ FactoryBot.define do
     data_type { 'select' }
     data_option do
       {
-        'default'    => '',
+        'default'    => default || '',
         'options'    => {
           'key_1' => 'value_1',
           'key_2' => 'value_2',

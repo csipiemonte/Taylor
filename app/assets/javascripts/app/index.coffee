@@ -53,7 +53,7 @@ class App extends Spine.Controller
   @viewPrintItem: (item, attributeConfig = {}, valueRef, table, object) ->
     return '-' if item is undefined
     return '-' if item is ''
-    return item if item is null
+    return '-' if item is null
     result = ''
     items = [item]
     if _.isArray(item)
@@ -134,14 +134,23 @@ class App extends Spine.Controller
       else if attributeConfig.tag is 'datetime'
         isHtmlEscape = true
         timestamp = App.i18n.translateTimestamp(resultLocal)
+
         escalation = false
         cssClass = attributeConfig.class || ''
         if cssClass.match 'escalation'
           escalation = true
+
         humanTime = ''
         if !table
           humanTime = App.PrettyDate.humanTime(resultLocal, escalation)
-        resultLocal = "<time class=\"humanTimeFromNow #{cssClass}\" datetime=\"#{resultLocal}\" title=\"#{timestamp}\">#{humanTime}</time>"
+
+        title = timestamp
+        timezone = ''
+        if attributeConfig.include_timezone
+          timezone = " timezone=\"#{App.Config.get('timezone_default')}\""
+          title += ' ' + App.Config.get('timezone_default')
+
+        resultLocal = "<time class=\"humanTimeFromNow #{cssClass}\" datetime=\"#{resultLocal}\" title=\"#{title}\"#{timezone}>#{humanTime}</time>"
 
       if !isHtmlEscape && typeof resultLocal is 'string'
         resultLocal = App.Utils.htmlEscape(resultLocal)

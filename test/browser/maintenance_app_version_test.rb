@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'browser_test_helper'
 
 class MaintenanceAppVersionTest < TestCase
@@ -5,7 +7,7 @@ class MaintenanceAppVersionTest < TestCase
   def test_app_version
     @browser = browser_instance
     login(
-      username: 'master@example.com',
+      username: 'admin@example.com',
       password: 'test',
       url:      browser_url,
     )

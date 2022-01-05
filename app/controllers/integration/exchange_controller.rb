@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Integration::ExchangeController < ApplicationController
   include Integration::ImportJobBase
@@ -7,6 +7,7 @@ class Integration::ExchangeController < ApplicationController
 
   def autodiscover
     answer_with do
+      require 'autodiscover' # Only load this gem when it is really used.
       client = Autodiscover::Client.new(
         email:    params[:user],
         password: params[:password],

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class CalendarSubscriptions
 
@@ -24,8 +24,8 @@ class CalendarSubscriptions
   def all
     events_data = []
     @preferences.each_key do |object_name|
-      result      = generic_call(object_name)
-      events_data = events_data + result
+      result = generic_call(object_name)
+      events_data += result
     end
     to_ical(events_data)
   end

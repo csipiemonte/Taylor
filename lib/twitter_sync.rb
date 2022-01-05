@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2015 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 require 'http/uri'
 
@@ -125,6 +125,14 @@ class TwitterSync
     if tweet.instance_of?(Twitter::Tweet)
       message = {
         type: 'tweet',
+        text: tweet.text,
+      }
+      state = get_state(channel, tweet)
+    end
+
+    if tweet.is_a?(Twitter::DirectMessage)
+      message = {
+        type: 'direct_message',
         text: tweet.text,
       }
       state = get_state(channel, tweet)
@@ -478,47 +486,24 @@ create a tweet or direct message from an article
 =end
 
   def from_article(article)
-
     tweet = nil
     case article[:type]
     when 'twitter direct-message'
 
       Rails.logger.debug { "Create twitter direct message from article to '#{article[:to]}'..." }
 
-      #      tweet = @client.create_direct_message(
-      #        article[:to],
-      #        article[:body],
-      #        {}
-      #      )
       article[:to].delete!('@')
       authorization = Authorization.find_by(provider: 'twitter', username: article[:to])
       raise "Unable to lookup user_id for @#{article[:to]}" if !authorization
 
-      data = {
-        event: {
-          type:           'message_create',
-          message_create: {
-            target:       {
-              recipient_id: authorization.uid,
-            },
-            message_data: {
-              text: article[:body],
-            }
-          }
-        }
-      }
-
-      tweet = Twitter::REST::Request.new(@client, :json_post, '/1.1/direct_messages/events/new.json', data).perform
-
+      tweet = @client.create_direct_message(authorization.uid.to_i, article[:body])
     when 'twitter status'
 
       Rails.logger.debug { 'Create tweet from article...' }
 
-      # rubocop:disable Style/AsciiComments
       # workaround for https://github.com/sferik/twitter/issues/677
       # https://github.com/zammad/zammad/issues/2873 - unable to post
       # tweets with * - replace `*` with the wide-asterisk `＊`.
-      # rubocop:enable Style/AsciiComments
       article[:body].tr!('*', '＊') if article[:body].present?
       tweet = @client.update(
         article[:body],
@@ -564,7 +549,7 @@ create a tweet or direct message from an article
 
   def tweet_limit_reached(tweet, factor = 1)
     max_count = 120
-    max_count = max_count * factor
+    max_count *= factor
     type_id = Ticket::Article::Type.lookup(name: 'twitter status').id
     created_at = Time.zone.now - 15.minutes
     created_count = Ticket::Article.where('created_at > ? AND type_id = ?', created_at, type_id).count
@@ -792,6 +777,7 @@ download public media file from twitter
       {
         open_timeout: 20,
         read_timeout: 40,
+        verify_ssl:   true,
       },
     )
   end

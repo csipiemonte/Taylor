@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class ImportFreshdeskController < ApplicationController
 
   def url_check
@@ -16,7 +17,7 @@ class ImportFreshdeskController < ApplicationController
     endpoint = "#{params[:url]}/api/v2"
     endpoint.gsub!(%r{([^:])//+}, '\\1/')
 
-    response = UserAgent.request("#{endpoint}/contacts")
+    response = UserAgent.request("#{endpoint}/contacts", verify_ssl: true)
 
     if response.header.nil? || !response.header['x-freshdesk-api-version']
       render json: {

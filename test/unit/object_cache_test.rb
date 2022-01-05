@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'test_helper'
 
 class ObjectCacheTest < ActiveSupport::TestCase
@@ -8,7 +10,7 @@ class ObjectCacheTest < ActiveSupport::TestCase
       created_by_id: 1,
     )
 
-    roles  = Role.where( name: %w[Agent Admin] )
+    roles  = Role.where(name: %w[Agent Admin])
     groups = Group.all
     user1 = User.create_or_update(
       login:           'object_cache1@example.org',
@@ -69,7 +71,7 @@ class ObjectCacheTest < ActiveSupport::TestCase
 
     # update group
     group1 = groups.first
-    group1.note = "some note #{rand(9_999_999_999)}"
+    group1.note = "some note #{SecureRandom.uuid}"
     group1.save
 
     assets = user1.assets({})

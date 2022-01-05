@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module BrowserTestHelper
 
   # Sometimes tests refer to elements that get removed/re-added to the DOM when
@@ -66,9 +68,17 @@ module BrowserTestHelper
   #  await_empty_ajax_queue
   #
   def await_empty_ajax_queue
-    wait(5, interval: 0.5).until_constant do
+    # page.evaluate_script silently discards any present alerts, which is not desired.
+    begin
+      return if page.driver.browser.switch_to.alert
+    rescue Selenium::WebDriver::Error::NoSuchAlertError # rubocop:disable Lint/SuppressedException
+    end
+
+    wait(5, interval: 0.1).until_constant do
       page.evaluate_script('App.Ajax.queue().length').zero?
     end
+  rescue
+    nil
   end
 
   # Moves the mouse from its current position by the given offset.
@@ -103,6 +113,22 @@ module BrowserTestHelper
     page.driver.browser.action.click_and_hold(element).perform
   end
 
+  # Clicks and hold (without releasing) in the middle of the given element
+  # and moves it to the top left of the page to show marcos batches in
+  # overview section.
+  #
+  # @example
+  # display_macro_batches(ticket)
+  # display_macro_batches(tr[data-id='1'])
+  #
+  def display_macro_batches(element)
+    click_and_hold(element)
+    # move element to y -ticket.location.y
+    move_mouse_by(0, -element.location.y + 5)
+    # move a bit to the left to display macro batches
+    move_mouse_by(-250, 0)
+  end
+
   # Releases the depressed left mouse button at the current mouse location.
   #
   # @example
@@ -110,6 +136,7 @@ module BrowserTestHelper
   #
   def release_mouse
     page.driver.browser.action.release.perform
+    await_empty_ajax_queue
   end
 
   class Waiter < SimpleDelegator

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Service::Image::Zammad
 
@@ -24,6 +24,7 @@ class Service::Image::Zammad
         open_timeout:  OPEN_TIMEOUT,
         read_timeout:  READ_TIMEOUT,
         total_timeout: TOTAL_TIMEOUT,
+        verify_ssl:    true,
       },
     )
     if !response.success?
@@ -57,6 +58,7 @@ class Service::Image::Zammad
         open_timeout:  OPEN_TIMEOUT,
         read_timeout:  READ_TIMEOUT,
         total_timeout: TOTAL_TIMEOUT,
+        verify_ssl:    true,
       },
     )
     if !response.success?

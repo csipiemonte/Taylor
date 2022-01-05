@@ -1,13 +1,15 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'browser_test_helper'
 
 class IntegrationSipgateTest < TestCase
   # Regression test for #2017
   def test_nav_menu_notification_badge_clears
-    id = rand(99_999_999)
+    id = SecureRandom.uuid
 
     @browser = browser_instance
     login(
-      username: 'master@example.com',
+      username: 'admin@example.com',
       password: 'test',
       url:      browser_url,
     )

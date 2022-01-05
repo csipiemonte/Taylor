@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'test_helper'
 
 class TicketTriggerRecursiveDisabledTest < ActiveSupport::TestCase
@@ -945,7 +947,7 @@ class TicketTriggerRecursiveDisabledTest < ActiveSupport::TestCase
     assert_equal('2 normal', ticket_p.priority.name, 'ticket_p.priority verify')
     assert_equal(2, ticket_p.articles.count, 'ticket_p.articles verify')
 
-    #p ticket_p.articles.last.inspect
+    # p ticket_p.articles.last.inspect
     article_p = ticket_p.articles.last
     assert_match('Owner has changed', article_p.subject)
     assert_match('Zammad <zammad@localhost>', article_p.from)
@@ -1024,7 +1026,7 @@ class TicketTriggerRecursiveDisabledTest < ActiveSupport::TestCase
     assert_equal('3 high', ticket_p.priority.name, 'ticket_p.priority verify')
     assert_equal(2, ticket_p.articles.count, 'ticket_p.articles verify')
 
-    #p ticket_p.articles.last.inspect
+    # p ticket_p.articles.last.inspect
     article_p = ticket_p.articles.last
     assert_match('Owner has changed', article_p.subject)
     assert_match('Zammad <zammad@localhost>', article_p.from)
@@ -1107,7 +1109,7 @@ class TicketTriggerRecursiveDisabledTest < ActiveSupport::TestCase
     assert_equal('3 high', ticket_p.priority.name, 'ticket_p.priority verify')
     assert_equal(2, ticket_p.articles.count, 'ticket_p.articles verify')
 
-    #p ticket_p.articles.last.inspect
+    # p ticket_p.articles.last.inspect
     article_p = ticket_p.articles.last
     assert_match('Owner has changed', article_p.subject)
     assert_match('Zammad <zammad@localhost>', article_p.from)
@@ -1347,7 +1349,7 @@ class TicketTriggerRecursiveDisabledTest < ActiveSupport::TestCase
 
     ticket1 = Ticket.create!(
       title:         'test 123',
-      #owner: agent,
+      # owner: agent,
       group:         Group.lookup(name: 'Users'),
       customer:      User.lookup(email: 'nicole.braun@zammad.org'),
       updated_by_id: 1,
@@ -1502,7 +1504,7 @@ class TicketTriggerRecursiveDisabledTest < ActiveSupport::TestCase
     assert_equal(1, ticket1.articles.count, 'ticket1.articles verify')
     assert_equal([], ticket1.tag_list)
 
-    ticket1.update!(customer: User.lookup(email: 'nicole.braun@zammad.org') )
+    ticket1.update!(customer: User.lookup(email: 'nicole.braun@zammad.org'))
 
     UserInfo.current_user_id = agent.id
     Ticket::Article.create!(
@@ -1615,7 +1617,7 @@ class TicketTriggerRecursiveDisabledTest < ActiveSupport::TestCase
     assert_equal(1, ticket1.articles.count, 'ticket1.articles verify')
     assert_equal([], ticket1.tag_list)
 
-    ticket1.update!(customer: customer )
+    ticket1.update!(customer: customer)
 
     UserInfo.current_user_id = agent.id
     Ticket::Article.create!(
@@ -1703,7 +1705,7 @@ class TicketTriggerRecursiveDisabledTest < ActiveSupport::TestCase
 
     ticket1 = Ticket.create!(
       title:         'test 123',
-      #owner: agent,
+      # owner: agent,
       group:         Group.lookup(name: 'Users'),
       customer:      User.lookup(email: 'nicole.braun@zammad.org'),
       updated_by_id: 1,
@@ -1886,7 +1888,7 @@ class TicketTriggerRecursiveDisabledTest < ActiveSupport::TestCase
 
     ticket1 = Ticket.create!(
       title:         'test 123',
-      #owner: agent,
+      # owner: agent,
       group:         Group.lookup(name: 'Users'),
       customer:      User.lookup(email: 'nicole.braun@zammad.org'),
       updated_by_id: 1,
@@ -2597,7 +2599,7 @@ class TicketTriggerRecursiveDisabledTest < ActiveSupport::TestCase
 
     ticket1 = Ticket.create!(
       title:         'test 123',
-      #owner: agent,
+      # owner: agent,
       customer:      customer,
       group:         Group.lookup(name: 'Users'),
       updated_by_id: 1,
@@ -3561,7 +3563,7 @@ class TicketTriggerRecursiveDisabledTest < ActiveSupport::TestCase
           'value'    => Ticket::State.lookup(name: 'new').id.to_s,
         },
         'ticket.tags'     => {
-          #'operator' => 'contains one not',
+          # 'operator' => 'contains one not',
           'operator' => 'contains all not',
           'value'    => 'sender1, sender2',
         },

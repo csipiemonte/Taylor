@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe Channel, type: :model do
@@ -21,11 +23,11 @@ RSpec.describe Channel, type: :model do
 
       let(:failing_adapter_class) do
         Class.new(Channel::Driver::Null) do
-          def fetchable?(*)
+          def fetchable?(...)
             true
           end
 
-          def fetch(*)
+          def fetch(...)
             raise 'some error'
           end
         end
@@ -33,7 +35,7 @@ RSpec.describe Channel, type: :model do
 
       let(:dummy_adapter_class) do
         Class.new(Channel::Driver::Null) do
-          def fetchable?(*)
+          def fetchable?(...)
             true
           end
         end

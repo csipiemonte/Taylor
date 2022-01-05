@@ -1,6 +1,9 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class ObjectManager::Attribute::Validation::Required < ObjectManager::Attribute::Validation::Backend
 
   def validate
+    return if record.class.include?(ChecksCoreWorkflow)
     return if !value.nil?
     return if optional_for_user?
 

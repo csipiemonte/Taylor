@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Package < ApplicationModel
   @@root = Rails.root.to_s # rubocop:disable Style/ClassVars
@@ -445,7 +445,7 @@ execute all pending package migrations at once
 
     # check if directories need to be created
     directories = location.split '/'
-    (0..(directories.length - 2) ).each do |position|
+    (0..(directories.length - 2)).each do |position|
       tmp_path = ''
       (1..position).each do |count|
         tmp_path = "#{tmp_path}/#{directories[count]}"

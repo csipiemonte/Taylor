@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sequencer
   class Sequence
     module Import
@@ -7,9 +9,9 @@ class Sequencer
 
             def self.sequence
               [
-                'Import::Zendesk::Ticket::Comment::UserID',
-                'Import::Zendesk::Common::ArticleSenderID',
-                'Import::Zendesk::Common::ArticleTypeID',
+                'Import::Zendesk::Ticket::Comment::UserId',
+                'Import::Zendesk::Common::ArticleSenderId',
+                'Import::Zendesk::Common::ArticleTypeId',
                 'Import::Zendesk::Ticket::Comment::From',
                 'Import::Zendesk::Ticket::Comment::To',
                 'Import::Zendesk::Ticket::Comment::Mapping',

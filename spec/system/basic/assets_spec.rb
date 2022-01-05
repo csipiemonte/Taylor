@@ -40,12 +40,6 @@ RSpec.describe 'Assets', type: :system, db_strategy: :reset do
 
     before do
       visit "#ticket/zoom/#{ticket.id}"
-
-      # make sure all AJAX requests are done
-      await_empty_ajax_queue
-
-      # make sure loading is completed (e.g. ticket zoom may take longer)
-      expect(page).to have_no_css('.icon-loading', wait: 30) # rubocop:disable RSpec/ExpectInHook
     end
 
     describe 'when customer', authenticated_as: :customer do
@@ -74,12 +68,6 @@ RSpec.describe 'Assets', type: :system, db_strategy: :reset do
 
     before do
       visit "#ticket/zoom/#{ticket.id}"
-
-      # make sure all AJAX requests are done
-      await_empty_ajax_queue
-
-      # make sure loading is completed (e.g. ticket zoom may take longer)
-      expect(page).to have_no_css('.icon-loading', wait: 30) # rubocop:disable RSpec/ExpectInHook
     end
 
     describe 'when customer', authenticated_as: :customer do
@@ -125,12 +113,6 @@ RSpec.describe 'Assets', type: :system, db_strategy: :reset do
 
     before do
       visit "#ticket/zoom/#{ticket.id}"
-
-      # make sure all AJAX requests are done
-      await_empty_ajax_queue
-
-      # make sure loading is completed (e.g. ticket zoom may take longer)
-      expect(page).to have_no_css('.icon-loading', wait: 30)  # rubocop:disable RSpec/ExpectInHook
     end
 
     describe 'when customer', authenticated_as: :customer do

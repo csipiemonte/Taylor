@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module Import
   module OTRS
     module ImportStats
@@ -23,7 +25,7 @@ module Import
       def statistic
 
         # check cache
-        cache = Cache.get('import_otrs_stats')
+        cache = Cache.read('import_otrs_stats')
         return cache if cache
 
         # retrieve statistic

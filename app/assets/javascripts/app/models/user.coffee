@@ -121,6 +121,9 @@ class App.User extends App.Model
       return true
     false
 
+  maxLoginFailedReached: ->
+    return @login_failed > (parseInt(App.Config.get('password_max_login_failed')))
+
   imageUrl: ->
     return if !@image
     # set image url
@@ -156,11 +159,18 @@ class App.User extends App.Model
     data
 
   searchResultAttributes: ->
+    classList = ['user', 'user-popover']
+    icon = 'user'
+
+    if @active is false
+      classList.push 'is-inactive'
+      icon = 'inactive-' + icon
+
     display: "#{@displayName()}"
     id:      @id
-    class:   'user user-popover'
+    class:   classList.join(' ')
     url:     @uiUrl()
-    icon:    'user'
+    icon:    icon
 
   activityMessage: (item) ->
     return if !item
@@ -352,6 +362,9 @@ class App.User extends App.Model
     return false if @organization_id is null
     return false if requester.organization_id is null
     @organization_id == requester.organization_id
+
+  lifetimeCustomerTicketsCount: ->
+    (@preferences.tickets_closed || 0) + (@preferences.tickets_open || 0)
 
   # Do NOT modify the return value of this method!
   # It is a direct reference to a value in the App.User.irecords object.

@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'test_helper'
 
 class TicketNotificationTest < ActiveSupport::TestCase
@@ -664,6 +666,10 @@ class TicketNotificationTest < ActiveSupport::TestCase
     @agent2.save!
 
     travel 1.minute # to skip loopup cache in Transaction::Notification
+    if Rails.application.config.cache_store.first.eql? :mem_cache_store
+      # External memcached does not support time travel, so clear the cache to avoid an outdated match.
+      Cache.clear
+    end
 
     # create ticket in group
     ApplicationHandleInfo.current = 'scheduler.postmaster'
@@ -730,6 +736,10 @@ class TicketNotificationTest < ActiveSupport::TestCase
     @agent2.save!
 
     travel 1.minute # to skip loopup cache in Transaction::Notification
+    if Rails.application.config.cache_store.first.eql? :mem_cache_store
+      # External memcached does not support time travel, so clear the cache to avoid an outdated match.
+      Cache.clear
+    end
 
     # create ticket in group
     ApplicationHandleInfo.current = 'scheduler.postmaster'
@@ -796,6 +806,10 @@ class TicketNotificationTest < ActiveSupport::TestCase
     @agent2.save!
 
     travel 1.minute # to skip loopup cache in Transaction::Notification
+    if Rails.application.config.cache_store.first.eql? :mem_cache_store
+      # External memcached does not support time travel, so clear the cache to avoid an outdated match.
+      Cache.clear
+    end
 
     # create ticket in group
     ApplicationHandleInfo.current = 'scheduler.postmaster'
@@ -875,6 +889,10 @@ class TicketNotificationTest < ActiveSupport::TestCase
     @agent2.save!
 
     travel 1.minute # to skip loopup cache in Transaction::Notification
+    if Rails.application.config.cache_store.first.eql? :mem_cache_store
+      # External memcached does not support time travel, so clear the cache to avoid an outdated match.
+      Cache.clear
+    end
 
     # create ticket in group
     ApplicationHandleInfo.current = 'scheduler.postmaster'
@@ -997,8 +1015,8 @@ class TicketNotificationTest < ActiveSupport::TestCase
       group:         Group.lookup(name: 'TicketNotificationTest'),
       customer:      @customer,
       owner_id:      @agent2.id,
-      #state: Ticket::State.lookup(name: 'new'),
-      #priority: Ticket::Priority.lookup(name: '2 normal'),
+      # state: Ticket::State.lookup(name: 'new'),
+      # priority: Ticket::Priority.lookup(name: '2 normal'),
       updated_by_id: @customer.id,
       created_by_id: @customer.id,
     )
@@ -1040,8 +1058,8 @@ class TicketNotificationTest < ActiveSupport::TestCase
       group:         Group.lookup(name: 'TicketNotificationTest'),
       customer:      @customer,
       owner_id:      @agent2.id,
-      #state: Ticket::State.lookup(name: 'new'),
-      #priority: Ticket::Priority.lookup(name: '2 normal'),
+      # state: Ticket::State.lookup(name: 'new'),
+      # priority: Ticket::Priority.lookup(name: '2 normal'),
       updated_by_id: @customer.id,
       created_by_id: @customer.id,
     )
@@ -1104,7 +1122,7 @@ class TicketNotificationTest < ActiveSupport::TestCase
     # verify notifications to @agent1 + @agent2
     assert_equal(0, NotificationFactory::Mailer.already_sent?(ticket2, @agent1, 'email'), ticket2.id)
     assert_equal(3, NotificationFactory::Mailer.already_sent?(ticket2, @agent2, 'email'), ticket2.id)
-    assert_equal(3, NotificationFactory::Mailer.already_sent?(ticket2, @agent3, 'email'), ticket2.id)
+    assert_equal(2, NotificationFactory::Mailer.already_sent?(ticket2, @agent3, 'email'), ticket2.id)
     assert_equal(1, NotificationFactory::Mailer.already_sent?(ticket2, @agent4, 'email'), ticket2.id)
 
   end

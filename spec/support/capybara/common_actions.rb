@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module CommonActions
 
   delegate :app_host, to: Capybara
@@ -7,13 +9,13 @@ module CommonActions
   #
   # @example
   #  login(
-  #    username: 'master@example.com',
+  #    username: 'admin@example.com',
   #    password: 'test',
   #  )
   #
   # @example
   #  login(
-  #    username:    'master@example.com',
+  #    username:    'admin@example.com',
   #    password:    'test',
   #    remember_me: true,
   #  )
@@ -36,6 +38,8 @@ module CommonActions
     wait(4).until_exists do
       current_login
     end
+
+    await_empty_ajax_queue
   end
 
   # Checks if the current session is logged in.
@@ -55,7 +59,7 @@ module CommonActions
   #
   # @example
   #  current_login
-  # => 'master@example.com'
+  # => 'admin@example.com'
   #
   # @return [String] the login of the currently logged in user.
   def current_login
@@ -66,7 +70,7 @@ module CommonActions
   #
   # @example
   #  current_user.login
-  # => 'master@example.com'
+  # => 'admin@example.com'
   #
   # @example
   #  current_user do |user|
@@ -118,6 +122,16 @@ module CommonActions
       route = "/##{route}"
     end
     super(route)
+
+    # wait for AJAX requets only on WebApp visits
+    return if !route.start_with?('/#')
+    return if route == '/#logout'
+
+    # make sure all AJAX requests are done
+    await_empty_ajax_queue
+
+    # make sure loading is completed (e.g. ticket zoom may take longer)
+    expect(page).to have_no_css('.icon-loading', wait: 30)
   end
 
   # Overwrites the global Capybara.always_include_port setting (true)
@@ -255,6 +269,53 @@ module CommonActions
     within('.modal', &block)
 
     modal_disappear(timeout: timeout) if disappears
+  end
+
+  # Show the popover on hover
+  #
+  # @example
+  # popover_on_hover(page.find('button.hover_me'))
+  def popover_on_hover(element, wait_for_popover_killer: true)
+    # wait for popover killer to pass
+    sleep 3 if wait_for_popover_killer
+
+    move_mouse_to(element)
+    move_mouse_by(5, 5)
+  end
+
+  # Scroll into view with javscript.
+  #
+  # @param position [Symbol] :top or :bottom, position of the scroll into view
+  #
+  # scroll_into_view('button.js-submit)
+  #
+  def scroll_into_view(css_selector, position: :top)
+    page.execute_script("document.querySelector('#{css_selector}').scrollIntoView(#{position == :top})")
+    sleep 0.3
+  end
+
+  # Close a tab in the taskbar.
+  #
+  # @param discard_changes [Boolean] if true, discard changes
+  #
+  # @example
+  # taskbar_tab_close('Ticket-2')
+  #
+  def taskbar_tab_close(tab_data_key, discard_changes: true)
+    retry_on_stale do
+      taskbar_entry = find(:task_with, tab_data_key)
+
+      move_mouse_to(taskbar_entry)
+      move_mouse_by(5, 5)
+
+      click ".tasks .task[data-key='#{tab_data_key}'] .js-close"
+
+      return if !discard_changes
+
+      in_modal do
+        click '.js-submit'
+      end
+    end
   end
 end
 

@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe ::Sequencer::Sequence::Import::Freshdesk::TicketField, sequencer: :sequence do
@@ -44,7 +46,6 @@ RSpec.describe ::Sequencer::Sequence::Import::Freshdesk::TicketField, sequencer:
       end
 
       it 'adds a custom field' do
-        p resource
         expect { process(process_payload) }.to change(Ticket, :column_names).by(['cf_custom_dropdown'])
       end
     end
@@ -155,7 +156,7 @@ RSpec.describe ::Sequencer::Sequence::Import::Freshdesk::TicketField, sequencer:
 
       it 'the custom field has type "tel"' do
         process(process_payload)
-        expect( ObjectManager::Attribute.find_by(name: 'cf_custom_phone_number').data_option ).to include( 'type' => 'tel' )
+        expect(ObjectManager::Attribute.find_by(name: 'cf_custom_phone_number').data_option).to include('type' => 'tel')
       end
     end
 
@@ -175,7 +176,7 @@ RSpec.describe ::Sequencer::Sequence::Import::Freshdesk::TicketField, sequencer:
 
       it 'the custom field has type "url"' do
         process(process_payload)
-        expect( ObjectManager::Attribute.find_by(name: 'cf_custom_url').data_option ).to include( 'type' => 'url' )
+        expect(ObjectManager::Attribute.find_by(name: 'cf_custom_url').data_option).to include('type' => 'url')
       end
     end
 

@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class NotificationFactory::Renderer
 
 =begin
@@ -36,6 +38,10 @@ examples how to use
 
   def render
     ERB.new(@template.to_s).result(binding)
+  rescue Exception => e # rubocop:disable Lint/RescueException
+    raise StandardError, e.message if e.is_a? SyntaxError
+
+    raise
   end
 
   # d - data of object

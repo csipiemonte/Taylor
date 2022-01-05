@@ -1,12 +1,15 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 require 'models/application_model_examples'
 require 'models/concerns/can_be_imported_examples'
 require 'models/concerns/can_csv_import_examples'
+require 'models/concerns/checks_core_workflow_examples'
 require 'models/concerns/has_history_examples'
 require 'models/concerns/has_tags_examples'
 require 'models/concerns/has_taskbars_examples'
 require 'models/concerns/has_xss_sanitized_note_examples'
-require 'models/concerns/has_object_manager_attributes_validation_examples'
+require 'models/concerns/has_object_manager_attributes_examples'
 require 'models/tag/writes_to_ticket_history_examples'
 require 'models/ticket/calls_stats_ticket_reopen_log_examples'
 require 'models/ticket/enqueues_user_ticket_counter_job_examples'
@@ -21,12 +24,13 @@ RSpec.describe Ticket, type: :model do
   it_behaves_like 'ApplicationModel'
   it_behaves_like 'CanBeImported'
   it_behaves_like 'CanCsvImport'
+  it_behaves_like 'ChecksCoreWorkflow'
   it_behaves_like 'HasHistory', history_relation_object: ['Ticket::Article', 'Mention']
   it_behaves_like 'HasTags'
   it_behaves_like 'TagWritesToTicketHistory'
   it_behaves_like 'HasTaskbars'
   it_behaves_like 'HasXssSanitizedNote', model_factory: :ticket
-  it_behaves_like 'HasObjectManagerAttributesValidation'
+  it_behaves_like 'HasObjectManagerAttributes'
   it_behaves_like 'Ticket::Escalation'
   it_behaves_like 'TicketCallsStatsTicketReopenLog'
   it_behaves_like 'TicketEnqueuesTicketUserTicketCounterJob'
@@ -270,6 +274,150 @@ RSpec.describe Ticket, type: :model do
               .to change { ticket.history_get.find { |elem| elem.fetch('type') == 'merged_into' }['value_to'] }
               .to("##{target_ticket.number} #{target_ticket.title}")
           end
+        end
+      end
+
+      # https://github.com/zammad/zammad/issues/3105
+      context 'when merge actions triggers exist', :performs_jobs do
+        before do
+          ticket && target_ticket
+          merged_into_trigger && received_merge_trigger && update_trigger
+
+          allow_any_instance_of(described_class).to receive(:perform_changes) do |ticket, trigger| # rubocop:disable RSpec/AnyInstance
+            log << { ticket: ticket.id, trigger: trigger.id }
+          end
+
+          perform_enqueued_jobs do
+            ticket.merge_to(ticket_id: target_ticket.id, user_id: 1)
+          end
+        end
+
+        let(:merged_into_trigger)    { create(:trigger, :conditionable, condition_ticket_action: 'update.merged_into') }
+        let(:received_merge_trigger) { create(:trigger, :conditionable, condition_ticket_action: 'update.received_merge') }
+        let(:update_trigger)         { create(:trigger, :conditionable, condition_ticket_action: 'update') }
+
+        let(:log) { [] }
+
+        it 'merge_into triggered with source ticket' do
+          expect(log).to include({ ticket: ticket.id, trigger: merged_into_trigger.id })
+        end
+
+        it 'received_merge not triggered with source ticket' do
+          expect(log).not_to include({ ticket: ticket.id, trigger: received_merge_trigger.id })
+        end
+
+        it 'update not triggered with source ticket' do
+          expect(log).not_to include({ ticket: ticket.id, trigger: update_trigger.id })
+        end
+
+        it 'merge_into not triggered with target ticket' do
+          expect(log).not_to include({ ticket: target_ticket.id, trigger: merged_into_trigger.id })
+        end
+
+        it 'received_merge triggered with target ticket' do
+          expect(log).to include({ ticket: target_ticket.id, trigger: received_merge_trigger.id })
+        end
+
+        it 'update not triggered with target ticket' do
+          expect(log).not_to include({ ticket: target_ticket.id, trigger: update_trigger.id })
+        end
+      end
+
+      # https://github.com/zammad/zammad/issues/3105
+      context 'when user has notifications enabled', :performs_jobs do
+        before do
+          user
+
+          allow(OnlineNotification).to receive(:add) do |**args|
+            next if args[:object] != 'Ticket'
+
+            log << { type: :online, event: args[:type], ticket_id: args[:o_id], user_id: args[:user_id] }
+          end
+
+          allow(NotificationFactory::Mailer).to receive(:notification) do |**args|
+            log << { type: :email, event: args[:template], ticket_id: args[:objects][:ticket].id, user_id: args[:user].id }
+          end
+
+          perform_enqueued_jobs do
+            ticket.merge_to(ticket_id: target_ticket.id, user_id: 1)
+          end
+        end
+
+        let(:user) { create(:agent, :preferencable, notification_group_ids: [ticket, target_ticket].map(&:group_id), groups: [ticket, target_ticket].map(&:group)) }
+        let(:log)  { [] }
+
+        it 'merge_into notification sent with source ticket' do
+          expect(log).to include({ type: :online, event: 'update.merged_into', ticket_id: ticket.id, user_id: user.id })
+        end
+
+        it 'received_merge notification not sent with source ticket' do
+          expect(log).not_to include({ type: :online, event: 'update.received_merge', ticket_id: ticket.id, user_id: user.id })
+        end
+
+        it 'update notification not sent with source ticket' do
+          expect(log).not_to include({ type: :online, event: 'update', ticket_id: ticket.id, user_id: user.id })
+        end
+
+        it 'merge_into notification not sent with target ticket' do
+          expect(log).not_to include({ type: :online, event: 'update.merged_into', ticket_id: target_ticket.id, user_id: user.id })
+        end
+
+        it 'received_merge notification sent with target ticket' do
+          expect(log).to include({ type: :online, event: 'update.received_merge', ticket_id: target_ticket.id, user_id: user.id })
+        end
+
+        it 'update notification not sent with target ticket' do
+          expect(log).not_to include({ type: :online, event: 'update', ticket_id: target_ticket.id, user_id: user.id })
+        end
+
+        it 'merge_into email sent with source ticket' do
+          expect(log).to include({ type: :email, event: 'ticket_update_merged_into', ticket_id: ticket.id, user_id: user.id })
+        end
+
+        it 'received_merge email not sent with source ticket' do
+          expect(log).not_to include({ type: :email, event: 'ticket_update_received_merge', ticket_id: ticket.id, user_id: user.id })
+        end
+
+        it 'update email not sent with source ticket' do
+          expect(log).not_to include({ type: :email, event: 'ticket_update', ticket_id: ticket.id, user_id: user.id })
+        end
+
+        it 'merge_into email not sent with target ticket' do
+          expect(log).not_to include({ type: :email, event: 'ticket_update_merged_into', ticket_id: target_ticket.id, user_id: user.id })
+        end
+
+        it 'received_merge email sent with target ticket' do
+          expect(log).to include({ type: :email, event: 'ticket_update_received_merge', ticket_id: target_ticket.id, user_id: user.id })
+        end
+
+        it 'update email not sent with target ticket' do
+          expect(log).not_to include({ type: :email, event: 'ticket_update', ticket_id: target_ticket.id, user_id: user.id })
+        end
+      end
+
+      # https://github.com/zammad/zammad/issues/3105
+      context 'when sending notification email correct template', :performs_jobs do
+        before do
+          user
+
+          allow(NotificationFactory::Mailer).to receive(:send) do |**args|
+            log << args[:subject]
+          end
+
+          perform_enqueued_jobs do
+            ticket.merge_to(ticket_id: target_ticket.id, user_id: 1)
+          end
+        end
+
+        let(:user) { create(:agent, :preferencable, notification_group_ids: [ticket, target_ticket].map(&:group_id), groups: [ticket, target_ticket].map(&:group)) }
+        let(:log)  { [] }
+
+        it 'is used for merged_into' do
+          expect(log).to include(start_with("Ticket (#{ticket.title}) was merged into another ticket"))
+        end
+
+        it 'is used for received_merge' do
+          expect(log).to include(start_with("Another ticket was merged into ticket (#{target_ticket.title})"))
         end
       end
 
@@ -533,6 +681,117 @@ RSpec.describe Ticket, type: :model do
           include_examples 'verify log visibility status'
         end
 
+        shared_examples 'add a new article' do
+          it 'adds a new article' do
+            expect { ticket.perform_changes(performable, 'trigger', ticket, user) }
+              .to change { ticket.articles.count }.by(1)
+          end
+        end
+
+        shared_examples 'add attachment to new article' do
+          include_examples 'add a new article'
+
+          it 'adds attachment to the new article' do
+            ticket.perform_changes(performable, 'trigger', ticket, user)
+            article = ticket.articles.last
+
+            expect(article.type.name).to eq('email')
+            expect(article.sender.name).to eq('System')
+            expect(article.attachments.count).to eq(1)
+            expect(article.attachments[0].filename).to eq('some_file.pdf')
+            expect(article.attachments[0].preferences['Content-ID']).to eq('image/pdf@01CAB192.K8H512Y9')
+          end
+        end
+
+        shared_examples 'does not add attachment to new article' do
+          include_examples 'add a new article'
+
+          it 'does not add attachment to the new article' do
+            ticket.perform_changes(performable, 'trigger', ticket, user)
+            article = ticket.articles.last
+
+            expect(article.type.name).to eq('email')
+            expect(article.sender.name).to eq('System')
+            expect(article.attachments.count).to eq(0)
+          end
+        end
+
+        context 'dispatching email with include attachment present' do
+          let(:notification_type) { :email }
+          let(:additional_options) do
+            {
+              notification_key => {
+                include_attachments: 'true'
+              }
+            }
+          end
+
+          context 'when ticket has an attachment' do
+
+            before do
+              UserInfo.current_user_id = 1
+              ticket_article = create(:ticket_article, ticket: ticket)
+
+              Store.add(
+                object:        'Ticket::Article',
+                o_id:          ticket_article.id,
+                data:          'dGVzdCAxMjM=',
+                filename:      'some_file.pdf',
+                preferences:   {
+                  'Content-Type': 'image/pdf',
+                  'Content-ID':   'image/pdf@01CAB192.K8H512Y9',
+                },
+                created_by_id: 1,
+              )
+            end
+
+            include_examples 'add attachment to new article'
+          end
+
+          context 'when ticket does not have an attachment' do
+
+            include_examples 'does not add attachment to new article'
+          end
+        end
+
+        context 'dispatching email with include attachment not present' do
+          let(:notification_type) { :email }
+          let(:additional_options) do
+            {
+              notification_key => {
+                include_attachments: 'false'
+              }
+            }
+          end
+
+          context 'when ticket has an attachment' do
+
+            before do
+              UserInfo.current_user_id = 1
+              ticket_article = create(:ticket_article, ticket: ticket)
+
+              Store.add(
+                object:        'Ticket::Article',
+                o_id:          ticket_article.id,
+                data:          'dGVzdCAxMjM=',
+                filename:      'some_file.pdf',
+                preferences:   {
+                  'Content-Type': 'image/pdf',
+                  'Content-ID':   'image/pdf@01CAB192.K8H512Y9',
+                },
+                created_by_id: 1,
+              )
+            end
+
+            include_examples 'does not add attachment to new article'
+          end
+
+          context 'when ticket does not have an attachment' do
+
+            include_examples 'does not add attachment to new article'
+          end
+        end
+
         context 'dispatching SMS' do
           let(:notification_type) { :sms }
 
@@ -719,6 +978,12 @@ RSpec.describe Ticket, type: :model do
         it 'returns agent response time when agent responded to customer enquiry' do
           expect(result).to eq ticket.last_contact_agent_at
         end
+      end
+    end
+
+    describe '#param_cleanup' do
+      it 'does only remove parameters which are invalid and not the complete params hash if one element is invalid (#3743)' do
+        expect(described_class.param_cleanup({ state_id: 3, customer_id: 'guess:1234' }, true, false, false)).to eq({ 'state_id' => 3 })
       end
     end
   end
@@ -1263,13 +1528,13 @@ RSpec.describe Ticket, type: :model do
 
       shared_examples 'permitted' do
         it 'finds Ticket' do
-          expect( described_class.search(query: ticket.number, current_user: current_user).count ).to eq(1)
+          expect(described_class.search(query: ticket.number, current_user: current_user).count).to eq(1)
         end
       end
 
       shared_examples 'no permission' do
         it "doesn't find Ticket" do
-          expect( described_class.search(query: ticket.number, current_user: current_user) ).to be_blank
+          expect(described_class.search(query: ticket.number, current_user: current_user)).to be_blank
         end
       end
 
@@ -1606,6 +1871,59 @@ RSpec.describe Ticket, type: :model do
           .to change { NotificationFactory::Mailer.already_sent?(ticket, agent, 'email') }.to(1)
       end
     end
+
+    describe 'Ticket has changed attributes:' do
+      subject!(:ticket) { create(:ticket) }
+
+      let(:group) { create(:group) }
+      let(:condition_field) { nil }
+
+      shared_examples 'updated ticket group with trigger condition' do
+        it 'updated ticket group with has changed trigger condition' do
+          expect { TransactionDispatcher.commit }.to change { ticket.reload.group }.to(group)
+        end
+      end
+
+      before do
+        create(
+          :trigger,
+          condition: { "ticket.#{condition_field}" => { 'operator' => 'has changed', 'value' => 'create' } },
+          perform:   { 'ticket.group_id' => { 'value' => group.id } }
+        )
+
+        ticket.update!(condition_field => Time.zone.now)
+      end
+
+      context "when changing 'first_response_at' attribute" do
+        let(:condition_field) { 'first_response_at' }
+
+        include_examples 'updated ticket group with trigger condition'
+      end
+
+      context "when changing 'close_at' attribute" do
+        let(:condition_field) { 'close_at' }
+
+        include_examples 'updated ticket group with trigger condition'
+      end
+
+      context "when changing 'last_contact_agent_at' attribute" do
+        let(:condition_field) { 'last_contact_agent_at' }
+
+        include_examples 'updated ticket group with trigger condition'
+      end
+
+      context "when changing 'last_contact_customer_at' attribute" do
+        let(:condition_field) { 'last_contact_customer_at' }
+
+        include_examples 'updated ticket group with trigger condition'
+      end
+
+      context "when changing 'last_contact_at' attribute" do
+        let(:condition_field) { 'last_contact_at' }
+
+        include_examples 'updated ticket group with trigger condition'
+      end
+    end
   end
 
   describe 'Mentions:', sends_notification_emails: true do
@@ -1871,7 +2189,7 @@ RSpec.describe Ticket, type: :model do
       Store.add(
         object:        'SomeObject',
         o_id:          1,
-        data:          'a' * (1024**2 * 2.4), # with 2.4 mb
+        data:          'a' * ((1024**2) * 2.4), # with 2.4 mb
         filename:      'test.TXT',
         created_by_id: 1,
       )
@@ -1946,7 +2264,7 @@ RSpec.describe Ticket, type: :model do
       Store.add(
         object:        'Ticket::Article',
         o_id:          article1.id,
-        data:          'a' * (1024**2 * 2.4), # with 2.4 mb
+        data:          'a' * ((1024**2) * 2.4), # with 2.4 mb
         filename:      'some_file.pdf',
         preferences:   {
           'Content-Type' => 'image/pdf',
@@ -1956,14 +2274,14 @@ RSpec.describe Ticket, type: :model do
       Store.add(
         object:        'Ticket::Article',
         o_id:          article1.id,
-        data:          'a' * (1024**2 * 5.8), # with 5,8 mb
+        data:          'a' * ((1024**2) * 5.8), # with 5,8 mb
         filename:      'some_file.txt',
         preferences:   {
           'Content-Type' => 'text/plain',
         },
         created_by_id: 1,
       )
-      create(:ticket_article, ticket: ticket, body: 'a' * (1024**2 * 1.2)) # body with 1,2 mb
+      create(:ticket_article, ticket: ticket, body: 'a' * ((1024**2) * 1.2)) # body with 1,2 mb
       create(:ticket_article, ticket: ticket)
       ticket.search_index_attribute_lookup
     end
@@ -2029,5 +2347,4 @@ RSpec.describe Ticket, type: :model do
     end
 
   end
-
 end

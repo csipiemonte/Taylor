@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class NotificationFactory::Mailer
 
 =begin
@@ -26,6 +28,9 @@ returns
     map = {
       'escalation_warning' => 'escalation'
     }
+
+    type = type.split('.').first # pick parent type of a subtype. Eg. update vs update.merged_into
+
     if map[type]
       type = map[type]
     end
@@ -33,7 +38,7 @@ returns
     # this cache will optimize the preference catch performance
     # because of the yaml deserialization its pretty slow
     # on many tickets you we cache it.
-    user_preferences = Cache.get("NotificationFactory::Mailer.notification_settings::#{user.id}")
+    user_preferences = Cache.read("NotificationFactory::Mailer.notification_settings::#{user.id}")
     if user_preferences.blank?
       user_preferences = user.preferences
 

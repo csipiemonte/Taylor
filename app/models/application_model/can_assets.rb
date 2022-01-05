@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module ApplicationModel::CanAssets
   extend ActiveSupport::Concern
 
@@ -64,11 +65,14 @@ get assets and record_ids of selector
       attribute = item.split('.')
       next if !attribute[1]
 
+      if attribute[0] == 'customer' || attribute[0] == 'session'
+        attribute[0] = 'user'
+      end
+
       begin
         attribute_class = attribute[0].to_classname.constantize
       rescue => e
         next if attribute[0] == 'article'
-        next if attribute[0] == 'customer'
         next if attribute[0] == 'execution_time'
 
         logger.error "Unable to get asset for '#{attribute[0]}': #{e.inspect}"
@@ -157,7 +161,6 @@ get assets of object list
 
     def assets_of_object_list(list, assets = {})
       list.each do |item|
-        require_dependency item['object'].to_filename
         record = item['object'].constantize.lookup(id: item['o_id'])
         next if record.blank?
 

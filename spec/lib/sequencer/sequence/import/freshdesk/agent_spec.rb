@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe ::Sequencer::Sequence::Import::Freshdesk::Agent, sequencer: :sequence do
@@ -78,7 +80,7 @@ RSpec.describe ::Sequencer::Sequence::Import::Freshdesk::Agent, sequencer: :sequ
     end
 
     it 'sets user roles correctly for admin user' do
-      allow( Sequencer::Unit::Import::Freshdesk::Agent::Mapping).to receive(:admin_id).and_return(1001)
+      allow(Sequencer::Unit::Import::Freshdesk::Agent::Mapping).to receive(:admin_id).and_return(1001)
       process(process_payload)
       expect(User.last.roles.sort.map(&:name)).to eq %w[Admin Agent]
     end
@@ -88,7 +90,7 @@ RSpec.describe ::Sequencer::Sequence::Import::Freshdesk::Agent, sequencer: :sequ
       expect(User.last.roles.sort.map(&:name)).to eq ['Agent']
     end
 
-    it 'sets user groups correctly ' do
+    it 'sets user groups correctly' do
       process(process_payload)
       expect(User.last.groups_access('full').sort).to eq groups
     end

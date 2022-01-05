@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module Import
   module OTRS
     class User
@@ -162,7 +164,7 @@ module Import
         end
 
         return result if !group['Name'].match?(%r{^(stats|report)})
-        return result if !( permissions.include?('ro') || permissions.include?('rw') )
+        return result if !(permissions.include?('ro') || permissions.include?('rw'))
 
         result.push 'Report'
         result

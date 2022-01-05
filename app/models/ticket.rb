@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 require 'base64'
 
 class Ticket < ApplicationModel
@@ -14,7 +14,7 @@ class Ticket < ApplicationModel
   include HasOnlineNotifications
   include HasKarmaActivityLog
   include HasLinks
-  include HasObjectManagerAttributesValidation
+  include HasObjectManagerAttributes
   include HasTaskbars
   include Ticket::CallsStatsTicketReopenLog
   include Ticket::EnqueuesUserTicketCounterJob
@@ -38,6 +38,9 @@ class Ticket < ApplicationModel
   include Ticket::SetsLastOwnerUpdateTime
 
   include HasTransactionDispatcher
+
+  # workflow checks should run after before_create and before_update callbacks
+  include ChecksCoreWorkflow
 
   validates :group_id, presence: true
 
@@ -93,43 +96,6 @@ class Ticket < ApplicationModel
   association_attributes_ignored :flags, :mentions
 
   attr_accessor :callback_loop
-
-=begin
-
-get user access conditions
-
-  conditions = Ticket.access_condition( User.find(1) , 'full')
-
-returns
-
-  result = [user1, user2, ...]
-
-=end
-
-  def self.access_condition(user, access)
-    sql  = []
-    bind = []
-
-    if user.permissions?('ticket.agent')
-      sql.push('group_id IN (?)')
-      bind.push(user.group_ids_access(access))
-    end
-
-    if user.permissions?('ticket.customer')
-      if !user.organization || ( !user.organization.shared || user.organization.shared == false )
-        sql.push('tickets.customer_id = ?')
-        bind.push(user.id)
-      else
-        sql.push('(tickets.customer_id = ? OR tickets.organization_id = ?)')
-        bind.push(user.id)
-        bind.push(user.organization.id)
-      end
-    end
-
-    return if sql.blank?
-
-    [ sql.join(' OR ') ].concat(bind)
-  end
 
 =begin
 
@@ -416,6 +382,26 @@ returns
 
       # touch new ticket (to broadcast change)
       target_ticket.touch # rubocop:disable Rails/SkipsModelValidations
+
+      EventBuffer.add('transaction', {
+                        object:     target_ticket.class.name,
+                        type:       'update.received_merge',
+                        data:       target_ticket,
+                        changes:    {},
+                        id:         target_ticket.id,
+                        user_id:    UserInfo.current_user_id,
+                        created_at: Time.zone.now,
+                      })
+
+      EventBuffer.add('transaction', {
+                        object:     self.class.name,
+                        type:       'update.merged_into',
+                        data:       self,
+                        changes:    {},
+                        id:         id,
+                        user_id:    UserInfo.current_user_id,
+                        created_at: Time.zone.now,
+                      })
     end
     true
   end
@@ -503,11 +489,13 @@ get count of tickets and tickets which match on selector
         return [ticket_count, tickets]
       end
 
-      access_condition = Ticket.access_condition(current_user, access)
-      ticket_count = Ticket.distinct.where(access_condition).where(query, *bind_params).joins(tables).count
-      tickets = Ticket.distinct.where(access_condition).where(query, *bind_params).joins(tables).limit(limit)
+      tickets = "TicketPolicy::#{access.camelize}Scope".constantize
+                                                       .new(current_user).resolve
+                                                       .distinct
+                                                       .where(query, *bind_params)
+                                                       .joins(tables)
 
-      return [ticket_count, tickets]
+      return [tickets.count, tickets.limit(limit)]
     rescue ActiveRecord::StatementInvalid => e
       Rails.logger.error e
       raise ActiveRecord::Rollback
@@ -664,7 +652,7 @@ condition example
         biz = Calendar.lookup(id: selector['value'])&.biz
         next if biz.blank?
 
-        if ( selector['operator'] == 'is in working time' && !biz.in_hours?(Time.zone.now) ) || ( selector['operator'] == 'is not in working time' && biz.in_hours?(Time.zone.now) )
+        if (selector['operator'] == 'is in working time' && !biz.in_hours?(Time.zone.now)) || (selector['operator'] == 'is not in working time' && biz.in_hours?(Time.zone.now))
           no_result = true
           break
         end
@@ -1956,6 +1944,11 @@ result
     end
 
     original_article = objects[:article]
+
+    if ActiveModel::Type::Boolean.new.cast(value['include_attachments']) == true && original_article&.attachments.present?
+      original_article.clone_attachments('Ticket::Article', message.id, only_attached_attachments: true)
+    end
+
     if original_article&.should_clone_inline_attachments? # rubocop:disable Style/GuardClause
       original_article.clone_attachments('Ticket::Article', message.id, only_inline_attachments: true)
       original_article.should_clone_inline_attachments = false # cancel the temporary flag after cloning

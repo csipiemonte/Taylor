@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class TextModule < ApplicationModel
   include ChecksClientNotification
@@ -37,7 +37,8 @@ load text modules from online
       url,
       {},
       {
-        json: true,
+        json:       true,
+        verify_ssl: true,
       }
     )
 
@@ -72,7 +73,7 @@ push text_modules to online
   def self.push(locale)
 
     # only push changed text_modules
-    text_modules         = TextModule.all #where(locale: locale)
+    text_modules         = TextModule.all # where(locale: locale)
     text_modules_to_push = []
     text_modules.each do |text_module|
       next if !text_module.active
@@ -98,6 +99,7 @@ push text_modules to online
         json:         true,
         open_timeout: 6,
         read_timeout: 16,
+        verify_ssl:   true,
       }
     )
     raise "Can't push text_modules to #{url}: #{result.error}" if !result.success?

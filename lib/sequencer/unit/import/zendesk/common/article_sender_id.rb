@@ -1,9 +1,11 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sequencer
   class Unit
     module Import
       module Zendesk
         module Common
-          class ArticleSenderID < Sequencer::Unit::Common::Provider::Named
+          class ArticleSenderId < Sequencer::Unit::Common::Provider::Named
 
             uses :user_id
 

@@ -1,9 +1,11 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sequencer
   class Unit
     module Import
       module Zendesk
         module User
-          class OrganizationID < Sequencer::Unit::Common::Provider::Named
+          class OrganizationId < Sequencer::Unit::Common::Provider::Named
 
             uses :resource, :organization_map
 

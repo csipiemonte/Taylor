@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class KnowledgeBase < ApplicationModel
   include HasTranslations
   include HasAgentAllowedParams
@@ -26,18 +27,13 @@ class KnowledgeBase < ApplicationModel
   validates :category_layout, inclusion: { in: KnowledgeBase::LAYOUTS }
   validates :homepage_layout, inclusion: { in: KnowledgeBase::LAYOUTS }
 
-  validates :color_highlight, presence: true, color: true
-  validates :color_header,    presence: true, color: true
+  validates :color_highlight,   presence: true, color: true
+  validates :color_header,      presence: true, color: true
+  validates :color_header_link, presence: true, color: true
 
   validates :iconset, inclusion: { in: KnowledgeBase::ICONSETS }
 
   scope :active, -> { where(active: true) }
-
-  scope :check_active_unless_editor, lambda { |user|
-    return if user&.permissions? 'knowledge_base.editor'
-
-    active
-  }
 
   alias assets_essential assets
 
@@ -96,7 +92,7 @@ class KnowledgeBase < ApplicationModel
   def custom_address_prefix(request)
     host        = custom_address_uri.host || request.headers.env['SERVER_NAME']
     port        = request.headers.env['SERVER_PORT']
-    port_silent = request.ssl? && port == '443' || !request.ssl? && port == '80'
+    port_silent = (request.ssl? && port == '443') || (!request.ssl? && port == '80')
     port_string = port_silent ? '' : ":#{port}"
 
     "#{custom_address_uri.scheme}://#{host}#{port_string}"

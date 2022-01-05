@@ -1353,6 +1353,10 @@ td .icon-trash {
   //fill: hsl(240,1%,77%);
 }
 
+td .prefix-icon > .icon {
+  vertical-align: top;
+}
+
 .table-checkbox,
 .table-radio {
   padding: 0 !important;
@@ -1777,6 +1781,11 @@ fieldset > .form-group {
 
   &.form-group--inactive {
     opacity: 0.5;
+  }
+
+  &.is-readonly {
+    pointer-events: none;
+    cursor: not-allowed !important;
   }
 }
 
@@ -2652,7 +2661,7 @@ input.has-error {
   }
 
   a {
-    color: hsl(206,8%,50%);
+    color: inherit;
   }
 
   .label {
@@ -3841,6 +3850,15 @@ footer {
     min-width: $minWidth - $sidebarWidth;
   }
 
+  &.no-sidebar {
+    @include bidi-style(left, $navigationWidth, right, 0);
+    min-width: $minWidth - $navigationWidth;
+
+    @include small-desktop {
+      min-width: $minWidth;
+    }
+  }
+
   @include phone {
     @include bidi-style(left, $mobileNavigationWidth, right, 0);
     min-width: 0;
@@ -4295,6 +4313,12 @@ footer {
 
     .navigation .nav-tab-name {
       text-align: start;
+
+
+      &.is-inactive {
+        text-decoration: line-through;
+        opacity: .73;
+      }
     }
 
     .tasks-navigation .nav-tab-icon .error {
@@ -4324,6 +4348,11 @@ footer {
   .nav-tab.nav-tab--search {
     height: 30px;
     padding-top: 9px;
+
+    &.is-inactive {
+      text-decoration: line-through;
+      opacity: .73;
+    }
   }
 
   .nav-tab-icon {
@@ -5163,6 +5192,12 @@ footer {
   .btn-list {
     margin-bottom: 5px;
   }
+
+  &-button {
+    .sidebar-block-header + &.text-muted {
+      margin-top: 3px;
+    }
+  }
 }
 
 .sidebar-git-issue-delete {
@@ -5363,6 +5398,11 @@ footer {
     border: none;
     background: none;
     padding: 21px 17px 4px;
+
+    .is-inactive {
+      text-decoration: line-through;
+      color: #ccc;
+    }
   }
 
   .popover-content {
@@ -5421,10 +5461,22 @@ footer {
     color: #a1a4a7;
   }
 
+  .popover .person {
+    &.is-inactive {
+      text-decoration: line-through;
+      color: #ccc;
+    }
+  }
+
   .popover .user-organization {
     @extend .u-textTruncate;
     margin-bottom: 8px;
     margin-top: -4px;
+
+    &.is-inactive {
+      text-decoration: line-through;
+      color: #ccc;
+    }
   }
 
   .popover-block {
@@ -5563,6 +5615,11 @@ footer {
     position: absolute;
     left: 0;
     top: 0;
+  }
+
+  .user-popover.is-inactive {
+    text-decoration: line-through;
+    opacity: .73;
   }
 
   .btn.js-newTicket {
@@ -6581,8 +6638,7 @@ footer {
       }
     }
 
-    .attachments .icon-paperclip,
-    .attachments .icon-overviews {
+    .attachments > .icon:first-child {
       position: absolute;
       left: 33px;
       top: 27px;
@@ -7005,13 +7061,23 @@ footer {
     padding: 10px 0;
     color: #b3b3b3;
     overflow: hidden;
-    @extend .u-unclickable, .u-textTruncate;
+    @extend .u-textTruncate;
   }
 
     .attachments:not(:empty) {
       padding: 9px 5px;
       border-top: 1px solid hsl(0,0%,93%);
       margin: 6px -12px 30px;
+    }
+
+    .ticket-create .attachments:not(:empty) {
+      margin-left: 0;
+      margin-right: 0;
+      margin-bottom: 56px;
+    }
+
+    .ticket-create .attachment--row {
+      line-height: 1.45;
     }
 
     .attachment.attachment--row {
@@ -8006,6 +8072,11 @@ footer {
     padding: 9px 15px;
     list-style-image: none;
 
+    &.is-inactive {
+      text-decoration: line-through;
+      opacity: .73;
+    }
+
     &:not(:first-child) {
       box-shadow: 0 1px rgba(255,255,255,.13) inset;
     }
@@ -8391,6 +8462,10 @@ footer {
 
   .dropdown li.with-category, .dropdown.dropdown--actions li.with-category {
     line-height: 19.5px;
+
+    small {
+      color: #fff !important;
+    }
   }
 
   .dropdown.dropdown--actions li.with-category {
@@ -8576,6 +8651,13 @@ footer {
   display: flex;
   align-items: center;
   @extend .u-clickable;
+
+  &.is-inactive {
+    .recipientList-name {
+      text-decoration: line-through;
+      opacity: .73;
+    }
+  }
 }
 
   .recipientList-entry .recipientList-iconSpacer {
@@ -8630,6 +8712,10 @@ footer {
 
   .recipientList-detail {
     opacity: 0.5;
+
+    &.is-inactive > span {
+      text-decoration: line-through;
+    }
   }
 
   .recipientList-icon.plus {
@@ -9873,7 +9959,7 @@ label + .wizard-buttonList {
 
 output {
   border-bottom: 1px solid hsl(200,71%,59%);
-  margin: 14px 0 0;
+  margin: 14px 0 19px;
   display: inline-block;
   padding: 10px 12px 8px;
   background: hsl(201,62%,93%);
@@ -10363,6 +10449,11 @@ output {
 
     & + .icon {
       @include bidi-style(margin-left, 10px, margin-right, 0);
+    }
+
+    &.is-inactive {
+      opacity: .73;
+      text-decoration: line-through;
     }
   }
 
@@ -11658,11 +11749,7 @@ output {
     bottom: -50px; // extra space for bounce animation
 
     .batch-overlay-box-inner {
-      max-height: 310px;
-
-      @media screen and (min-height: 1000px) {
-        max-height: 465px;
-      }
+      max-height: 40vh;
     }
 
     &-group {
@@ -11727,12 +11814,8 @@ output {
     top: -50px; // extra space for bounce animation
 
     .batch-overlay-box-inner {
-      max-height: 146px;
+      max-height: 55vh;
       margin: 24px 12px;
-
-      @media screen and (min-height: 800px) {
-        max-height: 292px;
-      }
     }
 
     &-entry {
@@ -11751,6 +11834,14 @@ output {
       &.is-hovered {
         border-color: $highlight-color;
         transform: scale(1.05);
+      }
+
+      &.small {
+        @include small-desktop {
+          height: 80px;
+          width: 80px;
+          padding: 11px 11px 8px;
+        }
       }
     }
   }
@@ -11782,7 +11873,7 @@ output {
       color: inherit;
     }
 
-    td {
+    td:not(:first-child) {
       display: block;
       padding: 0 12px;
       white-space: nowrap;
@@ -11797,6 +11888,11 @@ output {
       &:nth-child(n+4) {
         display: none;
       }
+    }
+
+    .checkbox-replacement > .icon,
+    .radio-replacement > .icon {
+      fill: none;
     }
   }
 
@@ -12930,6 +13026,7 @@ span.is-disabled {
   }
 
   &-attachments,
+  &-tags,
   &-linked-tickets {
     margin: 0 -30px;
 
@@ -12940,6 +13037,25 @@ span.is-disabled {
 
   .tasks {
     @include bidi-style(margin-left, 7px, margin-right, 0);
+  }
+
+  &-tags--container {
+    padding: 6px 5px 11px;
+    display: flex;
+    flex-wrap: wrap;
+
+    .tag {
+      margin: 2px;
+      display: inline-block;
+      background: #0F94D6;
+      color: white;
+      border-radius: 999px;
+      padding: 2px 12px 1px;
+
+      &:hover {
+        background: hsl(200deg, 87%, 34%);
+      }
+    }
   }
 
   &-nav {

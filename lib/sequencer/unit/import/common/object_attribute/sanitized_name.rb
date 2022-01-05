@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sequencer
   class Unit
     module Import
@@ -40,7 +42,7 @@ class Sequencer
               # model__name
               # model_name_
               # model_name
-              downcased.split('').map { |char| char.match?(%r{[a-z0-9_]}) ? char : '_' }.join
+              downcased.chars.map { |char| char.match?(%r{[a-z0-9_]}) ? char : '_' }.join
             end
 
             def downcased
@@ -72,9 +74,7 @@ class Sequencer
               # Model Name
               # Model::Name
               # Model Name?
-              # rubocop:disable Style/AsciiComments
               # Mödel Nâmé
-              # rubocop:enable Style/AsciiComments
               raise 'Missing implementation for unsanitized_name method'
             end
           end

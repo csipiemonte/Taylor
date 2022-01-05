@@ -1,5 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
-require 'csv'
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Translation < ApplicationModel
   before_create :set_initial
@@ -84,6 +83,7 @@ push translations to online
         json:         true,
         open_timeout: 8,
         read_timeout: 24,
+        verify_ssl:   true,
       }
     )
     raise "Can't push translations to #{url}: #{result.error}" if !result.success?
@@ -174,7 +174,7 @@ get list of translations
 
         presorted_list.push item
         list.delete item
-        #list.unshift presort
+        # list.unshift presort
       end
     end
     data['list'] = presorted_list.concat list
@@ -243,7 +243,7 @@ or
       return timestamp.to_s
     end
 
-    record = Translation.where(locale: locale, source: 'timestamp', format: 'time').pluck(:target).first
+    record = Translation.where(locale: locale, source: 'timestamp', format: 'time').pick(:target)
     return timestamp.to_s if !record
 
     record.sub!('dd', format('%<day>02d', day: timestamp.day))
@@ -285,7 +285,7 @@ or
 
     return date.to_s if date.class != Date
 
-    record = Translation.where(locale: locale, source: 'date', format: 'time').pluck(:target).first
+    record = Translation.where(locale: locale, source: 'date', format: 'time').pick(:target)
     return date.to_s if !record
 
     record.sub!('dd', format('%<day>02d', day: date.day))
@@ -354,6 +354,7 @@ all:
           json:         true,
           open_timeout: 8,
           read_timeout: 24,
+          verify_ssl:   true,
         }
       )
       raise "Can't load translations from #{url}: #{result.error}" if !result.success?
@@ -404,6 +405,7 @@ Get source file at https://i18n.zammad.com/api/v1/translations_empty_translation
     params = {
       col_sep: ',',
     }
+    require 'csv' # Only load it when it's really needed to save memory.
     rows = ::CSV.parse(content, params)
     rows.shift # remove header
 
@@ -502,7 +504,7 @@ Get source file at https://i18n.zammad.com/api/v1/translations_empty_translation
   private_class_method :cache_set
 
   def self.cache_get(locale)
-    Cache.get("TranslationMapOnlyContent::#{locale.downcase}")
+    Cache.read("TranslationMapOnlyContent::#{locale.downcase}")
   end
   private_class_method :cache_get
 end

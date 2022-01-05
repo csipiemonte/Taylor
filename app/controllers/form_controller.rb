@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2014 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class FormController < ApplicationController
   prepend_before_action -> { authorize! }, only: %i[configuration submit]
@@ -6,7 +6,7 @@ class FormController < ApplicationController
   skip_before_action :verify_csrf_token
   before_action :cors_preflight_check
   after_action :set_access_control_headers_execute
-  skip_before_action :user_device_check
+  skip_before_action :user_device_log
 
   def configuration
     return if !fingerprint_exists?
@@ -149,7 +149,7 @@ class FormController < ApplicationController
 
   # we don't wann to tell what the cause for the authorization error is
   # so we capture the exception and raise an anonymized one
-  def authorize!(*)
+  def authorize!(...)
     super
   rescue Pundit::NotAuthorizedError
     raise Exceptions::Forbidden
@@ -192,7 +192,7 @@ class FormController < ApplicationController
       Rails.logger.info "Invalid token for form (invalid fingerprint found #{fingerprint_local} != #{fingerprint})!"
       raise Exceptions::NotAuthorized
     end
-    if parts[1].to_i < (Time.zone.now.to_i - 60 * 60 * 24)
+    if parts[1].to_i < (Time.zone.now.to_i - (60 * 60 * 24))
       Rails.logger.info 'Invalid token for form (token expired})!'
       raise Exceptions::NotAuthorized
     end

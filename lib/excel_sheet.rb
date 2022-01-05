@@ -1,6 +1,11 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class ExcelSheet
 
   def initialize(title:, header:, records:, locale:, timezone: nil)
+
+    require 'writeexcel' # Only load this gem when it is really used.
+
     @title           = title
     @header          = header
     @records         = records

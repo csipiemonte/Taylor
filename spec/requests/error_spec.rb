@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe 'Error handling', type: :request do
@@ -26,7 +28,7 @@ RSpec.describe 'Error handling', type: :request do
     let(:as) { :html }
 
     it { expect(response).to have_http_status(http_status) }
-    it { expect(response.content_type).to eq('text/html') }
+    it { expect(response.content_type).to start_with('text/html') }
     it { expect(response.body).to include('<html') }
     it { expect(response.body).to include("<title>#{title}</title>") }
     it { expect(response.body).to include("<h1>#{headline}</h1>") }

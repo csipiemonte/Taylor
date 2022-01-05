@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class GettingStartedController < ApplicationController
   prepend_before_action -> { authorize! }, only: [:base]
 
@@ -35,7 +36,7 @@ curl http://localhost/api/v1/getting_started -v -u #{login}:#{password}
     # check it auto wizard is already done
     return if auto_wizard_enabled_response
 
-    # if master user already exists, we need to be authenticated
+    # if admin user already exists, we need to be authenticated
     return if setup_done && !authentication_check
 
     # return result
@@ -210,7 +211,7 @@ curl http://localhost/api/v1/getting_started -v -u #{login}:#{password}
   end
 
   def setup_done
-    #return false
+    # return false
     count = User.all.count()
     done = true
     if count <= 2

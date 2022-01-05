@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class ExcelSheet::Ticket < ExcelSheet
 
 =begin
@@ -55,7 +57,9 @@ class ExcelSheet::Ticket < ExcelSheet
         object_lookup: ObjectLookup.lookup(name: 'Ticket')
       )
       .where.not(
-        name:    header.pluck(:name),
+        name:    header.pluck(:name)
+      )
+      .where.not(
         display: header.pluck(:display)
       )
       .pluck_as_hash(:name, :display, :data_type, :data_option)

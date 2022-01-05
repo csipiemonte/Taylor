@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 Zammad::Application.routes.draw do
   api_path = Rails.configuration.api_path
 
@@ -15,11 +17,15 @@ Zammad::Application.routes.draw do
   match api_path + '/ticket_customer',                               to: 'tickets#ticket_customer',   via: :get
   match api_path + '/ticket_related/:ticket_id',                     to: 'tickets#ticket_related',    via: :get
   match api_path + '/ticket_recent',                                 to: 'tickets#ticket_recent',     via: :get
-  match api_path + '/ticket_merge/:slave_ticket_id/:master_ticket_number', to: 'tickets#ticket_merge', via: :put
+  match api_path + '/ticket_merge/:source_ticket_id/:target_ticket_number', to: 'tickets#ticket_merge', via: :put
   match api_path + '/ticket_stats',                                  to: 'tickets#stats',             via: :get
   match api_path + '/ticket_admissible_transitions/:state_id',             to: 'tickets#admissible_transitions',        via: :get
 
   # ticket overviews
+  match api_path + '/ticket_overview',                               to: 'ticket_overviews#data',     via: :get
+  # Zammad ori
+  # match api_path + '/ticket_overviews',                              to: 'ticket_overviews#show',     via: :get
+  # CSI Piemonte custom
   match api_path + '/ticket_overviews',                              to: 'external_activity_tickets#show',     via: :get
 
   # ticket priority

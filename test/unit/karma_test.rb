@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'test_helper'
 
 class KarmaTest < ActiveSupport::TestCase
@@ -323,7 +325,7 @@ class KarmaTest < ActiveSupport::TestCase
     assert_equal(0, Karma.score_by_user(customer1))
 
     ticket1.tag_add('Tag1', agent1.id)
-    #travel 5.seconds
+    # travel 5.seconds
     ticket1.tag_add('Tag2', agent1.id)
 
     # execute object transaction
@@ -463,8 +465,8 @@ class KarmaTest < ActiveSupport::TestCase
     TransactionDispatcher.commit
     Scheduler.worker(true)
 
-    #Scheduler.worker(true)
-    #Ticket::Escalation.rebuild_all
+    # Scheduler.worker(true)
+    # Ticket::Escalation.rebuild_all
     Ticket.process_escalation
 
     assert_equal(10 + 2 + 25 + 4 + 10 - 5 - 5, Karma.score_by_user(agent1))

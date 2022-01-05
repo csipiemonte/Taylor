@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2015 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Facebook
 
@@ -107,7 +107,7 @@ result
     return if !item['from']['id']
 
     cache_key = "FB:User:Lookup:#{item['from']['id']}"
-    cache = Cache.get(cache_key)
+    cache = Cache.read(cache_key)
     return cache if cache
 
     begin
@@ -284,7 +284,7 @@ result
       end
 
       article = {
-        #to:        @account['name'],
+        # to:        @account['name'],
         ticket_id:     ticket.id,
         internal:      false,
         sender_id:     Ticket::Article::Sender.lookup(name: 'Customer').id,

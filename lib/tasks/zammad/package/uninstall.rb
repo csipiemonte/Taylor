@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require_dependency 'tasks/zammad/command.rb'
 
 module Tasks
@@ -17,7 +19,7 @@ module Tasks
             abort "Error: please provide a package name: #{ARGV[0]} MyPackage"
           end
           # Find the package so that we don't need to require the version from the command line.
-          package = ::Package.find_by( name: name )
+          package = ::Package.find_by(name: name)
           if package.blank?
             abort "Error: package #{name} was not found."
           end

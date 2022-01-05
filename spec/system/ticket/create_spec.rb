@@ -1,5 +1,8 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
+require 'system/examples/core_workflow_examples'
 require 'system/examples/text_modules_examples'
 
 RSpec.describe 'Ticket Create', type: :system do
@@ -202,8 +205,6 @@ RSpec.describe 'Ticket Create', type: :system do
                 encrypt_button = find('.js-securityEncrypt', wait: 5)
                 sign_button    = find('.js-securitySign', wait: 5)
 
-                await_empty_ajax_queue
-
                 active_button_class = '.btn--active'
                 expect(encrypt_button.matches_css?(active_button_class, wait: 2)).to be(encrypt)
                 expect(sign_button.matches_css?(active_button_class, wait: 2)).to be(sign)
@@ -231,8 +232,6 @@ RSpec.describe 'Ticket Create', type: :system do
 
               within(:active_content) do
                 use_template(template)
-
-                await_empty_ajax_queue
 
                 select new_group.name, from: 'group_id'
               end
@@ -342,17 +341,10 @@ RSpec.describe 'Ticket Create', type: :system do
     end
   end
 
-  describe 'GitLab Integration', :integration, authenticated_as: :authenticate do
+  describe 'GitLab Integration', :integration, authenticated_as: :authenticate, required_envs: %w[GITLAB_ENDPOINT GITLAB_APITOKEN] do
     let(:customer) { create(:customer) }
     let(:agent) { create(:agent, groups: [Group.find_by(name: 'Users')]) }
     let!(:template) { create(:template, :dummy_data, group: Group.find_by(name: 'Users'), owner: agent, customer: customer) }
-
-    before(:all) do # rubocop:disable RSpec/BeforeAfterAll
-      required_envs = %w[GITLAB_ENDPOINT GITLAB_APITOKEN]
-      required_envs.each do |key|
-        skip("NOTICE: Missing environment variable #{key} for test! (Please fill up: #{required_envs.join(' && ')})") if ENV[key].blank?
-      end
-    end
 
     def authenticate
       Setting.set('gitlab_integration', true)
@@ -376,7 +368,6 @@ RSpec.describe 'Ticket Create', type: :system do
         click_on 'Link issue'
         fill_in 'link', with: ENV['GITLAB_ISSUE_LINK']
         click_on 'Submit'
-        await_empty_ajax_queue
 
         # verify issue
         content = find('.sidebar-git-issue-content')
@@ -388,7 +379,6 @@ RSpec.describe 'Ticket Create', type: :system do
 
         # create Ticket
         click '.js-submit'
-        await_empty_ajax_queue
 
         # check stored data
         expect(Ticket.last.preferences[:gitlab][:issue_links][0]).to eq(ENV['GITLAB_ISSUE_LINK'])
@@ -396,17 +386,10 @@ RSpec.describe 'Ticket Create', type: :system do
     end
   end
 
-  describe 'GitHub Integration', :integration, authenticated_as: :authenticate do
+  describe 'GitHub Integration', :integration, authenticated_as: :authenticate, required_envs: %w[GITHUB_ENDPOINT GITHUB_APITOKEN] do
     let(:customer) { create(:customer) }
     let(:agent) { create(:agent, groups: [Group.find_by(name: 'Users')]) }
     let!(:template) { create(:template, :dummy_data, group: Group.find_by(name: 'Users'), owner: agent, customer: customer) }
-
-    before(:all) do # rubocop:disable RSpec/BeforeAfterAll
-      required_envs = %w[GITHUB_ENDPOINT GITHUB_APITOKEN]
-      required_envs.each do |key|
-        skip("NOTICE: Missing environment variable #{key} for test! (Please fill up: #{required_envs.join(' && ')})") if ENV[key].blank?
-      end
-    end
 
     def authenticate
       Setting.set('github_integration', true)
@@ -430,7 +413,6 @@ RSpec.describe 'Ticket Create', type: :system do
         click_on 'Link issue'
         fill_in 'link', with: ENV['GITHUB_ISSUE_LINK']
         click_on 'Submit'
-        await_empty_ajax_queue
 
         # verify issue
         content = find('.sidebar-git-issue-content')
@@ -442,10 +424,22 @@ RSpec.describe 'Ticket Create', type: :system do
 
         # create Ticket
         click '.js-submit'
-        await_empty_ajax_queue
 
         # check stored data
         expect(Ticket.last.preferences[:github][:issue_links][0]).to eq(ENV['GITHUB_ISSUE_LINK'])
+      end
+    end
+  end
+
+  describe 'Core Workflow' do
+    include_examples 'core workflow' do
+      let(:object_name) { 'Ticket' }
+      let(:before_it) do
+        lambda {
+          ensure_websocket(check_if_pinged: false) do
+            visit 'ticket/create'
+          end
+        }
       end
     end
   end
@@ -474,6 +468,146 @@ RSpec.describe 'Ticket Create', type: :system do
       end
 
       expect(page).to have_no_selector(:task_with, task_key)
+    end
+
+    it 'asks for confirmation if attachment was added' do
+      visit 'ticket/create'
+
+      within :active_content do
+        page.find('input#fileUpload_1', visible: :all).set(Rails.root.join('test/data/mail/mail001.box'))
+        await_empty_ajax_queue
+
+        find('.js-cancel').click
+      end
+
+      in_modal disappears: false do
+        expect(page).to have_text 'Tab has changed'
+      end
+    end
+  end
+
+  context 'when uploading attachment' do
+    it 'shows an error if server throws an error' do
+      allow(Store).to receive(:add) { raise 'Error' }
+      visit 'ticket/create'
+
+      within :active_content do
+        page.find('input#fileUpload_1', visible: :all).set(Rails.root.join('test/data/mail/mail001.box'))
+      end
+
+      in_modal disappears: false do
+        expect(page).to have_text 'Error'
+      end
+    end
+  end
+
+  context 'when closing taskbar tab for new ticket creation' do
+    it 'close task bar entry after some changes in ticket create form' do
+      visit 'ticket/create'
+
+      within(:active_content) do
+        find('[name=title]').fill_in with: 'Title'
+      end
+
+      taskbar_tab_close(find(:task_active)['data-key'])
+    end
+  end
+
+  describe 'customer selection to check the field search' do
+    before do
+      create(:customer, active: true)
+      create(:customer, active: false)
+    end
+
+    it 'check for inactive customer in customer/organization selection' do
+      visit 'ticket/create'
+
+      within(:active_content) do
+        find('[name=customer_id] ~ .user-select.token-input').fill_in with: '**'
+        expect(page).to have_css('ul.recipientList > li.recipientList-entry', minimum: 2)
+        expect(page).to have_css('ul.recipientList > li.recipientList-entry.is-inactive', count: 1)
+      end
+    end
+  end
+
+  context 'when agent and customer user login after another' do
+    let(:agent) { create(:agent, password: 'test') }
+    let(:customer) { create(:customer, password: 'test') }
+
+    it 'customer user should not have agent object attributes', authenticated_as: :agent do
+      visit 'ticket/create'
+
+      logout
+
+      # Re-create agent session and fetch object attributes.
+      login(
+        username: agent.login,
+        password: 'test'
+      )
+      visit 'ticket/create'
+
+      # Re-remove local object attributes bound to the session
+      # there was an issue (#1856) where the old attribute values
+      # persisted and were stored as the original attributes.
+      logout
+
+      # Create customer session and fetch object attributes.
+      login(
+        username: customer.login,
+        password: 'test'
+      )
+
+      visit 'customer_ticket_new'
+
+      expect(page).to have_no_css('.newTicket input[name="customer_id"]')
+    end
+  end
+
+  describe 'It should be possible to show attributes which are configured shown false #3726', authenticated_as: :authenticate, db_strategy: :reset do
+    let(:field_name) { SecureRandom.uuid }
+    let(:field) do
+      create :object_manager_attribute_text, name: field_name, display: field_name, screens: {
+        'create_middle' => {
+          'ticket.agent' => {
+            'shown'    => false,
+            'required' => false,
+          }
+        }
+      }
+      ObjectManager::Attribute.migration_execute
+    end
+
+    before do
+      visit 'ticket/create'
+    end
+
+    context 'when field visible' do
+      let(:workflow) do
+        create(:core_workflow,
+               object:  'Ticket',
+               perform: { "ticket.#{field_name}" => { 'operator' => 'show', 'show' => 'true' } })
+      end
+
+      def authenticate
+        field
+        workflow
+        true
+      end
+
+      it 'does show up the field' do
+        expect(page).to have_css("div[data-attribute-name='#{field_name}']")
+      end
+    end
+
+    context 'when field hidden' do
+      def authenticate
+        field
+        true
+      end
+
+      it 'does not show the field' do
+        expect(page).to have_css("div[data-attribute-name='#{field_name}'].is-hidden", visible: :hidden)
+      end
     end
   end
 end

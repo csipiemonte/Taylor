@@ -1,5 +1,5 @@
 default:
-  image: registry.znuny.com/docker/zammad-ci:2.6.8
+  image: registry.znuny.com/docker/zammad-ci:2.7.4
 
 include:
   - local: '/.gitlab/ci/base.yml'
@@ -39,9 +39,9 @@ variables:
 # Cache gems in between jobs and pipelines
 # ATTENTION: We use a combination of the Ruby major and minor version number
 # as a key for the cache to avoid cache growth and incompatibilities between
-# the gems. Search hook: 2.6.8 (change it when updating the Ruby version too)
+# the gems. Search hook: 2.7.4 (change it when updating the Ruby version too)
 cache:
-  key: "centos7ruby268"
+  key: "centos7ruby274"
   paths:
     - vendor/ruby
     # ATTENTION: This should be a dedicated cache only used in the job "TODO".
@@ -55,6 +55,7 @@ cache:
 # Initialize application env
 before_script:
   - source /etc/profile.d/rvm.sh
-  - FRESHENVFILE=fresh.env && test -f $FRESHENVFILE && source $FRESHENVFILE
+  - source /opt/rh/rh-nodejs12/enable
   - bundle install -j $(nproc) --path vendor
-  - bundle exec ruby script/build/database_config.rb
+  - bundle exec ruby .gitlab/configure_environment.rb
+  - source .gitlab/environment.env

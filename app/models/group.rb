@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Group < ApplicationModel
   include CanBeImported
@@ -7,7 +7,7 @@ class Group < ApplicationModel
   include ChecksHtmlSanitized
   include ChecksLatestChangeObserved
   include HasHistory
-  include HasObjectManagerAttributesValidation
+  include HasObjectManagerAttributes
   include HasCollectionUpdate
   include HasTicketCreateScreenImpact
   include HasSearchIndexBackend
@@ -16,6 +16,9 @@ class Group < ApplicationModel
 
   belongs_to :email_address, optional: true
   belongs_to :signature, optional: true
+
+  # workflow checks should run after before_create and before_update callbacks
+  include ChecksCoreWorkflow
 
   validates :name, presence: true
 

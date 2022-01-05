@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe 'Ticket views', type: :system do
@@ -16,8 +18,8 @@ RSpec.describe 'Ticket views', type: :system do
 
       # give user access to all groups including those created
       # by using FactoryBot outside of the example
-      group_names_access_map = Group.all.pluck(:name).each_with_object({}) do |group_name, result|
-        result[group_name] = 'full'.freeze
+      group_names_access_map = Group.all.pluck(:name).index_with do |_group_name|
+        'full'.freeze
       end
 
       current_user do |user|
@@ -87,7 +89,7 @@ RSpec.describe 'Ticket views', type: :system do
       end
     end
 
-    it 'can use macro to create article', authenticated_as: true do
+    it 'can use macro to create article' do
       refresh
       visit '#ticket/view/all_open'
 
@@ -110,10 +112,123 @@ RSpec.describe 'Ticket views', type: :system do
 
         release_mouse
 
-        await_empty_ajax_queue
-
-        expect(Ticket.first.articles.last.subject).to eq('macro note')
+        expect do
+          wait(10, interval: 0.1).until { Ticket.first.articles.last.subject == 'macro note' }
+        end.not_to raise_error
       end
+    end
+
+    context 'with macro batch overlay' do
+      shared_examples "adding 'small' class to macro element" do
+        it 'adds a "small" class to the macro element' do
+          within(:active_content) do
+
+            ticket = page.find(:table_row, Ticket.first.id).native
+
+            display_macro_batches(ticket)
+
+            expect(page).to have_selector('.batch-overlay-macro-entry.small', wait: 10)
+
+            release_mouse
+          end
+        end
+      end
+
+      shared_examples "not adding 'small' class to macro element" do
+        it 'does not add a "small" class to the macro element' do
+          within(:active_content) do
+
+            ticket = page.find(:table_row, Ticket.first.id).native
+
+            display_macro_batches(ticket)
+
+            expect(page).to have_no_selector('.batch-overlay-macro-entry.small', wait: 10)
+
+            release_mouse
+          end
+        end
+      end
+
+      shared_examples 'showing all macros' do
+        it 'shows all macros' do
+          within(:active_content) do
+
+            ticket = page.find(:table_row, Ticket.first.id).native
+
+            display_macro_batches(ticket)
+
+            expect(page).to have_selector('.batch-overlay-macro-entry', count: all, wait: 10)
+
+            release_mouse
+          end
+        end
+      end
+
+      shared_examples 'showing some macros' do |count|
+        it 'shows all macros' do
+          within(:active_content) do
+
+            ticket = page.find(:table_row, Ticket.first.id).native
+
+            display_macro_batches(ticket)
+
+            expect(page).to have_selector('.batch-overlay-macro-entry', count: count, wait: 10)
+
+            release_mouse
+          end
+        end
+      end
+
+      shared_examples 'show macros batch overlay' do
+        before do
+          Macro.destroy_all && (create_list :macro, all)
+          refresh
+          page.current_window.resize_to(width, height)
+          visit '#ticket/view/all_open'
+        end
+
+        context 'with few macros' do
+          let(:all) { 15 }
+
+          context 'when on large screen' do
+            let(:width) { 1520 }
+            let(:height) { 1040 }
+
+            it_behaves_like 'showing all macros'
+            it_behaves_like "not adding 'small' class to macro element"
+          end
+
+          context 'when on small screen' do
+            let(:width) { 1020 }
+            let(:height) { 1040 }
+
+            it_behaves_like 'showing all macros'
+            it_behaves_like "not adding 'small' class to macro element"
+          end
+
+        end
+
+        context 'with many macros' do
+          let(:all) { 50 }
+
+          context 'when on large screen' do
+            let(:width) { 1520 }
+            let(:height) { 1040 }
+
+            it_behaves_like 'showing some macros', 32
+          end
+
+          context 'when on small screen' do
+            let(:width) { 1020 }
+            let(:height) { 1040 }
+
+            it_behaves_like 'showing some macros', 30
+            it_behaves_like "adding 'small' class to macro element"
+          end
+        end
+      end
+
+      include_examples 'show macros batch overlay'
     end
   end
 
@@ -224,9 +339,38 @@ RSpec.describe 'Ticket views', type: :system do
 
     it 'does basic view test of tickets' do
       visit 'ticket/view/my_tickets'
-      expect(page).to have_text(ticket.title)
+      expect(page).to have_text(ticket.title, wait: 10)
       click_on 'My Organization Tickets'
-      expect(page).to have_text(ticket.title)
+      expect(page).to have_text(ticket.title, wait: 10)
+    end
+  end
+
+  describe 'Grouping' do
+    context 'when sorted by custom object date', authenticated_as: :authenticate, db_strategy: :reset do
+      let(:ticket1) { create(:ticket, group: Group.find_by(name: 'Users'), cdate: '2018-01-17') }
+      let(:ticket2) { create(:ticket, group: Group.find_by(name: 'Users'), cdate: '2018-08-19') }
+      let(:ticket3) { create(:ticket, group: Group.find_by(name: 'Users'), cdate: '2019-01-19') }
+      let(:ticket4) { create(:ticket, group: Group.find_by(name: 'Users'), cdate: '2021-08-18') }
+
+      def authenticate
+        create :object_manager_attribute_date, name: 'cdate'
+        ObjectManager::Attribute.migration_execute
+        ticket4
+        ticket3
+        ticket2
+        ticket1
+        Overview.find_by(link: 'all_unassigned').update(group_by: 'cdate')
+        true
+      end
+
+      it 'does show the date groups sorted' do
+        visit 'ticket/view/all_unassigned'
+        text = page.find('.js-tableBody').text(:all)
+
+        expect(text.index('01/17/2018') < text.index('08/19/2018')).to eq(true)
+        expect(text.index('08/19/2018') < text.index('01/19/2019')).to eq(true)
+        expect(text.index('01/19/2019') < text.index('08/18/2021')).to eq(true)
+      end
     end
   end
 

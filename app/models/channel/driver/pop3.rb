@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 require 'net/pop'
 
@@ -63,7 +63,7 @@ returns
     Rails.logger.info "fetching pop3 (#{options[:host]}/#{options[:user]} port=#{port},ssl=#{ssl})"
 
     @pop = ::Net::POP3.new(options[:host], port)
-    #@pop.set_debug_output $stderr
+    # @pop.set_debug_output $stderr
 
     # on check, reduce open_timeout to have faster probing
     @pop.open_timeout = 16

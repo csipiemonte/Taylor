@@ -1,4 +1,6 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
+require 'uri'
 
 require 'uri'
 
@@ -26,6 +28,7 @@ class GitLab
           log:          {
             facility: 'GitLab',
           },
+          verify_ssl:   true,
         },
       )
 
@@ -41,7 +44,7 @@ class GitLab
 
     def headers
       {
-        "PRIVATE-TOKEN": @api_token
+        'PRIVATE-TOKEN': @api_token
       }
     end
   end

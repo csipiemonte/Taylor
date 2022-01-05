@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 # encoding: utf-8
 
@@ -274,7 +274,7 @@ returns
           content_type: mail[:content_type],
           body:         mail[:body],
           from:         mail[:from],
-          reply_to:     mail[:"reply-to"],
+          reply_to:     mail[:'reply-to'],
           to:           mail[:to],
           cc:           mail[:cc],
           subject:      mail[:subject],
@@ -377,7 +377,7 @@ returns
 
   def self.sender_attributes(from)
     if from.is_a?(HashWithIndifferentAccess)
-      from = SENDER_FIELDS.map { |f| from[f] }.compact
+      from = SENDER_FIELDS.filter_map { |f| from[f] }
                           .map(&:to_utf8).reject(&:blank?)
                           .partition { |address| address.match?(EMAIL_REGEX) }
                           .flatten.first
@@ -603,11 +603,27 @@ process unprocessable_mails (tmp/unprocessable_mail/*.eml) again
   end
 
   def message_body_hash(mail)
-    message = [mail.html_part, mail.text_part, mail].find { |m| m&.body.present? }
+    if mail.html_part&.body.present?
+      content_type = mail.html_part.mime_type || 'text/plain'
+      body = body_text(mail.html_part, strict_html: true)
+    elsif mail.text_part.present?
+      content_type = 'text/plain'
 
-    if message.present? && (message.mime_type.nil? || message.mime_type.match?(%r{^text/(plain|html)$}))
-      content_type = message.mime_type || 'text/plain'
-      body = body_text(message, strict_html: content_type.eql?('text/html'))
+      body = mail
+        .all_parts
+        .reduce('') do |memo, part|
+          if part.mime_type == 'text/plain' && !part.attachment?
+            memo += body_text(part, strict_html: false)
+          elsif part.inline? && part.content_type&.start_with?('image')
+            content_type = 'text/html'
+            memo += "<img src=\'cid:#{part.cid}\'>"
+          end
+
+          memo
+        end
+    elsif mail&.body.present? && (mail.mime_type.nil? || mail.mime_type.match?(%r{^text/(plain|html)$}))
+      content_type = mail.mime_type || 'text/plain'
+      body = body_text(mail, strict_html: content_type.eql?('text/html'))
     end
 
     content_type = 'text/plain' if body.blank?
@@ -688,6 +704,7 @@ process unprocessable_mails (tmp/unprocessable_mail/*.eml) again
   def get_attachments(file, attachments, mail)
     return file.parts.map { |p| get_attachments(p, attachments, mail) } if file.parts.any?
     return [] if [mail.text_part&.body&.encoded, mail.html_part&.body&.encoded].include?(file.body.encoded)
+    return [] if file.content_type&.start_with?('text/plain') && !file.attachment?
 
     # get file preferences
     headers_store = {}
@@ -746,7 +763,7 @@ process unprocessable_mails (tmp/unprocessable_mail/*.eml) again
     end
 
     # for some broken sm mail clients (X-MimeOLE: Produced By Microsoft Exchange V6.5)
-    filename ||= file.header[:content_location].to_s.force_encoding('utf-8')
+    filename ||= file.header[:content_location].to_s.dup.force_encoding('utf-8')
 
     file_body = String.new(file.body.to_s)
 

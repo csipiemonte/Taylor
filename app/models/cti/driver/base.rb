@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Cti::Driver::Base
 
   def initialize(params = {})
@@ -154,7 +156,7 @@ class Cti::Driver::Base
       end
     end
 
-    id = rand(999_999_999)
+    id = SecureRandom.uuid
     PushMessages.send_to(user.id, {
                            event: 'remote_task',
                            data:  {

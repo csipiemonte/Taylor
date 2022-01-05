@@ -1,6 +1,6 @@
 # Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
-class Issue3647CustomObjectAttributeInteger < ActiveRecord::Migration[5.2]
+class Issue3647CustomObjectAttributeInteger < ActiveRecord::Migration[6.0]
   def up
     return if !Setting.exists?(name: 'system_init_done')
 

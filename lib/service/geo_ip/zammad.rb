@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Service::GeoIp::Zammad
   def self.location(address)
@@ -7,7 +7,7 @@ class Service::GeoIp::Zammad
 
     # check cache
     cache_key = "zammadgeoip::#{address}"
-    cache = ::Cache.get(cache_key)
+    cache = ::Cache.read(cache_key)
     return cache if cache
 
     # do lookup
@@ -23,6 +23,7 @@ class Service::GeoIp::Zammad
           open_timeout:  2,
           read_timeout:  4,
           total_timeout: 4,
+          verify_ssl:    true,
         },
       )
       if !response.success? && response.code.to_s !~ %r{^40.$}

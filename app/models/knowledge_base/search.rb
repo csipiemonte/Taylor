@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class KnowledgeBase
   module Search
     extend ActiveSupport::Concern
@@ -35,7 +37,7 @@ class KnowledgeBase
         es_response = SearchIndexBackend.search(query, name, options)
         es_response = search_es_filter(es_response, query, kb_locales, options) if defined? :search_es_filter
 
-        es_response.map { |item| lookup(id: item[:id]) }.compact
+        es_response.filter_map { |item| lookup(id: item[:id]) }
       end
 
       def search_sql(query, kb_locales, options)

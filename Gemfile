@@ -1,8 +1,10 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 source 'https://rubygems.org'
 
 # core - base
-ruby '2.6.8'
-gem 'rails', '5.2.4.6'
+ruby '2.7.4'
+gem 'rails', '~> 6.0'
 
 # core - rails additions
 gem 'activerecord-import'
@@ -17,7 +19,7 @@ gem 'unicorn', group: :unicorn
 
 # core - supported ORMs
 gem 'activerecord-nulldb-adapter', group: :nulldb
-gem 'mysql2', '0.4.10', group: :mysql
+gem 'mysql2', group: :mysql
 gem 'pg', '0.21.0', group: :postgres
 
 # core - asynchrous task execution
@@ -27,6 +29,8 @@ gem 'delayed_job_active_record'
 # core - websocket
 gem 'em-websocket'
 gem 'eventmachine'
+gem 'hiredis', require: false
+gem 'redis', require: false
 
 # core - password security
 gem 'argon2'
@@ -41,32 +45,35 @@ gem 'pundit'
 gem 'rszr', '0.5.2'
 
 # performance - Memcached
-gem 'dalli'
+gem 'dalli', require: false
 
-# asset handling - coffee-script
-gem 'coffee-rails'
-gem 'coffee-script-source'
+# Only load gems for asset compilation if they are needed to avoid
+#   having unneeded runtime dependencies like NodeJS.
+group :assets do
+  # asset handling - javascript execution for e.g. linux
+  gem 'execjs', require: false
 
-# asset handling - frontend templating
-gem 'eco'
+  # asset handling - coffee-script
+  gem 'coffee-rails', require: false
 
-# asset handling - SASS
-gem 'sassc-rails'
+  # asset handling - frontend templating
+  gem 'eco', require: false
 
-# asset handling - pipeline
-gem 'sprockets', '~> 3.7.2'
-gem 'uglifier'
+  # asset handling - SASS
+  gem 'sassc-rails', require: false
 
-gem 'autoprefixer-rails'
+  # asset handling - pipeline
+  gem 'sprockets', '~> 3.7.2', require: false
+  gem 'uglifier', require: false
 
-# asset handling - javascript execution for e.g. linux
-gem 'execjs'
+  gem 'autoprefixer-rails', require: false
+end
 
-# mini_racer can be omitted on systems where node.js is available via
-#   `bundle install --without mini_racer`.
-group :mini_racer do
+# Don't use mini_racer any more for asset compilation.
+#   Instead, use an external node.js binary.
+group :mini_racer, optional: true do
   gem 'libv8'
-  gem 'mini_racer'
+  gem 'mini_racer', '0.2.9' # Newer versions require libv8-node instead which does not compile on older platforms.
 end
 
 # authentication - provider
@@ -93,7 +100,7 @@ gem "omniauth-csisaml", path: "vendor/custom_gems/omniauth-csisaml"
 gem 'gmail_xoauth'
 gem 'koala'
 gem 'telegramAPI'
-gem 'twitter', git: 'https://github.com/sferik/twitter.git'
+gem 'twitter'
 
 # channels - email additions
 gem 'htmlentities'
@@ -109,7 +116,10 @@ gem 'biz'
 gem 'diffy'
 
 # feature - excel output
-gem 'writeexcel'
+gem 'writeexcel', require: false
+
+# feature - csv import/export
+gem 'csv', require: false
 
 # feature - device logging
 gem 'browser'
@@ -122,7 +132,8 @@ gem 'icalendar-recurrence'
 gem 'telephone_number'
 
 # feature - SMS
-gem 'twilio-ruby'
+gem 'messagebird-rest'
+gem 'twilio-ruby', require: false
 
 # feature - ordering
 gem 'acts_as_list'
@@ -132,15 +143,14 @@ gem 'oj' # fast json parser
 gem 'faraday' # http lib wrapper
 
 # integrations
-gem 'clearbit'
+gem 'clearbit', require: false
 gem 'net-ldap'
-gem 'slack-notifier'
-gem 'zendesk_api'
+gem 'slack-notifier', require: false
+gem 'zendesk_api', require: false
 
 # integrations - exchange
-gem 'autodiscover', git: 'https://github.com/zammad-deps/autodiscover'
-gem 'rubyntlm', git: 'https://github.com/wimm/rubyntlm'
-gem 'viewpoint'
+gem 'autodiscover', git: 'https://github.com/zammad-deps/autodiscover', require: false
+gem 'viewpoint', require: false
 
 # integrations - S/MIME
 gem 'openssl'
@@ -165,7 +175,6 @@ group :development, :test do
   gem 'pry-remote'
   gem 'pry-rescue'
   gem 'pry-stack_explorer'
-  gem 'debase'
   gem 'ruby-debug-ide'
 
   # test frameworks
@@ -196,9 +205,11 @@ group :development, :test do
   gem 'guard-symlink', require: false
 
   # code QA
+  gem 'brakeman', require: false
   gem 'coffeelint'
-  gem 'pre-commit'
+  gem 'overcommit'
   gem 'rubocop'
+  gem 'rubocop-faker'
   gem 'rubocop-performance'
   gem 'rubocop-rails'
   gem 'rubocop-rspec'
@@ -214,7 +225,7 @@ group :development, :test do
   gem 'webmock'
 
   # record and replay TCP/HTTP transactions
-  gem 'tcr', git: 'https://github.com/zammad-deps/tcr'
+  gem 'tcr'
   gem 'vcr'
 
   # handle deprecations in core and addons
@@ -226,9 +237,8 @@ group :development, :test do
   # refresh ENVs in CI environment
   gem 'dotenv', require: false
 
-  # Can be used to detect for example the current
-  # operating system in tests, to handle things differently.
-  gem 'os'
+  # Slack helper for testing
+  gem 'slack-ruby-client', require: false
 end
 
 # Want to extend Zammad with additional gems?

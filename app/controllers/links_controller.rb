@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class LinksController < ApplicationController
   prepend_before_action :authentication_check
@@ -12,8 +12,7 @@ class LinksController < ApplicationController
     )
 
     linked_objects = links
-                     .map { |elem| elem['link_object']&.safe_constantize&.lookup(id: elem['link_object_value']) }
-                     .compact
+                     .filter_map { |elem| elem['link_object']&.safe_constantize&.lookup(id: elem['link_object_value']) }
 
     # return result
     render json: {

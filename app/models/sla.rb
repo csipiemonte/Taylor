@@ -1,16 +1,20 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Sla < ApplicationModel
   include ChecksClientNotification
   include ChecksConditionValidation
   include HasEscalationCalculationImpact
-
   include Sla::Assets
+
+  belongs_to :calendar, optional: true
+
+  # workflow checks should run after before_create and before_update callbacks
+  include ChecksCoreWorkflow
+
+  validates  :name, presence: true
 
   store      :condition
   store      :data
-  validates  :name, presence: true
-  belongs_to :calendar, optional: true
 
   def condition_matches?(ticket)
     query_condition, bind_condition, tables = Ticket.selector2sql(condition)

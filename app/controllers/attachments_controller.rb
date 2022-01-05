@@ -1,7 +1,9 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class AttachmentsController < ApplicationController
+  prepend_before_action :authorize!, only: %i[show destroy]
   prepend_before_action :authentication_check, except: %i[show destroy]
   prepend_before_action :authentication_check_only, only: %i[show destroy]
-  before_action :verify_object_permissions, only: %i[show destroy]
 
   def show
     view_type = params[:preview] ? 'preview' : nil
@@ -69,11 +71,10 @@ class AttachmentsController < ApplicationController
 
   private
 
-  def verify_object_permissions
-
-    klass = download_file&.store_object&.name&.safe_constantize
-    return if klass.send("can_#{params[:action]}_attachment?", download_file, current_user)
-
+  def authorize!
+    record = download_file&.store_object&.name&.safe_constantize&.find(download_file.o_id)
+    authorize(record) if record
+  rescue Pundit::NotAuthorizedError
     raise ActiveRecord::RecordNotFound
   end
 end

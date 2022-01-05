@@ -12,7 +12,7 @@ class GettingStartedAdmin extends App.ControllerWizardFullScreen
     # set title
     @title 'Create Admin'
 
-    # redirect to login if master user already exists
+    # redirect to login if admin user already exists
     if @Config.get('system_init_done')
       @navigate '#login'
       return
@@ -67,7 +67,7 @@ class GettingStartedAdmin extends App.ControllerWizardFullScreen
     user.load(@params)
 
     errors = user.validate(
-      screen: 'signup'
+      controllerForm: @form
     )
     if errors
       @log 'error new', errors

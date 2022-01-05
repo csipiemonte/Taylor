@@ -11,7 +11,7 @@ RSpec.describe 'Knowledge Base Locale Search', type: :system do
     let(:search_query) { nil }
 
     before do
-      visit "#knowledge_base/#{knowledge_base.id}/locale/#{primary_locale.system_locale.locale}/search/#{search_query}"
+      visit "#knowledge_base/#{knowledge_base.id}/locale/#{locale_name}/search/#{search_query}"
     end
 
     shared_examples 'check search result' do

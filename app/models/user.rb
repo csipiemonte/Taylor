@@ -1,5 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
-require_dependency 'karma/user'
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class User < ApplicationModel
   include CanBeAuthorized
@@ -12,8 +11,8 @@ class User < ApplicationModel
   include ChecksHtmlSanitized
   include HasGroups
   include HasRoles
-  include HasObjectManagerAttributesValidation
-  include HasTicketCreateScreenImpact
+  include HasObjectManagerAttributes
+  include ::HasTicketCreateScreenImpact
   include HasTaskbars
   include User::HasTicketCreateScreenImpact
   include User::Assets
@@ -50,13 +49,16 @@ class User < ApplicationModel
   before_validation :check_name, :check_email, :check_login, :ensure_uniq_email, :ensure_password, :ensure_roles, :ensure_identifier
   before_validation :check_mail_delivery_failed, on: :update
   before_create     :check_preferences_default, :validate_preferences, :validate_ooo, :domain_based_assignment, :set_locale
-  before_update     :check_preferences_default, :validate_preferences, :validate_ooo, :reset_login_failed, :validate_agent_limit_by_attributes, :last_admin_check_by_attribute
+  before_update     :check_preferences_default, :validate_preferences, :validate_ooo, :reset_login_failed_after_password_change, :validate_agent_limit_by_attributes, :last_admin_check_by_attribute
   before_destroy    :destroy_longer_required_objects, :destroy_move_dependency_ownership
   after_commit      :update_caller_id
   before_destroy    :destroy_longer_required_objects, :destroy_move_dependency_ownership
 
   # CSI validations
   before_validation -> { ensure_uniq_attribute('codice_fiscale','Codice Fiscale') }
+
+  # workflow checks should run after before_create and before_update callbacks
+  include ChecksCoreWorkflow
 
   store :preferences
 
@@ -221,11 +223,21 @@ returns
 
 =end
 
-  def out_of_office_agent
+  def out_of_office_agent(loop_user_ids: [])
     return if !out_of_office?
     return if out_of_office_replacement_id.blank?
 
-    User.find_by(id: out_of_office_replacement_id)
+    user = User.find_by(id: out_of_office_replacement_id)
+
+    # stop if users are occuring multiple times to prevent endless loops
+    return user if loop_user_ids.include?(out_of_office_replacement_id)
+
+    loop_user_ids |= [out_of_office_replacement_id]
+
+    ooo_agent = user.out_of_office_agent(loop_user_ids: loop_user_ids)
+    return ooo_agent if ooo_agent.present?
+
+    user
   end
 
 =begin
@@ -242,7 +254,19 @@ returns
 =end
 
   def out_of_office_agent_of
-    User.where(active: true, out_of_office: true, out_of_office_replacement_id: id).where('out_of_office_start_at <= ? AND out_of_office_end_at >= ?', Time.zone.today, Time.zone.today)
+    User.where(id: out_of_office_agent_of_recursive(user_id: id))
+  end
+
+  def out_of_office_agent_of_recursive(user_id:, result: [])
+    User.where(active: true, out_of_office: true, out_of_office_replacement_id: user_id).where('out_of_office_start_at <= ? AND out_of_office_end_at >= ?', Time.zone.today, Time.zone.today).each do |user|
+
+      # stop if users are occuring multiple times to prevent endless loops
+      break if result.include?(user.id)
+
+      result |= [user.id]
+      result |= out_of_office_agent_of_recursive(user_id: user.id, result: result)
+    end
+    result
   end
 
 =begin
@@ -293,54 +317,6 @@ returns
 
 =begin
 
-authenticate user
-
-  result = User.authenticate(username, password)
-
-returns
-
-  result = user_model # user model if authentication was successfully
-
-=end
-
-  def self.authenticate(username, password)
-
-    # do not authenticate with nothing
-    return if username.blank? || password.blank?
-
-    user = User.identify(username)
-    return if !user
-
-    return if !Auth.can_login?(user)
-
-    return user if Auth.valid?(user, password)
-
-    sleep 1
-    user.login_failed += 1
-    user.save!
-    nil
-  end
-
-=begin
-
-checks if a user has reached the maximum of failed login tries
-
-  user = User.find(123)
-  result = user.max_login_failed?
-
-returns
-
-  result = true | false
-
-=end
-
-  def max_login_failed?
-    max_login_failed = Setting.get('password_max_login_failed').to_i || 10
-    login_failed > max_login_failed
-  end
-
-=begin
-
 tries to find the matching instance by the given identifier. Currently email and login is supported.
 
   user = User.indentify('User123')
@@ -357,6 +333,8 @@ returns
 =end
 
   def self.identify(identifier)
+    return if identifier.blank?
+
     # try to find user based on login
     user = User.find_by(login: identifier.downcase)
     return user if user
@@ -470,7 +448,7 @@ returns
       end
       next if permission_ids.blank?
 
-      Role.joins(:roles_permissions).joins(:permissions).where('permissions_roles.permission_id IN (?) AND roles.active = ? AND permissions.active = ?', permission_ids, true, true).distinct().pluck(:id).each do |role_id|
+      Role.joins(:permissions_roles).joins(:permissions).where('permissions_roles.permission_id IN (?) AND roles.active = ? AND permissions.active = ?', permission_ids, true, true).distinct.pluck(:id).each do |role_id|
         role_ids.push role_id
       end
       total_role_ids.push role_ids
@@ -484,7 +462,7 @@ returns
       end
       condition += 'roles_users.role_id IN (?)'
     end
-    User.joins(:users_roles).where("(#{condition}) AND users.active = ?", *total_role_ids, true).distinct.order(:id)
+    User.joins(:roles_users).where("(#{condition}) AND users.active = ?", *total_role_ids, true).distinct.order(:id)
   end
 
 =begin
@@ -695,11 +673,11 @@ returns
   def self.of_role(role, group_ids = nil)
     roles_ids = Role.where(active: true, name: role).map(&:id)
     if !group_ids
-      return User.where(active: true).joins(:users_roles).where('roles_users.role_id' => roles_ids).order('users.updated_at DESC')
+      return User.where(active: true).joins(:roles_users).where('roles_users.role_id' => roles_ids).order('users.updated_at DESC')
     end
 
     User.where(active: true)
-        .joins(:users_roles)
+        .joins(:roles_users)
         .joins(:users_groups)
         .where('roles_users.role_id IN (?) AND users_groups.group_ids IN (?)', roles_ids, group_ids).order('users.updated_at DESC')
   end
@@ -953,7 +931,7 @@ try to find correct name
 
     # generate auto login
     if login.blank?
-      self.login = "auto-#{Time.zone.now.to_i}-#{rand(999_999)}"
+      self.login = "auto-#{SecureRandom.uuid}"
     end
 
     # check if login already exists
@@ -1072,7 +1050,7 @@ raise 'Minimum one user need to have admin permissions'
 
   def last_admin_check_admin_count
     admin_role_ids = Role.joins(:permissions).where(permissions: { name: ['admin', 'admin.user'], active: true }, roles: { active: true }).pluck(:id)
-    User.joins(:roles).where(roles: { id: admin_role_ids }, users: { active: true }).distinct().count - 1
+    User.joins(:roles).where(roles: { id: admin_role_ids }, users: { active: true }).distinct.count - 1
   end
 
   def validate_agent_limit_by_attributes
@@ -1082,7 +1060,7 @@ raise 'Minimum one user need to have admin permissions'
     return true if !permissions?('ticket.agent')
 
     ticket_agent_role_ids = Role.joins(:permissions).where(permissions: { name: 'ticket.agent', active: true }, roles: { active: true }).pluck(:id)
-    count                 = User.joins(:roles).where(roles: { id: ticket_agent_role_ids }, users: { active: true }).distinct().count + 1
+    count                 = User.joins(:roles).where(roles: { id: ticket_agent_role_ids }, users: { active: true }).distinct.count + 1
     raise Exceptions::UnprocessableEntity, 'Agent limit exceeded, please check your account settings.' if count > Setting.get('system_agent_limit').to_i
 
     true
@@ -1095,7 +1073,7 @@ raise 'Minimum one user need to have admin permissions'
     return true if !role.with_permission?('ticket.agent')
 
     ticket_agent_role_ids = Role.joins(:permissions).where(permissions: { name: 'ticket.agent', active: true }, roles: { active: true }).pluck(:id)
-    count                 = User.joins(:roles).where(roles: { id: ticket_agent_role_ids }, users: { active: true }).distinct().count
+    count                 = User.joins(:roles).where(roles: { id: ticket_agent_role_ids }, users: { active: true }).distinct.count
 
     # if new added role is a ticket.agent role
     if ticket_agent_role_ids.include?(role.id)
@@ -1217,7 +1195,7 @@ raise 'Minimum one user need to have admin permissions'
   end
 
   # reset login_failed if password is changed
-  def reset_login_failed
+  def reset_login_failed_after_password_change
     return true if !will_save_change_to_attribute?('password')
 
     self.login_failed = 0

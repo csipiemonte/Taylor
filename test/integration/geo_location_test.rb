@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'integration_test_helper'
 require 'webmock/minitest'
 
@@ -5,7 +7,7 @@ class GeoLocationTest < ActiveSupport::TestCase
 
   setup do
     @mock = true
-    #WebMock.allow_net_connect!
+    # WebMock.allow_net_connect!
   end
 
   # check

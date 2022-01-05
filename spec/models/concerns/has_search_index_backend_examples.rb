@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 RSpec.shared_examples 'HasSearchIndexBackend' do |indexed_factory:|
 
   describe '#search_index_update', performs_jobs: true do
@@ -7,7 +9,7 @@ RSpec.shared_examples 'HasSearchIndexBackend' do |indexed_factory:|
       allow(SearchIndexBackend).to receive(:enabled?).and_return(true)
     end
 
-    context 'record indexing' do
+    describe 'record indexing' do
 
       before do
         expect(subject).to be_present

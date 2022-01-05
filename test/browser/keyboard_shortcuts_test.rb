@@ -1,14 +1,16 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'browser_test_helper'
 
 class KeyboardShortcutsTest < TestCase
   def test_navigation
     @browser = browser_instance
     login(
-      username: 'master@example.com',
+      username: 'admin@example.com',
       password: 'test',
       url:      browser_url,
     )
-    tasks_close_all()
+    tasks_close_all
     sleep 2
 
     # show shortkeys
@@ -39,14 +41,14 @@ class KeyboardShortcutsTest < TestCase
       end
     end
 
-    modal_ready()
+    modal_ready
     # hide shortkeys
     shortcut(key: 'h')
-    modal_disappear()
+    modal_disappear
 
     # show shortkeys
     shortcut(key: 'h')
-    modal_ready()
+    modal_ready
 
     # show notifications
     shortcut(key: 'a')

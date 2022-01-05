@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class SamlDatabase < OmniAuth::Strategies::SAML
   # Strategy nativa Zammad, rinominata in '_saml' per non andare in contrasto
   # con la custom strategy omniauth CSI definita in

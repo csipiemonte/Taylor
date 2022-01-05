@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'test_helper'
 require 'net/imap'
 
@@ -6,7 +8,7 @@ class EmailPostmasterToSender < ActiveSupport::TestCase
   setup do
     Setting.set('postmaster_max_size', 0.1)
 
-    @test_id = rand(999_999_999)
+    @test_id = SecureRandom.uuid
 
     # setup the IMAP account info for Zammad
     if ENV['MAIL_SERVER'].blank?
@@ -23,7 +25,7 @@ class EmailPostmasterToSender < ActiveSupport::TestCase
     @folder = "postmaster_to_sender_#{@test_id}"
 
     if ENV['MAIL_SERVER_EMAIL'].blank?
-      raise "Need MAIL_SERVER_EMAIL as ENV variable like export MAIL_SERVER_EMAIL='master@example.com'"
+      raise "Need MAIL_SERVER_EMAIL as ENV variable like export MAIL_SERVER_EMAIL='admin@example.com'"
     end
 
     @sender_email_address = ENV['MAIL_SERVER_EMAIL']
@@ -132,7 +134,7 @@ Oversized Email Message Body #{'#' * 120_000}
     msg = imap.fetch(imap_message_id, 'RFC822')[0].attr['RFC822']
     assert(msg.present?, 'Must have received a reply from the postmaster')
     imap.store(imap_message_id, '+FLAGS', [:Deleted])
-    imap.expunge()
+    imap.expunge
 
     # parse the reply mail and verify the various headers
     parser = Channel::EmailParser.new
@@ -207,7 +209,7 @@ Oversized Email Message Body #{'#' * 120_000}
     imap_message_id = message_ids.last
     msg = imap.fetch(imap_message_id, 'RFC822')[0].attr['RFC822']
     imap.store(imap_message_id, '+FLAGS', [:Deleted])
-    imap.expunge()
+    imap.expunge
     assert(msg.present?, 'Oversized Email Message')
     assert_equal(message_ids.count, 1, 'Original customer mail must be deleted.')
 

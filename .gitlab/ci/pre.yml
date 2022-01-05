@@ -6,12 +6,44 @@
     - .rules_singletest
   before_script:
     - source /etc/profile.d/rvm.sh # ensure RVM is loaded
+    - source /opt/rh/rh-nodejs12/enable # ensure Node.js is available
 
 rubocop:
   <<: *template_pre
   script:
     - bundle install -j $(nproc) --path vendor
     - bundle exec rubocop --parallel
+
+shellcheck:
+  <<: *template_pre
+  image: koalaman/shellcheck-alpine:stable
+  before_script:
+    - echo "Disable default before_script."
+  script:
+    - shellcheck -S warning $(find . -name "*.sh" -o -name "functions" | grep -v "/vendor/")
+
+zeitwerk_check:
+  <<: *template_pre
+  extends:
+    - .tags_docker
+    - .services_postgresql
+  script:
+    - bundle install -j $(nproc) --path vendor
+    - bundle exec ruby .gitlab/configure_environment.rb
+    - source .gitlab/environment.env
+    - bundle exec rake zammad:db:init
+    - bundle exec rails zeitwerk:check
+
+brakeman:
+  <<: *template_pre
+  artifacts:
+    expire_in: 1 week
+    paths:
+    - tmp/brakeman-report.html
+    when: on_failure
+  script:
+    - bundle install -j $(nproc) --path vendor
+    - bundle exec brakeman -o /dev/stdout -o tmp/brakeman-report.html
 
 coffeelint:
   <<: *template_pre

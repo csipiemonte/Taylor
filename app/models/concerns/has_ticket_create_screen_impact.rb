@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module HasTicketCreateScreenImpact
   extend ActiveSupport::Concern
 
@@ -9,7 +10,7 @@ module HasTicketCreateScreenImpact
   def push_ticket_create_screen?
     return true if destroyed?
 
-    %w[id name active].any? do |attribute|
+    %w[id name active updated_at].any? do |attribute|
       saved_change_to_attribute?(attribute)
     end
   end

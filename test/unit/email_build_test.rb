@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'test_helper'
 
 class EmailBuildTest < ActiveSupport::TestCase
@@ -335,8 +337,8 @@ text
     quoted_in_one_line = Channel::EmailBuild.recipient_line('Somebody | Some Org', 'some.body@example.com')
     assert_equal('"Somebody | Some Org" <some.body@example.com>', quoted_in_one_line)
 
-    quoted_in_one_line = Channel::EmailBuild.recipient_line('Test Master Agent via Support', 'some.body@example.com')
-    assert_equal('"Test Master Agent via Support" <some.body@example.com>', quoted_in_one_line)
+    quoted_in_one_line = Channel::EmailBuild.recipient_line('Test Admin Agent via Support', 'some.body@example.com')
+    assert_equal('"Test Admin Agent via Support" <some.body@example.com>', quoted_in_one_line)
 
   end
 

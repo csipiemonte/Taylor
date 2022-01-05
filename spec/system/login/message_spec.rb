@@ -1,8 +1,10 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe 'Login Message', type: :system, authenticated_as: false do
   context 'with maintenance_login_message' do
-    let(:message) { "badum tssss #{rand(99_999)}" }
+    let(:message) { "badum tssss #{SecureRandom.uuid}" }
     let(:alt_message) { 'lorem ipsum' }
 
     before { Setting.set 'maintenance_login_message', message }

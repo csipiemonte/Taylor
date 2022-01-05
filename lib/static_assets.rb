@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module StaticAssets
 
 =begin
@@ -69,7 +71,7 @@ returns
   def self.read_raw
     list = Store.list(object: 'System::Logo', o_id: 1)
     if list && list[0]
-      return Store.find( list[0] )
+      return Store.find(list[0])
     end
 
     raise 'No such raw logo!'

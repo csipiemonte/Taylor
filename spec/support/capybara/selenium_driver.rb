@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 # This file registers the custom Zammad chrome and firefox drivers.
 # The options check if a REMOTE_URL ENV is given and change the
 # configurations accordingly.
@@ -27,7 +29,7 @@ Capybara.register_driver(:zammad_chrome) do |app|
     options[:url]     = ENV['REMOTE_URL']
   end
 
-  Capybara::Selenium::Driver.new(app, options)
+  Capybara::Selenium::Driver.new(app, **options)
 end
 
 Capybara.register_driver(:zammad_firefox) do |app|
@@ -52,5 +54,5 @@ Capybara.register_driver(:zammad_firefox) do |app|
     options[:url]     = ENV['REMOTE_URL']
   end
 
-  Capybara::Selenium::Driver.new(app, options)
+  Capybara::Selenium::Driver.new(app, **options)
 end

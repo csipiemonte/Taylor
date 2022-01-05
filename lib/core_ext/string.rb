@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rchardet'
 
 class String
@@ -160,7 +162,7 @@ class String
     elsif string.scan(%r{<a[[:space:]]}i).count < 5_000
       string.gsub!(%r{<a[[:space:]].*?href=("|')(.+?)("|').*?>}ix) do
         link = $2
-        counter = counter + 1
+        counter += 1
         link_list += "[#{counter}] #{link}\n"
         "[#{counter}] "
       end
@@ -415,7 +417,6 @@ class String
     map['otrs-en-de'] = '^.{6,10}[[:space:]].{3,10}[[:space:]]-[[:space:]].{1,250}[[:space:]](wrote|schrieb):'
 
     # Ms
-    # rubocop:disable Style/AsciiComments
     # From: Martin Edenhofer via Znuny Support [mailto:support@znuny.inc]
     # Send: Donnerstag, 2. April 2015 10:00
     # To/Cc/Bcc: xxx
@@ -430,8 +431,6 @@ class String
     # À/?/?: xxx
     # Envoyé : mercredi 29 avril 2015 17:31
     # Objet : xxx
-    # rubocop:enable Style/AsciiComments
-
     # en/de/fr | sometimes ms adds a space to "xx : value"
     map['ms-en-de-fr_from'] = '^(Von|From|De|от|Z|Od|Ze|Fra|Van|Mistä|Από|Dal|から|Из|од|iz|Från|จาก|з|Từ)( ?):[[:space:]].+?'
     map['ms-en-de-fr_from_html'] = "\n######b######(From|Von|De)([[:space:]]?):([[:space:]]?)(######\/b######)[[:space:]].+?"
@@ -439,7 +438,7 @@ class String
     # word 14
     # edv hotline wrote:
     # edv hotline schrieb:
-    #map['word-en-de'] = "[^#{marker}].{1,250}\s(wrote|schrieb):"
+    # map['word-en-de'] = "[^#{marker}].{1,250}\s(wrote|schrieb):"
 
     map.each_value do |regexp|
       string.sub!(%r{#{regexp}}) do |placeholder|
@@ -468,8 +467,8 @@ class String
   #     * `:output_to_binary` returns an ASCII-8BIT-encoded string.
   #     * `:read_as_sanitized_binary` returns a UTF-8-encoded string with all
   #       invalid byte sequences replaced with "?" characters.
-  def utf8_encode(**options)
-    dup.utf8_encode!(options)
+  def utf8_encode(...)
+    dup.utf8_encode!(...)
   end
 
   def utf8_encode!(**options)

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Idoit
 
@@ -92,7 +92,7 @@ or with filter:
     raise 'Unable for find api_token in config' if setting[:api_token].blank?
     raise 'Unable for find endpoint in config' if setting[:endpoint].blank?
 
-    #translator_key = Setting.get('translator_key')
+    # translator_key = Setting.get('translator_key')
     params = {
       apikey: setting[:api_token],
     }

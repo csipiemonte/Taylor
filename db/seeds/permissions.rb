@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 Permission.create_if_not_exists(
   name:        'admin',
   note:        'Admin Interface',
@@ -267,6 +269,13 @@ Permission.create_if_not_exists(
   note:        'Manage %s',
   preferences: {
     translations: ['Webhooks']
+  },
+)
+Permission.create_if_not_exists(
+  name:        'admin.core_workflow',
+  note:        'Manage %s',
+  preferences: {
+    translations: ['Core Workflow']
   },
 )
 Permission.create_if_not_exists(

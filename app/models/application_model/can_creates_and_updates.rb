@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module ApplicationModel::CanCreatesAndUpdates
   extend ActiveSupport::Concern
 
@@ -40,7 +41,7 @@ returns
 
       raise ArgumentError, 'Need name, login, email or locale for create_or_update()' if attr.nil?
 
-      record = case_sensitive_find_by(data.slice(attr))
+      record = case_sensitive_find_by(**data.slice(attr))
       record.nil? ? create(data) : record.tap { |r| r.update(data) }
     end
 

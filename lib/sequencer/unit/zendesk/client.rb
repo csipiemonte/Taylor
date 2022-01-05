@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sequencer
   class Unit
     module Zendesk
@@ -8,6 +10,7 @@ class Sequencer
         private
 
         def client
+          require 'zendesk_api' # Only load this gem when it is really used.
           ZendeskAPI::Client.new do |config|
             config.url = Setting.get('import_zendesk_endpoint')
 

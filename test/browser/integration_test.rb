@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'browser_test_helper'
 
 class IntegrationTest < TestCase
@@ -5,11 +7,11 @@ class IntegrationTest < TestCase
   def test_sipgate
     @browser = browser_instance
     login(
-      username: 'master@example.com',
+      username: 'admin@example.com',
       password: 'test',
       url:      browser_url,
     )
-    tasks_close_all()
+    tasks_close_all
 
     # change settings
     click(css: 'a[href="#manage"]')
@@ -50,7 +52,7 @@ class IntegrationTest < TestCase
       css: '.content.active .main .js-inboundBlockCallerId [value="block spam caller id"]',
     )
 
-    reload()
+    reload
     exists(
       css: '.content.active .main .js-inboundBlockCallerId [value="0411234567"]',
     )
@@ -65,7 +67,7 @@ class IntegrationTest < TestCase
       type: 'off',
     )
 
-    reload()
+    reload
     exists_not(
       css: '.content.active .main .js-inboundBlockCallerId [value="0411234567"]',
     )
@@ -77,11 +79,11 @@ class IntegrationTest < TestCase
   def test_slack
     @browser = browser_instance
     login(
-      username: 'master@example.com',
+      username: 'admin@example.com',
       password: 'test',
       url:      browser_url,
     )
-    tasks_close_all()
+    tasks_close_all
 
     # change settings
     click(css: 'a[href="#manage"]')
@@ -139,7 +141,7 @@ class IntegrationTest < TestCase
       value: 'someuser',
     )
 
-    reload()
+    reload
 
     match(
       css:   '.content.active .main select[name="group_ids"]',
@@ -163,11 +165,11 @@ class IntegrationTest < TestCase
   def test_clearbit
     @browser = browser_instance
     login(
-      username: 'master@example.com',
+      username: 'admin@example.com',
       password: 'test',
       url:      browser_url,
     )
-    tasks_close_all()
+    tasks_close_all
 
     # change settings
     click(css: 'a[href="#manage"]')
@@ -209,7 +211,7 @@ class IntegrationTest < TestCase
       css: '.content.active .main .js-userSync [value="destination1"]',
     )
 
-    reload()
+    reload
 
     match(
       css:   '.content.active .main input[name="api_key"]',
@@ -233,7 +235,7 @@ class IntegrationTest < TestCase
     )
     click(css: '.content.active .main .js-submit')
 
-    reload()
+    reload
     match_not(
       css:   '.content.active .main input[name="api_key"]',
       value: 'some_api_key',
@@ -253,11 +255,11 @@ class IntegrationTest < TestCase
   def test_icinga
     @browser = browser_instance
     login(
-      username: 'master@example.com',
+      username: 'admin@example.com',
       password: 'test',
       url:      browser_url,
     )
-    tasks_close_all()
+    tasks_close_all
 
     # change settings
     click(css: 'a[href="#manage"]')
@@ -301,7 +303,7 @@ class IntegrationTest < TestCase
       value: 'no',
     )
 
-    reload()
+    reload
 
     match(
       css:   '.content.active .main input[name="icinga_sender"]',

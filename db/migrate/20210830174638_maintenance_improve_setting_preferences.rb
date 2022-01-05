@@ -1,6 +1,6 @@
 # Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
-class MaintenanceImproveSettingPreferences < ActiveRecord::Migration[5.2]
+class MaintenanceImproveSettingPreferences < ActiveRecord::Migration[6.0]
   def change
     return if !Setting.exists?(name: 'system_init_done')
 

@@ -1,12 +1,14 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe 'Ticket', type: :request do
 
   let!(:ticket_group) do
-    create(:group, email_address: create(:email_address) )
+    create(:group, email_address: create(:email_address))
   end
   let!(:ticket_group_without_create) do
-    create(:group, email_address: create(:email_address) )
+    create(:group, email_address: create(:email_address))
   end
   let(:admin) do
     create(:admin, groups: Group.all, firstname: 'Tickets', lastname: 'Admin')
@@ -815,7 +817,7 @@ RSpec.describe 'Ticket', type: :request do
     end
 
     it 'does ticket with correct ticket id (02.04)' do
-      title = "ticket with corret ticket id testagent#{rand(999_999_999)}"
+      title = "ticket with corret ticket id testagent#{SecureRandom.uuid}"
       ticket = create(
         :ticket,
         title:       title,
@@ -1053,7 +1055,7 @@ RSpec.describe 'Ticket', type: :request do
     end
 
     it 'does ticket pagination (02.05)' do
-      title = "ticket pagination #{rand(999_999_999)}"
+      title = "ticket pagination #{SecureRandom.uuid}"
       tickets = []
       (1..20).each do |count|
         ticket = create(
@@ -1220,7 +1222,7 @@ RSpec.describe 'Ticket', type: :request do
     end
 
     it 'does ticket with correct ticket id (03.05)' do
-      title = "ticket with corret ticket id testme#{rand(999_999_999)}"
+      title = "ticket with corret ticket id testme#{SecureRandom.uuid}"
       ticket = create(
         :ticket,
         title:       title,
@@ -1425,7 +1427,7 @@ RSpec.describe 'Ticket', type: :request do
     end
 
     it 'does ticket show and response format (04.01)' do
-      title = "ticket testagent#{rand(999_999_999)}"
+      title = "ticket testagent#{SecureRandom.uuid}"
       ticket = create(
         :ticket,
         title:         title,
@@ -1509,7 +1511,7 @@ RSpec.describe 'Ticket', type: :request do
     end
 
     it 'does ticket index and response format (04.02)' do
-      title = "ticket testagent#{rand(999_999_999)}"
+      title = "ticket testagent#{SecureRandom.uuid}"
       ticket = create(
         :ticket,
         title:         title,
@@ -1604,7 +1606,7 @@ RSpec.describe 'Ticket', type: :request do
     end
 
     it 'does ticket create and response format (04.03)' do
-      title = "ticket testagent#{rand(999_999_999)}"
+      title = "ticket testagent#{SecureRandom.uuid}"
       params = {
         title:       title,
         group:       ticket_group.name,
@@ -1675,7 +1677,7 @@ RSpec.describe 'Ticket', type: :request do
     end
 
     it 'does ticket update and response formats (04.04)' do
-      title = "ticket testagent#{rand(999_999_999)}"
+      title = "ticket testagent#{SecureRandom.uuid}"
       ticket = create(
         :ticket,
         title:         title,
@@ -2020,7 +2022,7 @@ RSpec.describe 'Ticket', type: :request do
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['result']).to eq('failed')
-      expect(json_response['message']).to eq('No such master ticket number!')
+      expect(json_response['message']).to eq('No such target ticket number!')
 
       put "/api/v1/ticket_merge/#{ticket3.id}/#{ticket1.number}", params: {}, as: :json
       expect(response).to have_http_status(:forbidden)
@@ -2038,7 +2040,7 @@ RSpec.describe 'Ticket', type: :request do
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['result']).to eq('success')
-      expect(json_response['master_ticket']['id']).to eq(ticket2.id)
+      expect(json_response['target_ticket']['id']).to eq(ticket2.id)
     end
 
     it 'does ticket merge - change permission (07.02)' do
@@ -2068,11 +2070,11 @@ RSpec.describe 'Ticket', type: :request do
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['result']).to eq('success')
-      expect(json_response['master_ticket']['id']).to eq(ticket2.id)
+      expect(json_response['target_ticket']['id']).to eq(ticket2.id)
     end
 
     it 'does ticket search sorted (08.01)' do
-      title = "ticket pagination #{rand(999_999_999)}"
+      title = "ticket pagination #{SecureRandom.uuid}"
 
       ticket1 = create(
         :ticket,
@@ -2143,7 +2145,7 @@ RSpec.describe 'Ticket', type: :request do
       expect(json_response['tickets']).to eq([ticket2.id, ticket1.id])
     end
 
-    it 'does ticket history ' do
+    it 'does ticket history' do
       ticket1 = create(
         :ticket,
         title:       'some title',

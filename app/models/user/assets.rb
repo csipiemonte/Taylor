@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class User
   module Assets
@@ -22,7 +22,7 @@ returns
 
 =end
 
-    def assets (data)
+    def assets(data)
       return data if assets_added_to?(data)
 
       app_model = User.to_app_model
@@ -44,7 +44,7 @@ returns
       # get linked accounts
       local_attributes['accounts'] = {}
       key = "User::authorizations::#{id}"
-      local_accounts = Cache.get(key)
+      local_accounts = Cache.read(key)
       if !local_accounts
         local_accounts = {}
         authorizations = self.authorizations()

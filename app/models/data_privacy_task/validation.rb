@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class DataPrivacyTask::Validation < ActiveModel::Validator
 
   attr_reader :record
@@ -71,6 +72,7 @@ class DataPrivacyTask::Validation < ActiveModel::Validator
       deletable: deletable
     ).where.not(
       id:    record.id,
+    ).where.not(
       state: 'failed'
     ).exists?
   end

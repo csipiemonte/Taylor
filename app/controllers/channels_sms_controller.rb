@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class ChannelsSmsController < ApplicationController
   prepend_before_action -> { authentication_check && authorize! }, except: [:webhook]
   skip_before_action :verify_csrf_token, only: [:webhook]
@@ -98,7 +100,8 @@ class ChannelsSmsController < ApplicationController
     list = []
     Dir.glob(Rails.root.join('app/models/channel/driver/sms/*.rb')).each do |path|
       filename = File.basename(path)
-      require_dependency "channel/driver/sms/#{filename.sub('.rb', '')}"
+      next if !Channel.driver_class("sms/#{filename}").const_defined?(:NAME)
+
       list.push Channel.driver_class("sms/#{filename}").definition
     end
     list

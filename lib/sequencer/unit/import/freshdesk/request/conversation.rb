@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sequencer
   class Unit
     module Import
@@ -6,7 +8,7 @@ class Sequencer
           class Conversation < Sequencer::Unit::Import::Freshdesk::Request::Generic
             attr_reader :ticket
 
-            def initialize(*)
+            def initialize(...)
               super
               @ticket = request_params.delete(:ticket)
             end

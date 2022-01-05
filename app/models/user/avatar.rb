@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class User
   module Avatar
@@ -15,7 +15,7 @@ class User
       return if image_source.blank?
       return if image_source.match?(URI::DEFAULT_PARSER.make_regexp(%w[http https]))
 
-      Rails.logger.debug "Removed invalid image source '#{image_source}' for user '#{email}'"
+      Rails.logger.debug { "Removed invalid image source '#{image_source}' for user '#{email}'" }
 
       self.image_source = nil
     end

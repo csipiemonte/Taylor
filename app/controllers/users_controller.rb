@@ -1,9 +1,10 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class UsersController < ApplicationController
   include ChecksUserAttributesByCurrentUserPermission
+  include CanPaginate
 
-  prepend_before_action -> { authorize! }, only: %i[import_example import_start search history]
+  prepend_before_action -> { authorize! }, only: %i[import_example import_start search history unlock]
   prepend_before_action :authentication_check, except: %i[create password_reset_send password_reset_verify image email_verify email_verify_send]
   prepend_before_action :authentication_check_only, only: %i[create]
 
@@ -17,18 +18,7 @@ class UsersController < ApplicationController
   # @response_message 200 [Array<User>] List of matching User records.
   # @response_message 403               Forbidden / Invalid session.
   def index
-    offset = 0
-    per_page = 500
-    if params[:page] && params[:per_page]
-      offset = (params[:page].to_i - 1) * params[:per_page].to_i
-      per_page = params[:per_page].to_i
-    end
-
-    if per_page > 500
-      per_page = 500
-    end
-
-    users = policy_scope(User).order(id: :asc).offset(offset).limit(per_page)
+    users = policy_scope(User).order(id: :asc).offset(pagination.offset).limit(pagination.limit)
 
     if response_expand?
       list = []
@@ -130,6 +120,7 @@ class UsersController < ApplicationController
     user.with_lock do
       clean_params = User.association_name_to_id_convert(params)
       clean_params = User.param_cleanup(clean_params, true)
+      clean_params[:screen] = 'update'
       user.update!(clean_params)
 
       # presence and permissions were checked via `check_attributes_by_current_user_permission`
@@ -217,26 +208,19 @@ class UsersController < ApplicationController
   #                   The requester has to be in the role 'Admin' or 'Agent' to
   #                   be able to search for User records.
   #
-  # @parameter        query            [String]                             The search query.
-  # @parameter        limit            [Integer]                            The limit of search results.
-  # @parameter        role_ids(multi)  [Array<String>]                      A list of Role identifiers to which the Users have to be allocated to.
-  # @parameter        group_ids(multi) [Hash<String=>String,Array<String>>] A list of Group identifiers to which the Users have to be allocated to.
-  # @parameter        full             [Boolean]                            Defines if the result should be
-  #                                                                         true: { user_ids => [1,2,...], assets => {...} }
-  #                                                                         or false: [{:id => user.id, :label => "firstname lastname <email>", :value => "firstname lastname <email>"},...].
+  # @parameter        query              [String]                               The search query.
+  # @parameter        limit              [Integer]                              The limit of search results.
+  # @parameter        ids(multi)         [Array<Integer>]                       A list of User IDs which should be returned
+  # @parameter        role_ids(multi)    [Array<Integer>]                       A list of Role identifiers to which the Users have to be allocated to.
+  # @parameter        group_ids(multi)   [Hash<String=>Integer,Array<Integer>>] A list of Group identifiers to which the Users have to be allocated to.
+  # @parameter        permissions(multi) [Array<String>]                        A list of Permission identifiers to which the Users have to be allocated to.
+  # @parameter        full               [Boolean]                              Defines if the result should be
+  #                                                                             true: { user_ids => [1,2,...], assets => {...} }
+  #                                                                             or false: [{:id => user.id, :label => "firstname lastname <email>", :value => "firstname lastname <email>"},...].
   #
   # @response_message 200 [Array<User>] A list of User records matching the search term.
   # @response_message 403               Forbidden / Invalid session.
   def search
-    per_page = params[:per_page] || params[:limit] || 100
-    per_page = per_page.to_i
-    if per_page > 500
-      per_page = 500
-    end
-    page = params[:page] || 1
-    page = page.to_i
-    offset = (page - 1) * per_page
-
     query = params[:query]
     if query.respond_to?(:permit!)
       query.permit!.to_h
@@ -249,13 +233,13 @@ class UsersController < ApplicationController
 
     query_params = {
       query:        query,
-      limit:        per_page,
-      offset:       offset,
+      limit:        pagination.limit,
+      offset:       pagination.offset,
       sort_by:      params[:sort_by],
       order_by:     params[:order_by],
       current_user: current_user,
     }
-    %i[role_ids group_ids permissions].each do |key|
+    %i[ids role_ids group_ids permissions].each do |key|
       next if params[key].blank?
 
       query_params[key] = params[key]
@@ -282,7 +266,7 @@ class UsersController < ApplicationController
           realname = "#{realname} <#{user.email}>"
         end
         a = if params[:term]
-              { id: user.id, label: realname, value: user.email }
+              { id: user.id, label: realname, value: user.email, inactive: !user.active }
             else
               { id: user.id, label: realname, value: realname }
             end
@@ -336,6 +320,24 @@ class UsersController < ApplicationController
 
     # get history of user
     render json: user.history_get(true)
+  end
+
+  # @path       [PUT] /users/unlock/{id}
+  #
+  # @summary          Unlocks the User record matching the identifier.
+  # @notes            The requester have 'admin.user' permissions to be able to unlock a user.
+  #
+  # @parameter        id(required) [Integer] The identifier matching the requested User record.
+  #
+  # @response_message 200 Unlocked User record.
+  # @response_message 403 Forbidden / Invalid session.
+  def unlock
+    user = User.find(params[:id])
+
+    user.with_lock do
+      user.update!(login_failed: 0)
+    end
+    render json: { message: 'ok' }, status: :ok
   end
 
 =begin
@@ -411,12 +413,6 @@ curl http://localhost/api/v1/users/email_verify_send -v -u #{login}:#{password} 
         objects:  result
       )
 
-      # only if system is in develop mode, send token back to browser for browser tests
-      if Setting.get('developer_mode') == true
-        render json: { message: 'ok', token: result[:token].name }, status: :ok
-        return
-      end
-
       # token sent to user, send ok to browser
       render json: { message: 'ok' }, status: :ok
       return
@@ -466,12 +462,6 @@ curl http://localhost/api/v1/users/password_reset -v -u #{login}:#{password} -H 
         user:     result[:user],
         objects:  result
       )
-
-      # only if system is in develop mode, send token back to browser for browser tests
-      if Setting.get('developer_mode') == true
-        render json: { message: 'ok', token: result[:token].name }, status: :ok
-        return
-      end
     end
 
     # result is always positive to avoid leaking of existing user accounts
@@ -571,8 +561,9 @@ curl http://localhost/api/v1/users/password_change -v -u #{login}:#{password} -H
       render json: { message: 'failed', notice: ['Current password needed!'] }, status: :ok
       return
     end
-    user = User.authenticate(current_user.login, params[:password_old])
-    if !user
+
+    current_password_verified = PasswordHash.verified?(current_user.password, params[:password_old])
+    if !current_password_verified
       render json: { message: 'failed', notice: ['Current password is wrong!'] }, status: :ok
       return
     end
@@ -589,20 +580,19 @@ curl http://localhost/api/v1/users/password_change -v -u #{login}:#{password} -H
       return
     end
 
-    user.update!(password: params[:password_new])
+    current_user.update!(password: params[:password_new])
 
-    if user.email.present?
+    if current_user.email.present?
       NotificationFactory::Mailer.notification(
         template: 'password_change',
-        user:     user,
+        user:     current_user,
         objects:  {
-          user:         user,
-          current_user: current_user,
+          user: current_user,
         }
       )
     end
 
-    render json: { message: 'ok', user_login: user.login }, status: :ok
+    render json: { message: 'ok', user_login: current_user.login }, status: :ok
   end
 
 =begin
@@ -901,7 +891,7 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
   private
 
   def clean_user_params
-    User.param_cleanup(User.association_name_to_id_convert(params), true)
+    User.param_cleanup(User.association_name_to_id_convert(params), true).merge(screen: 'create')
   end
 
   # @summary          Creates a User record with the provided attribute values.

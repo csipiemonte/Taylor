@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Organization < ApplicationModel
   include HasActivityStreamLog
@@ -8,7 +8,7 @@ class Organization < ApplicationModel
   include HasSearchIndexBackend
   include CanCsvImport
   include ChecksHtmlSanitized
-  include HasObjectManagerAttributesValidation
+  include HasObjectManagerAttributes
   include HasTaskbars
 
   include Organization::Assets
@@ -24,6 +24,9 @@ class Organization < ApplicationModel
 
   before_create :domain_cleanup
   before_update :domain_cleanup
+
+  # workflow checks should run after before_create and before_update callbacks
+  include ChecksCoreWorkflow
 
   validates :name,   presence: true
   validates :domain, presence: { message: 'required when Domain Based Assignment is enabled' }, if: :domain_assignment

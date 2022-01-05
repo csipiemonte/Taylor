@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class ObjectManager::Element::Backend
 
   attr_reader :user, :attribute, :record
@@ -36,7 +38,7 @@ class ObjectManager::Element::Backend
       name:    attribute.name,
       display: attribute.display,
       tag:     attribute.data_type,
-      #:null     => attribute.null,
+      # :null     => attribute.null,
     }
   end
 

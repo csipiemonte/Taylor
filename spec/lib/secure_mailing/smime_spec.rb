@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe SecureMailing::SMIME do
@@ -675,7 +677,7 @@ RSpec.describe SecureMailing::SMIME do
     end
 
     let!(:article) do
-      _ticket, article, _user, _mail = Channel::EmailParser.new.process({}, mail['raw'] )
+      _ticket, article, _user, _mail = Channel::EmailParser.new.process({}, mail['raw'])
       article
     end
 

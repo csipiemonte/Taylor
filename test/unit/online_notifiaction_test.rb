@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'test_helper'
 
 class OnlineNotificationTest < ActiveSupport::TestCase
@@ -342,7 +344,7 @@ class OnlineNotificationTest < ActiveSupport::TestCase
       owner_id:      User.lookup(login: '-').id,
       title:         'Unit Test 4 (äöüß)!',
       state_id:      Ticket::State.lookup(name: 'new').id,
-      priority_id:   Ticket::Priority.lookup( name: '2 normal').id,
+      priority_id:   Ticket::Priority.lookup(name: '2 normal').id,
       updated_by_id: @agent_user1.id,
       created_by_id: @agent_user1.id,
     )

@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class KnowledgeBase::Category < ApplicationModel
   include HasTranslations
   include HasAgentAllowedParams
@@ -112,12 +113,6 @@ class KnowledgeBase::Category < ApplicationModel
 
   def visible?(kb_locale = nil)
     public_content?(kb_locale)
-  end
-
-  def visible_content_for?(user)
-    return true if user&.permissions? 'knowledge_base.editor'
-
-    public_content?
   end
 
   def api_url

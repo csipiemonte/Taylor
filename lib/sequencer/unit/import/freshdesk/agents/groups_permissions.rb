@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sequencer
   class Unit
     module Import
@@ -16,8 +18,8 @@ class Sequencer
 
             def group_ids_access_map
               @group_ids_access_map ||= begin
-                ::Group.all.pluck(:id).each_with_object({}) do |group_id, result|
-                  result[group_id] = 'full'.freeze
+                ::Group.all.pluck(:id).index_with do
+                  'full'.freeze
                 end
               end
             end

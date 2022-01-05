@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 require 'ostruct'
 
@@ -104,7 +106,7 @@ RSpec.describe NotificationFactory::Mailer do
       let(:user) { create(:agent, email: 'somebody@example.com') }
 
       it 'returns a Mail::Message' do
-        expect( result ).to be_kind_of(Mail::Message)
+        expect(result).to be_kind_of(Mail::Message)
       end
     end
 

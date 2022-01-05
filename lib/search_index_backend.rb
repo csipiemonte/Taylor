@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class SearchIndexBackend
 
@@ -20,10 +20,12 @@ info about used search index machine
       installed_version = response.data.dig('version', 'number')
       raise "Unable to get elasticsearch version from response: #{response.inspect}" if installed_version.blank?
 
-      version_supported = Gem::Version.new(installed_version) < Gem::Version.new('8')
+      installed_version_parsed = Gem::Version.new(installed_version)
+
+      version_supported = installed_version_parsed < Gem::Version.new('8')
       raise "Version #{installed_version} of configured elasticsearch is not supported." if !version_supported
 
-      version_supported = Gem::Version.new(installed_version) > Gem::Version.new('2.3')
+      version_supported = installed_version_parsed >= Gem::Version.new('7.8')
       raise "Version #{installed_version} of configured elasticsearch is not supported." if !version_supported
 
       return response.data
@@ -261,8 +263,7 @@ remove whole data from index
     end
 
     index
-      .map { |local_index| search_by_index(query, local_index, options) }
-      .compact
+      .filter_map { |local_index| search_by_index(query, local_index, options) }
       .flatten(1)
   end
 
@@ -286,6 +287,7 @@ remove whole data from index
     condition = {
       'query_string' => {
         'query'            => append_wildcard_to_simple_query(query),
+        'time_zone'        => Setting.get('timezone_default').presence || 'UTC',
         'default_operator' => 'AND',
         'analyze_wildcard' => true,
       }
@@ -298,7 +300,7 @@ remove whole data from index
     query_data = build_query(condition, options)
 
     if (fields = options.dig(:highlight_fields_by_indexes, index.to_sym))
-      fields_for_highlight = fields.each_with_object({}) { |elem, memo| memo[elem] = {} }
+      fields_for_highlight = fields.index_with { |_elem| {} }
 
       query_data[:highlight] = { fields: fields_for_highlight }
     end
@@ -335,22 +337,24 @@ remove whole data from index
   end
 
   def self.search_by_index_sort(sort_by = nil, order_by = nil)
-    result = []
+    result = (sort_by || [])
+      .map(&:to_s)
+      .each_with_object([])
+      .each_with_index do |(elem, memo), index|
+        next if elem.blank?
+        next if order_by&.at(index).blank?
 
-    sort_by&.each_with_index do |value, index|
-      next if value.blank?
-      next if order_by&.at(index).blank?
+        # for sorting values use .keyword values (no analyzer is used - plain values)
+        if elem !~ %r{\.} && elem !~ %r{_(time|date|till|id|ids|at)$} && elem != 'id'
+          elem += '.keyword'
+        end
 
-      # for sorting values use .keyword values (no analyzer is used - plain values)
-      if value !~ %r{\.} && value !~ %r{_(time|date|till|id|ids|at)$}
-        value += '.keyword'
+        memo.push(
+          elem => {
+            order: order_by[index],
+          },
+        )
       end
-      result.push(
-        value => {
-          order: order_by[index],
-        },
-      )
-    end
 
     if result.blank?
       result.push(
@@ -947,7 +951,7 @@ helper method for making HTTP calls and raising error if response was not succes
 =end
 
   def self.make_request_and_validate(url, **args)
-    response = make_request(url, args)
+    response = make_request(url, **args)
 
     return true if response.success?
 
@@ -1136,7 +1140,7 @@ helper method for making HTTP calls and raising error if response was not succes
   def self.pipeline(create: false)
     pipeline = Setting.get('es_pipeline')
     if create && pipeline.blank?
-      pipeline = "zammad#{rand(999_999_999_999)}"
+      pipeline = "zammad#{SecureRandom.uuid}"
       Setting.set('es_pipeline', pipeline)
     end
     pipeline

@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'browser_test_helper'
 
 class AuthTest < TestCase
@@ -21,10 +23,10 @@ class AuthTest < TestCase
       username: 'nicole.braun@zammad.org',
       password: 'test',
     )
-    tasks_close_all()
+    tasks_close_all
 
     # reload page
-    reload()
+    reload
 
     # check if cookie is temporarily
     watch_for(
@@ -73,7 +75,7 @@ class AuthTest < TestCase
       expires: '\d{4}-\d{1,2}-\d{1,2}.+?',
     )
 
-    logout()
+    logout
 
     # verify session cookie
     sleep 2

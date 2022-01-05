@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module CanBePublished
   class StateMachine
     include AASM
@@ -57,7 +59,7 @@ module CanBePublished
       state :internal
       state :published
       state :archived
-      state :unarchived #magic
+      state :unarchived # magic
 
       event :internal do
         transitions from:  :draft,

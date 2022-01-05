@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe SearchIndexBackend, searchindex: true do
@@ -65,6 +67,66 @@ RSpec.describe SearchIndexBackend, searchindex: true do
         let(:index) { %w[User Organization] }
 
         it { is_expected.to be_an(Array).and not_include(nil).and be_empty }
+      end
+    end
+
+    context 'search with date that requires time zone conversion', time_zone: 'Europe/Vilnius' do
+      let(:record_type) { 'Ticket'.freeze }
+      let(:record) { create :ticket }
+
+      before do
+        travel_to(Time.zone.parse('2019-01-02 00:33'))
+        described_class.add(record_type, record)
+        described_class.refresh
+      end
+
+      it 'finds record in a given timezone with a range' do
+        Setting.set('timezone_default', 'UTC')
+        result = described_class.search('created_at: [2019-01-01 TO 2019-01-01]', record_type)
+        expect(result).to eq([{ id: record.id.to_s, type: record_type }])
+      end
+
+      it 'finds record in a far away timezone with a date' do
+        Setting.set('timezone_default', 'Europe/Vilnius')
+        result = described_class.search('created_at: 2019-01-02', record_type)
+        expect(result).to eq([{ id: record.id.to_s, type: record_type }])
+      end
+
+      it 'finds record in UTC with date' do
+        Setting.set('timezone_default', 'UTC')
+        result = described_class.search('created_at: 2019-01-01', record_type)
+        expect(result).to eq([{ id: record.id.to_s, type: record_type }])
+      end
+    end
+
+    context 'does find integer values for ticket data', db_strategy: :reset do
+      let(:record_type) { 'Ticket'.freeze }
+      let(:record) { create :ticket, inttest: '1021052349' }
+
+      before do
+        create(:object_manager_attribute_integer, name: 'inttest', data_option: {
+                 'default' => 0,
+                 'min'     => 0,
+                 'max'     => 99_999_999,
+               })
+        ObjectManager::Attribute.migration_execute
+        record.search_index_update_backend
+        described_class.refresh
+      end
+
+      it 'finds added records by integer part' do
+        result = described_class.search('102105', record_type, sort_by: ['updated_at'], order_by: ['desc'])
+        expect(result).to eq([{ id: record.id.to_s, type: record_type }])
+      end
+
+      it 'finds added records by integer' do
+        result = described_class.search('1021052349', record_type, sort_by: ['updated_at'], order_by: ['desc'])
+        expect(result).to eq([{ id: record.id.to_s, type: record_type }])
+      end
+
+      it 'finds added records by quoted integer' do
+        result = described_class.search('"1021052349"', record_type, sort_by: ['updated_at'], order_by: ['desc'])
+        expect(result).to eq([{ id: record.id.to_s, type: record_type }])
       end
     end
   end

@@ -210,10 +210,10 @@ class App.TicketZoom extends App.Controller
     formMeta   = data.form_meta
 
     # on the following states we want to rerender the ticket:
-    # - if the object attribute configuration has changed (attribute values, restrictions, filters)
+    # - if the object attribute configuration has changed (attribute values, dependecies, filters)
     # - if the user view has changed (agent/customer)
     # - if the ticket permission has changed (read/write/full)
-    if @view && ( !_.isEqual(@formMeta, formMeta) || @view isnt view || @readable isnt readable || @changeable isnt changeable || @fullable isnt fullable )
+    if @view && ( !_.isEqual(@formMeta.configure_attributes, formMeta.configure_attributes) || !_.isEqual(@formMeta.dependencies, formMeta.dependencies) || !_.isEqual(@formMeta.filter, formMeta.filter) || @view isnt view || @readable isnt readable || @changeable isnt changeable || @fullable isnt fullable )
       @renderDone = false
 
     @view       = view
@@ -224,6 +224,7 @@ class App.TicketZoom extends App.Controller
 
     # render page
     @render(local)
+    App.Event.trigger('ui::ticket::load', data)
 
   meta: =>
 
@@ -887,7 +888,8 @@ class App.TicketZoom extends App.Controller
 
     # validate ticket by model
     errors = ticket.validate(
-      screen: 'edit'
+      controllerForm: @sidebarWidget?.get('100-TicketEdit')?.edit?.controllerFormSidebarTicket
+      target: e.target
     )
     if errors
       @log 'error', 'update', errors
@@ -996,8 +998,14 @@ class App.TicketZoom extends App.Controller
           @openTicketInOverview(nextTicket)
           App.Event.trigger('overview:fetch')
           return
-
-        if taskAction is 'closeTab' || taskAction is 'next_task'
+        else if taskAction is 'closeTabOnTicketClose' || taskAction is 'next_task_on_close'
+          state_type_id = App.TicketState.find(ticket.state_id).state_type_id
+          state_type    = App.TicketStateType.find(state_type_id).name
+          if state_type is 'closed'
+            App.Event.trigger('overview:fetch')
+            @taskCloseTicket(true)
+            return
+        else if taskAction is 'closeTab' || taskAction is 'next_task'
           App.Event.trigger('overview:fetch')
           @taskCloseTicket(true)
           return

@@ -1,6 +1,8 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
-RSpec.describe ::Sequencer::Sequence::Import::Freshdesk::Ticket, sequencer: :sequence, db_strategy: 'reset' do
+RSpec.describe ::Sequencer::Sequence::Import::Freshdesk::Ticket, sequencer: :sequence, db_strategy: :reset do
 
   context 'when importing tickets from Freshdesk' do
 
@@ -172,7 +174,7 @@ RSpec.describe ::Sequencer::Sequence::Import::Freshdesk::Ticket, sequencer: :seq
       expect { process(process_payload) }.to change(Ticket::Article, :count).by(1)
     end
 
-    it 'correct attributes for added article ' do
+    it 'correct attributes for added article' do
       process(process_payload)
       expect(Ticket::Article.last).to have_attributes(
         to:   'info@zammad.org',

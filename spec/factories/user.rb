@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 FactoryBot.define do
   factory :user do
     transient do
@@ -31,7 +33,7 @@ FactoryBot.define do
     end
 
     factory :agent_and_customer do
-      role_ids { Role.signup_role_ids.push( Role.find_by(name: 'Agent').id ).sort }
+      role_ids { Role.signup_role_ids.push(Role.find_by(name: 'Agent').id).sort }
 
       trait :with_org do
         organization
@@ -46,10 +48,38 @@ FactoryBot.define do
       roles { Role.where(name: %w[Admin Agent]) }
     end
 
+    trait :with_valid_password do
+      password { generate :password_valid }
+    end
+
     # make given password accessible for e.g. authentication logic
     before(:create) do |user|
       password_plain = user.password
       user.define_singleton_method(:password_plain, -> { password_plain })
     end
+
+    trait :preferencable do
+      transient do
+        notification_group_ids { [] }
+      end
+
+      preferences do
+        {
+          'notification_config' => {
+            'matrix'    => {
+              'create'           => { 'criteria' => { 'owned_by_me' => true, 'owned_by_nobody' => true }, 'channel' => { 'email' => true, 'online' => true } },
+              'update'           => { 'criteria' => { 'owned_by_me' => true, 'owned_by_nobody' => true }, 'channel' => { 'email' => true, 'online' => true } },
+              'reminder_reached' => { 'criteria' => { 'owned_by_me' => true, 'owned_by_nobody' => true }, 'channel' => { 'email' => true, 'online' => true } },
+              'escalation'       => { 'criteria' => { 'owned_by_me' => true, 'owned_by_nobody' => true }, 'channel' => { 'email' => true, 'online' => true } },
+            },
+            'group_ids' => notification_group_ids
+          }
+        }
+      end
+    end
+  end
+
+  sequence(:password_valid) do |n|
+    "SOme-pass#{n}"
   end
 end

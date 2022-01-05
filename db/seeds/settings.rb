@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 Setting.create_if_not_exists(
   title:       'Application secret',
   name:        'application_secret',
@@ -229,7 +231,7 @@ options = {}
 (10..99).each do |item|
   options[item] = item
 end
-system_id = rand(10..99)
+system_id = rand(10..99) # rubocop:disable Zammad/ForbidRand
 Setting.create_if_not_exists(
   title:       'SystemID',
   name:        'system_id',
@@ -621,6 +623,32 @@ Setting.create_if_not_exists(
   frontend:    true
 )
 Setting.create_if_not_exists(
+  title:       'Core Workflow Ajax Mode',
+  name:        'core_workflow_ajax_mode',
+  area:        'System::UI',
+  description: 'Defines if the core workflow communication should run over ajax instead of websockets.',
+  options:     {
+    form: [
+      {
+        display: '',
+        null:    true,
+        name:    'core_workflow_ajax_mode',
+        tag:     'boolean',
+        options: {
+          true  => 'yes',
+          false => 'no',
+        },
+      },
+    ],
+  },
+  state:       false,
+  preferences: {
+    prio:       3,
+    permission: ['admin.system'],
+  },
+  frontend:    true
+)
+Setting.create_if_not_exists(
   title:       'User Organization Selector - email',
   name:        'ui_user_organization_selector_with_email',
   area:        'UI::UserOrganizatiomSelector',
@@ -844,7 +872,7 @@ Setting.create_if_not_exists(
   description: 'Set notes for ticket create types by selecting type.',
   options:     {},
   state:       {
-    #'email-out' => 'Attention: When creating a ticket an e-mail is sent.',
+    # 'email-out' => 'Attention: When creating a ticket an e-mail is sent.',
   },
   preferences: {
     permission: ['admin.ui'],
@@ -1123,6 +1151,38 @@ Setting.create_if_not_exists(
 )
 Setting.create_if_not_exists(
   title:       'Authentication via %s',
+  name:        'auth_internal',
+  area:        'Security::Authentication',
+  description: 'Enables user authentication via %s.',
+  preferences: {
+    title_i18n:       ['internal database'],
+    description_i18n: ['internal database'],
+    permission:       ['admin.security'],
+  },
+  state:       {
+    priority: 1,
+    adapter:  'Auth::Backend::Internal',
+  },
+  frontend:    false
+)
+Setting.create_if_not_exists(
+  title:       'Authentication via %s',
+  name:        'auth_developer',
+  area:        'Security::Authentication',
+  description: 'Enables user authentication via %s.',
+  preferences: {
+    title_i18n:       ['developer password'],
+    description_i18n: ['developer password'],
+    permission:       ['admin.security'],
+  },
+  state:       {
+    priority: 2,
+    adapter:  'Auth::Backend::Developer',
+  },
+  frontend:    false
+)
+Setting.create_if_not_exists(
+  title:       'Authentication via %s',
   name:        'auth_ldap',
   area:        'Security::Authentication',
   description: 'Enables user authentication via %s.',
@@ -1132,7 +1192,8 @@ Setting.create_if_not_exists(
     permission:       ['admin.security'],
   },
   state:       {
-    adapter:       'Auth::Ldap',
+    priority:      3,
+    adapter:       'Auth::Backend::Ldap',
     host:          'localhost',
     port:          389,
     bind_dn:       'cn=Manager,dc=example,dc=org',
@@ -1868,9 +1929,10 @@ Setting.create_if_not_exists(
   },
   state:       5,
   preferences: {
-    permission: ['admin.security'],
+    authentication: true,
+    permission:     ['admin.security'],
   },
-  frontend:    false
+  frontend:    true
 )
 
 Setting.create_if_not_exists(
@@ -2303,6 +2365,35 @@ Setting.create_if_not_exists(
 )
 
 Setting.create_if_not_exists(
+  title:       'Tab behaviour after ticket action',
+  name:        'ticket_secondary_action',
+  area:        'CustomerWeb::Base',
+  description: 'Defines the tab behaviour after a ticket action.',
+  options:     {
+    form: [
+      {
+        display: '',
+        null:    true,
+        name:    'ticket_secondary_action',
+        tag:     'boolean',
+        options: {
+          'closeTab'              => 'Close tab',
+          'closeTabOnTicketClose' => 'Close tab on ticket close',
+          'closeNextInOverview'   => 'Next in overview',
+          'stayOnTab'             => 'Stay on tab',
+        },
+      },
+    ],
+  },
+  state:       'stayOnTab',
+  preferences: {
+    authentication: true,
+    permission:     ['admin.channel_web'],
+  },
+  frontend:    true
+)
+
+Setting.create_if_not_exists(
   title:       'Enable Ticket creation',
   name:        'form_ticket_create',
   area:        'Form::Base',
@@ -2709,7 +2800,7 @@ Setting.create_if_not_exists(
       },
     ],
   },
-  state:       'Notification Master <noreply@#{config.fqdn}>', # rubocop:disable Lint/InterpolationCheck
+  state:       '#{config.product_name} <noreply@#{config.fqdn}>', # rubocop:disable Lint/InterpolationCheck
   preferences: {
     online_service_disable: true,
     permission:             ['admin.channel_email', 'admin.channel_google', 'admin.channel_microsoft365'],
@@ -2774,7 +2865,7 @@ Setting.create_if_not_exists(
   preferences: {
     permission: ['admin.api'],
   },
-  frontend:    false
+  frontend:    true
 )
 Setting.create_if_not_exists(
   title:       'API Password Access',
@@ -3385,6 +3476,15 @@ Setting.create_if_not_exists(
 )
 Setting.create_if_not_exists(
   title:       'Defines postmaster filter.',
+  name:        '0009_postmaster_filter_follow_up_assignment',
+  area:        'Postmaster::PreFilter',
+  description: 'Defines postmaster filter to set the owner (based on group follow up assignment).',
+  options:     {},
+  state:       'Channel::Filter::FollowUpAssignment',
+  frontend:    false
+)
+Setting.create_if_not_exists(
+  title:       'Defines postmaster filter.',
   name:        '0011_postmaster_sender_based_on_reply_to',
   area:        'Postmaster::PreFilter',
   description: 'Defines postmaster filter to set the sender/from of emails based on reply-to header.',
@@ -3534,6 +3634,24 @@ Setting.create_if_not_exists(
   description: 'Defines postmaster filter to identify service now mails for correct follow-ups.',
   options:     {},
   state:       'Channel::Filter::ServiceNowCheck',
+  frontend:    false
+)
+Setting.create_if_not_exists(
+  title:       'Defines postmaster filter.',
+  name:        '5400_postmaster_filter_jira_check',
+  area:        'Postmaster::PreFilter',
+  description: 'Defines postmaster filter to identify jira mails for correct follow-ups.',
+  options:     {},
+  state:       'Channel::Filter::JiraCheck',
+  frontend:    false
+)
+Setting.create_if_not_exists(
+  title:       'Defines postmaster filter.',
+  name:        '5401_postmaster_filter_jira_check',
+  area:        'Postmaster::PostFilter',
+  description: 'Defines postmaster filter to identify jira mails for correct follow-ups.',
+  options:     {},
+  state:       'Channel::Filter::JiraCheck',
   frontend:    false
 )
 Setting.create_if_not_exists(

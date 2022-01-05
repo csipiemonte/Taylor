@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe 'Manage > Integration > S/MIME', type: :system do
@@ -38,10 +40,10 @@ RSpec.describe 'Manage > Integration > S/MIME', type: :system do
     expect(page).to have_css('td', text: 'Including private key')
 
     # check result
-    expect( Setting.get('smime_integration') ).to be true
-    expect( SMIMECertificate.last.fingerprint ).to be_present
-    expect( SMIMECertificate.last.raw ).to be_present
-    expect( SMIMECertificate.last.private_key ).to be_present
+    expect(Setting.get('smime_integration')).to be true
+    expect(SMIMECertificate.last.fingerprint).to be_present
+    expect(SMIMECertificate.last.raw).to be_present
+    expect(SMIMECertificate.last.private_key).to be_present
   end
 
   it 'adding of multiple certificates at once' do

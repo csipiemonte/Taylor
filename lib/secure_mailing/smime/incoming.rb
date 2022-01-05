@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class SecureMailing::SMIME::Incoming < SecureMailing::Backend::Handler
   attr_accessor :mail, :content_type
 

@@ -1,5 +1,4 @@
-require_dependency 'sequencer/unit/common/mixin/dynamic_attribute'
-require_dependency 'sequencer/unit/import/common/model/mixin/log/context_identification_string'
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Sequencer
   class Unit

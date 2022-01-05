@@ -1,17 +1,19 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'browser_test_helper'
 
 class AgentTicketActionLevel0Test < TestCase
 
   def test_aaa_agent_ticket_create_with_one_group
-    agent = "bob.smith_one_group#{rand(99_999_999)}"
+    agent = "bob.smith_one_group#{SecureRandom.uuid}"
 
     @browser = browser_instance
     login(
-      username: 'master@example.com',
+      username: 'admin@example.com',
       password: 'test',
       url:      browser_url,
     )
-    tasks_close_all()
+    tasks_close_all
 
     # create new ticket
     ticket_create(
@@ -33,7 +35,7 @@ class AgentTicketActionLevel0Test < TestCase
       },
     )
 
-    tasks_close_all()
+    tasks_close_all
 
     # invite agent (with one group)
     click(css: '#navigation a[href="#dashboard"]')
@@ -43,7 +45,7 @@ class AgentTicketActionLevel0Test < TestCase
       value: 'Configuration',
     )
     click(css: '.active.content .js-inviteAgent')
-    modal_ready()
+    modal_ready
     set(
       css:   '.modal [name="firstname"]',
       value: 'Bob',
@@ -83,7 +85,7 @@ class AgentTicketActionLevel0Test < TestCase
       value: 'Configuration',
     )
     click(css: '.active.content .js-inviteAgent')
-    modal_ready()
+    modal_ready
     set(
       css:   '.modal [name="firstname"]',
       value: 'Bob2',
@@ -136,7 +138,7 @@ class AgentTicketActionLevel0Test < TestCase
       value: 'Sending',
     )
 
-    tasks_close_all()
+    tasks_close_all
 
   end
 
@@ -157,7 +159,7 @@ class AgentTicketActionLevel0Test < TestCase
       css:   '.newTicket',
       value: 'New Ticket',
     )
-    exists_not(css: '.newTicket select[name="group_id"]')
+    exists(css: '.newTicket .form-group.hide select[name="group_id"]')
 
     set(
       css:   '.newTicket input[name="title"]',
@@ -196,7 +198,7 @@ class AgentTicketActionLevel0Test < TestCase
       value: 'one group - some body 1234 äöüß',
     )
 
-    tasks_close_all()
+    tasks_close_all
 
   end
 
@@ -204,18 +206,18 @@ class AgentTicketActionLevel0Test < TestCase
 
     @browser = browser_instance
     login(
-      username: 'master@example.com',
+      username: 'admin@example.com',
       password: 'test',
       url:      browser_url,
     )
-    tasks_close_all()
+    tasks_close_all
 
     group_create(
       data: {
-        name:   "some group #{rand(999_999_999)}",
+        name:   "some group #{SecureRandom.uuid}",
         member: [
           {
-            login:  'master@example.com',
+            login:  'admin@example.com',
             access: 'full',
           },
           {
@@ -248,7 +250,7 @@ class AgentTicketActionLevel0Test < TestCase
       },
     )
 
-    tasks_close_all()
+    tasks_close_all
 
   end
 

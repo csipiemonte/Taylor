@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module Import
   module OTRS
     class Article
@@ -14,7 +16,7 @@ module Import
         Subject:     :subject,
         InReplyTo:   :in_reply_to,
         MessageID:   :message_id,
-        #ReplyTo:    :reply_to,
+        # ReplyTo:    :reply_to,
         References:  :references,
         ContentType: :content_type,
         ChangeTime:  :updated_at,

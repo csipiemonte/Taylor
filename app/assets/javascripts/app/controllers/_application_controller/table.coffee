@@ -514,6 +514,8 @@ class App.ControllerTable extends App.Controller
       groupObjects = objectsGrouped[groupValue]
 
       for object in groupObjects
+        objectActions = []
+
         if object
           position++
           if @groupBy
@@ -521,7 +523,14 @@ class App.ControllerTable extends App.Controller
             if groupLastName isnt groupByName
               groupLastName = groupByName
               tableBody.push @renderTableGroupByRow(object, position, groupByName)
-          tableBody.push @renderTableRow(object, position)
+          for action in @actions
+            # Check if the available key is used, it can be a Boolean or a function which should be called.
+            if !action.available? || action.available == true
+              objectActions.push action
+            else if typeof action.available is 'function' && action.available(object) == true
+              objectActions.push action
+
+          tableBody.push @renderTableRow(object, position, objectActions)
     tableBody
 
   renderTableGroupByRow: (object, position, groupByName) =>
@@ -543,7 +552,7 @@ class App.ControllerTable extends App.Controller
       columnsLength: @columnsLength
     )
 
-  renderTableRow: (object, position) =>
+  renderTableRow: (object, position, actions) =>
     App.view('generic/table_row')(
       headers:    @headers
       attributes: @attributesList
@@ -553,7 +562,7 @@ class App.ControllerTable extends App.Controller
       sortable:   @dndCallback
       position:   position
       object:     object
-      actions:    @actions
+      actions:    actions
     )
 
   tableHeadersHasChanged: =>
@@ -1054,12 +1063,13 @@ class App.ControllerTable extends App.Controller
     # update store
     @preferencesStore('order', 'customOrderBy', @orderBy)
     @preferencesStore('order', 'customOrderDirection', @orderDirection)
-    render = =>
-      @renderTableFull(false, skipHeadersResize: true)
-    App.QueueManager.add('tableRender', render)
 
     if @sortRenderCallback
       App.QueueManager.add('tableRender', @sortRenderCallback)
+    else
+      render = =>
+        @renderTableFull(false, skipHeadersResize: true)
+      App.QueueManager.add('tableRender', render)
 
     App.QueueManager.run('tableRender')
 

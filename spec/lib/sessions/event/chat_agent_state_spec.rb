@@ -1,8 +1,10 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe Sessions::Event::ChatAgentState do
 
-  let(:client_id) { rand(123_456_789) }
+  let(:client_id) { SecureRandom.uuid }
   let(:chat) { Chat.first }
 
   let(:user) do

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class ChannelsGoogleController < ApplicationController
   prepend_before_action -> { authentication_check && authorize! }
@@ -76,7 +76,7 @@ class ChannelsGoogleController < ApplicationController
     channel.refresh_xoauth2!(force: true)
 
     result = EmailHelper::Probe.inbound(channel.options[:inbound])
-    raise Exceptions::UnprocessableEntity, ( result[:message_human] || result[:message] ) if result[:result] == 'invalid'
+    raise Exceptions::UnprocessableEntity, (result[:message_human] || result[:message]) if result[:result] == 'invalid'
 
     channel.status_in    = 'ok'
     channel.status_out   = 'ok'

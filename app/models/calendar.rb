@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Calendar < ApplicationModel
   include ChecksClientNotification
@@ -35,7 +35,7 @@ returns calendar object
     end
 
     # prevent multiple setups for same ip
-    cache = Cache.get('Calendar.init_setup.done')
+    cache = Cache.read('Calendar.init_setup.done')
     return if cache && cache[:ip] == ip
 
     Cache.write('Calendar.init_setup.done', { ip: ip }, { expires_in: 1.hour })
@@ -159,7 +159,7 @@ returns
     # only sync every 5 days
     if id
       cache_key = "CalendarIcal::#{id}"
-      cache = Cache.get(cache_key)
+      cache = Cache.read(cache_key)
       return if !last_log && cache && cache[:ical_url] == ical_url
     end
 
@@ -423,7 +423,7 @@ returns
       return
     end
 
-    #raise Exceptions::UnprocessableEntity, 'No configured business hours found!' if hours.blank?
+    # raise Exceptions::UnprocessableEntity, 'No configured business hours found!' if hours.blank?
 
     # validate if business hours are usable by execute a try calculation
     begin

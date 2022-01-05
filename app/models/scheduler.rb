@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Scheduler < ApplicationModel
   include ChecksHtmlSanitized
@@ -288,7 +288,7 @@ class Scheduler < ApplicationModel
     )
 
     logger.info "execute #{job.method} (try_count #{try_count})..."
-    eval job.method() # rubocop:disable Security/Eval
+    eval job.method # rubocop:disable Security/Eval
     took = Time.zone.now - started_at
     logger.info "ended #{job.method} took: #{took} seconds."
   rescue => e
@@ -336,6 +336,8 @@ class Scheduler < ApplicationModel
     took = Time.zone.now - started_at
     logger.error "execute #{job.method} (try_count #{try_count}) exited with a non standard-error #{e.inspect} in: #{took} seconds."
     raise
+  ensure
+    ActiveSupport::CurrentAttributes.clear_all
   end
 
   def self.worker(foreground = false)

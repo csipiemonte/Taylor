@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe 'QUnit', type: :system, authenticated_as: false, set_up: true, websocket: false do
@@ -128,6 +130,10 @@ RSpec.describe 'QUnit', type: :system, authenticated_as: false, set_up: true, we
 
     it 'DateTime' do
       q_unit_tests('form_datetime')
+    end
+
+    it 'Core Workflow' do
+      q_unit_tests('form_core_workflow')
     end
   end
 

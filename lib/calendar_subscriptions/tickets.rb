@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class CalendarSubscriptions::Tickets
 
@@ -44,7 +44,7 @@ class CalendarSubscriptions::Tickets
       owner_ids = [ @user.id ]
     end
     if preferences[:not_assigned]
-      owner_ids.push( 1 )
+      owner_ids.push(1)
     end
 
     owner_ids

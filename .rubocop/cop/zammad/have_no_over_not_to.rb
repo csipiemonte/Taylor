@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'capybara/rspec/matchers'
 
 module RuboCop
@@ -23,7 +25,7 @@ module RuboCop
           have_not_no?(matcher_name) && capybara_matcher?(matcher_name)
         end
 
-        def have_not_no?(matcher_name) # rubocop:disable Naming/PredicateName
+        def have_not_no?(matcher_name)  # rubocop:disable Naming/PredicateName
           matcher_name.match?(%r{^have_(?!no)})
         end
 

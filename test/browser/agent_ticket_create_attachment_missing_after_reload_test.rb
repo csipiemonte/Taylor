@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'browser_test_helper'
 
 # https://github.com/zammad/zammad/issues/1123
@@ -11,7 +13,7 @@ class AgentticketCreateAttachmentMissingAfterReloadTest < TestCase
       password: 'test',
       url:      browser_url,
     )
-    tasks_close_all()
+    tasks_close_all
 
     #
     # attachment checks - new ticket

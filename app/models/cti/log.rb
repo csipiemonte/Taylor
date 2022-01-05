@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module Cti
   class Log < ApplicationModel
     include HasSearchIndexBackend
@@ -91,7 +93,7 @@ example data, can be used for demo
     from_comment: 'Franz Bauer',
     to: '4930609811111',
     to_comment: 'Bob Smith',
-    call_id: rand(999_999_999),
+    call_id: SecureRandom.uuid,
     comment: '',
     state: 'newCall',
     done: true,
@@ -116,7 +118,7 @@ example data, can be used for demo
     from_comment: 'Franz Bauer',
     to: '4930609811111',
     to_comment: 'Bob Smith',
-    call_id: rand(999_999_999),
+    call_id: SecureRandom.uuid,
     comment: '',
     state: 'answer',
     done: true,
@@ -144,7 +146,7 @@ example data, can be used for demo
     from_comment: 'Franz Bauer',
     to: '4930609811111',
     to_comment: 'Bob Smith',
-    call_id: rand(999_999_999),
+    call_id: SecureRandom.uuid,
     comment: '',
     state: 'hangup',
     comment: 'normalClearing',
@@ -175,7 +177,7 @@ example data, can be used for demo
     from_comment: 'Franz Bauer',
     to: '4930609811111',
     to_comment: 'Bob Smith',
-    call_id: rand(999_999_999),
+    call_id: SecureRandom.uuid,
     comment: '',
     state: 'hangup',
     done: true,
@@ -207,7 +209,7 @@ example data, can be used for demo
     from_comment: 'Franz Bauer',
     to: '4930609811111',
     to_comment: '',
-    call_id: rand(999_999_999),
+    call_id: SecureRandom.uuid,
     comment: '',
     state: 'hangup',
     done: true,
@@ -239,7 +241,7 @@ example data, can be used for demo
     from_comment: 'Franz Bauer',
     to: '4930609811111',
     to_comment: 'Bob Smith',
-    call_id: rand(999_999_999),
+    call_id: SecureRandom.uuid,
     comment: '',
     state: 'hangup',
     done: true,
@@ -269,7 +271,7 @@ example data, can be used for demo
     direction: 'in',
     from: '4930609854180',
     to: '4930609811112',
-    call_id: rand(999_999_999),
+    call_id: SecureRandom.uuid,
     comment: '',
     state: 'hangup',
     done: true,
@@ -307,7 +309,7 @@ returns
                    .map { |p| p.slice(:from, :to) }
                    .map(&:values).flatten
                    .pluck(:user_id).compact
-                   .map { |user_id| User.lookup(id: user_id) }.compact
+                   .filter_map { |user_id| User.lookup(id: user_id) }
                    .each.with_object({}) { |user, a| user.assets(a) }
 
       {

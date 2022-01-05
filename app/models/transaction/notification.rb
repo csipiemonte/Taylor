@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Transaction::Notification
 
@@ -84,7 +84,7 @@ class Transaction::Notification
 
     if possible_recipients_additions.present?
       # join unique entries
-      possible_recipients = possible_recipients | possible_recipients_additions.to_a
+      possible_recipients |= possible_recipients_additions.to_a
     end
 
     already_checked_recipient_ids = {}
@@ -184,21 +184,24 @@ class Transaction::Notification
 
       # get user based notification template
       # if create, send create message / block update messages
-      template = nil
-      case @item[:type]
-      when 'create'
-        template = 'ticket_create'
-      when 'update'
-        template = 'ticket_update'
-      when 'reminder_reached'
-        template = 'ticket_reminder_reached'
-      when 'escalation'
-        template = 'ticket_escalation'
-      when 'escalation_warning'
-        template = 'ticket_escalation_warning'
-      else
-        raise "unknown type for notification #{@item[:type]}"
-      end
+      template = case @item[:type]
+                 when 'create'
+                   'ticket_create'
+                 when 'update'
+                   'ticket_update'
+                 when 'reminder_reached'
+                   'ticket_reminder_reached'
+                 when 'escalation'
+                   'ticket_escalation'
+                 when 'escalation_warning'
+                   'ticket_escalation_warning'
+                 when 'update.merged_into'
+                   'ticket_update_merged_into'
+                 when 'update.received_merge'
+                   'ticket_update_received_merge'
+                 else
+                   raise "unknown type for notification #{@item[:type]}"
+                 end
 
       current_user = User.lookup(id: @item[:user_id])
       if !current_user
@@ -220,7 +223,7 @@ class Transaction::Notification
           changes:      changes,
           reason:       recipients_reason[user.id],
         },
-        message_id:  "<notification.#{DateTime.current.to_s(:number)}.#{ticket.id}.#{user.id}.#{rand(999_999)}@#{Setting.get('fqdn')}>",
+        message_id:  "<notification.#{DateTime.current.to_s(:number)}.#{ticket.id}.#{user.id}.#{SecureRandom.uuid}@#{Setting.get('fqdn')}>",
         references:  ticket.get_references,
         main_object: ticket,
         attachments: attachments,
@@ -359,7 +362,7 @@ class Transaction::Notification
   end
 
   def possible_recipients_of_group(group_id)
-    cache = Cache.get("Transaction::Notification.group_access.full::#{group_id}")
+    cache = Cache.read("Transaction::Notification.group_access.full::#{group_id}")
     return cache if cache
 
     possible_recipients = User.group_access(group_id, 'full').sort_by(&:login)

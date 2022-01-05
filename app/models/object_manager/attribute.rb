@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class ObjectManager::Attribute < ApplicationModel
   include ChecksClientNotification
   include CanSeed
@@ -39,6 +41,13 @@ class ObjectManager::Attribute < ApplicationModel
   store :data_option_new
 
   before_validation :set_base_options
+
+  scope :active,     -> { where(active:   true) }
+  scope :editable,   -> { where(editable: true) }
+  scope :for_object, lambda { |name_or_klass|
+    id = ObjectLookup.lookup(name: name_or_klass.to_s)
+    where(object_lookup_id: id)
+  }
 
 =begin
 

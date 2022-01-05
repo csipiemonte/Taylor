@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module ApplicationController::Authenticates
   extend ActiveSupport::Concern
 
@@ -41,10 +43,10 @@ module ApplicationController::Authenticates
   end
 
   def authentication_check_only(auth_param = {})
-    #logger.debug 'authentication_check'
-    #logger.debug params.inspect
-    #logger.debug session.inspect
-    #logger.debug cookies.inspect
+    # logger.debug 'authentication_check'
+    # logger.debug params.inspect
+    # logger.debug session.inspect
+    # logger.debug cookies.inspect
     authentication_errors = []
 
     # already logged in, early exit
@@ -64,8 +66,8 @@ module ApplicationController::Authenticates
         raise Exceptions::Forbidden, 'API password access disabled!'
       end
 
-      user = User.authenticate(username, password)
-      return authentication_check_prerequesits(user, 'basic_auth', auth_param) if user
+      auth = Auth.new(username, password)
+      return authentication_check_prerequesits(auth.user, 'basic_auth', auth_param) if auth.valid?
 
       authentication_errors.push('Invalid BasicAuth credentials')
     end
@@ -142,14 +144,6 @@ module ApplicationController::Authenticates
     return false if authentication_errors.blank?
 
     raise Exceptions::NotAuthorized, authentication_errors.join(', ')
-  end
-
-  def authenticate_with_password
-    user = User.authenticate(params[:username], params[:password])
-    raise_unified_login_error if !user
-
-    session.delete(:switched_from_user_id)
-    authentication_check_prerequesits(user, 'session', {})
   end
 
   def authentication_check_prerequesits(user, auth_type, auth_param)

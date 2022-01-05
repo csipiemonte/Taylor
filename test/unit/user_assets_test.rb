@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 # NOTE: This test file is _almost_ fully migrated to RSpec, as of 4cc64d0ce.
 # It may be deleted once all missing spec coverage has been added.
 #
@@ -113,7 +115,7 @@ class UserAssetsTest < ActiveSupport::TestCase
     end
     return true if (object1.to_a - object2.to_a).blank?
 
-    #puts "ERROR: difference \n1: #{object1.inspect}\n2: #{object2.inspect}\ndiff: #{(object1.to_a - object2.to_a).inspect}"
+    # puts "ERROR: difference \n1: #{object1.inspect}\n2: #{object2.inspect}\ndiff: #{(object1.to_a - object2.to_a).inspect}"
     false
   end
 

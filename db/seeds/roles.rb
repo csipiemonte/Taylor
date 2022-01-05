@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 Role.create_if_not_exists(
   name:              'Admin',
   note:              'To configure your system.',
