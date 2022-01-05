@@ -346,7 +346,7 @@ class App.TicketCreate extends App.Controller
       screen:         'create_middle'
       events:
         'change [name=customer_id]': @localUserInfo
-        "change [name='service_catalog_item_id']": => @filter_service_catalog_sub_items()
+        "change [name='service_catalog_item_id']": (e) => @filter_service_catalog_sub_items(e)
       handlersConfig: handlers
       filter:                  @formMeta.filter
       formMeta:                @formMeta
@@ -604,17 +604,21 @@ class App.TicketCreate extends App.Controller
     @formEnable(@$('.js-submit'), 'button')
 
   # CSI custom: filter service_catalog_sub_items based on service_catalog_item
-  filter_service_catalog_sub_items: ->
-    catalog_item = $("[name='service_catalog_item_id']")
-    catalog_sub_item = $("[name='service_catalog_sub_item_id']")
-
+  filter_service_catalog_sub_items: (e) ->
+    catalog_item = $(e.target)
+    catalog_sub_item = catalog_item.parents('form').find("[name='service_catalog_sub_item_id']")
+    
     selected_item = catalog_item.val()
     if !selected_item
-      return
-    selected_item = Number(selected_item)
-
+      subItems = App.ServiceCatalogSubItem.all()
+    else
+      selected_item = Number(selected_item)
+      subItems =  (item for item in  App.ServiceCatalogSubItem.all() when item.parent_service == selected_item)
+    
+    empty_option = new Option('-', '')
     catalog_sub_item.empty()
-    subItems = (item for item in App.ServiceCatalogSubItem.all() when item.parent_service == selected_item)
+    catalog_sub_item.append(empty_option)
+
     subItems.forEach (option) ->
       o = new Option(option['name'], option['id'])
       $(o).html(option['name'])
