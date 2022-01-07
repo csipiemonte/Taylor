@@ -324,11 +324,14 @@ class App.TicketCreate extends App.Controller
 
     handlers = @Config.get('TicketCreateFormHandler')
 
+    # CSI Piemonte custom, aggiunto agli events "change [name='service_catalog_item_id']"
     @controllerFormCreateMiddle = new App.ControllerForm(
       el:                      @$('.ticket-form-middle')
       form_id:                 @formId
       model:                   App.Ticket
       screen:                  'create_middle'
+      events:
+        "change [name='service_catalog_item_id']": (e) => @filter_service_catalog_sub_items(e)
       handlersConfig:          handlers
       filter:                  @formMeta.filter
       formMeta:                @formMeta
@@ -635,6 +638,27 @@ class App.TicketCreate extends App.Controller
       @formEnable(e)
       return
     @formEnable(@$('.js-submit'), 'button')
+
+  # CSI custom: filter service_catalog_sub_items based on service_catalog_item
+  filter_service_catalog_sub_items: (e) ->
+    catalog_item = $(e.target)
+    catalog_sub_item = catalog_item.parents('form').find("[name='service_catalog_sub_item_id']")
+    
+    selected_item = catalog_item.val()
+    if !selected_item
+      subItems = App.ServiceCatalogSubItem.all()
+    else
+      selected_item = Number(selected_item)
+      subItems =  (item for item in  App.ServiceCatalogSubItem.all() when item.parent_service == selected_item)
+    
+    empty_option = new Option('-', '')
+    catalog_sub_item.empty()
+    catalog_sub_item.append(empty_option)
+
+    subItems.forEach (option) ->
+      o = new Option(option['name'], option['id'])
+      $(o).html(option['name'])
+      catalog_sub_item.append(o)
 
 class Router extends App.ControllerPermanent
   requiredPermission: 'ticket.agent'

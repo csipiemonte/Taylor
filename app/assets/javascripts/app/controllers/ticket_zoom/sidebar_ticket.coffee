@@ -29,6 +29,10 @@ class Edit extends App.Controller
       # for the new ticket + eventually changed task state
       @formMeta.core_workflow = undefined
 
+    # CSI custom: get subitems to perform prefiltering
+    subItems = App.ServiceCatalogSubItem.select (item) -> item.parent_service == defaults.service_catalog_item_id
+    @formMeta.filter['service_catalog_sub_item_id'] = (item.id for item in subItems)
+
     if followUpPossible == 'new_ticket' && ticketState != 'closed' ||
        followUpPossible != 'new_ticket' ||
        @permissionCheck('admin') || @ticket.currentView() is 'agent'
@@ -45,6 +49,8 @@ class Edit extends App.Controller
         core_workflow: {
           callbacks: [@markForm]
         }
+        events:
+          "change [name='service_catalog_item_id']": (e) => @filter_service_catalog_sub_items(e)
         #bookmarkable:  true
       )
     else
@@ -73,6 +79,27 @@ class Edit extends App.Controller
       @render()
     )
 
+  # CSI custom: filter service_catalog_sub_items based on service_catalog_item
+  filter_service_catalog_sub_items: (e) ->
+    catalog_item = $(e.target)
+    catalog_sub_item = catalog_item.parents('form').find("[name='service_catalog_sub_item_id']")
+
+    selected_item = catalog_item.val()
+    if !selected_item
+      subItems = App.ServiceCatalogSubItem.all()
+    else
+      selected_item = Number(selected_item)
+      subItems =  (item for item in  App.ServiceCatalogSubItem.all() when item.parent_service == selected_item)
+    
+    empty_option = new Option('-', '')
+    catalog_sub_item.empty()
+    catalog_sub_item.append(empty_option)
+
+    subItems.forEach (option) ->
+      o = new Option(option['name'], option['id'])
+      $(o).html(option['name'])
+      catalog_sub_item.append(o)
+    
 class SidebarTicket extends App.Controller
   constructor: ->
     super
