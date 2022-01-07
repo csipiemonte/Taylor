@@ -820,7 +820,7 @@ is certain attribute used by triggers, overviews or schedulers
     end
 
     record = object_lookup.name.constantize.new
-    if record.respond_to?(name.to_sym) && record.attributes.key?(name) && new_record?
+    if new_record? && (record.respond_to?(name.to_sym) || record.attributes.key?(name))
       errors.add(:name, "#{name} already exists!")
     end
 
@@ -932,12 +932,7 @@ is certain attribute used by triggers, overviews or schedulers
       [{ failed:  local_data_option[:future].nil?,
          message: 'must have boolean value for :future' },
        { failed:  local_data_option[:past].nil?,
-         message: 'must have boolean value for :past' },
-       { failed:  local_data_option[:diff].nil?,
-         message: 'must have integer value for :diff (in hours)' }]
-    when 'date'
-      [{ failed:  local_data_option[:diff].nil?,
-         message: 'must have integer value for :diff (in days)' }]
+         message: 'must have boolean value for :past' }]
     else
       []
     end

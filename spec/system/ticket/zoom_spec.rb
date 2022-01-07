@@ -2149,6 +2149,13 @@ RSpec.describe 'Ticket zoom', type: :system do
       expect(page.find("select[name='priority_id']").value).to eq(high_prio.id.to_s)
     end
 
+    it 'does show up the new group (different case because it will also trigger a full rerender because of potential permission changes)' do
+      group = Group.find_by(name: 'some group1')
+      ticket.update(group: group)
+      wait(10, interval: 0.5).until { page.find("select[name='group_id']").value == group.id.to_s }
+      expect(page.find("select[name='group_id']").value).to eq(group.id.to_s)
+    end
+
     it 'does show up the new state and pending time' do
       pending_state = Ticket::State.find_by(name: 'pending reminder')
       ticket.update(state: pending_state, pending_time: 1.day.from_now)
@@ -2226,6 +2233,38 @@ RSpec.describe 'Ticket zoom', type: :system do
       wait(5).until { Taskbar.find_by(key: "Ticket-#{ticket.id}").attributes_with_association_ids['attachments'].present? }
       refresh
       expect(page).to have_selector('form.article-add.is-open')
+    end
+  end
+
+  context 'Owner should get cleared if not listed in changed group #3818', authenticated_as: :authenticate do
+    let(:group1) { create(:group) }
+    let(:group2) { create(:group) }
+    let(:agent1) { create(:agent) }
+    let(:agent2) { create(:agent) }
+    let(:ticket) { create(:ticket, group: group1, owner: agent1) }
+
+    def authenticate
+      agent1.group_names_access_map = {
+        group1.name => 'full',
+        group2.name => %w[read change overview]
+      }
+      agent2.group_names_access_map = {
+        group1.name => 'full',
+        group2.name => 'full',
+      }
+      agent1
+    end
+
+    before do
+      visit "#ticket/zoom/#{ticket.id}"
+    end
+
+    it 'does clear agent1 on select of group 2' do
+      select group2.name, from: 'Group'
+      wait(5).until { page.find('select[name=owner_id]').value != agent1.id.to_s }
+      expect(page.find('select[name=owner_id]').value).to eq('')
+      expect(page.all('select[name=owner_id] option').map(&:value)).not_to include(agent1.id.to_s)
+      expect(page.all('select[name=owner_id] option').map(&:value)).to include(agent2.id.to_s)
     end
   end
 end

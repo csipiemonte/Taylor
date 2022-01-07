@@ -610,4 +610,111 @@ RSpec.describe 'Ticket Create', type: :system do
       end
     end
   end
+
+  describe 'Support workflow mechanism to do pending reminder state hide pending time use case #3790', authenticated_as: :authenticate do
+    let(:template) { create(:template, :dummy_data) }
+
+    def add_state
+      Ticket::State.create_or_update(
+        name:              'pending customer feedback',
+        state_type:        Ticket::StateType.find_by(name: 'pending reminder'),
+        ignore_escalation: true,
+        created_by_id:     1,
+        updated_by_id:     1,
+      )
+    end
+
+    def update_screens
+      attribute = ObjectManager::Attribute.get(
+        object: 'Ticket',
+        name:   'state_id',
+      )
+      attribute.data_option[:filter] = Ticket::State.by_category(:viewable).pluck(:id)
+      attribute.screens[:create_middle]['ticket.agent'][:filter] = Ticket::State.by_category(:viewable_agent_new).pluck(:id)
+      attribute.screens[:create_middle]['ticket.customer'][:filter] = Ticket::State.by_category(:viewable_customer_new).pluck(:id)
+      attribute.screens[:edit]['ticket.agent'][:filter] = Ticket::State.by_category(:viewable_agent_edit).pluck(:id)
+      attribute.screens[:edit]['ticket.customer'][:filter] = Ticket::State.by_category(:viewable_customer_edit).pluck(:id)
+      attribute.save!
+    end
+
+    def create_flow
+      create(:core_workflow,
+             object:             'Ticket',
+             condition_selected: { 'ticket.state_id'=>{ 'operator' => 'is', 'value' => Ticket::State.find_by(name: 'pending customer feedback').id.to_s } },
+             perform:            { 'ticket.pending_time'=> { 'operator' => 'remove', 'remove' => 'true' } })
+    end
+
+    def authenticate
+      add_state
+      update_screens
+      create_flow
+      template
+      true
+    end
+
+    before do
+      visit 'ticket/create'
+      use_template(template)
+    end
+
+    it 'does make it possible to create pending states where the pending time is optional and not visible' do
+      select 'pending customer feedback', from: 'state_id'
+      click '.js-submit'
+      expect(current_url).to include('ticket/zoom')
+      expect(Ticket.last.state_id).to eq(Ticket::State.find_by(name: 'pending customer feedback').id)
+      expect(Ticket.last.pending_time).to be nil
+    end
+  end
+
+  describe 'When looking for customers, it is no longer possible to change into organizations #3815' do
+    before do
+      visit 'ticket/create'
+
+      # modal reaper ;)
+      sleep 3
+    end
+
+    context 'when less than 10 customers' do
+      let(:organization) { Organization.first }
+
+      it 'has no show more option' do
+        find('[name=customer_id_completion]').fill_in with: 'zam'
+        expect(page).to have_selector("li.js-organization[data-organization-id='#{organization.id}']")
+        page.find("li.js-organization[data-organization-id='#{organization.id}']").click
+        expect(page).to have_selector("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers.hidden", visible: :all)
+      end
+    end
+
+    context 'when more than 10 customers', authenticated_as: :authenticate do
+      def authenticate
+        customers
+        true
+      end
+
+      let(:organization) { create(:organization, name: 'Zammed') }
+      let(:customers) do
+        create_list(:customer, 50, organization: organization)
+      end
+
+      it 'does paginate through organization' do
+        find('[name=customer_id_completion]').fill_in with: 'zam'
+        expect(page).to have_selector("li.js-organization[data-organization-id='#{organization.id}']")
+        page.find("li.js-organization[data-organization-id='#{organization.id}']").click
+        wait(5).until { page.all("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li", visible: :all).count == 12 } # 10 users + back + show more button
+
+        expect(page).to have_selector("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers[organization-member-limit='10']")
+        scroll_into_view('li.js-showMoreMembers')
+        page.find("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers").click
+        wait(5).until { page.all("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li", visible: :all).count == 27 } # 25 users + back + show more button
+
+        expect(page).to have_selector("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers[organization-member-limit='25']")
+        scroll_into_view('li.js-showMoreMembers')
+        page.find("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers").click
+        wait(5).until { page.all("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li", visible: :all).count == 52 } # 50 users + back + show more button
+
+        scroll_into_view('li.js-showMoreMembers')
+        expect(page).to have_selector("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers.hidden", visible: :all, wait: 20)
+      end
+    end
+  end
 end

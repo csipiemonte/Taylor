@@ -654,6 +654,7 @@ class App.TicketZoom extends App.Controller
     # update changes in ui
     currentStore = @currentStore()
     modelDiff = @formDiff(currentParams, currentStore)
+    return if _.isEmpty(modelDiff)
 
     # set followup state if needed
     @setDefaultFollowUpState(modelDiff, currentStore)
@@ -748,6 +749,14 @@ class App.TicketZoom extends App.Controller
 
     # do not compare null or undefined value
     if currentStore.ticket
+
+      # make sure that the compared state is same in local storage and
+      # rendered html. Else we could have race conditions of data
+      # which is not rendered yet
+      renderedUpdatedAt = @el.find('.edit').attr('data-ticket-updated-at')
+      return if !renderedUpdatedAt
+      return if currentStore.ticket.updated_at.toString() isnt renderedUpdatedAt
+
       for key, value of currentStore.ticket
         if value is null || value is undefined
           currentStore.ticket[key] = ''
