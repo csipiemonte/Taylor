@@ -10,7 +10,6 @@ require 'models/concerns/has_xss_sanitized_note_examples'
 require 'models/concerns/can_be_imported_examples'
 require 'models/concerns/has_object_manager_attributes_examples'
 require 'models/user/can_lookup_search_index_attributes_examples'
-require 'models/user/has_ticket_create_screen_impact_examples'
 require 'models/user/performs_geo_lookup_examples'
 require 'models/concerns/has_taskbars_examples'
 
@@ -29,7 +28,6 @@ RSpec.describe User, type: :model do
   it_behaves_like 'HasGroups and Permissions', group_access_no_permission_factory: :user
   it_behaves_like 'CanBeImported'
   it_behaves_like 'HasObjectManagerAttributes'
-  it_behaves_like 'User::HasTicketCreateScreenImpact'
   it_behaves_like 'CanLookupSearchIndexAttributes'
   it_behaves_like 'HasTaskbars'
   it_behaves_like 'UserPerformsGeoLookup'
@@ -248,6 +246,62 @@ RSpec.describe User, type: :model do
 
           it 'returns the designated substitute recursive with a endless loop' do
             expect(user.out_of_office_agent).to eq(substitute)
+          end
+        end
+
+        context 'with stack depth exceeding limit' do
+          let(:replacement_chain) do
+            user = create(:agent)
+
+            14
+              .times
+              .each_with_object([user]) do |_, memo|
+                memo << create(:agent, :ooo, ooo_agent: memo.last)
+              end
+              .reverse
+          end
+
+          let(:ids_executed) { [] }
+
+          before do
+            allow_any_instance_of(described_class).to receive(:out_of_office_agent).and_wrap_original do |method, *args| # rubocop:disable RSpec/AnyInstance
+              ids_executed << method.receiver.id
+              method.call(*args)
+            end
+
+            allow(Rails.logger).to receive(:warn)
+          end
+
+          it 'returns the last agent at the limit' do
+            expect(replacement_chain.first.out_of_office_agent).to eq replacement_chain[10]
+          end
+
+          it 'does not evaluate element beyond the limit' do
+            user_beyond_limit = replacement_chain[11]
+
+            replacement_chain.first.out_of_office_agent
+
+            expect(ids_executed).not_to include(user_beyond_limit.id)
+          end
+
+          it 'does evaluate element within the limit' do
+            user_within_limit = replacement_chain[5]
+
+            replacement_chain.first.out_of_office_agent
+
+            expect(ids_executed).to include(user_within_limit.id)
+          end
+
+          it 'logs error below the limit' do
+            replacement_chain.first.out_of_office_agent
+
+            expect(Rails.logger).to have_received(:warn).with(%r{#{Regexp.escape('Found more than 10 replacement levels for agent')}})
+          end
+
+          it 'does not logs warn within the limit' do
+            replacement_chain[10].out_of_office_agent
+
+            expect(Rails.logger).not_to have_received(:warn)
           end
         end
       end

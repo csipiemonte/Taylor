@@ -79,6 +79,12 @@ class App.FormHandlerCoreWorkflow
     return if !App.WebSocket.channel()
     return !App.Config.get('core_workflow_ajax_mode')
 
+  @restrictValuesAttributeCache: (attribute, values) ->
+    result = { values: values }
+    return result if !attribute.relation
+    result.lastUpdatedAt = App[attribute.relation].lastUpdatedAt()
+    return result
+
   # restricts the dropdown and tree select values of a form
   @restrictValues: (classname, form, ui, attributes, params, data) ->
     return if _.isEmpty(data.restrict_values)
@@ -111,11 +117,11 @@ class App.FormHandlerCoreWorkflow
         # cache state for performance and only run
         # if values or param differ
         if coreWorkflowRestrictions?[classname]?[item.name]
-          compare = values
+          compare = App.FormHandlerCoreWorkflow.restrictValuesAttributeCache(attribute, values)
           continue if _.isEqual(coreWorkflowRestrictions[classname][item.name], compare)
 
         coreWorkflowRestrictions[classname] ||= {}
-        coreWorkflowRestrictions[classname][item.name] = values
+        coreWorkflowRestrictions[classname][item.name] = App.FormHandlerCoreWorkflow.restrictValuesAttributeCache(attribute, values)
 
         valueFound = false
         for value in values
@@ -299,6 +305,11 @@ class App.FormHandlerCoreWorkflow
       screen: ui.screen
     }
 
+    # send last changed attribute only once for has changed condition
+    if ui.lastChangedAttribute
+      requestData.last_changed_attribute = ui.lastChangedAttribute
+      ui.lastChangedAttribute            = '-'
+
     if App.FormHandlerCoreWorkflow.useWebSockets()
       App.WebSocket.send(requestData)
     else
@@ -324,8 +335,12 @@ class App.FormHandlerCoreWorkflow
 
     # get params and add id from ui if needed
     params = App.FormHandlerCoreWorkflow.cleanParams(params_ref)
-    if ui?.params?.id
+
+    # add object id for edit screens
+    if ui?.params?.id && ui.screen.match(/edit/)
       params.id = ui.params.id
+    else
+      delete params.id
 
     # skip double checks
     return if _.isEqual(coreWorkflowParams[classname], params)

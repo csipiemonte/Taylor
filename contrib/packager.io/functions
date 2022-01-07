@@ -181,6 +181,9 @@ function update_database_yml () {
     -e "s/.*username:.*/  username: ${DB_USER}/" \
     -e "s/.*password:.*/  password: ${DB_PASS}/" \
     -e "s/.*database:.*/  database: ${DB}/" < ${ZAMMAD_DIR}/contrib/packager.io/database.yml.pkgr > ${ZAMMAD_DIR}/config/database.yml
+
+  echo "# ... Fixing permission database.yml"
+  chown zammad:zammad ${ZAMMAD_DIR}/config/database.yml
 }
 
 function initialise_database () {
@@ -301,6 +304,9 @@ function update_or_install () {
   setup_elasticsearch
 
   elasticsearch_searchindex_rebuild
+
+  echo "# Enforcing 0600 on database.yml ..."
+  chmod 600 ${ZAMMAD_DIR}/config/database.yml
 }
 
 function set_env_vars () {

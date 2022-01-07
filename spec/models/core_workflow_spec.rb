@@ -377,7 +377,7 @@ RSpec.describe CoreWorkflow, type: :model do
         base_payload.merge(
           'screen'     => 'edit',
           'class_name' => 'Sla',
-          'params'     => { 'update_time_enabled' => 'true' }
+          'params'     => { 'update_time_enabled' => 'true', 'update_type' => 'update' }
         )
       end
 
@@ -1750,6 +1750,104 @@ RSpec.describe CoreWorkflow, type: :model do
 
     it 'does not show any owners because no one has full permissions' do
       expect(result[:restrict_values]['owner_id']).to eq([''])
+    end
+  end
+
+  describe 'Add clear selection action or has changed condition #3821' do
+    let!(:workflow_has_changed) do
+      create(:core_workflow,
+             object:             'Ticket',
+             condition_selected: {
+               'ticket.priority_id': {
+                 operator: 'has_changed',
+               },
+             })
+    end
+    let!(:workflow_changed_to) do
+      create(:core_workflow,
+             object:             'Ticket',
+             condition_selected: {
+               'ticket.priority_id': {
+                 operator: 'changed_to',
+                 value:    [ Ticket::Priority.find_by(name: '3 high').id.to_s ]
+               },
+             })
+    end
+
+    context 'when priority changed' do
+      let(:payload) do
+        base_payload.merge('last_changed_attribute' => 'priority_id', 'params' => { 'priority_id' => Ticket::Priority.find_by(name: '3 high').id.to_s })
+      end
+
+      it 'does match on condition has changed' do
+        expect(result[:matched_workflows]).to include(workflow_has_changed.id)
+      end
+
+      it 'does match on condition changed to' do
+        expect(result[:matched_workflows]).to include(workflow_changed_to.id)
+      end
+    end
+
+    context 'when nothing changed' do
+      it 'does not match on condition has changed' do
+        expect(result[:matched_workflows]).not_to include(workflow_has_changed.id)
+      end
+
+      it 'does not match on condition changed to' do
+        expect(result[:matched_workflows]).not_to include(workflow_changed_to.id)
+      end
+    end
+
+    context 'when state changed' do
+      let(:payload) do
+        base_payload.merge('last_changed_attribute' => 'state_id')
+      end
+
+      it 'does not match on condition has changed' do
+        expect(result[:matched_workflows]).not_to include(workflow_has_changed.id)
+      end
+
+      it 'does not match on condition changed to' do
+        expect(result[:matched_workflows]).not_to include(workflow_changed_to.id)
+      end
+    end
+  end
+
+  describe 'If selected value is not part of the restriction of set_fixed_to it should recalculate it with the new value #3822', db_strategy: :reset do
+    let(:field_name1) { SecureRandom.uuid }
+    let(:screens) do
+      {
+        'create_middle' => {
+          'ticket.agent' => {
+            'shown'    => false,
+            'required' => false,
+          }
+        }
+      }
+    end
+    let!(:workflow1) do
+      create(:core_workflow,
+             object:  'Ticket',
+             perform: { "ticket.#{field_name1}" => { 'operator' => 'set_fixed_to', 'set_fixed_to' => ['key_3'] } })
+    end
+    let!(:workflow2) do
+      create(:core_workflow,
+             object:             'Ticket',
+             condition_selected: {
+               "ticket.#{field_name1}": {
+                 operator: 'is',
+                 value:    'key_3',
+               },
+             })
+    end
+
+    before do
+      create :object_manager_attribute_select, name: field_name1, display: field_name1, screens: screens
+      ObjectManager::Attribute.migration_execute
+    end
+
+    it 'does select key_3 as new param value and based on this executes workflow 2' do
+      expect(result[:matched_workflows]).to include(workflow1.id, workflow2.id)
     end
   end
 end

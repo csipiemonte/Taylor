@@ -563,6 +563,25 @@ RSpec.describe 'Ticket Create', type: :system do
     end
   end
 
+  context 'when state options have a special translation', authenticated_as: :authenticate do
+    let(:admin_de) { create(:admin, preferences: { locale: 'de-de' }) }
+
+    context 'when translated state option has a single quote' do
+      def authenticate
+        open_tranlation = Translation.where(locale: 'de-de', source: 'open')
+        open_tranlation.update(target: "off'en")
+
+        admin_de
+      end
+
+      it 'shows the translated state options correctly' do
+        visit 'ticket/create'
+
+        expect(page).to have_select('state_id', with_options: ["off'en"])
+      end
+    end
+  end
+
   describe 'It should be possible to show attributes which are configured shown false #3726', authenticated_as: :authenticate, db_strategy: :reset do
     let(:field_name) { SecureRandom.uuid }
     let(:field) do
@@ -715,6 +734,99 @@ RSpec.describe 'Ticket Create', type: :system do
         scroll_into_view('li.js-showMoreMembers')
         expect(page).to have_selector("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers.hidden", visible: :all, wait: 20)
       end
+    end
+  end
+
+  describe 'Ticket create screen will loose attachments by time #3827' do
+    before do
+      visit 'ticket/create'
+    end
+
+    it 'does not loose attachments on rerender of the ui' do
+      # upload two files
+      page.find('input#fileUpload_1', visible: :all).set(Rails.root.join('test/data/mail/mail001.box'))
+      await_empty_ajax_queue
+      page.find('input#fileUpload_1', visible: :all).set(Rails.root.join('test/data/mail/mail002.box'))
+      await_empty_ajax_queue
+      wait(5).until { page.all('div.attachment-delete.js-delete', visible: :all).count == 2 }
+      expect(page).to have_text('mail001.box')
+      expect(page).to have_text('mail002.box')
+
+      # remove last file
+      begin
+        page.evaluate_script("$('div.attachment-delete.js-delete:last').click()") # not interactable
+      rescue # Lint/SuppressedException
+        # because its not interactable it also
+        # returns this weird exception for the jquery
+        # even tho it worked fine
+      end
+      await_empty_ajax_queue
+      wait(5).until { page.all('div.attachment-delete.js-delete', visible: :all).count == 1 }
+      expect(page).to have_text('mail001.box')
+      expect(page).to have_no_text('mail002.box')
+
+      # simulate rerender b
+      page.evaluate_script("App.Event.trigger('ui:rerender')")
+      expect(page).to have_text('mail001.box')
+      expect(page).to have_no_text('mail002.box')
+    end
+  end
+
+  describe 'Invalid group and owner list for tickets created via customer profile #3835' do
+    let(:invalid_ticket) { create(:ticket) }
+
+    before do
+      visit "#ticket/create/id/#{invalid_ticket.id}/customer/#{User.find_by(firstname: 'Nicole').id}"
+    end
+
+    it 'does show an empty list of owners' do
+      wait(5).until { page.all('select[name=owner_id] option').count == 1 }
+      expect(page.all('select[name=owner_id] option').count).to eq(1)
+    end
+  end
+
+  # https://github.com/zammad/zammad/issues/3825
+  describe 'CC token field' do
+    before do
+      visit 'ticket/create'
+
+      find('[data-type=email-out]').click
+    end
+
+    it 'can be cleared by cutting out text' do
+      add_email 'asd@example.com'
+      add_email 'def@example.com'
+
+      find('.token', text: 'def@example.com').double_click
+
+      meta_key = Gem::Platform.local.os == 'darwin' ? :command : :control
+      send_keys([meta_key, 'x'])
+
+      find('.token').click # trigger blur
+
+      expect(find('[name="cc"]', visible: :all).value).to eq 'asd@example.com'
+    end
+
+    def add_email(input)
+      fill_in 'Cc', with: input
+      send_keys(:enter) # trigger blur
+      find '.token', text: input # wait for email to tokenize
+    end
+  end
+
+  describe 'No signature on new ticket if email is default message type #3844', authenticated_as: :authenticate do
+    def authenticate
+      Setting.set('ui_ticket_create_default_type', 'email-out')
+      Group.where.not(name: 'Users').each { |g| g.update(active: false) }
+      true
+    end
+
+    before do
+      visit 'ticket/create'
+    end
+
+    it 'does render the create screen with an initial core workflow state to set signatures and other defaults properly' do
+      expect(page.find('.richtext-content')).to have_text('Support')
     end
   end
 end

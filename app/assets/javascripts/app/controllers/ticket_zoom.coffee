@@ -503,16 +503,22 @@ class App.TicketZoom extends App.Controller
       @form_id = @taskGet('article').form_id || App.ControllerForm.formId()
 
       @articleNew = new App.TicketZoomArticleNew(
-        ticket:                  @ticket
-        ticket_id:               @ticket_id
-        el:                      elLocal.find('.article-new')
-        formMeta:                @formMeta
-        form_id:                 @form_id
-        defaults:                @taskGet('article')
-        taskKey:                 @taskKey
-        ui:                      @
-        callbackFileUploadStart: @submitDisable
-        callbackFileUploadStop:  @submitEnable
+        ticket:                       @ticket
+        ticket_id:                    @ticket_id
+        el:                           elLocal.find('.article-new')
+        formMeta:                     @formMeta
+        form_id:                      @form_id
+        defaults:                     @taskGet('article')
+        taskKey:                      @taskKey
+        ui:                           @
+        richTextUploadStartCallback:  @submitDisable
+        richTextUploadRenderCallback: (attachments) =>
+          @submitEnable()
+          @taskUpdateAttachments('article', attachments)
+          @delay(@markForm, 250, 'ticket-zoom-form-update')
+        richTextUploadDeleteCallback: (attachments) =>
+          @taskUpdateAttachments('article', attachments)
+          @delay(@markForm, 250, 'ticket-zoom-form-update')
       )
 
       @highligher = new App.TicketZoomHighlighter(
@@ -734,7 +740,7 @@ class App.TicketZoom extends App.Controller
     # add attachments if exist
     attachmentCount = @$('.article-add .textBubble .attachments .attachment').length
     if attachmentCount > 0
-      currentParams.article.attachments = true
+      currentParams.article.attachments = attachmentCount
     else
       delete currentParams.article.attachments
 
@@ -1094,6 +1100,13 @@ class App.TicketZoom extends App.Controller
 
     App.TaskManager.update(@taskKey, taskData)
 
+  taskUpdateAttachments: (area, attachments) =>
+    taskData = App.TaskManager.get(@taskKey)
+    return if !taskData
+
+    taskData.attachments = attachments
+    App.TaskManager.update(@taskKey, taskData)
+
   taskUpdateAll: (data) =>
     @localTaskData = data
     @localTaskData.article['form_id'] = @form_id
@@ -1116,7 +1129,7 @@ class App.TicketZoom extends App.Controller
     @localTaskData =
       ticket:  {}
       article: {}
-    App.TaskManager.update(@taskKey, { 'state': @localTaskData })
+    App.TaskManager.update(@taskKey, { 'state': @localTaskData, attachments: [] })
 
   # CSI Piemonte custom, issue #175 (https://gitlab.csi.it/prodotti/nextcrm/zammad/issues/175)
   setTicketAdmissibleTransitions: (ticket) =>

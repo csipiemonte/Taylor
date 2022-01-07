@@ -48,12 +48,15 @@ class App.TicketCreate extends App.Controller
     if @ticket_id && @article_id
       @split = "/#{@ticket_id}/#{@article_id}"
 
-    load = (data) =>
-      App.Collection.loadAssets(data.assets)
-      @formMeta = data.form_meta
-      @buildScreen(params)
-    @bindId = App.TicketCreateCollection.bind(load, false)
-    App.TicketCreateCollection.fetch()
+    @ajax(
+      type: 'GET'
+      url:  "#{@apiPath}/ticket_create"
+      processData: true
+      success: (data, status, xhr) =>
+        App.Collection.loadAssets(data.assets)
+        @formMeta = data.form_meta
+        @buildScreen(params)
+    )
 
     # rerender view, e. g. on langauge change
     @controllerBind('ui:rerender', =>
@@ -68,9 +71,6 @@ class App.TicketCreate extends App.Controller
       return if !@sidebarWidget
       @sidebarWidget.render(@params())
     )
-
-  release: =>
-    App.TicketCreateCollection.unbindById(@bindId)
 
   currentChannel: =>
     if !type
@@ -282,8 +282,15 @@ class App.TicketCreate extends App.Controller
     return if !@formMeta
     App.QueueManager.run(@queueKey)
 
+  updateTaskManagerAttachments: (attribute, attachments) =>
+    taskData = App.TaskManager.get(@taskKey)
+    return if _.isEmpty(taskData)
+
+    taskData.attachments = attachments
+    App.TaskManager.update(@taskKey, taskData)
+
   render: (template = {}) ->
-    return if !@formMeta
+
     # get params
     params = @prefilledParams || {}
     if template && !_.isEmpty(template.options)
@@ -326,19 +333,18 @@ class App.TicketCreate extends App.Controller
 
     # CSI Piemonte custom, aggiunto agli events "change [name='service_catalog_item_id']"
     @controllerFormCreateMiddle = new App.ControllerForm(
-      el:                      @$('.ticket-form-middle')
-      form_id:                 @formId
-      model:                   App.Ticket
-      screen:                  'create_middle'
+      el:                       @$('.ticket-form-middle')
+      form_id:                  @formId
+      model:                    App.Ticket
+      screen:                   'create_middle'
+      handlersConfig:           handlers
+      formMeta:                 @formMeta
+      params:                   params
+      noFieldset:               true
+      taskKey:                  @taskKey
+      rejectNonExistentValues:  true
       events:
         "change [name='service_catalog_item_id']": (e) => @filter_service_catalog_sub_items(e)
-      handlersConfig:          handlers
-      filter:                  @formMeta.filter
-      formMeta:                @formMeta
-      params:                  params
-      noFieldset:              true
-      taskKey:                 @taskKey
-      rejectNonExistentValues: true
     )
 
     # tunnel events to make sure core workflow does know
@@ -362,8 +368,6 @@ class App.TicketCreate extends App.Controller
       events:
         'change [name=customer_id]': @localUserInfo
       handlersConfig: handlersTunnel
-      filter:         @formMeta.filter
-      formMeta:       @formMeta
       autofocus:      true
       params:         params
       taskKey:        @taskKey
@@ -379,6 +383,8 @@ class App.TicketCreate extends App.Controller
       handlersConfig: handlersTunnel
       params:  params
       taskKey: @taskKey
+      richTextUploadRenderCallback: @updateTaskManagerAttachments
+      richTextUploadDeleteCallback: @updateTaskManagerAttachments
     )
     @controllerFormCreateBottom = new App.ControllerForm(
       el:             @$('.ticket-form-bottom')
@@ -386,8 +392,6 @@ class App.TicketCreate extends App.Controller
       model:          App.Ticket
       screen:         'create_bottom'
       handlersConfig: handlersTunnel
-      filter:         @formMeta.filter
-      formMeta:       @formMeta
       params:         params
       taskKey:        @taskKey
     )
