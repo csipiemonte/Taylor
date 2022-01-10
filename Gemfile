@@ -175,7 +175,7 @@ group :development, :test do
   gem 'pry-remote'
   gem 'pry-rescue'
   gem 'pry-stack_explorer'
-  gem 'ruby-debug-ide'
+  gem 'ruby-debug-ide' # da commentare per far eseguire i test automatizzati
 
   # test frameworks
   gem 'rails-controller-testing'
