@@ -175,7 +175,10 @@ group :development, :test do
   gem 'pry-remote'
   gem 'pry-rescue'
   gem 'pry-stack_explorer'
-  gem 'ruby-debug-ide' # da commentare per far eseguire i test automatizzati
+
+  # CSI Piemonte custom, serve per avviare rails in modalità debugger
+  gem 'debase'
+  gem 'ruby-debug-ide'
 
   # test frameworks
   gem 'rails-controller-testing'
