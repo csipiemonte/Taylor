@@ -1,5 +1,5 @@
 # Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
-
+=begin
 require 'rails_helper'
 
 RSpec.describe 'Import Freshdesk', type: :system, set_up: false, authenticated_as: false, required_envs: %w[IMPORT_FRESHDESK_ENDPOINT_SUBDOMAIN IMPORT_FRESHDESK_ENDPOINT_KEY] do
@@ -116,3 +116,4 @@ RSpec.describe 'Import Freshdesk', type: :system, set_up: false, authenticated_a
     end
   end
 end
+=end
