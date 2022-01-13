@@ -331,7 +331,11 @@ class App.TicketCreate extends App.Controller
 
     handlers = @Config.get('TicketCreateFormHandler')
 
-    # CSI Piemonte custom, aggiunto agli events "change [name='service_catalog_item_id']"
+    # CSI Piemonte custom: get subitems to perform prefiltering
+    item_id = Number(params.service_catalog_item_id)
+    subItems = App.ServiceCatalogSubItem.select (item) -> item.parent_service == item_id
+    @formMeta.filter['service_catalog_sub_item_id'] = (item.id for item in subItems)
+
     @controllerFormCreateMiddle = new App.ControllerForm(
       el:                       @$('.ticket-form-middle')
       form_id:                  @formId

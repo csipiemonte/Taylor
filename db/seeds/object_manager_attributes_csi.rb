@@ -237,8 +237,9 @@ ObjectManager::Attribute.add(
   display:     'Service Catalog Sub Item',
   data_type:   'select',
   data_option: {
-    default:    nil,
-    options: ServiceCatalogSubItem.all.map { |scs| [scs.id, scs.name] }.to_h,
+    relation:       'ServiceCatalogSubItem',
+    default:        nil,
+    options:        ServiceCatalogSubItem.all.map { |scs| [scs.id, scs.name] }.to_h,
     autocapitalize: false,
     multiple:       false,
     guess:          true,
