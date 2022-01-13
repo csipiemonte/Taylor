@@ -18,6 +18,10 @@
 # users commonly want.
 #
 # See http://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
+
+require 'simplecov'
+Simplecov.start
+
 require 'webmock/rspec'
 
 RSpec.configure do |config|
