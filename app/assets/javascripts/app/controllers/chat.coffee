@@ -448,7 +448,6 @@ class ChatWindow extends App.Controller
     @on('layout-change', @onLayoutChange)
 
     @bind('chat_session_typing', (data) =>
-      console.log('chat coffee loader', data)
       return if data.session_id isnt @session.session_id
       return if data.self_written
       @showWritingLoader()
@@ -1091,6 +1090,14 @@ class App.ChatMonitor extends App.Controller
       @showTable()
     )
 
+    @bind('chat_session_closed', (data) =>
+      @showTable()
+    )
+
+    @bind('chat_session_left', (data) =>
+      @showTable()
+    )
+
     @bind('chat_session_flag',(data) =>
       if data.state
         flag_counter++
@@ -1108,6 +1115,8 @@ class App.ChatMonitor extends App.Controller
     @navupdate '#chat_monitor'
     @html App.view('chat_monitor/index')()
     @showTable()
+    # inserito intervallo che fa refesh automatico della lista delle chat
+    setInterval (=> @showTable()), 60000
 
   showTable: ->
     @ajax(
