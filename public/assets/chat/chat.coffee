@@ -934,8 +934,8 @@ do($ = window.jQuery, window) ->
     reloadChat: =>
       @log.debug 'reload chat'
       @close()
-      @isOpen = false
-      setTimeout(@open(), 2000)
+      # @isOpen = false
+      # setTimeout(@open(), 2000)
 
     onCloseAnimationEnd: =>
       @el.css 'bottom', ''
