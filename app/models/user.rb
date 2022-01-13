@@ -33,7 +33,7 @@ class User < ApplicationModel
   before_destroy    :destroy_longer_required_objects
 
   # CSI validations
-  before_validation -> { ensure_uniq_attribute('codice_fiscale','Codice Fiscale') }
+  before_validation -> { ensure_uniq_attribute('codice_fiscale', 'Codice Fiscale') }
 
   store :preferences
 
@@ -354,7 +354,12 @@ returns
       url = local_url
     end
     begin
-      logger.info "[user.rb - create_from_hash!] nickname: #{hash['info']['nickname']}"
+      # CSI Piemonte Custom
+      # hash['info']['nickname'] e' valorizzato solo se si e' passati dalla custom gem
+      # 'omniauth-csisaml' (vendor/custom_gems/omniauth-csisaml) che e' invocata quando si passa
+      # dall'autenticazione SAML CSI; alla creazione dell'utente con nel campo 'login' il valore
+      # di hash['info']['nickname'] si conferisce al nuovo utente il role 'No preferences'
+      # perche' e' compito dell'amministratore di sistema quello di assegnare role e gruppo corretti.
       data = {
         login:         hash['info']['nickname'] || hash['uid'],
         firstname:     hash['info']['name'] || hash['info']['display_name'],
@@ -364,7 +369,7 @@ returns
         address:       hash['info']['location'],
         note:          hash['info']['description'],
         source:        hash['provider'],
-        role_ids:      Role.signup_role_ids,
+        role_ids:      hash['info']['nickname'] ? Role.where(name: 'No preferences').map(&:id) : Role.signup_role_ids,
         updated_by_id: 1,
         created_by_id: 1,
       }
@@ -1269,17 +1274,16 @@ raise 'Minimum one user need to have admin permissions'
     Cti::CallerId.build(self)
   end
 
-
-
   def ensure_uniq_attribute(attribute_name, attribute_display_name)
     # per evitare che stringhe vuote facciano scattare il vincolo unique sul db
-    if !self[attribute_name].nil? and self[attribute_name].strip === ''
+    if !self[attribute_name].nil? && self[attribute_name].strip === ''
       self[attribute_name] = nil
     end
     return true if self[attribute_name].blank?
     return true if !changes
     return true if !changes[attribute_name]
     return true if !User.exists?("#{attribute_name}": self[attribute_name].strip)
+
     raise Exceptions::UnprocessableEntity, "#{attribute_display_name} '#{self[attribute_name].strip}' is already used for other user."
   end
 
