@@ -1,2 +1,0 @@
-class TicketCategorization < ApplicationModel
-end
