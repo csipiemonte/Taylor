@@ -180,6 +180,26 @@ class Report
         },
       },
       {
+        name:         'web_api_in',
+        display:      'Web via api (in)',
+        selected:     true,
+        dataDownload: true,
+        adapter:      Report::TicketGenericTime,
+        params:       {
+          field:    'created_at',
+          selector: {
+            'create_article_type_id'   => {
+              'operator' => 'is',
+              'value'    => Ticket::Article::Type.lookup(name: 'web (via api)').id,
+            },
+            'create_article_sender_id' => {
+              'operator' => 'is',
+              'value'    => Ticket::Article::Sender.lookup(name: 'Customer').id,
+            },
+          },
+        },
+      },
+      {
         name:         'twitter_in',
         display:      'Twitter (in)',
         selected:     true,
@@ -280,6 +300,17 @@ class Report
         adapter:      Report::ArticleByTypeSender,
         params:       {
           type:   'web',
+          sender: 'Customer',
+        },
+      },
+      {
+        name:         'web_api_in',
+        display:      'Web via api (in)',
+        selected:     true,
+        dataDownload: false,
+        adapter:      Report::ArticleByTypeSender,
+        params:       {
+          type:   'web (via api)',
           sender: 'Customer',
         },
       },

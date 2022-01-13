@@ -145,3 +145,24 @@ Translation.create_if_not_exists(
   created_by_id:  '1',
   updated_by_id:  '1',
 )
+
+# No preferences, role utilizzato da chi proviene la prima volta
+# dall'autenticazione SAML
+Role.create_if_not_exists(
+  name:              'No preferences',
+  note:              'No preferences',
+  preferences:       {},
+  default_at_signup: false,
+  updated_by_id:     1,
+  created_by_id:     1
+)
+
+Translation.create_if_not_exists(
+  locale:         'it-it',
+  source:         'No preferences',
+  target:         'Nessuna abilitazione',
+  target_initial: 'Nessuna abilitazione',
+  format:         'string',
+  created_by_id:  '1',
+  updated_by_id:  '1',
+)
