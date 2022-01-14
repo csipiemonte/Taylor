@@ -39,23 +39,22 @@ return is sent as message back to peer
         chat_session_id: chat_session.id,
         content:         @payload['data']['content'],
         created_by_id:   user_id,
-        sneak_peek: true,
-        whispering: whispering
+        sneak_peek:      true,
+        whispering:      whispering
       }
     else
       chat_message = Chat::Message.create(
         chat_session_id: chat_session.id,
         content:         @payload['data']['content'],
         created_by_id:   user_id,
-        whispering: whispering
+        whispering:      whispering
       )
     end
-
 
     customers = []
 
     if whispering || sneak_peek
-      customers = findCustomers chat_session.preferences[:participants]
+      customers = find_customers chat_session.preferences[:participants]
       chat_session.preferences[:participants] -= customers
       chat_session.save
     end
@@ -69,15 +68,16 @@ return is sent as message back to peer
     }
 
     if !(whispering || sneak_peek)
+      # Transazione di background invocata solo se il chatbot e' attivo
       Transaction::BackgroundJob.run(
-          object:     'Chat Message',
-          type:       'chat_message',
-          user_id:  user_id,
-          chat_session: chat_session,
-          object_id: chat_message.id,
-          cli_id: @client_id,
-          clients: @clients,
-          event: message
+        object:       'Chat Message',
+        type:         'chat_message',
+        user_id:      user_id,
+        chat_session: chat_session,
+        object_id:    chat_message.id,
+        cli_id:       @client_id,
+        clients:      @clients,
+        event:        message
       )
     end
 
@@ -99,13 +99,13 @@ return is sent as message back to peer
 
   end
 
-  def findCustomers(participants)
+  def find_customers(participants)
     customers = []
     participants.each do |client_id|
       session = Sessions.get(client_id)
       if session && session[:user] && session[:user]['id']
         user = User.find_by(id: session[:user]['id'].to_i)
-        next if user && !user.role?("Customer")
+        next if user && !user.role?('Customer')
       end
       customers << client_id
     end

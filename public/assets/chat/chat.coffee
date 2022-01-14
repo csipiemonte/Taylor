@@ -137,11 +137,12 @@ do($ = window.jQuery, window) ->
       @connect()
 
     send: (event, data = {}) =>
-      @log.debug 'send', event, data
       msg = JSON.stringify
         event: event
         data: data
-      @ws.send msg
+      # aggiunto controllo sullo readyState
+      if @ws.readyState == 1
+        @ws.send msg
 
     ping: =>
       localPing = =>
@@ -192,42 +193,9 @@ do($ = window.jQuery, window) ->
     inputTimeout: null
     isTyping: false
     state: 'offline'
-    initialQueueDelay: 10000
-    translations:
-      'da':
-        '<strong>Chat</strong> with us!': '<strong>Chat</strong> med os!'
-        'Scroll down to see new messages': 'Scroll ned for at se nye beskeder'
-        'Online': 'Online'
-        'Offline': 'Offline'
-        'Connecting': 'Forbinder'
-        'Connection re-established': 'Forbindelse genoprettet'
-        'Today': 'I dag'
-        'Send': 'Send'
-        'Chat closed by %s': 'Chat lukket af %s'
-        'Compose your message...': 'Skriv en besked...'
-        'All colleagues are busy.': 'Alle kollegaer er optaget.'
-        'You are on waiting list position <strong>%s</strong>.': 'Du er i venteliste som nummer <strong>%s</strong>.'
-        'Start new conversation': 'Start en ny samtale'
-        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Da du ikke har svaret i de sidste %s minutter er din samtale med <strong>%s</strong> blevet lukket.'
-        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Da du ikke har svaret i de sidste %s minutter er din samtale blevet lukket.'
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Vi beklager, det tager længere end forventet at få en ledig plads. Prøv venligst igen senere eller send os en e-mail. På forhånd tak!'
-      'de':
-        '<strong>Chat</strong> with us!': '<strong>Chatte</strong> mit uns!'
-        'Scroll down to see new messages': 'Scrolle nach unten um neue Nachrichten zu sehen'
-        'Online': 'Online'
-        'Offline': 'Offline'
-        'Connecting': 'Verbinden'
-        'Connection re-established': 'Verbindung wiederhergestellt'
-        'Today': 'Heute'
-        'Send': 'Senden'
-        'Chat closed by %s': 'Chat beendet von %s'
-        'Compose your message...': 'Ihre Nachricht...'
-        'All colleagues are busy.': 'Alle Kollegen sind belegt.'
-        'You are on waiting list position <strong>%s</strong>.': 'Sie sind in der Warteliste an der Position <strong>%s</strong>.'
-        'Start new conversation': 'Neue Konversation starten'
-        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Da Sie in den letzten %s Minuten nichts geschrieben haben wurde Ihre Konversation mit <strong>%s</strong> geschlossen.'
-        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Da Sie in den letzten %s Minuten nichts geschrieben haben wurde Ihre Konversation geschlossen.'
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Es tut uns leid, es dauert länger als erwartet, um einen freien Platz zu erhalten. Bitte versuchen Sie es zu einem späteren Zeitpunkt noch einmal oder schicken Sie uns eine E-Mail. Vielen Dank!'
+    initialQueueDelay: 10000,
+    hasSametimeStamp:null, # provvisoria per bloccare le troppe chiamate
+    translations: # lasciate traduzioni a es, fr, it, le altre sono state rimosse
       'es':
         '<strong>Chat</strong> with us!': '<strong>Chatee</strong> con nosotros!'
         'Scroll down to see new messages': 'Haga scroll hacia abajo para ver nuevos mensajes'
@@ -245,23 +213,6 @@ do($ = window.jQuery, window) ->
         'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Puesto que usted no respondió en los últimos %s minutos su conversación con <strong>%s</strong> se ha cerrado.'
         'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Puesto que usted no respondió en los últimos %s minutos su conversación se ha cerrado.'
         'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Lo sentimos, se tarda más tiempo de lo esperado para ser atendido por un agente. Inténtelo de nuevo más tarde o envíenos un correo electrónico. ¡Gracias!'
-      'fi':
-        '<strong>Chat</strong> with us!': '<strong>Keskustele</strong> kanssamme!'
-        'Scroll down to see new messages': 'Rullaa alas nähdäksesi uudet viestit'
-        'Online': 'Paikalla'
-        'Offline': 'Poissa'
-        'Connecting': 'Yhdistetään'
-        'Connection re-established': 'Yhteys muodostettu uudelleen'
-        'Today': 'Tänään'
-        'Send': 'Lähetä'
-        'Chat closed by %s': '%s sulki keskustelun'
-        'Compose your message...': 'Luo viestisi...'
-        'All colleagues are busy.': 'Kaikki kollegat ovat varattuja.'
-        'You are on waiting list position <strong>%s</strong>.': 'Olet odotuslistalla sijalla <strong>%s</strong>.'
-        'Start new conversation': 'Aloita uusi keskustelu'
-        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Koska et vastannut viimeiseen %s minuuttiin, keskustelusi <strong>%s</strong> kanssa suljettiin.'
-        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Koska et vastannut viimeiseen %s minuuttiin, keskustelusi suljettiin.'
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Olemme pahoillamme, tyhjän paikan vapautumisessa kestää odotettua pidempään. Ole hyvä ja yritä myöhemmin uudestaan tai lähetä meille sähköpostia. Kiitos!'
       'fr':
         '<strong>Chat</strong> with us!': '<strong>Chattez</strong> avec nous!'
         'Scroll down to see new messages': 'Faites défiler pour lire les nouveaux messages'
@@ -876,7 +827,7 @@ do($ = window.jQuery, window) ->
             @receiveMessage pipe.data
           when 'chat_session_typing'
             return if pipe.data.self_written
-            @onAgentTypingStart()
+            @onAgentTypingStart(pipe.data.whispering)
           when 'chat_session_start'
             @onConnectionEstablished pipe.data
           when 'chat_session_queue'
@@ -918,11 +869,13 @@ do($ = window.jQuery, window) ->
       @log.debug message
       @addStatus(message)
       $(".#{ @options.buttonClass }").hide()
+      # vista dopo due minuti di loading
+      @el.find('.zammad-chat-modal').html @view('error_connection')
       if @isOpen
         @disableInput()
-        @destroy(remove: false)
+        # @destroy(remove: false) provvisoriamente commentato
       else
-        @destroy(remove: true)
+        # @destroy(remove: true) provvisoriamente commentato
 
       @options.onError?(message)
 
@@ -1047,10 +1000,26 @@ do($ = window.jQuery, window) ->
 
       @maybeAddTimestamp()
 
-      @renderMessage
-        message: data.message.content
-        id: data.id
-        from: 'agent'
+      # chatbot_response - CSI Custom
+      console.log('data.chatbot_response', data.chatbot_response)
+      if data.chatbot_response != undefined
+        for chatbot_msg in data.chatbot_response
+          @renderMessage
+            message: chatbot_msg.text
+            from: 'agent'
+
+          if chatbot_msg.hasOwnProperty('buttons')
+            for btn in chatbot_msg.buttons
+              @renderIntentButton
+                btnintent: btn.payload
+                btnlabel: btn.title
+
+            @el.find('.zammad-chat-intent').on 'click', @onClickIntentButton
+      else
+        @renderMessage
+          message: data.message.content
+          id: data.id
+          from: 'agent'
 
       @scrollToBottom showHint: true
 
@@ -1059,11 +1028,37 @@ do($ = window.jQuery, window) ->
       data.unreadClass = if document.hidden then ' zammad-chat-message--unread' else ''
       @el.find('.zammad-chat-body').append @view('message')(data)
 
+    # Metodo custom CSI per mostrare i button sulla conversazione
+    renderIntentButton: (data) =>
+      @lastAddedType = 'message--agent'
+      @el.find('.zammad-chat-body').append @view('intent_button')(data)
+
+    # Metodo custom CSI
+    onClickIntentButton: (event) =>
+      event.preventDefault()
+      event.stopPropagation()
+      event.stopImmediatePropagation()
+      intent = event.target.getAttribute('data-intent')
+      label = event.target.getAttribute('data-label')
+      return if intent == undefined
+
+      console.log('evento', event.timeStamp)
+      # work around, le chiamate dai pulsanti si moltiplicavano per potenza di 2.
+      # soluzione provvisoria
+      # TODO, indagare la causa della moltiplicazione degli eventi.
+      if @hasSametimeStamp != event.timeStamp
+        @hasSametimeStamp = event.timeStamp
+        @invokeIntent(intent, label)
+        console.log('non duplicato')
+      else
+        console.log('duplicato')
+        return
+
     open: =>
       if @isOpen
         @log.debug 'widget already open, block'
         return
-
+    
       @isOpen = true
       @log.debug 'open widget'
       @show()
@@ -1123,9 +1118,11 @@ do($ = window.jQuery, window) ->
         return
       if @initDelayId
         clearTimeout(@initDelayId)
-      if @sessionId
-        @log.debug 'session close before widget close'
-        @sessionClose()
+      # non sempre il session id è necessario il controllo risulta bloccante
+      # @log.debug "session id close #{@sessionId}"
+      # if !@sessionId && @state == 'online'
+      #   @log.debug 'can\'t close widget without sessionId'
+      #   return
 
       @log.debug 'close widget'
 
@@ -1138,11 +1135,16 @@ do($ = window.jQuery, window) ->
       remainerHeight = @el.height() - @el.find('.zammad-chat-header').outerHeight()
       @el.animate { bottom: -remainerHeight }, 500, @onCloseAnimationEnd
 
+    # aggiunta metodo reloadChat sostituisce location reload
+    reloadChat: =>
+      @log.debug 'reload chat'
+      @close()
+      # @isOpen = false
+      # setTimeout(@open(), 2000)
+
     onCloseAnimationEnd: =>
       @el.css 'bottom', ''
       @el.removeClass('zammad-chat-is-open')
-
-      @showLoader()
       @el.find('.zammad-chat-welcome').removeClass('zammad-chat-is-hidden')
       @el.find('.zammad-chat-agent').addClass('zammad-chat-is-hidden')
       @el.find('.zammad-chat-agent-status').addClass('zammad-chat-is-hidden')
@@ -1205,7 +1207,7 @@ do($ = window.jQuery, window) ->
       @el.find('.zammad-chat-modal').html @view('waiting')
         position: data.position
 
-    onAgentTypingStart: =>
+    onAgentTypingStart: (whispering) =>
       if @stopTypingId
         clearTimeout(@stopTypingId)
       @stopTypingId = setTimeout(@onAgentTypingEnd, 3000)
@@ -1214,8 +1216,9 @@ do($ = window.jQuery, window) ->
       return if @el.find('.zammad-chat-message--typing').get(0)
 
       @maybeAddTimestamp()
-
-      @el.find('.zammad-chat-body').append @view('typingIndicator')()
+      # abbiamo aggiunto il controllo su whispering per nascondere anche la classe css che mostra la digitazione
+      if !whispering
+        @el.find('.zammad-chat-body').append @view('typingIndicator')()
 
       # only if typing indicator is shown
       return if !@isVisible(@el.find('.zammad-chat-message--typing'), true)
@@ -1270,6 +1273,28 @@ do($ = window.jQuery, window) ->
       scrollBottom = @el.find('.zammad-chat-body').scrollTop() + @el.find('.zammad-chat-body').outerHeight()
       @scrolledToBottom = Math.abs(scrollBottom - @el.find('.zammad-chat-body').prop('scrollHeight')) <= @scrollSnapTolerance
       @el.find('.zammad-scroll-hint').addClass('is-hidden') if @scrolledToBottom
+
+    # Metodo custom CSI per gestire il click su uno dei bottoni e innescare la chiamata
+    # ad uno degli intent censiti.
+    invokeIntent: (intent, msg) ->
+      messageElement = @view('message')
+        message: msg
+        from: 'customer'
+        id: @_messageCount++
+        unreadClass: ''
+
+      @maybeAddTimestamp()
+      
+      @lastAddedType = 'message--customer'
+      @el.find('.zammad-chat-body').append messageElement
+
+      @scrollToBottom()
+
+      # send message event passing intent
+      @send 'chat_session_message',
+        content: intent
+        id: @_messageCount
+        session_id: @sessionId
 
     showScrollHint: ->
       @el.find('.zammad-scroll-hint').removeClass('is-hidden')
@@ -1374,17 +1399,13 @@ do($ = window.jQuery, window) ->
       @el.find('.zammad-chat-modal').html @view('customer_timeout')
         agent: @agent.name
         delay: @options.inactiveTimeout
-      reload = ->
-        location.reload()
-      @el.find('.js-restart').click reload
+      @el.find('.js-restart').on 'click', @reloadChat
       @sessionClose()
 
     showWaitingListTimeout: ->
       @el.find('.zammad-chat-modal').html @view('waiting_list_timeout')
         delay: @options.watingListTimeout
-      reload = ->
-        location.reload()
-      @el.find('.js-restart').click reload
+      @el.find('.js-restart').on 'click', @reloadChat
       @sessionClose()
 
     showLoader: ->
@@ -1437,7 +1458,7 @@ do($ = window.jQuery, window) ->
         timeoutIntervallCheck: @options.idleTimeoutIntervallCheck
         callback: =>
           @log.debug 'Idle timeout reached, hide widget', new Date
-          @destroy(remove: true)
+          # @destroy(remove: true) provvisoriamente commentato
       )
       @inactiveTimeout = new Timeout(
         logPrefix: 'inactiveTimeout'
@@ -1447,7 +1468,7 @@ do($ = window.jQuery, window) ->
         callback: =>
           @log.debug 'Inactive timeout reached, show timeout screen.', new Date
           @showCustomerTimeout()
-          @destroy(remove: false)
+          # @destroy(remove: false) provvisoriamente commentato
       )
       @waitingListTimeout = new Timeout(
         logPrefix: 'waitingListTimeout'
@@ -1457,7 +1478,7 @@ do($ = window.jQuery, window) ->
         callback: =>
           @log.debug 'Waiting list timeout reached, show timeout screen.', new Date
           @showWaitingListTimeout()
-          @destroy(remove: false)
+          # @destroy(remove: false) provvisoriamente commentato
       )
 
     disableScrollOnRoot: ->

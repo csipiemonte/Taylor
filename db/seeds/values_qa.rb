@@ -12,7 +12,7 @@ classification_engine_api_url.state = 'http://ts-ap1-be-bot-nextcrm.site02.nivol
 classification_engine_api_url.save!
 
 chat_bot_api_url = Setting.find_by(name: 'chat_bot_api_settings')
-chat_bot_api_url.state = 'http://ts-ap1-be-bot-nextcrm.site02.nivolapiemonte.it/botplat/example'
+chat_bot_api_url.state = 'http://ts-ap1-be-bot-nextcrm.site02.nivolapiemonte.it/botplat'
 chat_bot_api_url.save!
 
 saml_settings = Setting.find_by(name: 'auth_advanced_saml_credentials')

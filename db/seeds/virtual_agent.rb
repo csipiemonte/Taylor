@@ -150,7 +150,7 @@ Translation.create_if_not_exists(
 # dall'autenticazione SAML
 Role.create_if_not_exists(
   name:              'No preferences',
-  note:              'No preferences',
+  note:              'Ruolo di atterraggio delle login SAML via IAMIDPCSI/IAMIDP',
   preferences:       {},
   default_at_signup: false,
   updated_by_id:     1,

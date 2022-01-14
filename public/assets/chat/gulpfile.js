@@ -61,17 +61,17 @@ gulp.task('no-jquery', function(){
 });
 
 gulp.task('default', function(){
-  var cssWatcher = gulp.watch(['chat.scss'], ['css']);
+  var cssWatcher = gulp.watch(['chat.scss'], gulp.series('css'));
   cssWatcher.on('change', function(event) {
     console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
   });
 
-  var jsWatcher = gulp.watch(['chat.coffee', 'views/*.eco'], ['js']);
+  var jsWatcher = gulp.watch(['chat.coffee', 'views/*.eco'], gulp.series('js'));
   jsWatcher.on('change', function(event) {
     console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
   });
 
-  var js2Watcher = gulp.watch(['chat-no-jquery.coffee'], ['no-jquery']);
+  var js2Watcher = gulp.watch(['chat-no-jquery.coffee'], gulp.series('no-jquery'));
   js2Watcher.on('change', function(event) {
     console.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
   });

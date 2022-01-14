@@ -302,12 +302,13 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
       if (data == null) {
         data = {};
       }
-      this.log.debug('send', event, data);
       msg = JSON.stringify({
         event: event,
         data: data
       });
-      return this.ws.send(msg);
+      if (this.ws.readyState === 1) {
+        return this.ws.send(msg);
+      }
     };
 
     Io.prototype.ping = function() {
@@ -383,43 +384,9 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
 
     ZammadChat.prototype.initialQueueDelay = 10000;
 
+    ZammadChat.prototype.hasSametimeStamp = null;
+
     ZammadChat.prototype.translations = {
-      'da': {
-        '<strong>Chat</strong> with us!': '<strong>Chat</strong> med os!',
-        'Scroll down to see new messages': 'Scroll ned for at se nye beskeder',
-        'Online': 'Online',
-        'Offline': 'Offline',
-        'Connecting': 'Forbinder',
-        'Connection re-established': 'Forbindelse genoprettet',
-        'Today': 'I dag',
-        'Send': 'Send',
-        'Chat closed by %s': 'Chat lukket af %s',
-        'Compose your message...': 'Skriv en besked...',
-        'All colleagues are busy.': 'Alle kollegaer er optaget.',
-        'You are on waiting list position <strong>%s</strong>.': 'Du er i venteliste som nummer <strong>%s</strong>.',
-        'Start new conversation': 'Start en ny samtale',
-        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Da du ikke har svaret i de sidste %s minutter er din samtale med <strong>%s</strong> blevet lukket.',
-        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Da du ikke har svaret i de sidste %s minutter er din samtale blevet lukket.',
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Vi beklager, det tager længere end forventet at få en ledig plads. Prøv venligst igen senere eller send os en e-mail. På forhånd tak!'
-      },
-      'de': {
-        '<strong>Chat</strong> with us!': '<strong>Chatte</strong> mit uns!',
-        'Scroll down to see new messages': 'Scrolle nach unten um neue Nachrichten zu sehen',
-        'Online': 'Online',
-        'Offline': 'Offline',
-        'Connecting': 'Verbinden',
-        'Connection re-established': 'Verbindung wiederhergestellt',
-        'Today': 'Heute',
-        'Send': 'Senden',
-        'Chat closed by %s': 'Chat beendet von %s',
-        'Compose your message...': 'Ihre Nachricht...',
-        'All colleagues are busy.': 'Alle Kollegen sind belegt.',
-        'You are on waiting list position <strong>%s</strong>.': 'Sie sind in der Warteliste an der Position <strong>%s</strong>.',
-        'Start new conversation': 'Neue Konversation starten',
-        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Da Sie in den letzten %s Minuten nichts geschrieben haben wurde Ihre Konversation mit <strong>%s</strong> geschlossen.',
-        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Da Sie in den letzten %s Minuten nichts geschrieben haben wurde Ihre Konversation geschlossen.',
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Es tut uns leid, es dauert länger als erwartet, um einen freien Platz zu erhalten. Bitte versuchen Sie es zu einem späteren Zeitpunkt noch einmal oder schicken Sie uns eine E-Mail. Vielen Dank!'
-      },
       'es': {
         '<strong>Chat</strong> with us!': '<strong>Chatee</strong> con nosotros!',
         'Scroll down to see new messages': 'Haga scroll hacia abajo para ver nuevos mensajes',
@@ -437,24 +404,6 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
         'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Puesto que usted no respondió en los últimos %s minutos su conversación con <strong>%s</strong> se ha cerrado.',
         'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Puesto que usted no respondió en los últimos %s minutos su conversación se ha cerrado.',
         'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Lo sentimos, se tarda más tiempo de lo esperado para ser atendido por un agente. Inténtelo de nuevo más tarde o envíenos un correo electrónico. ¡Gracias!'
-      },
-      'fi': {
-        '<strong>Chat</strong> with us!': '<strong>Keskustele</strong> kanssamme!',
-        'Scroll down to see new messages': 'Rullaa alas nähdäksesi uudet viestit',
-        'Online': 'Paikalla',
-        'Offline': 'Poissa',
-        'Connecting': 'Yhdistetään',
-        'Connection re-established': 'Yhteys muodostettu uudelleen',
-        'Today': 'Tänään',
-        'Send': 'Lähetä',
-        'Chat closed by %s': '%s sulki keskustelun',
-        'Compose your message...': 'Luo viestisi...',
-        'All colleagues are busy.': 'Kaikki kollegat ovat varattuja.',
-        'You are on waiting list position <strong>%s</strong>.': 'Olet odotuslistalla sijalla <strong>%s</strong>.',
-        'Start new conversation': 'Aloita uusi keskustelu',
-        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Koska et vastannut viimeiseen %s minuuttiin, keskustelusi <strong>%s</strong> kanssa suljettiin.',
-        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Koska et vastannut viimeiseen %s minuuttiin, keskustelusi suljettiin.',
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Olemme pahoillamme, tyhjän paikan vapautumisessa kestää odotettua pidempään. Ole hyvä ja yritä myöhemmin uudestaan tai lähetä meille sähköpostia. Kiitos!'
       },
       'fr': {
         '<strong>Chat</strong> with us!': '<strong>Chattez</strong> avec nous!',
@@ -780,11 +729,14 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
       this.onQueueScreen = bind(this.onQueueScreen, this);
       this.onWebSocketClose = bind(this.onWebSocketClose, this);
       this.onCloseAnimationEnd = bind(this.onCloseAnimationEnd, this);
+      this.reloadChat = bind(this.reloadChat, this);
       this.close = bind(this.close, this);
       this.toggle = bind(this.toggle, this);
       this.sessionClose = bind(this.sessionClose, this);
       this.onOpenAnimationEnd = bind(this.onOpenAnimationEnd, this);
       this.open = bind(this.open, this);
+      this.onClickIntentButton = bind(this.onClickIntentButton, this);
+      this.renderIntentButton = bind(this.renderIntentButton, this);
       this.renderMessage = bind(this.renderMessage, this);
       this.receiveMessage = bind(this.receiveMessage, this);
       this.onSubmit = bind(this.onSubmit, this);
@@ -1160,7 +1112,7 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
             if (pipe.data.self_written) {
               return;
             }
-            this.onAgentTypingStart();
+            this.onAgentTypingStart(pipe.data.whispering);
             break;
           case 'chat_session_start':
             this.onConnectionEstablished(pipe.data);
@@ -1220,15 +1172,11 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
       this.log.debug(message);
       this.addStatus(message);
       $("." + this.options.buttonClass).hide();
+      this.el.find('.zammad-chat-modal').html(this.view('error_connection'));
       if (this.isOpen) {
         this.disableInput();
-        this.destroy({
-          remove: false
-        });
       } else {
-        this.destroy({
-          remove: true
-        });
+
       }
       return typeof (base = this.options).onError === "function" ? base.onError(message) : void 0;
     };
@@ -1343,14 +1291,38 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
     };
 
     ZammadChat.prototype.receiveMessage = function(data) {
+      var btn, chatbot_msg, j, k, len, len1, ref, ref1;
       this.inactiveTimeout.start();
       this.onAgentTypingEnd();
       this.maybeAddTimestamp();
-      this.renderMessage({
-        message: data.message.content,
-        id: data.id,
-        from: 'agent'
-      });
+      console.log('data.chatbot_response', data.chatbot_response);
+      if (data.chatbot_response !== void 0) {
+        ref = data.chatbot_response;
+        for (j = 0, len = ref.length; j < len; j++) {
+          chatbot_msg = ref[j];
+          this.renderMessage({
+            message: chatbot_msg.text,
+            from: 'agent'
+          });
+          if (chatbot_msg.hasOwnProperty('buttons')) {
+            ref1 = chatbot_msg.buttons;
+            for (k = 0, len1 = ref1.length; k < len1; k++) {
+              btn = ref1[k];
+              this.renderIntentButton({
+                btnintent: btn.payload,
+                btnlabel: btn.title
+              });
+            }
+            this.el.find('.zammad-chat-intent').on('click', this.onClickIntentButton);
+          }
+        }
+      } else {
+        this.renderMessage({
+          message: data.message.content,
+          id: data.id,
+          from: 'agent'
+        });
+      }
       return this.scrollToBottom({
         showHint: true
       });
@@ -1360,6 +1332,31 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
       this.lastAddedType = "message--" + data.from;
       data.unreadClass = document.hidden ? ' zammad-chat-message--unread' : '';
       return this.el.find('.zammad-chat-body').append(this.view('message')(data));
+    };
+
+    ZammadChat.prototype.renderIntentButton = function(data) {
+      this.lastAddedType = 'message--agent';
+      return this.el.find('.zammad-chat-body').append(this.view('intent_button')(data));
+    };
+
+    ZammadChat.prototype.onClickIntentButton = function(event) {
+      var intent, label;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      intent = event.target.getAttribute('data-intent');
+      label = event.target.getAttribute('data-label');
+      if (intent === void 0) {
+        return;
+      }
+      console.log('evento', event.timeStamp);
+      if (this.hasSametimeStamp !== event.timeStamp) {
+        this.hasSametimeStamp = event.timeStamp;
+        this.invokeIntent(intent, label);
+        return console.log('non duplicato');
+      } else {
+        console.log('duplicato');
+      }
     };
 
     ZammadChat.prototype.open = function() {
@@ -1429,10 +1426,6 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
       if (this.initDelayId) {
         clearTimeout(this.initDelayId);
       }
-      if (this.sessionId) {
-        this.log.debug('session close before widget close');
-        this.sessionClose();
-      }
       this.log.debug('close widget');
       if (event) {
         event.stopPropagation();
@@ -1446,11 +1439,15 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
       }, 500, this.onCloseAnimationEnd);
     };
 
+    ZammadChat.prototype.reloadChat = function() {
+      this.log.debug('reload chat');
+      return this.close();
+    };
+
     ZammadChat.prototype.onCloseAnimationEnd = function() {
       var base;
       this.el.css('bottom', '');
       this.el.removeClass('zammad-chat-is-open');
-      this.showLoader();
       this.el.find('.zammad-chat-welcome').removeClass('zammad-chat-is-hidden');
       this.el.find('.zammad-chat-agent').addClass('zammad-chat-is-hidden');
       this.el.find('.zammad-chat-agent-status').addClass('zammad-chat-is-hidden');
@@ -1523,7 +1520,7 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
       }));
     };
 
-    ZammadChat.prototype.onAgentTypingStart = function() {
+    ZammadChat.prototype.onAgentTypingStart = function(whispering) {
       if (this.stopTypingId) {
         clearTimeout(this.stopTypingId);
       }
@@ -1532,7 +1529,9 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
         return;
       }
       this.maybeAddTimestamp();
-      this.el.find('.zammad-chat-body').append(this.view('typingIndicator')());
+      if (!whispering) {
+        this.el.find('.zammad-chat-body').append(this.view('typingIndicator')());
+      }
       if (!this.isVisible(this.el.find('.zammad-chat-message--typing'), true)) {
         return;
       }
@@ -1601,6 +1600,25 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
       if (this.scrolledToBottom) {
         return this.el.find('.zammad-scroll-hint').addClass('is-hidden');
       }
+    };
+
+    ZammadChat.prototype.invokeIntent = function(intent, msg) {
+      var messageElement;
+      messageElement = this.view('message')({
+        message: msg,
+        from: 'customer',
+        id: this._messageCount++,
+        unreadClass: ''
+      });
+      this.maybeAddTimestamp();
+      this.lastAddedType = 'message--customer';
+      this.el.find('.zammad-chat-body').append(messageElement);
+      this.scrollToBottom();
+      return this.send('chat_session_message', {
+        content: intent,
+        id: this._messageCount,
+        session_id: this.sessionId
+      });
     };
 
     ZammadChat.prototype.showScrollHint = function() {
@@ -1714,27 +1732,19 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
     };
 
     ZammadChat.prototype.showCustomerTimeout = function() {
-      var reload;
       this.el.find('.zammad-chat-modal').html(this.view('customer_timeout')({
         agent: this.agent.name,
         delay: this.options.inactiveTimeout
       }));
-      reload = function() {
-        return location.reload();
-      };
-      this.el.find('.js-restart').click(reload);
+      this.el.find('.js-restart').on('click', this.reloadChat);
       return this.sessionClose();
     };
 
     ZammadChat.prototype.showWaitingListTimeout = function() {
-      var reload;
       this.el.find('.zammad-chat-modal').html(this.view('waiting_list_timeout')({
         delay: this.options.watingListTimeout
       }));
-      reload = function() {
-        return location.reload();
-      };
-      this.el.find('.js-restart').click(reload);
+      this.el.find('.js-restart').on('click', this.reloadChat);
       return this.sessionClose();
     };
 
@@ -1797,10 +1807,7 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
         timeoutIntervallCheck: this.options.idleTimeoutIntervallCheck,
         callback: (function(_this) {
           return function() {
-            _this.log.debug('Idle timeout reached, hide widget', new Date);
-            return _this.destroy({
-              remove: true
-            });
+            return _this.log.debug('Idle timeout reached, hide widget', new Date);
           };
         })(this)
       });
@@ -1812,10 +1819,7 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
         callback: (function(_this) {
           return function() {
             _this.log.debug('Inactive timeout reached, show timeout screen.', new Date);
-            _this.showCustomerTimeout();
-            return _this.destroy({
-              remove: false
-            });
+            return _this.showCustomerTimeout();
           };
         })(this)
       });
@@ -1827,10 +1831,7 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
         callback: (function(_this) {
           return function() {
             _this.log.debug('Waiting list timeout reached, show timeout screen.', new Date);
-            _this.showWaitingListTimeout();
-            return _this.destroy({
-              remove: false
-            });
+            return _this.showWaitingListTimeout();
           };
         })(this)
       });
@@ -2276,6 +2277,124 @@ window.zammadChatTemplates["customer_timeout"] = function(__obj) {
       __out.push(this.T('Start new conversation'));
     
       __out.push('</div>\n</div>');
+    
+    }).call(this);
+    
+  }).call(__obj);
+  __obj.safe = __objSafe, __obj.escape = __escape;
+  return __out.join('');
+};
+
+if (!window.zammadChatTemplates) {
+  window.zammadChatTemplates = {};
+}
+window.zammadChatTemplates["error_connection"] = function(__obj) {
+  if (!__obj) __obj = {};
+  var __out = [], __capture = function(callback) {
+    var out = __out, result;
+    __out = [];
+    callback.call(this);
+    result = __out.join('');
+    __out = out;
+    return __safe(result);
+  }, __sanitize = function(value) {
+    if (value && value.ecoSafe) {
+      return value;
+    } else if (typeof value !== 'undefined' && value != null) {
+      return __escape(value);
+    } else {
+      return '';
+    }
+  }, __safe, __objSafe = __obj.safe, __escape = __obj.escape;
+  __safe = __obj.safe = function(value) {
+    if (value && value.ecoSafe) {
+      return value;
+    } else {
+      if (!(typeof value !== 'undefined' && value != null)) value = '';
+      var result = new String(value);
+      result.ecoSafe = true;
+      return result;
+    }
+  };
+  if (!__escape) {
+    __escape = __obj.escape = function(value) {
+      return ('' + value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    };
+  }
+  (function() {
+    (function() {
+      __out.push('<div class="zammad-chat-modal-text">\n  ');
+    
+      __out.push(this.T('We are sorry, we are facing some connection problem. Please try again later or send us an email. Thank you!'));
+    
+      __out.push('\n  <br>\n</div>');
+    
+    }).call(this);
+    
+  }).call(__obj);
+  __obj.safe = __objSafe, __obj.escape = __escape;
+  return __out.join('');
+};
+
+if (!window.zammadChatTemplates) {
+  window.zammadChatTemplates = {};
+}
+window.zammadChatTemplates["intent_button"] = function(__obj) {
+  if (!__obj) __obj = {};
+  var __out = [], __capture = function(callback) {
+    var out = __out, result;
+    __out = [];
+    callback.call(this);
+    result = __out.join('');
+    __out = out;
+    return __safe(result);
+  }, __sanitize = function(value) {
+    if (value && value.ecoSafe) {
+      return value;
+    } else if (typeof value !== 'undefined' && value != null) {
+      return __escape(value);
+    } else {
+      return '';
+    }
+  }, __safe, __objSafe = __obj.safe, __escape = __obj.escape;
+  __safe = __obj.safe = function(value) {
+    if (value && value.ecoSafe) {
+      return value;
+    } else {
+      if (!(typeof value !== 'undefined' && value != null)) value = '';
+      var result = new String(value);
+      result.ecoSafe = true;
+      return result;
+    }
+  };
+  if (!__escape) {
+    __escape = __obj.escape = function(value) {
+      return ('' + value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    };
+  }
+  (function() {
+    (function() {
+      __out.push('<button type="button" class="zammad-chat-button zammad-chat-intent" data-intent="');
+    
+      __out.push(__sanitize(this.btnintent));
+    
+      __out.push('" data-label="');
+    
+      __out.push(this.btnlabel);
+    
+      __out.push('">');
+    
+      __out.push(this.btnlabel);
+    
+      __out.push('</button>');
     
     }).call(this);
     

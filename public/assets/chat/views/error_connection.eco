@@ -1,0 +1,4 @@
+<div class="zammad-chat-modal-text">
+  <%- @T('We are sorry, we are facing some connection problem. Please try again later or send us an email. Thank you!') %>
+  <br>
+</div>
