@@ -25,11 +25,14 @@ return is sent as message back to peer
     if @session
       user_id = @session['id']
     end
+    whispering = @payload['data']['whispering'] ? @payload['data']['whispering'] : false
+    Rails.logger.info "@payload whispering #{@payload}"
     message = {
       event: 'chat_session_typing',
       data:  {
         session_id: chat_session.session_id,
         user_id:    user_id,
+        whispering: whispering
       },
     }
 
@@ -42,6 +45,7 @@ return is sent as message back to peer
       data:  {
         session_id:   chat_session.session_id,
         self_written: true,
+        whispering:   whispering
       },
     }
   end

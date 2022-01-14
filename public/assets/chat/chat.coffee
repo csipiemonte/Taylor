@@ -137,11 +137,12 @@ do($ = window.jQuery, window) ->
       @connect()
 
     send: (event, data = {}) =>
-      @log.debug 'send', event, data
       msg = JSON.stringify
         event: event
         data: data
-      @ws.send msg
+      # aggiunto controllo sullo readyState
+      if @ws.readyState == 1
+        @ws.send msg
 
     ping: =>
       localPing = =>
@@ -191,42 +192,9 @@ do($ = window.jQuery, window) ->
     inputTimeout: null
     isTyping: false
     state: 'offline'
-    initialQueueDelay: 10000
-    translations:
-      'da':
-        '<strong>Chat</strong> with us!': '<strong>Chat</strong> med os!'
-        'Scroll down to see new messages': 'Scroll ned for at se nye beskeder'
-        'Online': 'Online'
-        'Offline': 'Offline'
-        'Connecting': 'Forbinder'
-        'Connection re-established': 'Forbindelse genoprettet'
-        'Today': 'I dag'
-        'Send': 'Send'
-        'Chat closed by %s': 'Chat lukket af %s'
-        'Compose your message...': 'Skriv en besked...'
-        'All colleagues are busy.': 'Alle kollegaer er optaget.'
-        'You are on waiting list position <strong>%s</strong>.': 'Du er i venteliste som nummer <strong>%s</strong>.'
-        'Start new conversation': 'Start en ny samtale'
-        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Da du ikke har svaret i de sidste %s minutter er din samtale med <strong>%s</strong> blevet lukket.'
-        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Da du ikke har svaret i de sidste %s minutter er din samtale blevet lukket.'
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Vi beklager, det tager længere end forventet at få en ledig plads. Prøv venligst igen senere eller send os en e-mail. På forhånd tak!'
-      'de':
-        '<strong>Chat</strong> with us!': '<strong>Chatte</strong> mit uns!'
-        'Scroll down to see new messages': 'Scrolle nach unten um neue Nachrichten zu sehen'
-        'Online': 'Online'
-        'Offline': 'Offline'
-        'Connecting': 'Verbinden'
-        'Connection re-established': 'Verbindung wiederhergestellt'
-        'Today': 'Heute'
-        'Send': 'Senden'
-        'Chat closed by %s': 'Chat beendet von %s'
-        'Compose your message...': 'Ihre Nachricht...'
-        'All colleagues are busy.': 'Alle Kollegen sind belegt.'
-        'You are on waiting list position <strong>%s</strong>.': 'Sie sind in der Warteliste an der Position <strong>%s</strong>.'
-        'Start new conversation': 'Neue Konversation starten'
-        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Da Sie in den letzten %s Minuten nichts geschrieben haben wurde Ihre Konversation mit <strong>%s</strong> geschlossen.'
-        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Da Sie in den letzten %s Minuten nichts geschrieben haben wurde Ihre Konversation geschlossen.'
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Es tut uns leid, es dauert länger als erwartet, um einen freien Platz zu erhalten. Bitte versuchen Sie es zu einem späteren Zeitpunkt noch einmal oder schicken Sie uns eine E-Mail. Vielen Dank!'
+    initialQueueDelay: 10000,
+    hasSametimeStamp:null, # provvisoria per bloccare le troppe chiamate
+    translations: # lasciate traduzioni a es, fr, it, le altre sono state rimosse
       'es':
         '<strong>Chat</strong> with us!': '<strong>Chatee</strong> con nosotros!'
         'Scroll down to see new messages': 'Haga scroll hacia abajo para ver nuevos mensajes'
@@ -244,23 +212,6 @@ do($ = window.jQuery, window) ->
         'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Puesto que usted no respondió en los últimos %s minutos su conversación con <strong>%s</strong> se ha cerrado.'
         'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Puesto que usted no respondió en los últimos %s minutos su conversación se ha cerrado.'
         'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Lo sentimos, se tarda más tiempo de lo esperado para ser atendido por un agente. Inténtelo de nuevo más tarde o envíenos un correo electrónico. ¡Gracias!'
-      'fi':
-        '<strong>Chat</strong> with us!': '<strong>Keskustele</strong> kanssamme!'
-        'Scroll down to see new messages': 'Rullaa alas nähdäksesi uudet viestit'
-        'Online': 'Paikalla'
-        'Offline': 'Poissa'
-        'Connecting': 'Yhdistetään'
-        'Connection re-established': 'Yhteys muodostettu uudelleen'
-        'Today': 'Tänään'
-        'Send': 'Lähetä'
-        'Chat closed by %s': '%s sulki keskustelun'
-        'Compose your message...': 'Luo viestisi...'
-        'All colleagues are busy.': 'Kaikki kollegat ovat varattuja.'
-        'You are on waiting list position <strong>%s</strong>.': 'Olet odotuslistalla sijalla <strong>%s</strong>.'
-        'Start new conversation': 'Aloita uusi keskustelu'
-        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Koska et vastannut viimeiseen %s minuuttiin, keskustelusi <strong>%s</strong> kanssa suljettiin.'
-        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Koska et vastannut viimeiseen %s minuuttiin, keskustelusi suljettiin.'
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Olemme pahoillamme, tyhjän paikan vapautumisessa kestää odotettua pidempään. Ole hyvä ja yritä myöhemmin uudestaan tai lähetä meille sähköpostia. Kiitos!'
       'fr':
         '<strong>Chat</strong> with us!': '<strong>Chattez</strong> avec nous!'
         'Scroll down to see new messages': 'Faites défiler pour lire les nouveaux messages'
@@ -278,57 +229,6 @@ do($ = window.jQuery, window) ->
         'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Si vous ne répondez pas dans les <strong>%s</strong> minutes, votre conversation avec %s va être fermée.'
         'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Si vous ne répondez pas dans les %s minutes, votre conversation va être fermée.'
         'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Nous sommes désolés, il faut plus de temps que prévu pour obtenir un emplacement vide. Veuillez réessayer ultérieurement ou nous envoyer un courriel. Je vous remercie!'
-      'he':
-        '<strong>Chat</strong> with us!': '<strong>שוחח</strong>איתנו!'
-        'Scroll down to see new messages': 'גלול מטה כדי לראות הודעות חדשות'
-        'Online': 'מחובר'
-        'Offline': 'מנותק'
-        'Connecting': 'מתחבר'
-        'Connection re-established': 'החיבור שוחזר'
-        'Today': 'היום'
-        'Send': 'שלח'
-        'Chat closed by %s': 'הצאט נסגר ע"י %s'
-        'Compose your message...': 'כתוב את ההודעה שלך ...'
-        'All colleagues are busy.': 'כל הנציגים תפוסים'
-        'You are on waiting list position <strong>%s</strong>.': 'מיקומך בתור <strong>%s</strong>.'
-        'Start new conversation': 'התחל שיחה חדשה'
-        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'מכיוון שלא הגבת במהלך %s דקות השיחה שלך עם <strong>%s</strong> נסגרה.'
-        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'מכיוון שלא הגבת במהלך %s הדקות האחרונות השיחה שלך נסגרה.'
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'מצטערים, הזמן לקבלת נציג ארוך מהרגיל. נסה שוב מאוחר יותר או שלח לנו דוא"ל. תודה!'
-      'hu':
-        '<strong>Chat</strong> with us!': '<strong>Chatelj</strong> velünk!'
-        'Scroll down to see new messages': 'Görgess lejjebb az újabb üzenetekért'
-        'Online': 'Online'
-        'Offline': 'Offline'
-        'Connecting': 'Csatlakozás'
-        'Connection re-established': 'Újracsatlakozás'
-        'Today': 'Ma'
-        'Send': 'Küldés'
-        'Chat closed by %s': 'A beszélgetést lezárta %s'
-        'Compose your message...': 'Írj üzenetet...'
-        'All colleagues are busy.': 'Jelenleg minden kollégánk elfoglalt.'
-        'You are on waiting list position <strong>%s</strong>.': 'A várólistán a <strong>%s</strong>. pozícióban várakozol.'
-        'Start new conversation': 'Új beszélgetés indítása'
-        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Mivel %s perce nem érkezett újabb üzenet, ezért a <strong>%s</strong> kollégával folytatott beszéletést lezártuk.'
-        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Mivel %s perce nem érkezett válasz, a beszélgetés lezárult.'
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Sajnáljuk, de a várakozási idő hosszabb a szokásosnál. Kérlek próbáld újra, vagy írd meg kérdésed emailben. Köszönjük!'
-      'nl':
-        '<strong>Chat</strong> with us!': '<strong>Chat</strong> met ons!'
-        'Scroll down to see new messages': 'Scrol naar beneden om nieuwe berichten te zien'
-        'Online': 'Online'
-        'Offline': 'Offline'
-        'Connecting': 'Verbinden'
-        'Connection re-established': 'Verbinding herstelt'
-        'Today': 'Vandaag'
-        'Send': 'Verzenden'
-        'Chat closed by %s': 'Chat gesloten door %s'
-        'Compose your message...': 'Typ uw bericht...'
-        'All colleagues are busy.': 'Alle medewerkers zijn bezet.'
-        'You are on waiting list position <strong>%s</strong>.': 'U bent <strong>%s</strong> in de wachtrij.'
-        'Start new conversation': 'Nieuwe conversatie starten'
-        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Omdat u in de laatste %s minuten niets geschreven heeft wordt de conversatie met <strong>%s</strong> gesloten.'
-        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Omdat u in de laatste %s minuten niets geschreven heeft is de conversatie gesloten.'
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Het spijt ons, het duurt langer dan verwacht om te antwoorden. Alstublieft probeer het later nogmaals of stuur ons een email. Hartelijk dank!'
       'it':
         '<strong>Chat</strong> with us!': '<strong>Chatta</strong> con noi!'
         'Scroll down to see new messages': 'Scorri verso il basso per vedere i nuovi messaggi'
@@ -346,143 +246,7 @@ do($ = window.jQuery, window) ->
         'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Dal momento che non hai risposto negli ultimi %s minuti la tua chat con <strong>%s</strong> è stata chiusa.'
         'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Dal momento che non hai risposto negli ultimi %s minuti la tua chat è stata chiusa.'
         'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Ci dispiace, ci vuole più tempo del previsto per arrivare al tuo turno. Per favore riprova più tardi o inviaci un\'email. Grazie!'
-      'pl':
-        '<strong>Chat</strong> with us!': '<strong>Czatuj</strong> z nami!'
-        'Scroll down to see new messages': 'Przewiń w dół, aby wyświetlić nowe wiadomości'
-        'Online': 'Online'
-        'Offline': 'Offline'
-        'Connecting': 'Łączenie'
-        'Connection re-established': 'Ponowne nawiązanie połączenia'
-        'Today': 'dzisiejszy'
-        'Send': 'Wyślij'
-        'Chat closed by %s': 'Czat zamknięty przez %s'
-        'Compose your message...': 'Utwórz swoją wiadomość...'
-        'All colleagues are busy.': 'Wszyscy koledzy są zajęci.'
-        'You are on waiting list position <strong>%s</strong>.': 'Na liście oczekujących znajduje się pozycja <strong>%s</strong>.'
-        'Start new conversation': 'Rozpoczęcie nowej konwersacji'
-        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Ponieważ w ciągu ostatnich %s minut nie odpowiedziałeś, Twoja rozmowa z <strong>%s</strong> została zamknięta.'
-        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Ponieważ nie odpowiedziałeś w ciągu ostatnich %s minut, Twoja rozmowa została zamknięta.'
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Przykro nam, ale to trwa dłużej niż się spodziewamy. Spróbuj ponownie później lub wyślij nam wiadomość e-mail. Dziękuję!'
-      'pt-br': {
-        '<strong>Chat</strong> with us!': '<strong>Chat</strong> fale conosco!',
-        'Scroll down to see new messages': 'Role para baixo, para ver nosvas mensagens',
-        'Online': 'Online',
-        'Offline': 'Desconectado',
-        'Connecting': 'Conectando',
-        'Connection re-established': 'Conexão restabelecida',
-        'Today': 'Hoje',
-        'Send': 'Enviar',
-        'Chat closed by %s': 'Chat encerrado por %s',
-        'Compose your message...': 'Escreva sua mensagem...',
-        'All colleagues are busy.': 'Todos os agentes estão ocupados.',
-        'You are on waiting list position <strong>%s</strong>.': 'Você está na posição <strong>%s</strong> na fila de espera.',
-        'Start new conversation': 'Iniciar uma nova conversa',
-        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Como você não respondeu nos últimos %s minutos sua conversa com <strong>%s</strong> foi encerrada.',
-        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Como você não respondeu nos últimos %s minutos sua conversa foi encerrada.',
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Desculpe, mas o tempo de espera por um agente foi excedido. Tente novamente mais tarde ou nós envie um email. Obrigado'
-      },
-      'zh-cn':
-        '<strong>Chat</strong> with us!': '发起<strong>即时对话</strong>!'
-        'Scroll down to see new messages': '向下滚动以查看新消息'
-        'Online': '在线'
-        'Offline': '离线'
-        'Connecting': '连接中'
-        'Connection re-established': '正在重新建立连接'
-        'Today': '今天'
-        'Send': '发送'
-        'Chat closed by %s': 'Chat closed by %s'
-        'Compose your message...': '正在输入信息...'
-        'All colleagues are busy.': '所有工作人员都在忙碌中.'
-        'You are on waiting list position <strong>%s</strong>.': '您目前的等候位置是第 <strong>%s</strong> 位.'
-        'Start new conversation': '开始新的会话'
-        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': '由于您超过 %s 分钟没有回复, 您与 <strong>%s</strong> 的会话已被关闭.'
-        'Since you didn\'t respond in the last %s minutes your conversation got closed.': '由于您超过 %s 分钟没有任何回复, 该对话已被关闭.'
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': '非常抱歉, 目前需要等候更长的时间才能接入对话, 请稍后重试或向我们发送电子邮件. 谢谢!'
-      'zh-tw':
-        '<strong>Chat</strong> with us!': '開始<strong>即時對话</strong>!'
-        'Scroll down to see new messages': '向下滑動以查看新訊息'
-        'Online': '線上'
-        'Offline': '离线'
-        'Connecting': '連線中'
-        'Connection re-established': '正在重新建立連線中'
-        'Today': '今天'
-        'Send': '發送'
-        'Chat closed by %s': 'Chat closed by %s'
-        'Compose your message...': '正在輸入訊息...'
-        'All colleagues are busy.': '所有服務人員都在忙碌中.'
-        'You are on waiting list position <strong>%s</strong>.': '你目前的等候位置是第 <strong>%s</strong> 順位.'
-        'Start new conversation': '開始新的對話'
-        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': '由於你超過 %s 分鐘沒有回應, 你與 <strong>%s</strong> 的對話已被關閉.'
-        'Since you didn\'t respond in the last %s minutes your conversation got closed.': '由於你超過 %s 分鐘沒有任何回應, 該對話已被關閉.'
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': '非常抱歉, 當前需要等候更長的時間方可排入對話程序, 請稍後重試或向我們寄送電子郵件. 謝謝!'
-      'ru':
-        '<strong>Chat</strong> with us!': 'Напишите нам!'
-        'Scroll down to see new messages': 'Прокрутите, чтобы увидеть новые сообщения'
-        'Online': 'Онлайн'
-        'Offline': 'Оффлайн'
-        'Connecting': 'Подключение'
-        'Connection re-established': 'Подключение восстановлено'
-        'Today': 'Сегодня'
-        'Send': 'Отправить'
-        'Chat closed by %s': '%s закрыл чат'
-        'Compose your message...': 'Напишите сообщение...'
-        'All colleagues are busy.': 'Все сотрудники заняты'
-        'You are on waiting list position %s.': 'Вы в списке ожидания под номером %s'
-        'Start new conversation': 'Начать новую переписку.'
-        'Since you didn\'t respond in the last %s minutes your conversation with %s got closed.': 'Поскольку вы не отвечали в течение последних %s минут, ваш разговор с %s был закрыт.'
-        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Поскольку вы не отвечали в течение последних %s минут, ваш разговор был закрыт.'
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'К сожалению, ожидание свободного места требует больше времени. Повторите попытку позже или отправьте нам электронное письмо. Спасибо!'
-      'sv':
-        '<strong>Chat</strong> with us!': '<strong>Chatta</strong> med oss!'
-        'Scroll down to see new messages': 'Rulla ner för att se nya meddelanden'
-        'Online': 'Online'
-        'Offline': 'Offline'
-        'Connecting': 'Ansluter'
-        'Connection re-established': 'Anslutningen återupprättas'
-        'Today': 'I dag'
-        'Send': 'Skicka'
-        'Chat closed by %s': 'Chatt stängd av %s'
-        'Compose your message...': 'Skriv ditt meddelande...'
-        'All colleagues are busy.': 'Alla kollegor är upptagna.'
-        'You are on waiting list position <strong>%s</strong>.': 'Du är på väntelistan som position <strong>%s</strong>.'
-        'Start new conversation': 'Starta ny konversation'
-        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Eftersom du inte svarat inom %s minuterna i din konversation med <strong>%s</strong> så stängdes chatten.'
-        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Då du inte svarat inom de senaste %s minuterna så avslutades din chatt.'
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Vi är ledsna, det tar längre tid som förväntat att få en ledig plats. Försök igen senare eller skicka ett e-postmeddelande till oss. Tack!'
-      'no':
-        '<strong>Chat</strong> with us!': '<strong>Chat</strong> med oss!'
-        'Scroll down to see new messages': 'Bla ned for å se nye meldinger'
-        'Online': 'Pålogget'
-        'Offline': 'Avlogget'
-        'Connecting': 'Koble til'
-        'Connection re-established': 'Tilkoblingen er gjenopprettet'
-        'Today': 'I dag'
-        'Send': 'Send'
-        'Chat closed by %s': 'Chat avsluttes om %s'
-        'Compose your message...': 'Skriv din melding...'
-        'All colleagues are busy.': 'Alle våre kolleger er for øyeblikket opptatt.'
-        'You are on waiting list position <strong>%s</strong>.': 'Du står nå i kø og er nr. <strong>%s</strong> på ventelisten.'
-        'Start new conversation': 'Start en ny samtale'
-        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Ettersom du ikke har respondert i løpet av de siste %s minuttene av samtalen, vil samtalen med  <strong>%s</strong> nå avsluttes.'
-        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Ettersom du ikke har respondert i løpet av de siste %s minuttene, har samtalen nå blitt avsluttet.'
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Vi beklager, men det tar lengre tid enn vanlig å få en ledig plass i vår chat. Vennligst prøv igjen på et senere tidspunkt eller send oss en e-post. Tusen takk!'
-      'nb':
-        '<strong>Chat</strong> with us!': '<strong>Chat</strong> med oss!'
-        'Scroll down to see new messages': 'Bla ned for å se nye meldinger'
-        'Online': 'Pålogget'
-        'Offline': 'Avlogget'
-        'Connecting': 'Koble til'
-        'Connection re-established': 'Tilkoblingen er gjenopprettet'
-        'Today': 'I dag'
-        'Send': 'Send'
-        'Chat closed by %s': 'Chat avsluttes om %s'
-        'Compose your message...': 'Skriv din melding...'
-        'All colleagues are busy.': 'Alle våre kolleger er for øyeblikket opptatt.'
-        'You are on waiting list position <strong>%s</strong>.': 'Du står nå i kø og er nr. <strong>%s</strong> på ventelisten.'
-        'Start new conversation': 'Start en ny samtale'
-        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Ettersom du ikke har respondert i løpet av de siste %s minuttene av samtalen, vil samtalen med  <strong>%s</strong> nå avsluttes.'
-        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Ettersom du ikke har respondert i løpet av de siste %s minuttene, har samtalen nå blitt avsluttet.'
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Vi beklager, men det tar lengre tid enn vanlig å få en ledig plass i vår chat. Vennligst prøv igjen på et senere tidspunkt eller send oss en e-post. Tusen takk!'
+        'We are sorry, we are facing some connection problem. Please try again later or send us an email. Thank you!': 'Ci dispiace, ci sono problemi di connessione. Per favore riprova più tardi o inviaci un\'email. Grazie!'
     sessionId: undefined
     scrolledToBottom: true
     scrollSnapTolerance: 10
@@ -856,7 +620,7 @@ do($ = window.jQuery, window) ->
             @receiveMessage pipe.data
           when 'chat_session_typing'
             return if pipe.data.self_written
-            @onAgentTypingStart()
+            @onAgentTypingStart(pipe.data.whispering)
           when 'chat_session_start'
             @onConnectionEstablished pipe.data
           when 'chat_session_queue'
@@ -898,11 +662,13 @@ do($ = window.jQuery, window) ->
       @log.debug message
       @addStatus(message)
       $(".#{ @options.buttonClass }").hide()
+      # vista dopo due minuti di loading
+      @el.find('.zammad-chat-modal').html @view('error_connection')
       if @isOpen
         @disableInput()
-        @destroy(remove: false)
+        # @destroy(remove: false) provvisoriamente commentato
       else
-        @destroy(remove: true)
+        # @destroy(remove: true) provvisoriamente commentato
 
       @options.onError?(message)
 
@@ -1027,10 +793,26 @@ do($ = window.jQuery, window) ->
 
       @maybeAddTimestamp()
 
-      @renderMessage
-        message: data.message.content
-        id: data.id
-        from: 'agent'
+      # chatbot_response - CSI Custom
+      console.log('data.chatbot_response', data.chatbot_response)
+      if data.chatbot_response != undefined
+        for chatbot_msg in data.chatbot_response
+          @renderMessage
+            message: chatbot_msg.text
+            from: 'agent'
+
+          if chatbot_msg.hasOwnProperty('buttons')
+            for btn in chatbot_msg.buttons
+              @renderIntentButton
+                btnintent: btn.payload
+                btnlabel: btn.title
+
+            @el.find('.zammad-chat-intent').on 'click', @onClickIntentButton
+      else
+        @renderMessage
+          message: data.message.content
+          id: data.id
+          from: 'agent'
 
       @scrollToBottom showHint: true
 
@@ -1039,11 +821,37 @@ do($ = window.jQuery, window) ->
       data.unreadClass = if document.hidden then ' zammad-chat-message--unread' else ''
       @el.find('.zammad-chat-body').append @view('message')(data)
 
+    # Metodo custom CSI per mostrare i button sulla conversazione
+    renderIntentButton: (data) =>
+      @lastAddedType = 'message--agent'
+      @el.find('.zammad-chat-body').append @view('intent_button')(data)
+
+    # Metodo custom CSI
+    onClickIntentButton: (event) =>
+      event.preventDefault()
+      event.stopPropagation()
+      event.stopImmediatePropagation()
+      intent = event.target.getAttribute('data-intent')
+      label = event.target.getAttribute('data-label')
+      return if intent == undefined
+
+      console.log('evento', event.timeStamp)
+      # work around, le chiamate dai pulsanti si moltiplicavano per potenza di 2.
+      # soluzione provvisoria
+      # TODO, indagare la causa della moltiplicazione degli eventi.
+      if @hasSametimeStamp != event.timeStamp
+        @hasSametimeStamp = event.timeStamp
+        @invokeIntent(intent, label)
+        console.log('non duplicato')
+      else
+        console.log('duplicato')
+        return
+
     open: =>
       if @isOpen
         @log.debug 'widget already open, block'
         return
-
+    
       @isOpen = true
       @log.debug 'open widget'
       @show()
@@ -1103,9 +911,11 @@ do($ = window.jQuery, window) ->
         return
       if @initDelayId
         clearTimeout(@initDelayId)
-      if !@sessionId
-        @log.debug 'can\'t close widget without sessionId'
-        return
+      # non sempre il session id è necessario il controllo risulta bloccante
+      # @log.debug "session id close #{@sessionId}"
+      # if !@sessionId && @state == 'online'
+      #   @log.debug 'can\'t close widget without sessionId'
+      #   return
 
       @log.debug 'close widget'
 
@@ -1120,11 +930,16 @@ do($ = window.jQuery, window) ->
       remainerHeight = @el.height() - @el.find('.zammad-chat-header').outerHeight()
       @el.animate { bottom: -remainerHeight }, 500, @onCloseAnimationEnd
 
+    # aggiunta metodo reloadChat sostituisce location reload
+    reloadChat: =>
+      @log.debug 'reload chat'
+      @close()
+      # @isOpen = false
+      # setTimeout(@open(), 2000)
+
     onCloseAnimationEnd: =>
       @el.css 'bottom', ''
       @el.removeClass('zammad-chat-is-open')
-
-      @showLoader()
       @el.find('.zammad-chat-welcome').removeClass('zammad-chat-is-hidden')
       @el.find('.zammad-chat-agent').addClass('zammad-chat-is-hidden')
       @el.find('.zammad-chat-agent-status').addClass('zammad-chat-is-hidden')
@@ -1184,7 +999,7 @@ do($ = window.jQuery, window) ->
       @el.find('.zammad-chat-modal').html @view('waiting')
         position: data.position
 
-    onAgentTypingStart: =>
+    onAgentTypingStart: (whispering) =>
       if @stopTypingId
         clearTimeout(@stopTypingId)
       @stopTypingId = setTimeout(@onAgentTypingEnd, 3000)
@@ -1193,8 +1008,9 @@ do($ = window.jQuery, window) ->
       return if @el.find('.zammad-chat-message--typing').get(0)
 
       @maybeAddTimestamp()
-
-      @el.find('.zammad-chat-body').append @view('typingIndicator')()
+      # abbiamo aggiunto il controllo su whispering per nascondere anche la classe css che mostra la digitazione
+      if !whispering
+        @el.find('.zammad-chat-body').append @view('typingIndicator')()
 
       # only if typing indicator is shown
       return if !@isVisible(@el.find('.zammad-chat-message--typing'), true)
@@ -1249,6 +1065,28 @@ do($ = window.jQuery, window) ->
       scrollBottom = @el.find('.zammad-chat-body').scrollTop() + @el.find('.zammad-chat-body').outerHeight()
       @scrolledToBottom = Math.abs(scrollBottom - @el.find('.zammad-chat-body').prop('scrollHeight')) <= @scrollSnapTolerance
       @el.find('.zammad-scroll-hint').addClass('is-hidden') if @scrolledToBottom
+
+    # Metodo custom CSI per gestire il click su uno dei bottoni e innescare la chiamata
+    # ad uno degli intent censiti.
+    invokeIntent: (intent, msg) ->
+      messageElement = @view('message')
+        message: msg
+        from: 'customer'
+        id: @_messageCount++
+        unreadClass: ''
+
+      @maybeAddTimestamp()
+      
+      @lastAddedType = 'message--customer'
+      @el.find('.zammad-chat-body').append messageElement
+
+      @scrollToBottom()
+
+      # send message event passing intent
+      @send 'chat_session_message',
+        content: intent
+        id: @_messageCount
+        session_id: @sessionId
 
     showScrollHint: ->
       @el.find('.zammad-scroll-hint').removeClass('is-hidden')
@@ -1350,17 +1188,13 @@ do($ = window.jQuery, window) ->
       @el.find('.zammad-chat-modal').html @view('customer_timeout')
         agent: @agent.name
         delay: @options.inactiveTimeout
-      reload = ->
-        location.reload()
-      @el.find('.js-restart').click reload
+      @el.find('.js-restart').on 'click', @reloadChat
       @sessionClose()
 
     showWaitingListTimeout: ->
       @el.find('.zammad-chat-modal').html @view('waiting_list_timeout')
         delay: @options.watingListTimeout
-      reload = ->
-        location.reload()
-      @el.find('.js-restart').click reload
+      @el.find('.js-restart').on 'click', @reloadChat
       @sessionClose()
 
     showLoader: ->
@@ -1413,7 +1247,7 @@ do($ = window.jQuery, window) ->
         timeoutIntervallCheck: @options.idleTimeoutIntervallCheck
         callback: =>
           @log.debug 'Idle timeout reached, hide widget', new Date
-          @destroy(remove: true)
+          # @destroy(remove: true) provvisoriamente commentato
       )
       @inactiveTimeout = new Timeout(
         logPrefix: 'inactiveTimeout'
@@ -1423,7 +1257,7 @@ do($ = window.jQuery, window) ->
         callback: =>
           @log.debug 'Inactive timeout reached, show timeout screen.', new Date
           @showCustomerTimeout()
-          @destroy(remove: false)
+          # @destroy(remove: false) provvisoriamente commentato
       )
       @waitingListTimeout = new Timeout(
         logPrefix: 'waitingListTimeout'
@@ -1433,7 +1267,7 @@ do($ = window.jQuery, window) ->
         callback: =>
           @log.debug 'Waiting list timeout reached, show timeout screen.', new Date
           @showWaitingListTimeout()
-          @destroy(remove: false)
+          # @destroy(remove: false) provvisoriamente commentato
       )
 
     disableScrollOnRoot: ->

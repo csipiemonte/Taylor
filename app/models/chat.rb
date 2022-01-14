@@ -90,7 +90,7 @@ reconnect - chat session already exists, serve agent and session chat messages (
     end
 
     # check if agents are available
-    if Chat.active_agent_count([id]).zero?
+    if Chat.active_agent_count([id]).zero? && !Setting.get('chatbot_status')
       return { state: 'offline' }
     end
 
@@ -105,6 +105,10 @@ reconnect - chat session already exists, serve agent and session chat messages (
 
     # seads are available
     { state: 'online' }
+  end
+  # metodo definito public per poter permettere a chatbot rb di contare gli agenti
+  def get_active_agent_count
+    Chat.active_agent_count([id])
   end
 
 =begin

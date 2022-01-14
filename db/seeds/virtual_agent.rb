@@ -78,6 +78,7 @@ virtual_agent_aligner = Role.create_if_not_exists(
 ) || Role.find_by(name: 'Virtual Agent (Aligner)')
 
 virtual_agent_aligner.permission_grant('ticket.agent')
+<<<<<<< HEAD
 
 Translation.create_if_not_exists(
   locale:         'it-it',
@@ -103,6 +104,33 @@ User.create_if_not_exists(
   roles:     [ Role.find_by(name: 'Virtual Agent (Aligner)') ]
 )
 
+=======
+
+Translation.create_if_not_exists(
+  locale:         'it-it',
+  source:         'Virtual Agent %s',
+  target:         'Operatore Virtuale %s',
+  target_initial: 'Operatore Virtuale %s',
+  format:         'string',
+  created_by_id:  '1',
+  updated_by_id:  '1',
+)
+
+# Utente impiegato per eseguire le operazioni di allineamento fra i ticket
+# presenti sugli external ticketing system e le Zammad external activities.
+# Deve avere come role 'Virtual Agent (Aligner)' e poi
+# deve avere il controllo pieno sui gruppi (abilitazioni date dalla pagina di dettaglio utente)
+User.create_if_not_exists(
+  login:     'aligner.agent@csi.it',
+  firstname: 'Aligner',
+  lastname:  'Agent',
+  email:     'aligner.agent@csi.it',
+  password:  'AliP21_ext!',
+  active:    true,
+  roles:     [ Role.find_by(name: 'Virtual Agent (Aligner)') ]
+)
+
+>>>>>>> feature/webchat
 # Api Management
 api_management = Role.create_if_not_exists(
   name:              'Api Management',
