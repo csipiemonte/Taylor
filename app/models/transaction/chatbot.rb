@@ -7,13 +7,13 @@ class Transaction::Chatbot
   end
 
   def perform
-    if @item[:object] == 'Chat Session'
+    case @item[:object]
+    when 'Chat Session'
       # Avviene in fase di inizializzazione della chat, cfr lib/sessions/event/chat_session_init.rb
       return if Setting.get('import_mode') || !Setting.get('chatbot_status')
 
       perform_chat_session
-
-    elsif @item[:object] == 'Chat Message'
+    when 'Chat Message'
       # Avviene durante lo scambio di messaggi nella chat, cfr lib/sessions/event/chat_session_message.rb
       ChatbotService.bind_supervisors(@item[:chat_session])
       return if Setting.get('import_mode') || !Setting.get('chatbot_status')
@@ -75,6 +75,12 @@ class Transaction::Chatbot
 
     ai_response_body = JSON.parse(ai_response.body)
     Rails.logger.info "ai_response_body #{ai_response_body}"
+    if ai_response_body.empty?
+      Rails.logger.error "Errore occorso durante l'invocazione del chatbot, array di risposte vuoto"
+      send_message_to_client(error_message(@chatbot.id, @item[:chat_session].id), clients)
+      return
+    end
+
     reply_text = ai_response_body[0]['text']
     actual_chat = Chat.find_by(id: chat_session.chat_id)
 
@@ -103,12 +109,12 @@ class Transaction::Chatbot
     # chatId 1 recuperera dalla tabella con id 1 la colonna name ad esempio bolloauto
     # importante:  chat.name deve essere un argomento che corrisponde ad un chatbot utilizzabile, impostare da BO lo stesso nome della chat che si vuole usare
     chatbot_url = "#{@api_host}/#{chat.name}/webhook"
-    Rails.logger.info "[call_chatbot_webhook] chatbot_url: #{chatbot_url}"
+    Rails.logger.info "[call_chatbot_webhook] chatbot_url: #{chatbot_url}, msg_text: #{msg_text}"
     UserAgent.post(
       chatbot_url,
       {
-        'sender':  @item[:chat_session].id, # id del chat customer per poter eventualmente stabilire una conversazione
-        'message': msg_text
+        sender:  @item[:chat_session].id, # id del chat customer per poter eventualmente stabilire una conversazione
+        message: msg_text
       },
       { json: true }
     )
