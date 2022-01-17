@@ -69,15 +69,15 @@ class Transaction::Chatbot
     ai_response = call_chatbot_webhook(message.content)
     if !ai_response.success?
       Rails.logger.error "Errore occorso durante l'invocazione del chatbot, dettaglio: #{ai_response.error}"
-      send_message_to_client(error_message(@chatbot.id, @item[:chat_session].id), clients)
+      send_message_to_client(error_message(@chatbot.id, @item[:chat_session].id))
       return
     end
 
     ai_response_body = JSON.parse(ai_response.body)
     Rails.logger.info "ai_response_body #{ai_response_body}"
-    if ai_response_body.empty?
+    if !ai_response_body[0]
       Rails.logger.error "Errore occorso durante l'invocazione del chatbot, array di risposte vuoto"
-      send_message_to_client(error_message(@chatbot.id, @item[:chat_session].id), clients)
+      send_message_to_client(error_message(@chatbot.id, @item[:chat_session].id))
       return
     end
 
