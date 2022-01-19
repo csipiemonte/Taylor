@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sessions::Event::Base
 
   def initialize(params)
@@ -21,14 +23,15 @@ class Sessions::Event::Base
   end
 
   def self.inherited(subclass)
+    super
     subclass.instance_variable_set(:@database_connection, @database_connection)
   end
 
   def websocket_send(recipient_client_id, data)
-    msg = if data.class != Array
-            "[#{data.to_json}]"
-          else
+    msg = if data.instance_of?(Array)
             data.to_json
+          else
+            "[#{data.to_json}]"
           end
     if @clients[recipient_client_id]
       log 'debug', "ws send #{msg}", recipient_client_id
@@ -131,17 +134,16 @@ class Sessions::Event::Base
   end
 
   def log(level, data, client_id = nil)
-    if !@options[:v]
-      return if level == 'debug'
-    end
+    return if !@options[:v] && level == 'debug'
+
     if !client_id
       client_id = @client_id
     end
     # rubocop:disable Rails/Output
     puts "#{Time.now.utc.iso8601}:client(#{client_id}) #{data}"
-    #puts "#{Time.now.utc.iso8601}:#{ level }:client(#{ client_id }) #{ data }"
+    # puts "#{Time.now.utc.iso8601}:#{ level }:client(#{ client_id }) #{ data }"
     # rubocop:enable Rails/Output
-    #Rails.logger.info "#{Time.now.utc.iso8601}:client(#{client_id}) #{data}"
+    # Rails.logger.info "#{Time.now.utc.iso8601}:client(#{client_id}) #{data}"
   end
 
   def self.database_connection_required

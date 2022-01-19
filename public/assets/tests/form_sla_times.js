@@ -57,16 +57,15 @@ test("form SLA times highlights and shows settings accordingly", function(assert
   equal(firstRow.find('input[data-name=first_response_time]').val(), '')
   ok(secondRow.hasClass('is-active'))
   equal(secondRow.find('input[data-name=update_time]').val(), '04:00')
-})
+  equal(secondRow.find('input[name=update_type]:checked').val(), 'update')
 
-test("form SLA times highlights errors when submitting empty active row", function(assert) {
-  $('#forms').append('<hr><h1>SLA error handling</h1><form id="form4"></form>')
+  $('#forms').append('<hr><h1>SLA with response time set</h1><form id="form3a"></form>')
 
-  var el = $('#form4')
+  var el = $('#form3a')
 
   var item = new App.Sla()
   item.id = '123'
-  item.update_time = 240
+  item.response_time = 180
 
   new App.ControllerForm({
     el:     el,
@@ -74,25 +73,14 @@ test("form SLA times highlights errors when submitting empty active row", functi
     params: item
   });
 
-  var row = el.find('.sla_times tbody > tr:nth-child(2)')
-  var input = row.find('input[data-name=update_time]')
-  input.val('').trigger('blur')
+  var firstRow = el.find('.sla_times tbody > tr:first')
+  var secondRow = el.find('.sla_times tbody > tr:nth-child(2)')
 
-  item.load(App.ControllerForm.params(el))
-
-  App.ControllerForm.validate({form: el, errors: item.validate()})
-
-  equal(input.css('border-top-color'), 'rgb(255, 0, 0)', 'highlighted as error') // checking border-color fails on Firefox
-
-  var anotherRow = el.find('.sla_times tbody > tr:nth-child(3)')
-  var anotherInput = anotherRow.find('input[data-name=update_time]')
-
-  notEqual(anotherInput.css('border-color'), 'rgb(255, 0, 0)', 'not highlighted as error')
-
-  row.find('td:nth-child(2)').click()
-  notOk(row.hasClass('is-active'), 'deactivates class by clicking on name cell)')
-
-  notEqual(input.css('border-color'), 'rgb(255, 0, 0)', 'error cleared by deactivating')
+  notOk(firstRow.hasClass('is-active'))
+  equal(firstRow.find('input[data-name=first_response_time]').val(), '')
+  ok(secondRow.hasClass('is-active'))
+  equal(secondRow.find('input[data-name=response_time]').val(), '03:00')
+  equal(secondRow.find('input[name=update_type]:checked').val(), 'response')
 })
 
 test("form SLA times clears field instead of 00:00", function(assert) {

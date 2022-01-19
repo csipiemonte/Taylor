@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 Scheduler.create_if_not_exists(
   name:   'Process pending tickets',
   method: 'Ticket.process_pending',
@@ -18,15 +20,6 @@ Scheduler.create_if_not_exists(
   period: 10.minutes,
   prio:   1,
   active: true,
-)
-Scheduler.create_if_not_exists(
-  name:          'Import OTRS diff load',
-  method:        'Import::OTRS.diff_worker',
-  period:        3.minutes,
-  prio:          1,
-  active:        true,
-  updated_by_id: 1,
-  created_by_id: 1,
 )
 Scheduler.create_if_not_exists(
   name:          'Check Channels',
@@ -137,6 +130,15 @@ Scheduler.create_or_update(
   created_by_id: 1,
 )
 Scheduler.create_or_update(
+  name:          'Cleanup dead sessions.',
+  method:        'SessionTimeoutJob.perform_now',
+  period:        1.hour,
+  prio:          2,
+  active:        true,
+  updated_by_id: 1,
+  created_by_id: 1,
+)
+Scheduler.create_or_update(
   name:          'Sync calendars with ical feeds.',
   method:        'Calendar.sync',
   period:        1.day,
@@ -198,4 +200,23 @@ Scheduler.create_if_not_exists(
   active:        true,
   updated_by_id: 1,
   created_by_id: 1
+)
+Scheduler.create_if_not_exists(
+  name:          'Handle data privacy tasks.',
+  method:        'DataPrivacyTaskJob.perform_now',
+  period:        10.minutes,
+  last_run:      Time.zone.now,
+  prio:          2,
+  active:        true,
+  updated_by_id: 1,
+  created_by_id: 1,
+)
+Scheduler.create_if_not_exists(
+  name:          'Delete old upload cache entries.',
+  method:        'UploadCacheCleanupJob.perform_now',
+  period:        1.month,
+  prio:          2,
+  active:        true,
+  updated_by_id: 1,
+  created_by_id: 1,
 )

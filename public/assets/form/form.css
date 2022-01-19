@@ -13,6 +13,7 @@
 .zammad-form .form-control {
   display: block;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .zammad-form .has-error .form-control {
@@ -34,6 +35,8 @@
     height: 100%;
     text-align: center;
     z-index: 999;
+    overflow: auto;
+    overscroll-behavior: contain;
 }
 
 .zammad-form-modal:before {
@@ -45,7 +48,7 @@
 }
 
 .zammad-form-modal-backdrop {
-    position: absolute;
+    position: fixed;
     left: 0;
     top: 0;
     width: 100%;
@@ -61,7 +64,7 @@
     padding: 24px 24px 22px;
     width: 90%;
     max-width: 26em;
-    margin: 0 auto;
+    margin: 20px auto;
     box-sizing: border-box;
     position: relative;
     display: inline-block;

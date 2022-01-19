@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module Cti
   class CallerId < ApplicationModel
     self.table_name = 'cti_caller_ids'
@@ -122,7 +124,7 @@ returns
         local_caller_ids = Cti::CallerId.extract_numbers(value)
         next if local_caller_ids.blank?
 
-        caller_ids = caller_ids.concat(local_caller_ids)
+        caller_ids.concat(local_caller_ids)
       end
 
       # search for caller ids to keep
@@ -226,19 +228,19 @@ returns
       # see specs for example
       return [] if !text.is_a?(String)
 
-      text.scan(/([\d|\s|\-|(|)]{6,26})/).map do |match|
+      text.scan(%r{([\d\s\-(|)]{6,26})}).map do |match|
         normalize_number(match[0])
       end
     end
 
     def self.normalize_number(number)
-      number = number.gsub(/[\s-]/, '')
-      number.gsub!(/^(00)?(\+?\d\d)\(0?(\d*)\)/, '\\1\\2\\3')
-      number.gsub!(/\D/, '')
+      number = number.gsub(%r{[\s-]}, '')
+      number.gsub!(%r{^(00)?(\+?\d\d)\(0?(\d*)\)}, '\\1\\2\\3')
+      number.gsub!(%r{\D}, '')
       case number
-      when /^00/
+      when %r{^00}
         number[2..]
-      when /^0/
+      when %r{^0}
         DEFAULT_COUNTRY_ID + number[1..]
       else
         number
@@ -345,6 +347,7 @@ return users by caller_id
     end
 
     def update_cti_logs_with_fg_optimization
+      return if Setting.get('import_mode')
       return if object != 'User'
       return if level != 'known'
 

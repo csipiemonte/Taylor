@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module AutoWizard
 
 =begin
@@ -66,20 +68,16 @@ returns
     UserInfo.current_user_id = admin_user.id
 
     # set default calendar
-    if auto_wizard_hash['CalendarSetup']
-      if auto_wizard_hash['CalendarSetup']['Ip']
-        Calendar.init_setup(auto_wizard_hash['CalendarSetup']['Ip'])
-      end
+    if auto_wizard_hash['CalendarSetup'] && auto_wizard_hash['CalendarSetup']['Ip']
+      Calendar.init_setup(auto_wizard_hash['CalendarSetup']['Ip'])
     end
 
     # load text modules
-    if auto_wizard_hash['TextModuleLocale']
-      if auto_wizard_hash['TextModuleLocale']['Locale']
-        begin
-          TextModule.load(auto_wizard_hash['TextModuleLocale']['Locale'])
-        rescue => e
-          Rails.logger.error "Unable to load text modules #{auto_wizard_hash['TextModuleLocale']['Locale']}: #{e.message}"
-        end
+    if auto_wizard_hash['TextModuleLocale'] && auto_wizard_hash['TextModuleLocale']['Locale']
+      begin
+        TextModule.load(auto_wizard_hash['TextModuleLocale']['Locale'])
+      rescue => e
+        Rails.logger.error "Unable to load text modules #{auto_wizard_hash['TextModuleLocale']['Locale']}: #{e.message}"
       end
     end
 
@@ -155,9 +153,9 @@ returns
   end
 
   def self.file_location
-    auto_wizard_file_name     = 'auto_wizard.json'
-    auto_wizard_file_location = Rails.root.join(auto_wizard_file_name)
-    auto_wizard_file_location
+    auto_wizard_file_name = 'auto_wizard.json'
+    Rails.root.join(auto_wizard_file_name)
+
   end
   private_class_method :file_location
 end

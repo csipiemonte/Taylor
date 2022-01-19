@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'test_helper'
 require 'net/imap'
 
@@ -6,7 +8,7 @@ class EmailPostmasterToSender < ActiveSupport::TestCase
   setup do
     Setting.set('postmaster_max_size', 0.1)
 
-    @test_id = rand(999_999_999)
+    @test_id = SecureRandom.uuid
 
     # setup the IMAP account info for Zammad
     if ENV['MAIL_SERVER'].blank?
@@ -23,7 +25,7 @@ class EmailPostmasterToSender < ActiveSupport::TestCase
     @folder = "postmaster_to_sender_#{@test_id}"
 
     if ENV['MAIL_SERVER_EMAIL'].blank?
-      raise "Need MAIL_SERVER_EMAIL as ENV variable like export MAIL_SERVER_EMAIL='master@example.com'"
+      raise "Need MAIL_SERVER_EMAIL as ENV variable like export MAIL_SERVER_EMAIL='admin@example.com'"
     end
 
     @sender_email_address = ENV['MAIL_SERVER_EMAIL']
@@ -90,7 +92,7 @@ To: shugo@example.com
 Message-ID: <#{@test_id}@zammad.test.com>
 
 Oversized Email Message Body #{'#' * 120_000}
-".gsub(/\n/, "\r\n")
+".gsub(%r{\n}, "\r\n")
 
     large_message_md5 = Digest::MD5.hexdigest(large_message)
     large_message_size = format('%<MB>.2f', MB: large_message.size.to_f / 1024 / 1024)
@@ -103,7 +105,7 @@ Oversized Email Message Body #{'#' * 120_000}
     # /tmp/oversized_mail/yyyy-mm-ddThh:mm:ss-:md5.eml
     path = Rails.root.join('tmp/oversized_mail')
     target_files = Dir.entries(path).select do |filename|
-      filename =~ /^#{large_message_md5}\.eml$/
+      filename =~ %r{^#{large_message_md5}\.eml$}
     end
     assert(target_files.present?, 'Large message .eml log file must be present.')
 
@@ -116,14 +118,23 @@ Oversized Email Message Body #{'#' * 120_000}
     assert_equal(large_message, eml_data)
 
     # 2. verify that a postmaster response email has been sent to the sender
-    imap.select('inbox')
-    message_ids = imap.sort(['DATE'], ['ALL'], 'US-ASCII')
+    message_ids = nil
+    5.times do |sleep_offset|
+      imap.select('inbox')
+      message_ids = imap.sort(['DATE'], ['ALL'], 'US-ASCII')
+
+      break if message_ids.count.positive?
+
+      # send mail hasn't arrived yet in the inbox
+      sleep sleep_offset
+    end
+
     assert(message_ids.count.positive?, 'Must have received a reply from the postmaster')
     imap_message_id = message_ids.last
     msg = imap.fetch(imap_message_id, 'RFC822')[0].attr['RFC822']
     assert(msg.present?, 'Must have received a reply from the postmaster')
     imap.store(imap_message_id, '+FLAGS', [:Deleted])
-    imap.expunge()
+    imap.expunge
 
     # parse the reply mail and verify the various headers
     parser = Channel::EmailParser.new
@@ -173,7 +184,7 @@ To: shugo@example.com
 Message-ID: <#{@test_id}@zammad.test.com>
 
 Oversized Email Message Body #{'#' * 120_000}
-".gsub(/\n/, "\r\n")
+".gsub(%r{\n}, "\r\n")
 
     imap.append(@folder, large_message, [], Time.zone.now)
 
@@ -183,7 +194,7 @@ Oversized Email Message Body #{'#' * 120_000}
     # /tmp/oversized_mail/yyyy-mm-ddThh:mm:ss-:md5.eml
     path = Rails.root.join('tmp/oversized_mail')
     target_files = Dir.entries(path).select do |filename|
-      filename =~ /^.+?\.eml$/
+      filename =~ %r{^.+?\.eml$}
     end
     assert_not(target_files.blank?, 'Large message .eml log file must be blank.')
 
@@ -198,7 +209,7 @@ Oversized Email Message Body #{'#' * 120_000}
     imap_message_id = message_ids.last
     msg = imap.fetch(imap_message_id, 'RFC822')[0].attr['RFC822']
     imap.store(imap_message_id, '+FLAGS', [:Deleted])
-    imap.expunge()
+    imap.expunge
     assert(msg.present?, 'Oversized Email Message')
     assert_equal(message_ids.count, 1, 'Original customer mail must be deleted.')
 

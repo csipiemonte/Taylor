@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sequencer
   class Unit
     module Import
@@ -18,7 +20,7 @@ class Sequencer
               end
 
               def not_synced(entries)
-                entries.find(&method(:not_synced?))
+                entries.find { |entry| not_synced?(entry) }
               end
 
               def not_synced?(entry)

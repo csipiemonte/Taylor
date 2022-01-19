@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module NotificationFactory
   TEMPLATE_PATH_STRING = Rails.root.join('app/views/%<type>s/%<template>s/%<filename>s').to_s.freeze
   APPLICATION_TEMPLATE_PATH_STRING = Rails.root.join('app/views/%<type>s/application.%<format>s.erb').to_s.freeze
@@ -44,7 +46,7 @@ returns
       .map { |filename| data.merge(filename: filename) }
       .map { |data_hash| TEMPLATE_PATH_STRING % data_hash }
 
-    found = candidates.find(&File.method(:exist?))
+    found = candidates.find { |candidate| File.exist?(candidate) }
 
     raise FileNotFoundError, "Missing template files #{candidates}!" if !found
 

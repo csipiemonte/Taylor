@@ -1,10 +1,10 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 module Channel::Filter::IdentifySender
 
-  def self.run(_channel, mail)
+  def self.run(_channel, mail, _transaction_params)
 
-    customer_user_id = mail[ 'x-zammad-ticket-customer_id'.to_sym ]
+    customer_user_id = mail[ :'x-zammad-ticket-customer_id' ]
     customer_user = nil
     if customer_user_id.present?
       customer_user = User.lookup(id: customer_user_id)
@@ -16,56 +16,53 @@ module Channel::Filter::IdentifySender
     end
 
     # check if sender exists in database
-    if !customer_user && mail[ 'x-zammad-customer-login'.to_sym ].present?
-      customer_user = User.find_by(login: mail[ 'x-zammad-customer-login'.to_sym ])
+    if !customer_user && mail[ :'x-zammad-customer-login' ].present?
+      customer_user = User.find_by(login: mail[ :'x-zammad-customer-login' ])
     end
-    if !customer_user && mail[ 'x-zammad-customer-email'.to_sym ].present?
-      customer_user = User.find_by(email: mail[ 'x-zammad-customer-email'.to_sym ])
+    if !customer_user && mail[ :'x-zammad-customer-email' ].present?
+      customer_user = User.find_by(email: mail[ :'x-zammad-customer-email' ])
     end
 
     # get correct customer
-    if !customer_user && Setting.get('postmaster_sender_is_agent_search_for_customer') == true
-      if mail[ 'x-zammad-ticket-create-article-sender'.to_sym ] == 'Agent'
+    if !customer_user && Setting.get('postmaster_sender_is_agent_search_for_customer') == true && mail[ :'x-zammad-ticket-create-article-sender' ] == 'Agent'
+      # get first recipient and set customer
+      begin
+        to = :'raw-to'
+        if mail[to]&.addrs
+          items = mail[to].addrs
+          items.each do |item|
 
-        # get first recipient and set customer
-        begin
-          to = 'raw-to'.to_sym
-          if mail[to]&.addrs
-            items = mail[to].addrs
-            items.each do |item|
+            # skip if recipient is system email
+            next if EmailAddress.exists?(email: item.address.downcase)
 
-              # skip if recipient is system email
-              next if EmailAddress.find_by(email: item.address.downcase)
-
-              customer_user = user_create(
-                login:     item.address,
-                firstname: item.display_name,
-                email:     item.address,
-              )
-              break
-            end
+            customer_user = user_create(
+              login:     item.address,
+              firstname: item.display_name,
+              email:     item.address,
+            )
+            break
           end
-        rescue => e
-          Rails.logger.error "SenderIsSystemAddress: ##{e.inspect}"
         end
+      rescue => e
+        Rails.logger.error "SenderIsSystemAddress: ##{e.inspect}"
       end
     end
 
     # take regular from as customer
     if !customer_user
       customer_user = user_create(
-        login:     mail[ 'x-zammad-customer-login'.to_sym ] || mail[ 'x-zammad-customer-email'.to_sym ] || mail[:from_email],
-        firstname: mail[ 'x-zammad-customer-firstname'.to_sym ] || mail[:from_display_name],
-        lastname:  mail[ 'x-zammad-customer-lastname'.to_sym ],
-        email:     mail[ 'x-zammad-customer-email'.to_sym ] || mail[:from_email],
+        login:     mail[ :'x-zammad-customer-login' ] || mail[ :'x-zammad-customer-email' ] || mail[:from_email],
+        firstname: mail[ :'x-zammad-customer-firstname' ] || mail[:from_display_name],
+        lastname:  mail[ :'x-zammad-customer-lastname' ],
+        email:     mail[ :'x-zammad-customer-email' ] || mail[:from_email],
       )
     end
 
     create_recipients(mail)
-    mail[ 'x-zammad-ticket-customer_id'.to_sym ] = customer_user.id
+    mail[ :'x-zammad-ticket-customer_id' ] = customer_user.id
 
     # find session user
-    session_user_id = mail[ 'x-zammad-session-user-id'.to_sym ]
+    session_user_id = mail[ :'x-zammad-session-user-id' ]
     session_user = nil
     if session_user_id.present?
       session_user = User.lookup(id: session_user_id)
@@ -84,7 +81,7 @@ module Channel::Filter::IdentifySender
       )
     end
     if session_user
-      mail[ 'x-zammad-session-user-id'.to_sym ] = session_user.id
+      mail[ :'x-zammad-session-user-id' ] = session_user.id
     end
 
     true
@@ -126,10 +123,10 @@ module Channel::Filter::IdentifySender
         recipients.each do |recipient|
           address = nil
           display_name = nil
-          if recipient =~ /.*<(.+?)>/
+          if recipient =~ %r{.*<(.+?)>}
             address = $1
           end
-          if recipient =~ /^(.+?)<(.+?)>/
+          if recipient =~ %r{^(.+?)<(.+?)>}
             display_name = $1
           end
 
@@ -165,7 +162,7 @@ module Channel::Filter::IdentifySender
   end
 
   def self.populate_attributes!(attrs, **extras)
-    if attrs[:email].match?(/\S\s+\S/) || attrs[:email].match?(/^<|>$/)
+    if attrs[:email].match?(%r{\S\s+\S}) || attrs[:email].match?(%r{^<|>$})
       attrs[:preferences] = { mail_delivery_failed:        true,
                               mail_delivery_failed_reason: 'invalid email',
                               mail_delivery_failed_data:   Time.zone.now }
@@ -190,20 +187,20 @@ module Channel::Filter::IdentifySender
           .delete('"')
           .delete_prefix("'")
           .delete_suffix("'")
-          .gsub(/.+?\s\(.+?\)$/, '')
+          .gsub(%r{.+?\s\(.+?\)$}, '')
   end
 
   def self.sanitize_email(string)
-    string += '@local' if !string.include?('@')
+    string += '@local' if string.exclude?('@')
 
     string.downcase
           .strip
           .delete('"')
           .delete("'")
-          .delete(' ')             # see https://github.com/zammad/zammad/issues/2254
-          .sub(/^<|>$/, '')        # see https://github.com/zammad/zammad/issues/2254
-          .sub(/\A'(.*)'\z/, '\1') # see https://github.com/zammad/zammad/issues/2154
-          .gsub(/\s/, '')          # see https://github.com/zammad/zammad/issues/2198
+          .delete(' ') # see https://github.com/zammad/zammad/issues/2254
+          .sub(%r{^<|>$}, '')        # see https://github.com/zammad/zammad/issues/2254
+          .sub(%r{\A'(.*)'\z}, '\1') # see https://github.com/zammad/zammad/issues/2154
+          .gsub(%r{\s}, '')          # see https://github.com/zammad/zammad/issues/2198
           .delete_suffix('.')
   end
 

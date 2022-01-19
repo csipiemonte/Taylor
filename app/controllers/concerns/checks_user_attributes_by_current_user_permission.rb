@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module ChecksUserAttributesByCurrentUserPermission
   extend ActiveSupport::Concern
 
@@ -10,9 +12,10 @@ module ChecksUserAttributesByCurrentUserPermission
     return true if current_user.permissions?('admin.user')
 
     # regular agents are not allowed to set Groups and Roles
+    suffixes = %w[_ids s]
     %w[Role Group].each do |model|
 
-      %w[_ids s].each do |suffix|
+      suffixes.each do |suffix|
         attribute = "#{model.downcase}#{suffix}"
         values    = params[attribute]
 

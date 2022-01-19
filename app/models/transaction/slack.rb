@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Transaction::Slack
 
@@ -60,17 +60,18 @@ class Transaction::Slack
     # if create, send create message / block update messages
     template = nil
     sent_value = nil
-    if @item[:type] == 'create'
+    case @item[:type]
+    when 'create'
       template = 'ticket_create'
-    elsif @item[:type] == 'update'
+    when 'update'
       template = 'ticket_update'
-    elsif @item[:type] == 'reminder_reached'
+    when 'reminder_reached'
       template = 'ticket_reminder_reached'
       sent_value = ticket.pending_time
-    elsif @item[:type] == 'escalation'
+    when 'escalation'
       template = 'ticket_escalation'
       sent_value = ticket.escalation_at
-    elsif @item[:type] == 'escalation_warning'
+    when 'escalation_warning'
       template = 'ticket_escalation_warning'
       sent_value = ticket.escalation_at
     else
@@ -105,7 +106,7 @@ class Transaction::Slack
       if ticket.pending_time && ticket.pending_time < Time.zone.now
         color = '#faab00'
       end
-    elsif ticket_state_type.match?(/^(new|open)$/)
+    elsif ticket_state_type.match?(%r{^(new|open)$})
       color = '#faab00'
     elsif ticket_state_type == 'closed'
       color = '#38ad69'
@@ -118,7 +119,7 @@ class Transaction::Slack
       md5_webhook = Digest::MD5.hexdigest(local_config['webhook'])
       cache_key = "slack::backend::#{@item[:type]}::#{ticket.id}::#{md5_webhook}"
       if sent_value
-        value = Cache.get(cache_key)
+        value = Cache.read(cache_key)
         if value == sent_value
           Rails.logger.debug { "did not send webhook, already sent (#{@item[:type]}/#{ticket.id}/#{local_config['webhook']})" }
           next
@@ -133,7 +134,7 @@ class Transaction::Slack
       end
 
       # check action
-      if local_config['types'].class == Array
+      if local_config['types'].instance_of?(Array)
         hit = false
         local_config['types'].each do |type|
           next if type.to_s != @item[:type].to_s
@@ -147,7 +148,7 @@ class Transaction::Slack
       end
 
       # check group
-      if local_config['group_ids'].class == Array
+      if local_config['group_ids'].instance_of?(Array)
         hit = false
         local_config['group_ids'].each do |group_id|
           next if group_id.to_s != ticket.group_id.to_s
@@ -167,6 +168,7 @@ class Transaction::Slack
 
       Rails.logger.debug { "sent webhook (#{@item[:type]}/#{ticket.id}/#{local_config['webhook']})" }
 
+      require 'slack-notifier' # Only load this gem when it is really used.
       notifier = Slack::Notifier.new(
         local_config['webhook'],
         channel:     local_config['channel'],
@@ -207,17 +209,14 @@ class Transaction::Slack
     locale = user.preferences[:locale] || Setting.get('locale_default') || 'en-us'
 
     # only show allowed attributes
-    attribute_list = ObjectManager::Attribute.by_object_as_hash('Ticket', user)
-    #puts "AL #{attribute_list.inspect}"
+    attribute_list = ObjectManager::Object.new('Ticket').attributes(user).index_by { |item| item[:name] }
+    # puts "AL #{attribute_list.inspect}"
     user_related_changes = {}
     @item[:changes].each do |key, value|
 
       # if no config exists, use all attributes
-      if attribute_list.blank?
-        user_related_changes[key] = value
-
-      # if config exists, just use existing attributes for user
-      elsif attribute_list[key.to_s]
+      # or if config exists, just use existing attributes for user
+      if attribute_list.blank? || attribute_list[key.to_s]
         user_related_changes[key] = value
       end
     end
@@ -301,7 +300,8 @@ class Transaction::Slack
           total_timeout: 20,
           log:           {
             facility: 'slack_webhook',
-          }
+          },
+          verify_ssl:    true,
         },
       )
     end

@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 Dir[ Rails.root.join('lib/omniauth/*') ].sort.each do |file|
   if File.file?(file)
     require file
@@ -33,7 +35,7 @@ Rails.application.config.middleware.use OmniAuth::Builder do
   provider :github_database, 'not_change_will_be_set_by_database', 'not_change_will_be_set_by_database'
 
   # gitlab database connect
-  provider :gitlab_database, 'not_change_will_be_set_by_database', 'not_change_will_be_set_by_database', {
+  provider :git_lab_database, 'not_change_will_be_set_by_database', 'not_change_will_be_set_by_database', {
     client_options: {
       site:          'https://not_change_will_be_set_by_database',
       authorize_url: '/oauth/authorize',
@@ -43,15 +45,6 @@ Rails.application.config.middleware.use OmniAuth::Builder do
 
   # microsoft_office365 database connect
   provider :microsoft_office365_database, 'not_change_will_be_set_by_database', 'not_change_will_be_set_by_database'
-
-  # oauth2 database connect
-  provider :oauth2_database, 'not_change_will_be_set_by_database', 'not_change_will_be_set_by_database', {
-    client_options: {
-      site:          'https://not_change_will_be_set_by_database',
-      authorize_url: '/oauth/authorize',
-      token_url:     '/oauth/token',
-    },
-  }
 
   # weibo database connect
   provider :weibo_database, 'not_change_will_be_set_by_database', 'not_change_will_be_set_by_database'

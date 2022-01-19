@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module ApplicationController::PreventsCsrf
   extend ActiveSupport::Concern
 
@@ -24,8 +26,7 @@ module ApplicationController::PreventsCsrf
 
   def verify_csrf_token
     return true if !protect_against_forgery?
-    return true if request.get?
-    return true if request.head?
+    return true if request.get? || request.head?
     return true if %w[token_auth basic_auth].include?(@_auth_type)
 
     # call Rails method to verify CRSF token

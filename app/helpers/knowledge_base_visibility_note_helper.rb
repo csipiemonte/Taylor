@@ -1,6 +1,8 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module KnowledgeBaseVisibilityNoteHelper
   def visibility_note(object)
-    return if !current_user&.permissions?('knowledge_base.editor')
+    return if !policy(:knowledge_base).edit?
 
     text = visibility_text(object)
 
@@ -19,14 +21,12 @@ module KnowledgeBaseVisibilityNoteHelper
   end
 
   def visiblity_text_can_be_published(object)
-    case object.can_be_published_aasm.current_state
-    when :internal
-      'internal'
-    when :archived
-      'archived'
-    when :draft
-      'not published'
-    end
+    state_text_map = {
+      internal: 'internal',
+      archived: 'archived',
+      draft:    'not published',
+    }
+    state_text_map[object.can_be_published_aasm.current_state]
   end
 
   def visiblity_text_category(object)

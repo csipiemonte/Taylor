@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Cti::Driver::Base
 
   def initialize(params = {})
@@ -39,12 +41,14 @@ class Cti::Driver::Base
     end
 
     log = Cti::Log.process(@params)
+    if log.present?
 
-    # push new call notification
-    push_incoming_call(log)
+      # push new call notification
+      push_incoming_call(log)
 
-    # open screen if call got answered
-    push_open_ticket_screen(log)
+      # open screen if call got answered
+      push_open_ticket_screen(log)
+    end
 
     result || {}
   end
@@ -97,8 +101,8 @@ class Cti::Driver::Base
 
     if routing_table.present?
       routing_table.each do |row|
-        dest = row[:dest].gsub(/\*/, '.+?')
-        next if !to.match?(/^#{dest}$/)
+        dest = row[:dest].gsub(%r{\*}, '.+?')
+        next if !to.match?(%r{^#{dest}$})
 
         return {
           action: 'set_caller_id',
@@ -134,7 +138,25 @@ class Cti::Driver::Base
 
     customer_id = log.best_customer_id_of_log_entry
 
-    id = rand(999_999_999)
+    # open user profile if user has a ticket in the last 30 days
+    if customer_id
+      last_activity = Setting.get('cti_customer_last_activity')
+      if Ticket.where(customer_id: customer_id).exists?(['updated_at > ?', last_activity.seconds.ago])
+        PushMessages.send_to(user.id, {
+                               event: 'remote_task',
+                               data:  {
+                                 key:        "User-#{customer_id}",
+                                 controller: 'UserProfile',
+                                 params:     { user_id: customer_id.to_s },
+                                 show:       true,
+                                 url:        "user/profile/#{customer_id}"
+                               },
+                             })
+        return
+      end
+    end
+
+    id = SecureRandom.uuid
     PushMessages.send_to(user.id, {
                            event: 'remote_task',
                            data:  {

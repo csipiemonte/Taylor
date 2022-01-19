@@ -43,7 +43,7 @@ class App.Auth
         @_loginError()
     )
 
-  @logout: ->
+  @logout: (rerender = true, callback) ->
     App.Log.debug 'Auth', 'logout'
 
     # abort all AJAX requests
@@ -66,7 +66,7 @@ class App.Auth
         success: =>
 
           # set logout (config, session, ...)
-          @_logout()
+          @_logout(rerender, callback)
 
         error: (xhr, statusText, error) =>
           @_loginError()
@@ -101,9 +101,8 @@ class App.Auth
 
       # rebuild navbar with new navbar items
       App.Event.trigger('auth')
-      App.Event.trigger('auth:logout')
+      App.Event.trigger('auth:failed')
       App.Event.trigger('ui:rerender')
-      App.TaskManager.tasksInitial()
       return false
 
 
@@ -153,7 +152,7 @@ class App.Auth
         if _.isFunction(App[model].updateAttributes)
           App[model].updateAttributes(attributes)
 
-  @_logout: (rerender = true) ->
+  @_logout: (rerender = true, callback) ->
     App.Log.debug 'Auth', '_logout'
 
     App.TaskManager.reset()
@@ -167,12 +166,16 @@ class App.Auth
 
     App.Event.trigger('auth')
     App.Event.trigger('auth:logout')
+
     if rerender
       @loginCheck(->
         window.location.href = '#login'
         App.Event.trigger('ui:rerender')
       )
     App.Event.trigger('clearStore')
+
+    if callback
+      callback()
 
   @_loginError: ->
     App.Log.debug 'Auth', '_loginError:error'
@@ -182,6 +185,6 @@ class App.Auth
 
     # rebuild navbar
     App.Event.trigger('auth')
-    App.Event.trigger('auth:logout')
+    App.Event.trigger('auth:failed')
     App.Event.trigger('ui:rerender')
     App.Event.trigger('clearStore')

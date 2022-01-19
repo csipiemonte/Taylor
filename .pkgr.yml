@@ -8,14 +8,16 @@ targets:
       - curl
       - elasticsearch
       - nginx
-      - postgresql-server
+      # Only CentOS 7 has the old PostgreSQL 9.2, so explicitly require 9.3 here.
+      - "postgresql-server >= 9.3"
       - which
       - epel-release
       - imlib2
-      - imlib2-devel
+      - shared-mime-info
     build_dependencies:
       - http://download.fedoraproject.org/pub/epel/7/x86_64/Packages/i/imlib2-1.4.5-9.el7.x86_64.rpm
       - http://download.fedoraproject.org/pub/epel/7/x86_64/Packages/i/imlib2-devel-1.4.5-9.el7.x86_64.rpm
+      - shared-mime-info
   centos-8:
     dependencies:
       - curl
@@ -25,91 +27,85 @@ targets:
       - which
       - epel-release
       - imlib2
-      - imlib2-devel
+      - shared-mime-info
     build_dependencies:
       - http://download.fedoraproject.org/pub/epel/8/Everything/x86_64/Packages/i/imlib2-1.4.9-8.el8.x86_64.rpm
       - http://download.fedoraproject.org/pub/epel/8/Everything/x86_64/Packages/i/imlib2-devel-1.4.9-8.el8.x86_64.rpm
-  debian-8:
-    dependencies:
-      - curl
-      - elasticsearch
-      - nginx|apache2
-      - postgresql|mysql-server|mariadb-server|sqlite
-      - libimlib2
-      - libimlib2-dev
-    build_dependencies:
-      - libimlib2
-      - libimlib2-dev
+      - shared-mime-info
   debian-9:
     dependencies:
       - curl
-      - elasticsearch
+      - elasticsearch|elasticsearch-oss
       - nginx|apache2
-      - postgresql|mariadb-server|sqlite
+      - postgresql|mariadb-server
       - libimlib2
-      - libimlib2-dev
+      - shared-mime-info
     build_dependencies:
       - libimlib2
       - libimlib2-dev
+      - shared-mime-info
   debian-10:
     dependencies:
       - curl
-      - elasticsearch
+      - elasticsearch|elasticsearch-oss
       - nginx|apache2
-      - postgresql|mariadb-server|sqlite
+      - postgresql|mariadb-server
       - libimlib2
-      - libimlib2-dev
+      - shared-mime-info
     build_dependencies:
       - libimlib2
       - libimlib2-dev
+      - shared-mime-info
   ubuntu-16.04:
     dependencies:
       - curl
-      - elasticsearch
+      - elasticsearch|elasticsearch-oss
       - nginx|apache2
-      - postgresql|mysql-server|mariadb-server|sqlite
+      - postgresql|mysql-server|mariadb-server
       - libimlib2
-      - libimlib2-dev
+      - shared-mime-info
     build_dependencies:
       - libimlib2
       - libimlib2-dev
+      - shared-mime-info
   ubuntu-18.04:
     dependencies:
       - curl
-      - elasticsearch
+      - elasticsearch|elasticsearch-oss
       - nginx|apache2
-      - postgresql|mysql-server|mariadb-server|sqlite
+      - postgresql|mysql-server|mariadb-server
       - libimlib2
-      - libimlib2-dev
+      - shared-mime-info
     build_dependencies:
       - libimlib2
       - libimlib2-dev
+      - shared-mime-info
   ubuntu-20.04:
     dependencies:
       - curl
-      - elasticsearch
+      - elasticsearch|elasticsearch-oss
       - nginx|apache2
-      - postgresql|mysql-server|mariadb-server|sqlite
+      - postgresql|mysql-server|mariadb-server
       - libimlib2
-      - libimlib2-dev
+      - shared-mime-info
     build_dependencies:
       - libimlib2
       - libimlib2-dev
+      - shared-mime-info
   sles-12:
     dependencies:
       - curl
       - elasticsearch
       - nginx
       - postgresql-server
-      - imlib2
       - libImlib2-1
       - imlib2
-      - imlib2-devel
     build_dependencies:
       - https://ftp.gwdg.de/pub/opensuse/discontinued/distribution/12.3/repo/oss/suse/x86_64/imlib2-1.4.5-12.1.1.x86_64.rpm
       - https://ftp.gwdg.de/pub/opensuse/discontinued/distribution/12.3/repo/oss/suse/x86_64/imlib2-devel-1.4.5-12.1.1.x86_64.rpm
       - https://ftp.gwdg.de/pub/opensuse/discontinued/distribution/12.3/repo/oss/suse/x86_64/imlib2-filters-1.4.5-12.1.1.x86_64.rpm
       - https://ftp.gwdg.de/pub/opensuse/discontinued/distribution/12.3/repo/oss/suse/x86_64/libImlib2-1-1.4.5-12.1.1.x86_64.rpm
+      - shared-mime-info
 before:
   - contrib/packager.io/before.sh
 after:
@@ -120,5 +116,6 @@ env:
   - ZAMMAD_RAILS_PORT=3000
   - ZAMMAD_WEBSOCKET_PORT=6042
 services:
-  - postgres
+  - postgres:13
+before_install: contrib/packager.io/preinstall.sh
 after_install: contrib/packager.io/postinstall.sh

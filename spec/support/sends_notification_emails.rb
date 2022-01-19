@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module SendsNotificationEmailsHelper
 
   # Provides a helper method to check notification email sending for a code block.
@@ -11,7 +13,7 @@ module SendsNotificationEmailsHelper
   #
   #     sent(
   #       template: 'user_device_new',
-  #       user:     admin_user,
+  #       user:     admin,
   #     )
   #   end
   #
@@ -31,13 +33,13 @@ module SendsNotificationEmailsHelper
   # @example
   # not_sent(
   #   template: 'user_device_new_location',
-  #   user:     admin_user,
+  #   user:     admin,
   # )
   #
   # @return [nil]
   def not_sent(args)
     check_in_progress!
-    expect(NotificationFactory::Mailer).to_not have_received(:notification).with(
+    expect(NotificationFactory::Mailer).not_to have_received(:notification).with(
       hash_including(args)
     )
   end
@@ -50,7 +52,7 @@ module SendsNotificationEmailsHelper
   # @example
   # sent(
   #   template: 'user_device_new_location',
-  #   user:     admin_user,
+  #   user:     admin,
   # )
   #
   # @return [nil]

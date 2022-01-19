@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sequencer
   class Unit
     module Import
@@ -11,6 +13,7 @@ class Sequencer
             def process
               return if custom?
 
+              logger.info { "Skipping. Default field '#{attribute}' found for field '#{resource.type}'." }
               state.provide(:action, :skipped)
             end
 
@@ -21,7 +24,7 @@ class Sequencer
             end
 
             def attribute
-              mapping.fetch(resource.type, resource.type)
+              @attribute ||= mapping.fetch(resource.type, resource.type)
             end
 
             def mapping

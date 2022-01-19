@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class ImportOtrsController < ApplicationController
 
@@ -23,10 +23,10 @@ class ImportOtrsController < ApplicationController
     }
 
     response = UserAgent.request(params[:url])
-    if !response.success? && response.code.to_s !~ /^40.$/
+    if !response.success? && response.code.to_s !~ %r{^40.$}
       message_human = ''
       translation_map.each do |key, message|
-        if response.error.to_s.match?(/#{Regexp.escape(key)}/i)
+        if response.error.to_s.match?(%r{#{Regexp.escape(key)}}i)
           message_human = message
         end
       end
@@ -39,7 +39,7 @@ class ImportOtrsController < ApplicationController
     end
 
     result = {}
-    if response.body.match?(/zammad migrator/)
+    if response.body.include?('zammad migrator')
 
       migrator_response = JSON.parse(response.body)
 
@@ -86,7 +86,7 @@ class ImportOtrsController < ApplicationController
           message_human: migrator_response['Error']
         }
       end
-    elsif response.body.match?(/(otrs\sag|otrs\.com|otrs\.org)/i)
+    elsif response.body.match?(%r{(otrs\sag|otrs\.com|otrs\.org)}i)
       result = {
         result:        'invalid',
         message_human: 'Host found, but no OTRS migrator is installed!'
@@ -115,7 +115,7 @@ class ImportOtrsController < ApplicationController
     end
 
     # start migration
-    Import::OTRS.delay.start_bg
+    AsyncOtrsImportJob.perform_later
 
     render json: {
       result: 'ok',

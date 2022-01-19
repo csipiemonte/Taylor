@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class FirstStepsController < ApplicationController
   prepend_before_action :authentication_check
@@ -7,13 +7,13 @@ class FirstStepsController < ApplicationController
 
   def index
     invite_agents = false
-    #if User.of_role('Agent').count > 2
+    # if User.of_role('Agent').count > 2
     #  invite_agents = true
-    #end
+    # end
     invite_customers = false
-    #if User.of_role('Customer').count > 2
+    # if User.of_role('Customer').count > 2
     #  invite_customers = true
-    #end
+    # end
 
     chat_active = false
     if Setting.get('chat')
@@ -98,11 +98,11 @@ class FirstStepsController < ApplicationController
               checked:  macro_active,
               location: '#manage/macros',
             },
-            #{
+            # {
             #  name: 'Create Overviews',
             #  checked: false,
             #  location: '#manage/overviews',
-            #},
+            # },
           ],
         },
         {
@@ -220,21 +220,7 @@ class FirstStepsController < ApplicationController
   end
 
   def check_availability(result)
-    test_ticket_active = true
-    overview = test_overview
-
-    if !overview
-      test_ticket_active = false
-    elsif overview.updated_by_id != 1
-      test_ticket_active = false
-    end
-    if !test_customer
-      test_ticket_active = false
-    end
-    if Group.where(active: true, name: 'Users').count.zero?
-      test_ticket_active = false
-    end
-    return result if test_ticket_active
+    return result if test_ticket_active?
 
     result.each do |item|
       items = []
@@ -248,4 +234,14 @@ class FirstStepsController < ApplicationController
     result
   end
 
+  def test_ticket_active?
+    overview = test_overview
+
+    return false if !overview
+    return false if overview.updated_by_id != 1
+    return false if !test_customer
+    return false if Group.where(active: true, name: 'Users').count.zero?
+
+    true
+  end
 end

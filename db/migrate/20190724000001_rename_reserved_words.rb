@@ -1,6 +1,8 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class RenameReservedWords < ActiveRecord::Migration[5.1]
   def up
-    return if !Setting.find_by(name: 'system_init_done')
+    return if !Setting.exists?(name: 'system_init_done')
 
     models = ObjectManager.list_objects.map(&:underscore).map { |object| object.tr('_', '/') }.map(&:classify).map(&:constantize)
 

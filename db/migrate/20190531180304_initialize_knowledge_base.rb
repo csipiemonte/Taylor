@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 # Using older 5.0 migration to stick to Integer primary keys. Otherwise migration fails in MySQL.
 class InitializeKnowledgeBase < ActiveRecord::Migration[5.0]
   def change
@@ -6,8 +8,9 @@ class InitializeKnowledgeBase < ActiveRecord::Migration[5.0]
     create_table :knowledge_bases do |t|
       t.string :iconset, limit: 30, null: false
 
-      t.string :color_highlight, limit: 25, null: false
-      t.string :color_header,    limit: 25, null: false
+      t.string :color_highlight,   limit: 25, null: false
+      t.string :color_header,      limit: 25, null: false
+      t.string :color_header_link, limit: 25, null: false
 
       t.string :homepage_layout, null: false
       t.string :category_layout, null: false
@@ -16,7 +19,7 @@ class InitializeKnowledgeBase < ActiveRecord::Migration[5.0]
 
       t.string :custom_address
 
-      t.timestamps null: false
+      t.timestamps null: false # rubocop:disable Zammad/ExistsDateTimePrecision
     end
 
     create_table :knowledge_base_locales do |t|
@@ -24,8 +27,9 @@ class InitializeKnowledgeBase < ActiveRecord::Migration[5.0]
       t.belongs_to :system_locale,  null: false, foreign_key: { to_table: :locales }
       t.boolean    :primary, null: false, default: false
 
-      t.timestamps null: false
+      t.timestamps null: false # rubocop:disable Zammad/ExistsDateTimePrecision
     end
+    add_index :knowledge_base_locales, %i[system_locale_id knowledge_base_id], name: 'index_kb_locale_on_kb_system_locale_kb', unique: true
 
     create_table :knowledge_base_translations do |t|
       t.string :title, limit: 250, null: false
@@ -34,8 +38,9 @@ class InitializeKnowledgeBase < ActiveRecord::Migration[5.0]
       t.references :kb_locale,      null: false, foreign_key: { to_table: :knowledge_base_locales }
       t.references :knowledge_base, null: false, foreign_key: { to_table: :knowledge_bases, on_delete: :cascade }
 
-      t.timestamps null: false
+      t.timestamps null: false # rubocop:disable Zammad/ExistsDateTimePrecision
     end
+    add_index :knowledge_base_translations, %i[kb_locale_id knowledge_base_id], name: 'index_kb_t_on_kb_locale_kb', unique: true
 
     create_table :knowledge_base_categories do |t|
       t.references :knowledge_base, null: false, foreign_key: { to_table: :knowledge_bases }
@@ -44,17 +49,18 @@ class InitializeKnowledgeBase < ActiveRecord::Migration[5.0]
       t.string  :category_icon, null: false, limit: 30
       t.integer :position,      null: false, index: true
 
-      t.timestamps null: false
+      t.timestamps null: false # rubocop:disable Zammad/ExistsDateTimePrecision
     end
 
     create_table :knowledge_base_category_translations do |t|
-      t.string :title,       limit: 250, null: false
+      t.string :title, limit: 250, null: false
 
       t.references :kb_locale, null: false, foreign_key: { to_table: :knowledge_base_locales }
       t.references :category,  null: false, foreign_key: { to_table: :knowledge_base_categories, on_delete: :cascade }
 
-      t.timestamps null: false
+      t.timestamps null: false # rubocop:disable Zammad/ExistsDateTimePrecision
     end
+    add_index :knowledge_base_category_translations, %i[kb_locale_id category_id], name: 'index_kb_c_t_on_kb_locale_category', unique: true
 
     create_table :knowledge_base_answers do |t|
       t.references :category, null: false, foreign_key: { to_table: :knowledge_base_categories }
@@ -70,7 +76,7 @@ class InitializeKnowledgeBase < ActiveRecord::Migration[5.0]
       t.timestamp  :published_at, limit: 3, null: true
       t.references :published_by, foreign_key: { to_table: :users }
 
-      t.timestamps null: false
+      t.timestamps null: false # rubocop:disable Zammad/ExistsDateTimePrecision
     end
 
     create_table :knowledge_base_answer_translation_contents do |t| # rubocop:disable Rails/CreateTableWithTimestamps
@@ -78,7 +84,7 @@ class InitializeKnowledgeBase < ActiveRecord::Migration[5.0]
     end
 
     create_table :knowledge_base_answer_translations do |t|
-      t.string :title,   limit: 250,  null: false
+      t.string :title, limit: 250, null: false
 
       t.references :kb_locale, null: false, foreign_key: { to_table: :knowledge_base_locales }
       t.references :answer,    null: false, foreign_key: { to_table: :knowledge_base_answers, on_delete: :cascade }
@@ -87,8 +93,9 @@ class InitializeKnowledgeBase < ActiveRecord::Migration[5.0]
       t.references :created_by, null: false, foreign_key: { to_table: :users }
       t.references :updated_by, null: false, foreign_key: { to_table: :users }
 
-      t.timestamps null: false
+      t.timestamps null: false # rubocop:disable Zammad/ExistsDateTimePrecision
     end
+    add_index :knowledge_base_answer_translations, %i[kb_locale_id answer_id], name: 'index_kb_a_t_on_kb_locale_answer', unique: true
 
     create_table :knowledge_base_menu_items do |t|
       t.references :kb_locale, null: false, foreign_key: { to_table: :knowledge_base_locales, on_delete: :cascade }
@@ -98,7 +105,7 @@ class InitializeKnowledgeBase < ActiveRecord::Migration[5.0]
       t.string     :url,       null: false, limit: 500
       t.boolean    :new_tab,   null: false, default: false
 
-      t.timestamps
+      t.timestamps # rubocop:disable Zammad/ExistsDateTimePrecision
     end
 
     Setting.create_if_not_exists(
@@ -142,7 +149,7 @@ class InitializeKnowledgeBase < ActiveRecord::Migration[5.0]
       frontend:    true
     )
 
-    return if !Setting.find_by(name: 'system_init_done')
+    return if !Setting.exists?(name: 'system_init_done')
 
     Permission.create_if_not_exists(
       name:        'admin.knowledge_base',

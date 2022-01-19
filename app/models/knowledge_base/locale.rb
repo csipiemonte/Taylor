@@ -1,10 +1,11 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class KnowledgeBase::Locale < ApplicationModel
   belongs_to :knowledge_base, inverse_of: :kb_locales, touch: true
   belongs_to :system_locale, inverse_of: :knowledge_base_locales, class_name: '::Locale'
 
-  validates :primary, uniqueness: { scope: %i[system_locale_id knowledge_base_id] }, if: :primary?
-  validates :system_locale_id, uniqueness: { scope: :knowledge_base_id }
+  validates :primary, uniqueness: { case_sensitive: true, scope: %i[system_locale_id knowledge_base_id] }, if: :primary?
+  validates :system_locale_id, uniqueness: { case_sensitive: true, scope: :knowledge_base_id }
 
   has_many :knowledge_base_translations, class_name:  'KnowledgeBase::Translation',
                                          inverse_of:  :kb_locale,
@@ -27,7 +28,7 @@ class KnowledgeBase::Locale < ApplicationModel
                                          dependent:   :destroy
 
   def self.system_with_kb_locales(knowledge_base)
-    Locale
+    ::Locale
       .joins(:knowledge_base_locales)
       .where(knowledge_base_locales: { knowledge_base: knowledge_base })
       .select('locales.*, knowledge_base_locales.id as kb_locale_id, knowledge_base_locales.primary as primary_locale')
@@ -50,5 +51,5 @@ class KnowledgeBase::Locale < ApplicationModel
     knowledge_base.kb_locales.find_by(primary: true)
   end
 
-  scope :available_for, ->(object) { where(id: object.translations.select(:kb_locale_id))  }
+  scope :available_for, ->(object) { where(id: object.translations.select(:kb_locale_id)) }
 end

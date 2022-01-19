@@ -6,6 +6,9 @@
  * Edit: Felix
  * - remove maxTokenWidth
  *
+ * Edit: Romit
+ * - allow to remove token by clearing it's text manually
+ *
  */
 
 (function (factory) {
@@ -233,7 +236,10 @@
       this.$element.trigger(createEvent)
 
       // Bail out if there if attributes are empty or event was defaultPrevented
-      if (!createEvent.attrs || createEvent.isDefaultPrevented()) return
+      if (!createEvent.attrs || createEvent.isDefaultPrevented()) {
+        this.updateTokensOnEditDiscard(triggerChange)
+        return
+      }
 
       var $token = $('<div class="token" />')
             .append('<span class="token-label" />')
@@ -254,10 +260,7 @@
       var $tokenLabel = $token.find('.token-label')
         , $closeButton = $token.find('.close')
 
-      if (this.options.html)
-        $tokenLabel.html(attrs.label)
-      else
-        $tokenLabel.text(attrs.label)
+      $tokenLabel.text(attrs.label)
 
       // Listen to events on token
       $token
@@ -306,10 +309,21 @@
       return this.$element.get(0)
     }
 
+  , updateTokensOnEditDiscard: function(triggerChange) {
+      // if the field is being edited, update original field's value 
+      if(this.$input.data('edit') && triggerChange) {
+        // Trigger change event on the original field
+        this.$element.val( this.getTokensList() ).trigger( $.Event('change', { initiator: 'tokenfield' }) )
+      }        
+    }
+
   , setTokens: function (tokens, add, triggerChange) {
       if (!add) this.$wrapper.find('.token').remove()
 
-      if (!tokens) return
+      if (!tokens) {
+        this.updateTokensOnEditDiscard(triggerChange)
+        return
+      }
 
       if (typeof triggerChange === 'undefined') {
           triggerChange = true
@@ -639,6 +653,11 @@
 
       var tokensBefore = this.getTokensList()
       this.setTokens( this.$input.val(), true )
+
+      // remove token text was cleared while editing
+      if (this.$input.data( 'edit' ) && !this.$input.val()) {
+        this.$element.val( this.getTokensList() )
+      }
 
       if (tokensBefore == this.getTokensList() && this.$input.val().length)
         return false // No tokens were added, do nothing (prevent form submit)
@@ -998,7 +1017,6 @@
   $.fn.tokenfield.defaults = {
     minWidth: 60,
     minLength: 0,
-    html: true,
     allowEditing: true,
     allowPasting: true,
     limit: 0,

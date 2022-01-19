@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2015 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class CalendarSubscriptionsController < ApplicationController
   prepend_before_action { authentication_check(basic_auth_promt: true) && authorize! }
 
@@ -7,7 +8,8 @@ class CalendarSubscriptionsController < ApplicationController
   # @summary          Returns an iCal file with all objects matching the calendar subscriptions preferences of the current user as events.
   #
   # @response_message 200 [String] iCal file ready to import in calendar applications.
-  # @response_message 401          Permission denied.
+  # @response_message 403          Forbidden / Invalid session.
+  # @response_message 422          Unprocessable Entity.
   def all
     calendar_subscriptions = CalendarSubscriptions.new(current_user)
     ical                   = calendar_subscriptions.all
@@ -29,7 +31,8 @@ class CalendarSubscriptionsController < ApplicationController
   # @summary          Returns an iCal file of the given object (and method) matching the calendar subscriptions preferences of the current user as events.
   #
   # @response_message 200 [String] iCal file ready to import in calendar applications.
-  # @response_message 401          Permission denied.
+  # @response_message 403          Forbidden / Invalid session.
+  # @response_message 422          Unprocessable Entity.
   def object
     calendar_subscriptions = CalendarSubscriptions.new(current_user)
     ical                   = calendar_subscriptions.generic(params[:object], params[:method])

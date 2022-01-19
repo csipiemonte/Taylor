@@ -1,3 +1,7 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
+require 'zendesk_api' # Only load this gem when it is really used.
+
 RSpec.shared_examples 'Sequencer::Unit::Import::Zendesk::SubSequence::Base' do
   describe 'error handling' do
     before do
@@ -24,9 +28,10 @@ RSpec.shared_examples 'Sequencer::Unit::Import::Zendesk::SubSequence::Base' do
       }
     end
 
-    let(:collection_name) { described_class.name.demodulize.snakecase.to_sym }
+    let(:collection_name) { described_class.name.demodulize.underscore.to_sym }
     let(:client_collection) { double('ZendeskAPI::Collection') }
-    let(:api_error) { ZendeskAPI::Error::NetworkError.new('Mock err msg', response_obj) }
+    let(:api_error_message) { 'Mock err msg' }
+    let(:api_error) { ZendeskAPI::Error::NetworkError.new(api_error_message, response_obj) }
 
     let(:response_obj) do
       # stubbed methods required for ZendeskAPI::Error::ClientError#to_s
@@ -62,7 +67,11 @@ RSpec.shared_examples 'Sequencer::Unit::Import::Zendesk::SubSequence::Base' do
           before { allow(response_obj).to receive(:status).and_return(403) }
 
           it 'does not rescue the resulting exception' do
-            expect { process(params) }.to raise_error(api_error)
+            expect do
+              process(params) do |unit|
+                allow(unit).to receive(:sleep) # stub out this method to speed up retry cycle
+              end
+            end.to raise_error(api_error)
           end
         end
       end
@@ -74,7 +83,7 @@ RSpec.shared_examples 'Sequencer::Unit::Import::Zendesk::SubSequence::Base' do
       end
     end
 
-    context 'when DNS resolution fails (getaddrinfo: nodename nor servname provided, or not known)' do
+    shared_examples 'retries ten times, in 10s intervals' do
       it 'retries ten times, in 10s intervals' do
         expect(client_collection)
           .to receive(:all!).exactly(11).times
@@ -85,6 +94,27 @@ RSpec.shared_examples 'Sequencer::Unit::Import::Zendesk::SubSequence::Base' do
           end
         end.to raise_error(api_error)
       end
+    end
+
+    context 'when DNS resolution fails (getaddrinfo: nodename nor servname provided, or not known)' do
+      include_examples 'retries ten times, in 10s intervals'
+    end
+
+    context 'when execution timeout occurs' do
+      let(:api_error_message) { "execution expired -- get https://example.zendesk.com/api/v2/#{collection_name}" }
+
+      include_examples 'retries ten times, in 10s intervals'
+    end
+
+    context 'when reset by peer occurs' do
+      let(:api_error_message) { "Connection reset by peer - SSL_connect -- get https://example.zendesk.com/api/v2/#{collection_name}" }
+
+      # ssl error does not return 4xx or 5xx status code that triggers retry
+      let(:response_obj) do
+        double('Faraday::Response', method: :get, url: 'https://example.com', status: nil)
+      end
+
+      include_examples 'retries ten times, in 10s intervals'
     end
   end
 end

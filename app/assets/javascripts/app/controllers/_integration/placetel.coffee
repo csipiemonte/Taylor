@@ -1,4 +1,4 @@
-class Index extends App.ControllerIntegrationBase
+class Placetel extends App.ControllerIntegrationBase
   featureIntegration: 'placetel_integration'
   featureName: 'Placetel'
   featureConfig: 'placetel_config'
@@ -60,6 +60,30 @@ class Form extends App.Controller
       placetel_token: App.Setting.get('placetel_token')
     )
 
+    configure_attributes = [
+      {
+        name: 'view_limit',
+        display: '',
+        tag: 'select',
+        null: false,
+        options: [
+          { name: 60, value: 60 }
+          { name: 120, value: 120 }
+          { name: 180, value: 180 }
+          { name: 240, value: 240 }
+          { name: 300, value: 300 }
+        ]
+      },
+    ]
+    new App.ControllerForm(
+      el: @$('.js-viewLimit')
+      model:
+        configure_attributes: configure_attributes,
+      params:
+        view_limit: @config['view_limit']
+      autofocus: false
+    )
+
   updateCurrentConfig: =>
     config = @config
     cleanupInput = @cleanupInput
@@ -69,6 +93,10 @@ class Form extends App.Controller
     # default caller_id
     default_caller_id = @$('input[name=default_caller_id]').val()
     config.outbound.default_caller_id = cleanupInput(default_caller_id)
+
+    # default view limit
+    view_limit = @$('select[name=view_limit]').val()
+    config.view_limit = parseInt(view_limit)
 
     # routing table
     config.outbound.routing_table = []
@@ -188,7 +216,7 @@ App.Config.set(
     name: 'Placetel'
     target: '#system/integration/placetel'
     description: 'VoIP service provider with realtime push.'
-    controller: Index
+    controller: Placetel
     state: State
   }
   'NavBarIntegrations'

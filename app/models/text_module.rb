@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class TextModule < ApplicationModel
   include ChecksClientNotification
@@ -11,11 +11,13 @@ class TextModule < ApplicationModel
   before_create  :validate_content
   before_update  :validate_content
 
-  sanitized_html :content
+  sanitized_html :content, :note
 
   csv_delete_possible true
 
   has_and_belongs_to_many :groups, after_add: :cache_update, after_remove: :cache_update, class_name: 'Group'
+
+  association_attributes_ignored :user
 
 =begin
 
@@ -35,7 +37,8 @@ load text modules from online
       url,
       {},
       {
-        json: true,
+        json:       true,
+        verify_ssl: true,
       }
     )
 
@@ -70,7 +73,7 @@ push text_modules to online
   def self.push(locale)
 
     # only push changed text_modules
-    text_modules         = TextModule.all #where(locale: locale)
+    text_modules         = TextModule.all # where(locale: locale)
     text_modules_to_push = []
     text_modules.each do |text_module|
       next if !text_module.active
@@ -96,6 +99,7 @@ push text_modules to online
         json:         true,
         open_timeout: 6,
         read_timeout: 16,
+        verify_ssl:   true,
       }
     )
     raise "Can't push text_modules to #{url}: #{result.error}" if !result.success?
@@ -112,9 +116,9 @@ push text_modules to online
 
   def validate_content
     return true if content.blank?
-    return true if content.match?(/<.+?>/)
+    return true if content.match?(%r{<.+?>})
 
-    content.gsub!(/(\r\n|\n\r|\r)/, "\n")
+    content.gsub!(%r{(\r\n|\n\r|\r)}, "\n")
     self.content = content.text2html
     true
   end

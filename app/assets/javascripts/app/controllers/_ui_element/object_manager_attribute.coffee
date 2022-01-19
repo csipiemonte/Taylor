@@ -8,7 +8,12 @@ class App.UiElement.object_manager_attribute extends App.UiElement.ApplicationUi
       params.data_option = params.data_option_new
 
     if attribute.value == 'select' && params.data_option? && params.data_option.options?
-      sorted = _.map params.data_option.options, (value, key) -> [key.toString(), value.toString()]
+      sorted = _.map(
+        params.data_option.options, (value, key) ->
+          key = '' if !key || !key.toString
+          value = '' if !value || !value.toString
+          [key.toString(), value.toString()]
+      )
       params.data_option.sorted = sorted.sort( (a, b) -> a[1].localeCompare(b[1]) )
 
     item = $(App.view('object_manager/attribute')(attribute: attribute))
@@ -210,6 +215,15 @@ class App.UiElement.object_manager_attribute extends App.UiElement.ApplicationUi
     item.find('.js-inputMaxlength').html(inputMaxlength.form)
     item.find('.js-inputLinkTemplate').html(inputLinkTemplate.form)
 
+    item.find("select[name='data_option::type']").on('change', (e) ->
+      value = $(e.target).val()
+      if value is 'url'
+        item.find('.js-inputLinkTemplate').hide()
+      else
+        item.find('.js-inputLinkTemplate').show()
+    )
+    item.find("select[name='data_option::type']").trigger('change')
+
   @datetime: (item, localParams, params) ->
     configureAttributes = [
       { name: 'data_option::future', display: 'Allow future', tag: 'boolean', null: false, default: true },
@@ -230,7 +244,7 @@ class App.UiElement.object_manager_attribute extends App.UiElement.ApplicationUi
       params: params
     )
     configureAttributes = [
-      { name: 'data_option::diff', display: 'Default time Diff (minutes)', tag: 'integer', null: false, default: 24 },
+      { name: 'data_option::diff', display: 'Default time Diff (minutes)', tag: 'integer', null: true },
     ]
     datetimeDiff = new App.ControllerForm(
       model:
@@ -244,7 +258,7 @@ class App.UiElement.object_manager_attribute extends App.UiElement.ApplicationUi
 
   @date: (item, localParams, params) ->
     configureAttributes = [
-      { name: 'data_option::diff', display: 'Default time Diff (hours)', tag: 'integer', null: false, default: 24 },
+      { name: 'data_option::diff', display: 'Default time Diff (hours)', tag: 'integer', null: true },
     ]
     dateDiff = new App.ControllerForm(
       model:
@@ -265,7 +279,7 @@ class App.UiElement.object_manager_attribute extends App.UiElement.ApplicationUi
       params: params
     )
     configureAttributes = [
-      { name: 'data_option::min', display: 'Minimal', tag: 'integer', null: false, default: 0, min: 1 },
+      { name: 'data_option::min', display: 'Minimal', tag: 'integer', null: false, default: 0, min: -2147483647, max: 2147483647 },
     ]
     integerMin = new App.ControllerForm(
       model:
@@ -274,7 +288,7 @@ class App.UiElement.object_manager_attribute extends App.UiElement.ApplicationUi
       params: params
     )
     configureAttributes = [
-      { name: 'data_option::max', display: 'Maximal', tag: 'integer', null: false, default: 999999999, min: 2 },
+      { name: 'data_option::max', display: 'Maximal', tag: 'integer', null: false, min: -2147483647, max: 2147483647, default: 999999999 },
     ]
     integerMax = new App.ControllerForm(
       model:
@@ -353,6 +367,20 @@ class App.UiElement.object_manager_attribute extends App.UiElement.ApplicationUi
       for subChild in child.children
         @buildRow(element, subChild, level + 1)
 
+  @findParent: (element, level, mode) ->
+    parent = $(element).closest('tr')
+    parent.nextAll().each(->
+      if parseInt($(@).find('.js-key').attr('level')) > level && mode is 'first'
+        parent = $(@)
+        return true
+      if parseInt($(@).find('.js-key').attr('level')) >= level && mode is 'last'
+        parent = $(@)
+        return true
+      return false
+    )
+
+    return parent
+
   @tree_select: (item, localParams, params, attribute) ->
     params.data_option ||= {}
     params.data_option.options ||= []
@@ -365,16 +393,16 @@ class App.UiElement.object_manager_attribute extends App.UiElement.ApplicationUi
     item.on('click', '.js-addRow', (e) =>
       e.stopPropagation()
       e.preventDefault()
-      addRow = $(e.currentTarget).closest('tr')
-      level  = parseInt(addRow.find('.js-key').attr('level'))
+      level  = parseInt($(e.currentTarget).closest('tr').find('.js-key').attr('level'))
+      addRow = @findParent(e.currentTarget, level, 'first')
       @buildRow(item, {}, level, addRow)
     )
 
     item.on('click', '.js-addChild', (e) =>
       e.stopPropagation()
       e.preventDefault()
-      addRow = $(e.currentTarget).closest('tr')
-      level  = parseInt(addRow.find('.js-key').attr('level')) + 1
+      level  = parseInt($(e.currentTarget).closest('tr').find('.js-key').attr('level')) + 1
+      addRow = @findParent(e.currentTarget, level, 'last')
       @buildRow(item, {}, level, addRow)
     )
 

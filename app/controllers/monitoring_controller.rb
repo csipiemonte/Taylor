@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class MonitoringController < ApplicationController
   prepend_before_action { authorize! }
@@ -35,12 +35,13 @@ curl http://localhost/api/v1/monitoring/health_check?token=XXX
 
     # channel check
     last_run_tolerance = Time.zone.now - 1.hour
+    options_keys = %w[host user uid]
     Channel.where(active: true).each do |channel|
 
       # inbound channel
       if channel.status_in == 'error'
         message = "Channel: #{channel.area} in "
-        %w[host user uid].each do |key|
+        options_keys.each do |key|
           next if channel.options[key].blank?
 
           message += "key:#{channel.options[key]};"
@@ -56,7 +57,7 @@ curl http://localhost/api/v1/monitoring/health_check?token=XXX
       next if channel.status_out != 'error'
 
       message = "Channel: #{channel.area} out "
-      %w[host user uid].each do |key|
+      options_keys.each do |key|
         next if channel.options[key].blank?
 
         message += "key:#{channel.options[key]};"
@@ -103,7 +104,7 @@ curl http://localhost/api/v1/monitoring/health_check?token=XXX
     handler_attempts_map = {}
     failed_jobs.order(:created_at).limit(10).each do |job|
 
-      job_name = if job.class.name == 'Delayed::Backend::ActiveRecord::Job'.freeze && job.payload_object.respond_to?(:job_data)
+      job_name = if job.instance_of?(Delayed::Backend::ActiveRecord::Job) && job.payload_object.respond_to?(:job_data)
                    job.payload_object.job_data['job_class']
                  else
                    job.name
@@ -118,7 +119,7 @@ curl http://localhost/api/v1/monitoring/health_check?token=XXX
       handler_attempts_map[job_name][:attempts] += job.attempts
     end
 
-    Hash[handler_attempts_map.sort].each_with_index do |(job_name, job_data), index|
+    handler_attempts_map.sort.to_h.each_with_index do |(job_name, job_data), index|
       issues.push "Failed to run background job ##{index + 1} '#{job_name}' #{job_data[:count]} time(s) with #{job_data[:attempts]} attempt(s)."
     end
 
@@ -149,7 +150,7 @@ curl http://localhost/api/v1/monitoring/health_check?token=XXX
     end
 
     # stuck import jobs
-    import_backends.each do |backend|
+    import_backends.each do |backend| # rubocop:disable Style/CombinableLoops
 
       job = ImportJob.where(
         name:        backend,
@@ -162,12 +163,18 @@ curl http://localhost/api/v1/monitoring/health_check?token=XXX
       issues.push "Stuck import backend '#{backend}' detected. Last update: #{job.updated_at}"
     end
 
+    # stuck data privacy tasks
+    DataPrivacyTask.where.not(state: 'completed').where('updated_at <= ?', 30.minutes.ago).find_each do |task|
+      issues.push "Stuck data privacy task (ID #{task.id}) detected. Last update: #{task.updated_at}"
+    end
+
     token = Setting.get('monitoring_token')
 
     if issues.blank?
       result = {
         healthy: true,
         message: 'success',
+        issues:  issues,
         token:   token,
       }
       render json: result
@@ -212,7 +219,7 @@ curl http://localhost/api/v1/monitoring/status?token=XXX
 
   def status
     last_login = nil
-    last_login_user = User.where('last_login IS NOT NULL').order(last_login: :desc).limit(1).first
+    last_login_user = User.where.not(last_login: nil).order(last_login: :desc).limit(1).first
     if last_login_user
       last_login = last_login_user.last_login
     end
@@ -231,6 +238,7 @@ curl http://localhost/api/v1/monitoring/status?token=XXX
       tickets:                   Ticket,
       ticket_articles:           Ticket::Article,
       text_modules:              TextModule,
+      taskbars:                  Taskbar,
       object_manager_attributes: ObjectManager::Attribute,
       knowledge_base_categories: KnowledgeBase::Category,
       knowledge_base_answers:    KnowledgeBase::Answer,
@@ -242,7 +250,7 @@ curl http://localhost/api/v1/monitoring/status?token=XXX
     end
 
     if ActiveRecord::Base.connection_config[:adapter] == 'postgresql'
-      sql = 'SELECT SUM(CAST(coalesce(size, \'0\') AS INTEGER)) FROM stores WHERE id IN (SELECT MAX(id) FROM stores GROUP BY store_file_id)'
+      sql = 'SELECT SUM(CAST(coalesce(size, \'0\') AS INTEGER)) FROM stores'
       records_array = ActiveRecord::Base.connection.exec_query(sql)
       if records_array[0] && records_array[0]['sum']
         sum = records_array[0]['sum']
@@ -300,18 +308,19 @@ curl http://localhost/api/v1/monitoring/amount_check?token=XXX&periode=1h
     raise Exceptions::UnprocessableEntity, 'periode is missing!' if params[:periode].blank?
 
     scale = params[:periode][-1, 1]
-    raise Exceptions::UnprocessableEntity, 'periode need to have s, m, h or d as last!' if !scale.match?(/^(s|m|h|d)$/)
+    raise Exceptions::UnprocessableEntity, 'periode need to have s, m, h or d as last!' if !scale.match?(%r{^(s|m|h|d)$})
 
     periode = params[:periode][0, params[:periode].length - 1]
     raise Exceptions::UnprocessableEntity, 'periode need to be an integer!' if periode.to_i.zero?
 
-    if scale == 's'
+    case scale
+    when 's'
       created_at = Time.zone.now - periode.to_i.seconds
-    elsif scale == 'm'
+    when 'm'
       created_at = Time.zone.now - periode.to_i.minutes
-    elsif scale == 'h'
+    when 'h'
       created_at = Time.zone.now - periode.to_i.hours
-    elsif scale == 'd'
+    when 'd'
       created_at = Time.zone.now - periode.to_i.days
     end
 

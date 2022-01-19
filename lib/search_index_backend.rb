@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class SearchIndexBackend
 
@@ -20,10 +20,12 @@ info about used search index machine
       installed_version = response.data.dig('version', 'number')
       raise "Unable to get elasticsearch version from response: #{response.inspect}" if installed_version.blank?
 
-      version_supported = Gem::Version.new(installed_version) < Gem::Version.new('8')
+      installed_version_parsed = Gem::Version.new(installed_version)
+
+      version_supported = installed_version_parsed < Gem::Version.new('8')
       raise "Version #{installed_version} of configured elasticsearch is not supported." if !version_supported
 
-      version_supported = Gem::Version.new(installed_version) > Gem::Version.new('2.3')
+      version_supported = installed_version_parsed >= Gem::Version.new('7.8')
       raise "Version #{installed_version} of configured elasticsearch is not supported." if !version_supported
 
       return response.data
@@ -261,8 +263,7 @@ remove whole data from index
     end
 
     index
-      .map { |local_index| search_by_index(query, local_index, options) }
-      .compact
+      .filter_map { |local_index| search_by_index(query, local_index, options) }
       .flatten(1)
   end
 
@@ -286,6 +287,7 @@ remove whole data from index
     condition = {
       'query_string' => {
         'query'            => append_wildcard_to_simple_query(query),
+        'time_zone'        => Setting.get('timezone_default').presence || 'UTC',
         'default_operator' => 'AND',
         'analyze_wildcard' => true,
       }
@@ -298,7 +300,7 @@ remove whole data from index
     query_data = build_query(condition, options)
 
     if (fields = options.dig(:highlight_fields_by_indexes, index.to_sym))
-      fields_for_highlight = fields.each_with_object({}) { |elem, memo| memo[elem] = {} }
+      fields_for_highlight = fields.index_with { |_elem| {} }
 
       query_data[:highlight] = { fields: fields_for_highlight }
     end
@@ -319,7 +321,7 @@ remove whole data from index
     return [] if !data
 
     data.map do |item|
-      Rails.logger.info "... #{item['_type']} #{item['_id']}"
+      Rails.logger.debug { "... #{item['_type']} #{item['_id']}" }
 
       output = {
         id:   item['_id'],
@@ -335,22 +337,24 @@ remove whole data from index
   end
 
   def self.search_by_index_sort(sort_by = nil, order_by = nil)
-    result = []
+    result = (sort_by || [])
+      .map(&:to_s)
+      .each_with_object([])
+      .each_with_index do |(elem, memo), index|
+        next if elem.blank?
+        next if order_by&.at(index).blank?
 
-    sort_by&.each_with_index do |value, index|
-      next if value.blank?
-      next if order_by&.at(index).blank?
+        # for sorting values use .keyword values (no analyzer is used - plain values)
+        if elem !~ %r{\.} && elem !~ %r{_(time|date|till|id|ids|at)$} && elem != 'id'
+          elem += '.keyword'
+        end
 
-      # for sorting values use .keyword values (no analyzer is used - plain values)
-      if value !~ /\./ && value !~ /_(time|date|till|id|ids|at)$/
-        value += '.keyword'
+        memo.push(
+          elem => {
+            order: order_by[index],
+          },
+        )
       end
-      result.push(
-        value => {
-          order: order_by[index],
-        },
-      )
-    end
 
     if result.blank?
       result.push(
@@ -434,6 +438,8 @@ example for aggregations within one year
 
     data = selector2query(selectors, options, aggs_interval)
 
+    verify_date_range(url, data)
+
     response = make_request(url, data: data)
 
     if !response.success?
@@ -473,9 +479,15 @@ example for aggregations within one year
   def self.selector2query(selector, options, aggs_interval)
     options = DEFAULT_QUERY_OPTIONS.merge(options.deep_symbolize_keys)
 
-    query_must = []
+    current_user = options[:current_user]
+    current_user_id = UserInfo.current_user_id
+    if current_user
+      current_user_id = current_user.id
+    end
+
+    query_must     = []
     query_must_not = []
-    relative_map = {
+    relative_map   = {
       day:    'd',
       year:   'y',
       month:  'M',
@@ -483,8 +495,17 @@ example for aggregations within one year
       minute: 'm',
     }
     if selector.present?
+      operators_is_isnot = ['is', 'is not']
+
       selector.each do |key, data|
-        key_tmp = key.sub(/^.+?\./, '')
+
+        data = data.clone
+        table, key_tmp = key.split('.')
+        if key_tmp.blank?
+          key_tmp = table
+          table   = 'ticket'
+        end
+
         wildcard_or_term = 'term'
         if data['value'].is_a?(Array)
           wildcard_or_term = 'terms'
@@ -493,64 +514,112 @@ example for aggregations within one year
 
         # use .keyword in case of compare exact values
         if data['operator'] == 'is' || data['operator'] == 'is not'
+
+          case data['pre_condition']
+          when 'not_set'
+            data['value'] = if key_tmp.match?(%r{^(created_by|updated_by|owner|customer|user)_id})
+                              1
+                            end
+          when 'current_user.id'
+            raise "Use current_user.id in selector, but no current_user is set #{data.inspect}" if !current_user_id
+
+            data['value']    = []
+            wildcard_or_term = 'terms'
+
+            if key_tmp == 'out_of_office_replacement_id'
+              data['value'].push User.find(current_user_id).out_of_office_agent_of.pluck(:id)
+            else
+              data['value'].push current_user_id
+            end
+          when 'current_user.organization_id'
+            raise "Use current_user.id in selector, but no current_user is set #{data.inspect}" if !current_user_id
+
+            user = User.find_by(id: current_user_id)
+            data['value'] = user.organization_id
+          end
+
           if data['value'].is_a?(Array)
             data['value'].each do |value|
-              next if !value.is_a?(String) || value !~ /[A-z]/
+              next if !value.is_a?(String) || value !~ %r{[A-z]}
 
               key_tmp += '.keyword'
               break
             end
-          elsif data['value'].is_a?(String) && /[A-z]/.match?(data['value'])
+          elsif data['value'].is_a?(String) && %r{[A-z]}.match?(data['value'])
             key_tmp += '.keyword'
           end
         end
 
         # use .keyword and wildcard search in cases where query contains non A-z chars
         if data['operator'] == 'contains' || data['operator'] == 'contains not'
+
           if data['value'].is_a?(Array)
             data['value'].each_with_index do |value, index|
-              next if !value.is_a?(String) || value !~ /[A-z]/ || value !~ /\W/
+              next if !value.is_a?(String) || value !~ %r{[A-z]}
 
               data['value'][index] = "*#{value}*"
               key_tmp += '.keyword'
               wildcard_or_term = 'wildcards'
               break
             end
-          elsif data['value'].is_a?(String) && /[A-z]/.match?(data['value']) && data['value'] =~ /\W/
+          elsif data['value'].is_a?(String) && %r{[A-z]}.match?(data['value'])
             data['value'] = "*#{data['value']}*"
             key_tmp += '.keyword'
             wildcard_or_term = 'wildcard'
           end
         end
 
+        # for pre condition not_set we want to check if values are defined for the object by exists
+        if data['pre_condition'] == 'not_set' && operators_is_isnot.include?(data['operator']) && data['value'].nil?
+          t['exists'] = {
+            field: key_tmp,
+          }
+
+          case data['operator']
+          when 'is'
+            query_must_not.push t
+          when 'is not'
+            query_must.push t
+          end
+          next
+
+        end
+
+        if table != 'ticket'
+          key_tmp = "#{table}.#{key_tmp}"
+        end
+
         # is/is not/contains/contains not
-        if data['operator'] == 'is' || data['operator'] == 'is not' || data['operator'] == 'contains' || data['operator'] == 'contains not'
+        case data['operator']
+        when 'is', 'is not', 'contains', 'contains not'
           t[wildcard_or_term] = {}
           t[wildcard_or_term][key_tmp] = data['value']
-          if data['operator'] == 'is' || data['operator'] == 'contains'
+          case data['operator']
+          when 'is', 'contains'
             query_must.push t
-          elsif data['operator'] == 'is not' || data['operator'] == 'contains not'
+          when 'is not', 'contains not'
             query_must_not.push t
           end
-        elsif data['operator'] == 'contains all' || data['operator'] == 'contains one' || data['operator'] == 'contains all not' || data['operator'] == 'contains one not'
+        when 'contains all', 'contains one', 'contains all not', 'contains one not'
           values = data['value'].split(',').map(&:strip)
           t[:query_string] = {}
-          if data['operator'] == 'contains all'
+          case data['operator']
+          when 'contains all'
             t[:query_string][:query] = "#{key_tmp}:\"#{values.join('" AND "')}\""
             query_must.push t
-          elsif data['operator'] == 'contains one not'
+          when 'contains one not'
             t[:query_string][:query] = "#{key_tmp}:\"#{values.join('" OR "')}\""
             query_must_not.push t
-          elsif data['operator'] == 'contains one'
+          when 'contains one'
             t[:query_string][:query] = "#{key_tmp}:\"#{values.join('" OR "')}\""
             query_must.push t
-          elsif data['operator'] == 'contains all not'
+          when 'contains all not'
             t[:query_string][:query] = "#{key_tmp}:\"#{values.join('" AND "')}\""
             query_must_not.push t
           end
 
         # within last/within next (relative)
-        elsif data['operator'] == 'within last (relative)' || data['operator'] == 'within next (relative)'
+        when 'within last (relative)', 'within next (relative)'
           range = relative_map[data['range'].to_sym]
           if range.blank?
             raise "Invalid relative_map for range '#{data['range']}'."
@@ -566,7 +635,7 @@ example for aggregations within one year
           query_must.push t
 
         # before/after (relative)
-        elsif data['operator'] == 'before (relative)' || data['operator'] == 'after (relative)'
+        when 'before (relative)', 'after (relative)'
           range = relative_map[data['range'].to_sym]
           if range.blank?
             raise "Invalid relative_map for range '#{data['range']}'."
@@ -581,8 +650,24 @@ example for aggregations within one year
           end
           query_must.push t
 
+        # till/from (relative)
+        when 'till (relative)', 'from (relative)'
+          range = relative_map[data['range'].to_sym]
+          if range.blank?
+            raise "Invalid relative_map for range '#{data['range']}'."
+          end
+
+          t[:range] = {}
+          t[:range][key_tmp] = {}
+          if data['operator'] == 'till (relative)'
+            t[:range][key_tmp][:lt] = "now+#{data['value']}#{range}"
+          else
+            t[:range][key_tmp][:gt] = "now-#{data['value']}#{range}"
+          end
+          query_must.push t
+
         # before/after (absolute)
-        elsif data['operator'] == 'before (absolute)' || data['operator'] == 'after (absolute)'
+        when 'before (absolute)', 'after (absolute)'
           t[:range] = {}
           t[:range][key_tmp] = {}
           if data['operator'] == 'before (absolute)'
@@ -667,25 +752,8 @@ return true if backend is configured
   def self.build_index_name(index = nil)
     local_index = "#{Setting.get('es_index')}_#{Rails.env}"
     return local_index if index.blank?
-    return "#{local_index}/#{index}" if lower_equal_es56?
 
     "#{local_index}_#{index.underscore.tr('/', '_')}"
-  end
-
-=begin
-
-return true if the elastic search version is lower equal 5.6
-
-  result = SearchIndexBackend.lower_equal_es56?
-
-returns
-
-  result = true
-
-=end
-
-  def self.lower_equal_es56?
-    Setting.get('es_multi_index') == false
   end
 
 =begin
@@ -725,7 +793,7 @@ generate url for index or document access (only for internal use)
     # prepare url params
     params_string = ''
     if url_params.present?
-      params_string = '?' + url_params.map { |key, value| "#{key}=#{value}" }.join('&')
+      params_string = "?#{URI.encode_www_form(url_params)}"
     end
 
     url = Setting.get('es_url')
@@ -735,7 +803,7 @@ generate url for index or document access (only for internal use)
     url = "#{url}/#{index}"
 
     # add document type
-    if with_document_type && !lower_equal_es56?
+    if with_document_type
       url = "#{url}/_doc"
     end
 
@@ -752,7 +820,7 @@ generate url for index or document access (only for internal use)
     "#{url}#{params_string}"
   end
 
-  def self.humanized_error(verb:, url:, payload: nil, response:)
+  def self.humanized_error(verb:, url:, response:, payload: nil)
     prefix = "Unable to process #{verb} request to elasticsearch URL '#{url}'."
     suffix = "\n\nResponse:\n#{response.inspect}\n\n"
 
@@ -766,7 +834,7 @@ generate url for index or document access (only for internal use)
     message = if response&.error&.match?('Connection refused')
                 "Elasticsearch is not reachable, probably because it's not running or even installed."
               elsif url.end_with?('pipeline/zammad-attachment', 'pipeline=zammad-attachment') && response.code == 400
-                'The installed attachment plugin could not handle the request payload. Ensure that the correct attachment plugin is installed (5.6 => ingest-attachment, 2.4 - 5.5 => mapper-attachments).'
+                'The installed attachment plugin could not handle the request payload. Ensure that the correct attachment plugin is installed (ingest-attachment).'
               else
                 'Check the response and payload for detailed information: '
               end
@@ -779,7 +847,7 @@ generate url for index or document access (only for internal use)
   # add * on simple query like "somephrase23"
   def self.append_wildcard_to_simple_query(query)
     query.strip!
-    query += '*' if !query.match?(/:/)
+    query += '*' if query.exclude?(':')
     query
   end
 
@@ -814,7 +882,7 @@ generate url for index or document access (only for internal use)
       }
     }
 
-    if (extension = options.dig(:query_extension))
+    if (extension = options[:query_extension])
       data[:query].deep_merge! extension.deep_dup
     end
 
@@ -853,7 +921,7 @@ helper method for making HTTP calls
 
 =end
   def self.make_request(url, data: {}, method: :get, open_timeout: 8, read_timeout: 180)
-    Rails.logger.info "# curl -X #{method} \"#{url}\" "
+    Rails.logger.debug { "# curl -X #{method} \"#{url}\" " }
     Rails.logger.debug { "-d '#{data.to_json}'" } if data.present?
 
     options = {
@@ -868,7 +936,7 @@ helper method for making HTTP calls
 
     response = UserAgent.send(method, url, data, options)
 
-    Rails.logger.info "# #{response.code}"
+    Rails.logger.debug { "# #{response.code}" }
 
     response
   end
@@ -885,7 +953,7 @@ helper method for making HTTP calls and raising error if response was not succes
 =end
 
   def self.make_request_and_validate(url, **args)
-    response = make_request(url, args)
+    response = make_request(url, **args)
 
     return true if response.success?
 
@@ -897,4 +965,332 @@ helper method for making HTTP calls and raising error if response was not succes
     )
   end
 
+=begin
+
+  This function will return a index mapping based on the
+  attributes of the database table of the existing object.
+
+  mapping = SearchIndexBackend.get_mapping_properties_object(Ticket)
+
+  Returns:
+
+  mapping = {
+    User: {
+      properties: {
+        firstname: {
+          type: 'keyword',
+        },
+      }
+    }
+  }
+
+=end
+
+  def self.get_mapping_properties_object(object)
+    name = '_doc'
+    result = {
+      name => {
+        properties: {}
+      }
+    }
+
+    store_columns = %w[preferences data]
+
+    # for elasticsearch 6.x and later
+    string_type = 'text'
+    string_raw  = { type: 'keyword', ignore_above: 5012 }
+    boolean_raw = { type: 'boolean' }
+
+    object.columns_hash.each do |key, value|
+      if value.type == :string && value.limit && value.limit <= 5000 && store_columns.exclude?(key)
+        result[name][:properties][key] = {
+          type:   string_type,
+          fields: {
+            keyword: string_raw,
+          }
+        }
+      elsif value.type == :integer
+        result[name][:properties][key] = {
+          type: 'integer',
+        }
+      elsif value.type == :datetime || value.type == :date
+        result[name][:properties][key] = {
+          type: 'date',
+        }
+      elsif value.type == :boolean
+        result[name][:properties][key] = {
+          type:   'boolean',
+          fields: {
+            keyword: boolean_raw,
+          }
+        }
+      elsif value.type == :binary
+        result[name][:properties][key] = {
+          type: 'binary',
+        }
+      elsif value.type == :bigint
+        result[name][:properties][key] = {
+          type: 'long',
+        }
+      elsif value.type == :decimal
+        result[name][:properties][key] = {
+          type: 'float',
+        }
+      end
+    end
+
+    case object.name
+    when 'Ticket'
+      result[name][:_source] = {
+        excludes: ['article.attachment']
+      }
+      result[name][:properties][:article] = {
+        type:              'nested',
+        include_in_parent: true,
+      }
+    when 'KnowledgeBase::Answer::Translation'
+      result[name][:_source] = {
+        excludes: ['attachment']
+      }
+    end
+
+    return result if type_in_mapping?
+
+    result[name]
+  end
+
+  # get es version
+  def self.version
+    @version ||= begin
+      info = SearchIndexBackend.info
+      number = nil
+      if info.present?
+        number = info['version']['number'].to_s
+      end
+      number
+    end
+  end
+
+  def self.version_int
+    number = version
+    return 0 if !number
+
+    number_split = version.split('.')
+    "#{number_split[0]}#{format('%<minor>03d', minor: number_split[1])}#{format('%<patch>03d', patch: number_split[2])}".to_i
+  end
+
+  def self.version_supported?
+
+    # only versions greater/equal than 6.5.0 are supported
+    return if version_int < 6_005_000
+
+    true
+  end
+
+  # no type in mapping
+  def self.type_in_mapping?
+    return true if version_int < 7_000_000
+
+    false
+  end
+
+  # is es configured?
+  def self.configured?
+    return false if Setting.get('es_url').blank?
+
+    true
+  end
+
+  def self.settings
+    {
+      'index.mapping.total_fields.limit': 2000,
+    }
+  end
+
+  def self.create_index(models = Models.indexable)
+    models.each do |local_object|
+      SearchIndexBackend.index(
+        action: 'create',
+        name:   local_object.name,
+        data:   {
+          mappings: SearchIndexBackend.get_mapping_properties_object(local_object),
+          settings: SearchIndexBackend.settings,
+        }
+      )
+    end
+  end
+
+  def self.drop_index(models = Models.indexable)
+    models.each do |local_object|
+      SearchIndexBackend.index(
+        action: 'delete',
+        name:   local_object.name,
+      )
+    end
+  end
+
+  def self.create_object_index(object)
+    models = Models.indexable.select { |c| c.to_s == object }
+    create_index(models)
+  end
+
+  def self.drop_object_index(object)
+    models = Models.indexable.select { |c| c.to_s == object }
+    drop_index(models)
+  end
+
+  def self.pipeline(create: false)
+    pipeline = Setting.get('es_pipeline')
+    if create && pipeline.blank?
+      pipeline = "zammad#{SecureRandom.uuid}"
+      Setting.set('es_pipeline', pipeline)
+    end
+    pipeline
+  end
+
+  def self.pipeline_settings
+    {
+      ignore_failure: true,
+      ignore_missing: true,
+    }
+  end
+
+  def self.create_pipeline
+    SearchIndexBackend.processors(
+      "_ingest/pipeline/#{pipeline(create: true)}": [
+        {
+          action: 'delete',
+        },
+        {
+          action:      'create',
+          description: 'Extract zammad-attachment information from arrays',
+          processors:  [
+            {
+              foreach: {
+                field:     'article',
+                processor: {
+                  foreach: {
+                    field:     '_ingest._value.attachment',
+                    processor: {
+                      attachment: {
+                        target_field: '_ingest._value',
+                        field:        '_ingest._value._content',
+                      }.merge(pipeline_settings),
+                    }
+                  }.merge(pipeline_settings),
+                }
+              }.merge(pipeline_settings),
+            },
+            {
+              foreach: {
+                field:     'attachment',
+                processor: {
+                  attachment: {
+                    target_field: '_ingest._value',
+                    field:        '_ingest._value._content',
+                  }.merge(pipeline_settings),
+                }
+              }.merge(pipeline_settings),
+            }
+          ]
+        }
+      ]
+    )
+  end
+
+  def self.drop_pipeline
+    return if pipeline.blank?
+
+    SearchIndexBackend.processors(
+      "_ingest/pipeline/#{pipeline}": [
+        {
+          action: 'delete',
+        },
+      ]
+    )
+  end
+
+  # verifies date range ElasticSearch payload
+  #
+  # @param url [String] of ElasticSearch
+  # @param payload [Hash] Elasticsearch query payload
+  #
+  # @return [Boolean] or raises error
+  def self.verify_date_range(url, payload)
+    ranges_payload = payload.dig(:query, :bool, :must)
+
+    return true if ranges_payload.nil?
+
+    ranges = ranges_payload
+      .select { |elem| elem.key? :range }
+      .map    { |elem| [elem[:range].keys.first, convert_es_date_range(elem)] }
+      .each_with_object({}) { |elem, sum| (sum[elem.first] ||= []) << elem.last }
+
+    return true if ranges.all? { |_, ranges_by_key| verify_single_key_range(ranges_by_key) }
+
+    error_prefix  = "Unable to process request to elasticsearch URL '#{url}'."
+    error_suffix  = "Payload:\n#{payload.to_json}"
+    error_message = 'Conflicting date ranges'
+
+    result = "#{error_prefix} #{error_message} #{error_suffix}"
+    Rails.logger.error result.first(40_000)
+
+    raise result
+  end
+
+  # checks if all ranges are overlaping
+  #
+  # @param ranges [Array<Range<DateTime>>] to use in search
+  #
+  # @return [Boolean]
+  def self.verify_single_key_range(ranges)
+    ranges
+      .each_with_index
+      .all? do |range, i|
+        ranges
+          .slice((i + 1)..)
+          .all? { |elem| elem.overlaps? range }
+      end
+  end
+
+  # Converts paylaod component to dates range
+  #
+  # @param elem [Hash] payload component
+  #
+  # @return [Range<DateTime>]
+  def self.convert_es_date_range(elem)
+    range = elem[:range].first.last
+    from  = parse_es_range_date range[:from] || range[:gt] || '-9999-01-01'
+    to    = parse_es_range_date range[:to] || range[:lt] || '9999-01-01'
+
+    from..to
+  end
+
+  # Parses absolute date or converts relative date
+  #
+  # @param input [String] string representation of date
+  #
+  # @return [Range<DateTime>]
+  def self.parse_es_range_date(input)
+    match = input.match(%r{^now(-|\+)(\d+)(\w{1})$})
+
+    return DateTime.parse input if !match
+
+    map = {
+      d: 'day',
+      y: 'year',
+      M: 'month',
+      h: 'hour',
+      m: 'minute',
+    }
+
+    range = match.captures[1].to_i.send map[match.captures[2].to_sym]
+
+    case match.captures[0]
+    when '-'
+      range.ago
+    when '+'
+      range.from_now
+    end
+  end
 end

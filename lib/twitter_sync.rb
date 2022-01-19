@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2015 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 require 'http/uri'
 
@@ -122,9 +122,17 @@ class TwitterSync
     # normalize message
     message = {}
 
-    if tweet.class == Twitter::Tweet
+    if tweet.instance_of?(Twitter::Tweet)
       message = {
         type: 'tweet',
+        text: tweet.text,
+      }
+      state = get_state(channel, tweet)
+    end
+
+    if tweet.is_a?(Twitter::DirectMessage)
+      message = {
+        type: 'direct_message',
         text: tweet.text,
       }
       state = get_state(channel, tweet)
@@ -203,9 +211,9 @@ class TwitterSync
           next if local_url['url'].blank?
 
           if local_url['expanded_url'].present?
-            text.gsub!(/#{Regexp.quote(local_url['url'])}/, local_url['expanded_url'])
+            text.gsub!(%r{#{Regexp.quote(local_url['url'])}}, local_url['expanded_url'])
           elsif local_url['display_url']
-            text.gsub!(/#{Regexp.quote(local_url['url'])}/, local_url['display_url'])
+            text.gsub!(%r{#{Regexp.quote(local_url['url'])}}, local_url['display_url'])
           end
         end
       end
@@ -253,10 +261,10 @@ class TwitterSync
       if item['entities']
 
         item['entities']['user_mentions']&.each do |local_user|
-          if !to
-            to = ''
-          else
+          if to
             to += ', '
+          else
+            to = ''
           end
           to += "@#{local_user['screen_name']}"
           mention_ids.push local_user['id']
@@ -266,9 +274,9 @@ class TwitterSync
 
           if local_media['url'].present?
             if local_media['expanded_url'].present?
-              text.gsub!(/#{Regexp.quote(local_media['url'])}/, local_media['expanded_url'])
+              text.gsub!(%r{#{Regexp.quote(local_media['url'])}}, local_media['expanded_url'])
             elsif local_media['display_url']
-              text.gsub!(/#{Regexp.quote(local_media['url'])}/, local_media['display_url'])
+              text.gsub!(%r{#{Regexp.quote(local_media['url'])}}, local_media['display_url'])
             end
           end
         end
@@ -277,9 +285,9 @@ class TwitterSync
 
           if local_media['url'].present?
             if local_media['expanded_url'].present?
-              text.gsub!(/#{Regexp.quote(local_media['url'])}/, local_media['expanded_url'])
+              text.gsub!(%r{#{Regexp.quote(local_media['url'])}}, local_media['expanded_url'])
             elsif local_media['display_url']
-              text.gsub!(/#{Regexp.quote(local_media['url'])}/, local_media['display_url'])
+              text.gsub!(%r{#{Regexp.quote(local_media['url'])}}, local_media['display_url'])
             end
           end
 
@@ -380,10 +388,10 @@ class TwitterSync
     from = "@#{tweet.user.screen_name}"
     mention_ids = []
     tweet.user_mentions&.each do |local_user|
-      if !to
-        to = ''
-      else
+      if to
         to += ', '
+      else
+        to = ''
       end
       to += "@#{local_user.screen_name}"
       mention_ids.push local_user.id
@@ -442,7 +450,7 @@ class TwitterSync
     Rails.logger.debug { 'import tweet' }
 
     ticket = nil
-    Transaction.execute(reset_user_id: true) do
+    Transaction.execute(reset_user_id: true, context: 'twitter') do
 
       # check if parent exists
       user = to_user(tweet)
@@ -478,46 +486,24 @@ create a tweet or direct message from an article
 =end
 
   def from_article(article)
-
     tweet = nil
-    if article[:type] == 'twitter direct-message'
+    case article[:type]
+    when 'twitter direct-message'
 
       Rails.logger.debug { "Create twitter direct message from article to '#{article[:to]}'..." }
 
-      #      tweet = @client.create_direct_message(
-      #        article[:to],
-      #        article[:body],
-      #        {}
-      #      )
       article[:to].delete!('@')
       authorization = Authorization.find_by(provider: 'twitter', username: article[:to])
       raise "Unable to lookup user_id for @#{article[:to]}" if !authorization
 
-      data = {
-        event: {
-          type:           'message_create',
-          message_create: {
-            target:       {
-              recipient_id: authorization.uid,
-            },
-            message_data: {
-              text: article[:body],
-            }
-          }
-        }
-      }
-
-      tweet = Twitter::REST::Request.new(@client, :json_post, '/1.1/direct_messages/events/new.json', data).perform
-
-    elsif article[:type] == 'twitter status'
+      tweet = @client.create_direct_message(authorization.uid.to_i, article[:body])
+    when 'twitter status'
 
       Rails.logger.debug { 'Create tweet from article...' }
 
-      # rubocop:disable Style/AsciiComments
       # workaround for https://github.com/sferik/twitter/issues/677
       # https://github.com/zammad/zammad/issues/2873 - unable to post
       # tweets with * - replace `*` with the wide-asterisk `＊`.
-      # rubocop:enable Style/AsciiComments
       article[:body].tr!('*', '＊') if article[:body].present?
       tweet = @client.update(
         article[:body],
@@ -548,8 +534,9 @@ create a tweet or direct message from an article
     # no changes in post is from page user it self
     if channel.options[:user][:id].to_s == user_id.to_s
       if !ticket
-        return Ticket::State.find_by(name: 'closed') if !ticket
+        return Ticket::State.find_by(name: 'closed')
       end
+
       return ticket.state
     end
 
@@ -562,7 +549,7 @@ create a tweet or direct message from an article
 
   def tweet_limit_reached(tweet, factor = 1)
     max_count = 120
-    max_count = max_count * factor
+    max_count *= factor
     type_id = Ticket::Article::Type.lookup(name: 'twitter status').id
     created_at = Time.zone.now - 15.minutes
     created_count = Ticket::Article.where('created_at > ? AND type_id = ?', created_at, type_id).count
@@ -608,11 +595,11 @@ or
     # replace Twitter::NullObject with nill to prevent elasticsearch index issue
     preferences.each do |key, value|
 
-      if value.class == Twitter::Place || value.class == Twitter::Geo
+      if value.instance_of?(Twitter::Place) || value.instance_of?(Twitter::Geo)
         preferences[key] = value.to_h
         next
       end
-      if value.class == Twitter::NullObject
+      if value.instance_of?(Twitter::NullObject)
         preferences[key] = nil
         next
       end
@@ -620,11 +607,11 @@ or
       next if !value.is_a?(Hash)
 
       value.each do |sub_key, sub_level|
-        if sub_level.class == NilClass
+        if sub_level.instance_of?(NilClass)
           value[sub_key] = nil
           next
         end
-        if sub_level.class == Twitter::Place || sub_level.class == Twitter::Geo
+        if sub_level.instance_of?(Twitter::Place) || sub_level.instance_of?(Twitter::Geo)
           value[sub_key] = sub_level.to_h
           next
         end
@@ -692,7 +679,7 @@ process webhook messages from twitter
       @payload['direct_message_events'].each do |item|
         next if item['type'] != 'message_create'
 
-        next if Ticket::Article.find_by(message_id: item['id'])
+        next if Ticket::Article.exists?(message_id: item['id'])
 
         user = to_user_webhook(item['message_create']['sender_id'])
         ticket = to_ticket(item, user, channel.options[:sync][:direct_messages][:group_id], channel)
@@ -702,7 +689,8 @@ process webhook messages from twitter
 
     if @payload['tweet_create_events'].present?
       @payload['tweet_create_events'].each do |item|
-        next if Ticket::Article.find_by(message_id: item['id'])
+        next if Ticket::Article.exists?(message_id: item['id'])
+        next if item.key?('retweeted_status') && !channel.options.dig('sync', 'track_retweets')
 
         # check if it's mention
         group_id = nil
@@ -720,7 +708,7 @@ process webhook messages from twitter
           channel.options[:sync][:search].each do |local_search|
             next if local_search[:term].blank?
             next if local_search[:group_id].blank?
-            next if !item['text'].match?(/#{Regexp.quote(local_search[:term])}/i)
+            next if !item['text'].match?(%r{#{Regexp.quote(local_search[:term])}}i)
 
             group_id = local_search[:group_id]
             break
@@ -789,6 +777,7 @@ download public media file from twitter
       {
         open_timeout: 20,
         read_timeout: 40,
+        verify_ssl:   true,
       },
     )
   end

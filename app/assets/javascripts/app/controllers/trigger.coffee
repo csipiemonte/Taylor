@@ -1,4 +1,4 @@
-class Index extends App.ControllerSubContent
+class Trigger extends App.ControllerSubContent
   requiredPermission: 'admin.trigger'
   header: 'Triggers'
   constructor: ->
@@ -13,6 +13,10 @@ class Index extends App.ControllerSubContent
         home: 'triggers'
         object: 'Trigger'
         objects: 'Triggers'
+        pagerAjax: true
+        pagerBaseUrl: '#manage/trigger/'
+        pagerSelected: ( @page || 1 )
+        pagerPerPage: 150
         navupdate: '#triggers'
         notes: [
           'Triggers are ...'
@@ -24,4 +28,11 @@ class Index extends App.ControllerSubContent
       veryLarge: true
     )
 
-App.Config.set('Trigger', { prio: 3300, name: 'Trigger', parent: '#manage', target: '#manage/trigger', controller: Index, permission: ['admin.trigger'] }, 'NavBarAdmin')
+  show: (params) =>
+    for key, value of params
+      if key isnt 'el' && key isnt 'shown' && key isnt 'match'
+        @[key] = value
+
+    @genericController.paginate( @page || 1 )
+
+App.Config.set('Trigger', { prio: 3300, name: 'Trigger', parent: '#manage', target: '#manage/trigger', controller: Trigger, permission: ['admin.trigger'] }, 'NavBarAdmin')

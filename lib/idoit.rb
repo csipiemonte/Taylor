@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Idoit
 
@@ -92,7 +92,7 @@ or with filter:
     raise 'Unable for find api_token in config' if setting[:api_token].blank?
     raise 'Unable for find endpoint in config' if setting[:endpoint].blank?
 
-    #translator_key = Setting.get('translator_key')
+    # translator_key = Setting.get('translator_key')
     params = {
       apikey: setting[:api_token],
     }
@@ -124,11 +124,11 @@ or with filter:
       },
     )
 
-    raise "Can't fetch objects from #{url}: Unable to parse response from server. Invalid JSON response." if !result.success? && result.error =~ /JSON::ParserError:.+?\s+unexpected\s+token\s+at\s+'<!DOCTYPE\s+html/i
+    raise "Can't fetch objects from #{url}: Unable to parse response from server. Invalid JSON response." if !result.success? && result.error =~ %r{JSON::ParserError:.+?\s+unexpected\s+token\s+at\s+'<!DOCTYPE\s+html}i
     raise "Can't fetch objects from #{url}: #{result.error}" if !result.success?
 
     # add link to idoit
-    if result.data['result'].class == Array
+    if result.data['result'].instance_of?(Array)
       result.data['result'].each do |item|
         next if !item['id']
 

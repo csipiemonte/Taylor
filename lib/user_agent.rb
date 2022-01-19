@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 require 'net/http'
 require 'net/https'
@@ -48,13 +48,19 @@ returns
     http = get_http(uri, options)
 
     # prepare request
-    request = Net::HTTP::Get.new(uri, { 'User-Agent' => 'Zammad User Agent' })
+    request = Net::HTTP::Get.new(uri)
+
+    # set headers
+    request = set_headers(request, options)
 
     # http basic auth (if needed)
     request = set_basic_auth(request, options)
 
     # set params
     request = set_params(request, params, options)
+
+    # add signature
+    request = set_signature(request, options)
 
     # start http call
     begin
@@ -104,13 +110,19 @@ returns
     http = get_http(uri, options)
 
     # prepare request
-    request = Net::HTTP::Post.new(uri, { 'User-Agent' => 'Zammad User Agent' })
+    request = Net::HTTP::Post.new(uri)
+
+    # set headers
+    request = set_headers(request, options)
 
     # set params
     request = set_params(request, params, options)
 
     # http basic auth (if needed)
     request = set_basic_auth(request, options)
+
+    # add signature
+    request = set_signature(request, options)
 
     # start http call
     begin
@@ -159,13 +171,19 @@ returns
     http = get_http(uri, options)
 
     # prepare request
-    request = Net::HTTP::Put.new(uri, { 'User-Agent' => 'Zammad User Agent' })
+    request = Net::HTTP::Put.new(uri)
+
+    # set headers
+    request = set_headers(request, options)
 
     # set params
     request = set_params(request, params, options)
 
     # http basic auth (if needed)
     request = set_basic_auth(request, options)
+
+    # add signature
+    request = set_signature(request, options)
 
     # start http call
     begin
@@ -210,10 +228,16 @@ returns
     http = get_http(uri, options)
 
     # prepare request
-    request = Net::HTTP::Delete.new(uri, { 'User-Agent' => 'Zammad User Agent' })
+    request = Net::HTTP::Delete.new(uri)
+
+    # set headers
+    request = set_headers(request, options)
 
     # http basic auth (if needed)
     request = set_basic_auth(request, options)
+
+    # add signature
+    request = set_signature(request, options)
 
     # start http call
     begin
@@ -263,9 +287,9 @@ returns
 
     uri = URI.parse(url)
     case uri.scheme.downcase
-    when /ftp/
+    when %r{ftp}
       ftp(uri, options)
-    when /http|https/
+    when %r{http|https}
       get(url, {}, options)
     end
 
@@ -277,8 +301,8 @@ returns
     proxy_no = options['proxy_no'] || Setting.get('proxy_no') || ''
     proxy_no = proxy_no.split(',').map(&:strip) || []
     proxy_no.push('localhost', '127.0.0.1', '::1')
-    if proxy.present? && !proxy_no.include?(uri.host.downcase)
-      if proxy =~ /^(.+?):(.+?)$/
+    if proxy.present? && proxy_no.exclude?(uri.host.downcase)
+      if proxy =~ %r{^(.+?):(.+?)$}
         proxy_host = $1
         proxy_port = $2
       end
@@ -304,10 +328,12 @@ returns
     http.open_timeout = options[:open_timeout] || 4
     http.read_timeout = options[:read_timeout] || 10
 
-    if uri.scheme.match?(/https/i)
+    if uri.scheme.match?(%r{https}i)
       http.use_ssl = true
-      # @TODO verify_mode should be configurable
-      http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+      if !options.fetch(:verify_ssl, false)
+        http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      end
     end
 
     http
@@ -316,7 +342,7 @@ returns
   def self.set_basic_auth(request, options)
 
     # http basic auth (if needed)
-    if options[:user] && options[:user] != '' && options[:password] && options[:password] != ''
+    if options[:user].present? && options[:password].present?
       request.basic_auth options[:user], options[:password]
     end
     request
@@ -331,6 +357,27 @@ returns
     elsif params.present?
       request.set_form_data(params)
     end
+    request
+  end
+
+  def self.set_headers(request, options)
+    defaults = { 'User-Agent' => 'Zammad User Agent' }
+    headers  = defaults.merge(options.fetch(:headers, {}))
+
+    headers.each do |header, value|
+      request[header] = value
+    end
+
+    request
+  end
+
+  def self.set_signature(request, options)
+    return request if options[:signature_token].blank?
+    return request if request.body.blank?
+
+    signature = OpenSSL::HMAC.hexdigest('sha1', options[:signature_token], request.body)
+    request['X-Hub-Signature'] = "sha1=#{signature}"
+
     request
   end
 
@@ -349,7 +396,7 @@ returns
     end
     body = request.body
     if body
-      request_data[:content] += "\n" + body
+      request_data[:content] += "\n#{body}"
     end
     request_data[:content] = request_data[:content].slice(0, 8000)
 
@@ -371,7 +418,7 @@ returns
       end
       body = response.body
       if body
-        response_data[:content] += "\n" + body
+        response_data[:content] += "\n#{body}"
       end
       response_data[:content] = response_data[:content].slice(0, 8000)
     end
@@ -406,26 +453,29 @@ returns
         error:   "No such file #{uri}, 404!",
         success: false,
         code:    response.code,
+        header:  response.each_header.to_h,
       )
     when Net::HTTPClientError
       return Result.new(
         error:   "Client Error: #{response.inspect}!",
         success: false,
         code:    response.code,
-        body:    response.body
+        body:    response.body,
+        header:  response.each_header.to_h,
       )
     when Net::HTTPInternalServerError
       return Result.new(
         error:   "Server Error: #{response.inspect}!",
         success: false,
         code:    response.code,
+        header:  response.each_header.to_h,
       )
     when Net::HTTPRedirection
       raise 'Too many redirections for the original URL, halting.' if count <= 0
 
       url = response['location']
       return get(url, params, options, count - 1)
-    when Net::HTTPOK
+    when Net::HTTPSuccess
       data = nil
       if options[:json] && !options[:jsonParseDisable] && response.body
         data = JSON.parse(response.body)
@@ -436,18 +486,7 @@ returns
         content_type: response['Content-Type'],
         success:      true,
         code:         response.code,
-      )
-    when Net::HTTPCreated
-      data = nil
-      if options[:json] && !options[:jsonParseDisable] && response.body
-        data = JSON.parse(response.body)
-      end
-      return Result.new(
-        data:         data,
-        body:         response.body,
-        content_type: response['Content-Type'],
-        success:      true,
-        code:         response.code,
+        header:       response.each_header.to_h,
       )
     end
 
@@ -511,11 +550,7 @@ returns
 
   class Result
 
-    attr_reader :error
-    attr_reader :body
-    attr_reader :data
-    attr_reader :code
-    attr_reader :content_type
+    attr_reader :error, :body, :data, :code, :content_type, :header
 
     def initialize(options)
       @success      = options[:success]
@@ -524,6 +559,7 @@ returns
       @code         = options[:code]
       @content_type = options[:content_type]
       @error        = options[:error]
+      @header       = options[:header]
     end
 
     def success?

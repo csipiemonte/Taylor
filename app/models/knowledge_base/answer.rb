@@ -1,16 +1,17 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class KnowledgeBase::Answer < ApplicationModel
   include HasTranslations
   include HasAgentAllowedParams
+  include HasTags
   include CanBePublished
-  include HasKnowledgeBaseAttachmentPermissions
   include ChecksKbClientNotification
   include CanCloneAttachments
 
   AGENT_ALLOWED_ATTRIBUTES       = %i[category_id promoted internal_note].freeze
   AGENT_ALLOWED_NESTED_RELATIONS = %i[translations].freeze
 
-  belongs_to :category, class_name: 'KnowledgeBase::Category',                  inverse_of: :answers,  touch: true
+  belongs_to :category, class_name: 'KnowledgeBase::Category', inverse_of: :answers, touch: true
 
   scope :include_contents, -> { eager_load(translations: :content) }
   scope :sorted,           -> { order(position: :asc) }
@@ -27,12 +28,13 @@ class KnowledgeBase::Answer < ApplicationModel
   def attributes_with_association_ids
     key = "#{self.class}::aws::#{id}"
 
-    cache = Cache.get(key)
+    cache = Cache.read(key)
     return cache if cache
 
     attrs = super
 
     attrs[:attachments] = attachments_sorted.map { |elem| self.class.attachment_to_hash(elem) }
+    attrs[:tags]        = tag_list
 
     Cache.write(key, attrs)
 
@@ -112,6 +114,11 @@ class KnowledgeBase::Answer < ApplicationModel
   end
   before_save :reordering_callback
 
+  def touch_translations
+    translations.each(&:touch) # move to #touch_all when migrationg to Rails 6
+  end
+  after_touch :touch_translations
+
   class << self
     def attachment_to_hash(attachment)
       url = Rails.application.routes.url_helpers.attachment_path(attachment.id)
@@ -119,7 +126,7 @@ class KnowledgeBase::Answer < ApplicationModel
       {
         id:          attachment.id,
         url:         url,
-        preview_url: url + '?preview=1',
+        preview_url: "#{url}?preview=1",
         filename:    attachment.filename,
         size:        attachment.size,
         preferences: attachment.preferences

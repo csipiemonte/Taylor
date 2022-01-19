@@ -1,6 +1,8 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 FactoryBot.define do
   factory :job do
-    sequence(:name) { |n| "Test job #{n}"  }
+    sequence(:name) { |n| "Test job #{n}" }
     condition       { { 'ticket.state_id' => { 'operator' => 'is not', 'value' => 4 } } }
     perform         { { 'ticket.state_id' => { 'value' => 4 } } }
     active          { true }

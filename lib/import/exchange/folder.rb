@@ -1,4 +1,4 @@
-require_dependency 'mixin/rails_logger'
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 module Import
   class Exchange
@@ -33,7 +33,7 @@ module Import
       def children(*parents)
         return [] if parents.empty?
 
-        direct_descendants = parents.map(&method(:request_children))
+        direct_descendants = parents.map { |parent| request_children(parent) }
                                     .flatten.uniq.compact
 
         direct_descendants | children(*direct_descendants)
@@ -56,7 +56,9 @@ module Import
         parent = parent.id if parent.respond_to?(:id) # type coercion
         @connection.folders(root: parent)
       rescue Viewpoint::EWS::EwsFolderNotFound => e
-        logger.warn(e) && return
+        logger.warn("Try to get children folders of: #{parent.inspect}")
+        logger.warn(e)
+        nil
       end
     end
   end

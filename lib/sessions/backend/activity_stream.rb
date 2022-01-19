@@ -1,8 +1,10 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sessions::Backend::ActivityStream < Sessions::Backend::Base
 
   attr_writer :user
 
-  def initialize(user, asset_lookup, client = nil, client_id = nil, ttl = 25)
+  def initialize(user, asset_lookup, client = nil, client_id = nil, ttl = 25) # rubocop:disable Lint/MissingSuper
     @user         = user
     @client       = client
     @client_id    = client_id

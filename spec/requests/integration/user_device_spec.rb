@@ -1,12 +1,14 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
-  let!(:admin_user) do
-    create(:admin_user, login: 'user-device-admin', password: 'adminpw', groups: Group.all)
+  let!(:admin) do
+    create(:admin, login: 'user-device-admin', password: 'adminpw', groups: Group.all)
   end
-  let!(:agent_user) do
-    create(:agent_user, login: 'user-device-agent', password: 'agentpw', groups: Group.all)
+  let!(:agent) do
+    create(:agent, login: 'user-device-agent', password: 'agentpw', groups: Group.all)
   end
 
   before do
@@ -48,15 +50,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     admin_user,
+          user:     admin,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     admin_user,
+          user:     admin,
         )
       end
 
-      expect(UserDevice.where(user_id: admin_user.id).count).to eq(0)
+      expect(UserDevice.where(user_id: admin.id).count).to eq(0)
     end
 
     it 'does login index with admin with fingerprint - I (03)' do
@@ -74,15 +76,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     admin_user,
+          user:     admin,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     admin_user,
+          user:     admin,
         )
       end
 
-      expect(UserDevice.where(user_id: admin_user.id).count).to eq(1)
+      expect(UserDevice.where(user_id: admin.id).count).to eq(1)
       user_device_first = UserDevice.last
       sleep 2
 
@@ -98,15 +100,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     admin_user,
+          user:     admin,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     admin_user,
+          user:     admin,
         )
       end
 
-      expect(UserDevice.where(user_id: admin_user.id).count).to eq(1)
+      expect(UserDevice.where(user_id: admin.id).count).to eq(1)
       user_device_last = UserDevice.last
       expect(user_device_first.updated_at.to_s).to eq(user_device_last.updated_at.to_s)
 
@@ -124,15 +126,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     admin_user,
+          user:     admin,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     admin_user,
+          user:     admin,
         )
       end
 
-      expect(UserDevice.where(user_id: admin_user.id).count).to eq(1)
+      expect(UserDevice.where(user_id: admin.id).count).to eq(1)
       user_device_last = UserDevice.last
       expect(user_device_first.updated_at.to_s).to eq(user_device_last.updated_at.to_s)
 
@@ -149,22 +151,22 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     admin_user,
+          user:     admin,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     admin_user,
+          user:     admin,
         )
       end
 
-      expect(UserDevice.where(user_id: admin_user.id).count).to eq(1)
+      expect(UserDevice.where(user_id: admin.id).count).to eq(1)
       user_device_last = UserDevice.last
       expect(user_device_last.updated_at.to_s).not_to eq(user_device_first.updated_at.to_s)
       ENV['USER_DEVICE_UPDATED_AT'] = nil
 
       ENV['TEST_REMOTE_IP'] = '195.65.29.254' # ch
 
-      #reset_notification_checks
+      # reset_notification_checks
 
       params = {}
       get '/api/v1/users', params: params, as: :json
@@ -176,15 +178,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     admin_user,
+          user:     admin,
         )
         sent(
           template: 'user_device_new_location',
-          user:     admin_user,
+          user:     admin,
         )
       end
 
-      expect(UserDevice.where(user_id: admin_user.id).count).to eq(2)
+      expect(UserDevice.where(user_id: admin.id).count).to eq(2)
 
       # ip reset
       ENV['TEST_REMOTE_IP'] = '5.9.62.170' # de
@@ -195,7 +197,7 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
       create(
         :user_device,
-        user_id:     admin_user.id,
+        user_id:     admin.id,
         fingerprint: 'fingerprintI',
       )
 
@@ -209,15 +211,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         sent(
           template: 'user_device_new',
-          user:     admin_user,
+          user:     admin,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     admin_user,
+          user:     admin,
         )
       end
 
-      expect(UserDevice.where(user_id: admin_user.id).count).to eq(2)
+      expect(UserDevice.where(user_id: admin.id).count).to eq(2)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to be_falsey
       expect(json_response['config']).to be_truthy
@@ -233,15 +235,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     admin_user,
+          user:     admin,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     admin_user,
+          user:     admin,
         )
       end
 
-      expect(UserDevice.where(user_id: admin_user.id).count).to eq(2)
+      expect(UserDevice.where(user_id: admin.id).count).to eq(2)
 
       params = { fingerprint: 'my_finger_print_II' }
       get '/api/v1/signshow', params: params, as: :json
@@ -257,15 +259,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     admin_user,
+          user:     admin,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     admin_user,
+          user:     admin,
         )
       end
 
-      expect(UserDevice.where(user_id: admin_user.id).count).to eq(2)
+      expect(UserDevice.where(user_id: admin.id).count).to eq(2)
 
       ENV['TEST_REMOTE_IP'] = '195.65.29.254' # ch
 
@@ -279,15 +281,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     admin_user,
+          user:     admin,
         )
         sent(
           template: 'user_device_new_location',
-          user:     admin_user,
+          user:     admin,
         )
       end
 
-      expect(UserDevice.where(user_id: admin_user.id).count).to eq(3)
+      expect(UserDevice.where(user_id: admin.id).count).to eq(3)
 
       # ip reset
       ENV['TEST_REMOTE_IP'] = '5.9.62.170' # de
@@ -298,12 +300,12 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
       UserDevice.add(
         ENV['HTTP_USER_AGENT'],
         ENV['TEST_REMOTE_IP'],
-        admin_user.id,
+        admin.id,
         'my_finger_print_II',
         'session', # session|basic_auth|token_auth|sso
       )
 
-      expect(UserDevice.where(user_id: admin_user.id).count).to eq(1)
+      expect(UserDevice.where(user_id: admin.id).count).to eq(1)
 
       params = { fingerprint: 'my_finger_print_II', username: 'user-device-admin', password: 'adminpw' }
       post '/api/v1/signin', params: params, as: :json
@@ -315,15 +317,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     admin_user,
+          user:     admin,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     admin_user,
+          user:     admin,
         )
       end
 
-      expect(UserDevice.where(user_id: admin_user.id).count).to eq(1)
+      expect(UserDevice.where(user_id: admin.id).count).to eq(1)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to be_falsey
       expect(json_response['config']).to be_truthy
@@ -336,15 +338,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
       UserDevice.add(
         ENV['HTTP_USER_AGENT'],
         '127.0.0.1',
-        admin_user.id,
+        admin.id,
         '',
         'basic_auth', # session|basic_auth|token_auth|sso
       )
-      expect(UserDevice.where(user_id: admin_user.id).count).to eq(1)
+      expect(UserDevice.where(user_id: admin.id).count).to eq(1)
 
       ENV['HTTP_USER_AGENT'] = 'curl 1.2.3'
       params = {}
-      authenticated_as(admin_user, password: 'adminpw')
+      authenticated_as(admin, password: 'adminpw')
       get '/api/v1/users', params: params, as: :json
       expect(response).to have_http_status(:ok)
 
@@ -354,15 +356,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         sent(
           template: 'user_device_new',
-          user:     admin_user,
+          user:     admin,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     admin_user,
+          user:     admin,
         )
       end
 
-      expect(UserDevice.where(user_id: admin_user.id).count).to eq(2)
+      expect(UserDevice.where(user_id: admin.id).count).to eq(2)
       expect(json_response).to be_a_kind_of(Array)
       user_device_first = UserDevice.last
       sleep 2
@@ -377,15 +379,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     admin_user,
+          user:     admin,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     admin_user,
+          user:     admin,
         )
       end
 
-      expect(UserDevice.where(user_id: admin_user.id).count).to eq(2)
+      expect(UserDevice.where(user_id: admin.id).count).to eq(2)
       expect(json_response).to be_a_kind_of(Array)
       user_device_last = UserDevice.last
       expect(user_device_first.id).to eq(user_device_last.id)
@@ -404,15 +406,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     admin_user,
+          user:     admin,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     admin_user,
+          user:     admin,
         )
       end
 
-      expect(UserDevice.where(user_id: admin_user.id).count).to eq(2)
+      expect(UserDevice.where(user_id: admin.id).count).to eq(2)
       expect(json_response).to be_a_kind_of(Array)
       user_device_last = UserDevice.last
       expect(user_device_first.id).to eq(user_device_last.id)
@@ -426,15 +428,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
       UserDevice.add(
         ENV['HTTP_USER_AGENT'],
         ENV['TEST_REMOTE_IP'],
-        admin_user.id,
+        admin.id,
         '',
         'basic_auth', # session|basic_auth|token_auth|sso
       )
 
-      expect(UserDevice.where(user_id: admin_user.id).count).to eq(1)
+      expect(UserDevice.where(user_id: admin.id).count).to eq(1)
 
       params = {}
-      authenticated_as(admin_user, password: 'adminpw')
+      authenticated_as(admin, password: 'adminpw')
       get '/api/v1/users', params: params, as: :json
       expect(response).to have_http_status(:ok)
 
@@ -444,15 +446,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     admin_user,
+          user:     admin,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     admin_user,
+          user:     admin,
         )
       end
 
-      expect(UserDevice.where(user_id: admin_user.id).count).to eq(1)
+      expect(UserDevice.where(user_id: admin.id).count).to eq(1)
       expect(json_response).to be_a_kind_of(Array)
 
     end
@@ -461,7 +463,7 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
       ENV['HTTP_USER_AGENT'] = 'curl 1.2.3'
 
       params = {}
-      authenticated_as(agent_user, password: 'agentpw')
+      authenticated_as(agent, password: 'agentpw')
       get '/api/v1/users', params: params, as: :json
       expect(response).to have_http_status(:ok)
 
@@ -471,15 +473,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     agent_user,
+          user:     agent,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     agent_user,
+          user:     agent,
         )
       end
 
-      expect(UserDevice.where(user_id: agent_user.id).count).to eq(1)
+      expect(UserDevice.where(user_id: agent.id).count).to eq(1)
       expect(json_response).to be_a_kind_of(Array)
     end
 
@@ -490,15 +492,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
       UserDevice.add(
         ENV['HTTP_USER_AGENT'],
         ENV['TEST_REMOTE_IP'],
-        agent_user.id,
+        agent.id,
         '',
         'basic_auth', # session|basic_auth|token_auth|sso
       )
 
-      expect(UserDevice.where(user_id: agent_user.id).count).to eq(1)
+      expect(UserDevice.where(user_id: agent.id).count).to eq(1)
 
       params = {}
-      authenticated_as(agent_user, password: 'agentpw')
+      authenticated_as(agent, password: 'agentpw')
       get '/api/v1/users', params: params, as: :json
       expect(response).to have_http_status(:ok)
 
@@ -508,23 +510,23 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     agent_user,
+          user:     agent,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     agent_user,
+          user:     agent,
         )
       end
 
-      expect(UserDevice.where(user_id: agent_user.id).count).to eq(1)
+      expect(UserDevice.where(user_id: agent.id).count).to eq(1)
       expect(json_response).to be_a_kind_of(Array)
 
     end
 
     it 'does login with switched_from_user_id (10)' do
-      expect(UserDevice.where(user_id: agent_user.id).count).to eq(0)
+      expect(UserDevice.where(user_id: agent.id).count).to eq(0)
 
-      ENV['SWITCHED_FROM_USER_ID'] = admin_user.id.to_s
+      ENV['SWITCHED_FROM_USER_ID'] = admin.id.to_s
 
       params = { fingerprint: 'my_finger_print_II', username: 'user-device-agent', password: 'agentpw' }
       post '/api/v1/signin', params: params, as: :json
@@ -536,15 +538,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     agent_user,
+          user:     agent,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     agent_user,
+          user:     agent,
         )
       end
 
-      expect(UserDevice.where(user_id: agent_user.id).count).to eq(0)
+      expect(UserDevice.where(user_id: agent.id).count).to eq(0)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to be_falsey
       expect(json_response['config']).to be_truthy
@@ -555,15 +557,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     agent_user,
+          user:     agent,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     agent_user,
+          user:     agent,
         )
       end
 
-      expect(UserDevice.where(user_id: agent_user.id).count).to eq(0)
+      expect(UserDevice.where(user_id: agent.id).count).to eq(0)
 
       ENV['USER_DEVICE_UPDATED_AT'] = (Time.zone.now - 4.hours).to_s
       params = {}
@@ -577,15 +579,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     agent_user,
+          user:     agent,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     agent_user,
+          user:     agent,
         )
       end
 
-      expect(UserDevice.where(user_id: agent_user.id).count).to eq(0)
+      expect(UserDevice.where(user_id: agent.id).count).to eq(0)
       ENV['USER_DEVICE_UPDATED_AT'] = nil
 
       ENV['TEST_REMOTE_IP'] = '195.65.29.254' # ch
@@ -599,18 +601,18 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     agent_user,
+          user:     agent,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     agent_user,
+          user:     agent,
         )
       end
 
       # ip reset
       ENV['TEST_REMOTE_IP'] = '5.9.62.170' # de
 
-      expect(UserDevice.where(user_id: agent_user.id).count).to eq(0)
+      expect(UserDevice.where(user_id: agent.id).count).to eq(0)
     end
 
     it 'does login with invalid fingerprint (11)' do
@@ -629,15 +631,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     admin_user,
+          user:     admin,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     admin_user,
+          user:     admin,
         )
       end
 
-      expect(UserDevice.where(user_id: admin_user.id).count).to eq(0)
+      expect(UserDevice.where(user_id: admin.id).count).to eq(0)
     end
 
     it 'does login with integer as fingerprint (12)' do
@@ -652,15 +654,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     admin_user,
+          user:     admin,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     admin_user,
+          user:     admin,
         )
       end
 
-      expect(UserDevice.where(user_id: admin_user.id).count).to eq(1)
+      expect(UserDevice.where(user_id: admin.id).count).to eq(1)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to be_nil
     end
@@ -671,7 +673,7 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
       params = {
         fingerprint: 'long_1234567890long_1234567890long_1234567890long_1234567890long_1234567890long_1234567890long_1234567890long_1234567890long_1234567890long_1234567890long_1234567890'
       }
-      authenticated_as(admin_user, password: 'adminpw')
+      authenticated_as(admin, password: 'adminpw')
       post '/api/v1/form_config', params: params, as: :json
       expect(response).to have_http_status(:ok)
 
@@ -686,15 +688,15 @@ RSpec.describe 'User Device', type: :request, sends_notification_emails: true do
 
         not_sent(
           template: 'user_device_new',
-          user:     admin_user,
+          user:     admin,
         )
         not_sent(
           template: 'user_device_new_location',
-          user:     admin_user,
+          user:     admin,
         )
       end
 
-      expect(UserDevice.where(user_id: admin_user.id).count).to eq(0)
+      expect(UserDevice.where(user_id: admin.id).count).to eq(0)
     end
   end
 end

@@ -1,7 +1,4 @@
-# this require is required (hehe) because of Rails autoloading
-# which causes strange behavior not inheriting correctly
-# from Import::OTRS::DynamicField
-require_dependency 'import/zendesk/object_attribute/base'
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 module Import
   class Zendesk
@@ -18,7 +15,7 @@ module Import
         private
 
         def data_type(_attribute)
-          'input'
+          'textarea'
         end
       end
     end

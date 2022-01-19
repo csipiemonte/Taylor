@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class KnowledgeBase::Category < ApplicationModel
   include HasTranslations
   include HasAgentAllowedParams
@@ -61,6 +62,18 @@ class KnowledgeBase::Category < ApplicationModel
     [self] + children.map(&:self_with_children).flatten
   end
 
+  def self_with_parents
+    result = [self]
+
+    check = self
+    while check.parent.present?
+      result << check.parent
+      check = check.parent
+    end
+
+    result
+  end
+
   def self_with_children_answers
     KnowledgeBase::Answer.where(category_id: self_with_children_ids)
   end
@@ -93,19 +106,13 @@ class KnowledgeBase::Category < ApplicationModel
   def internal_content?(kb_locale = nil)
     scope = self_with_children_answers.internal
 
-    scope = scope.localed(kb_locale) if kb_locale
+    scope = scope.localed(kb_locale.system_locale) if kb_locale
 
     scope.any?
   end
 
   def visible?(kb_locale = nil)
     public_content?(kb_locale)
-  end
-
-  def visible_content_for?(user)
-    return true if user&.permissions? 'knowledge_base.editor'
-
-    public_content?
   end
 
   def api_url

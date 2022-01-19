@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'test_helper'
 
 class TicketOverviewOutOfOfficeTest < ActiveSupport::TestCase
@@ -123,7 +125,7 @@ class TicketOverviewOutOfOfficeTest < ActiveSupport::TestCase
       link:          'my_tickets',
       prio:          1100,
       role_ids:      [overview_role.id],
-      out_of_office: true,
+      out_of_office: false,
       condition:     {
         'ticket.state_id'                     => {
           operator: 'is',

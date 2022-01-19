@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe 'OAuth', type: :request do
@@ -9,7 +11,7 @@ RSpec.describe 'OAuth', type: :request do
       expect(response).to have_http_status(:found)
       expect(response.body).to include('https://login.microsoftonline.com/common/oauth2/v2.0/authorize')
       expect(response.body).to include('redirect_uri=http%3A%2F%2Fzammad.example.com%2Fauth%2Fmicrosoft_office365%2Fcallback')
-      expect(response.body).to include('scope=openid+email+profile')
+      expect(response.body).to include('scope=openid+User.Read+Contacts.Read')
       expect(response.body).to include('response_type=code')
     end
 

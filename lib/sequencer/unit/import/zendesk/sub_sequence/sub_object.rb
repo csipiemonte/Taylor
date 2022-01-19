@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sequencer
   class Unit
     module Import
@@ -9,6 +11,8 @@ class Sequencer
             uses :resource, :instance, :user_id, :model_class, :action
 
             def self.inherited(subclass)
+              super
+
               subclass.prepend(::Sequencer::Unit::Import::Common::Model::Mixin::Skip::Action)
               subclass.skip_action(:skipped, :failed)
             end

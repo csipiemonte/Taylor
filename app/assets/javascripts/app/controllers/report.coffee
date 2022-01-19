@@ -1,4 +1,4 @@
-class Index extends App.ControllerContent
+class Reporting extends App.ControllerAppContent
   requiredPermission: 'report'
 
   constructor: ->
@@ -98,13 +98,14 @@ class Index extends App.ControllerContent
       ui:     @
     )
 
-class Graph extends App.ControllerContent
+class Graph extends App.Controller
   constructor: ->
     super
 
     # rerender view
-    @bind 'ui:report:rerender', =>
+    @controllerBind('ui:report:rerender', =>
       @render()
+    )
 
     @render()
 
@@ -117,11 +118,11 @@ class Graph extends App.ControllerContent
         dataNew[key] = value
       @ui.storeParams()
 
-    if !@lastNewData
-      @lastNewData = {}
+    if !@lastParams
+      @lastParams = {}
 
-    return if @lastNewData && JSON.stringify(dataNew) is JSON.stringify(@lastNewData)
-    @lastNewData = dataNew
+    return if @lastParams && JSON.stringify(@params) is JSON.stringify(@lastParams)
+    @lastParams = $.extend(true, {}, @params)
 
     @draw(dataNew)
     t = new Date
@@ -170,6 +171,13 @@ class Graph extends App.ControllerContent
         backends:  @params.backendSelected
       )
       processData: true
+      error:       (xhr) =>
+        return if !_.include([401, 403, 404, 422, 502], xhr.status)
+
+        @bodyModal = new App.ControllerTechnicalErrorModal(
+          head:        'Cannot generate report'
+          contentCode: xhr.responseJSON.error
+        )
       success: (data) =>
         @update(data)
         @delay(@render, interval, 'report-update', 'page')
@@ -309,6 +317,7 @@ class Download extends App.Controller
       attribute =
         name:         'icon'
         display:      ''
+        parentClass:  'noTruncate'
         translation:  false
         width:        '28px'
         displayWidth: 28
@@ -380,8 +389,9 @@ class TimeRangePicker extends App.Controller
     super
 
    # rerender view
-    @bind 'ui:report:rerender', =>
+    @controllerBind('ui:report:rerender', =>
       @render()
+    )
 
     @render()
 
@@ -411,9 +421,9 @@ class TimePicker extends App.Controller
     @_timeSlotPicker()
 
     # rerender view
-    @bind 'ui:report:rerender', =>
+    @controllerBind('ui:report:rerender', =>
       @render()
-
+    )
     @render()
 
   render: =>
@@ -456,6 +466,7 @@ class TimePicker extends App.Controller
   selectTimeYear: (e) =>
     e.preventDefault()
     @ui.params.year = $(e.target).data('type')
+    @_timeSlotPicker()
     $(e.target).parent().parent().find('li').removeClass('active')
     $(e.target).parent().addClass('active')
     App.Event.trigger('ui:report:rerender')
@@ -523,7 +534,10 @@ class TimePicker extends App.Controller
     ]
 
     @timeRangeWeek = []
-    for item in [1..52]
+
+    numberOfWeeks = App.PrettyDate.getISOWeeks(@ui.params.year)
+
+    for item in [1..numberOfWeeks]
       record = {
         display: item
         value: item
@@ -584,5 +598,5 @@ class Sidebar extends App.Controller
     App.Event.trigger('ui:report:rerender')
     @ui.storeParams()
 
-App.Config.set('report', Index, 'Routes')
+App.Config.set('report', Reporting, 'Routes')
 App.Config.set('Reporting', { prio: 8000, parent: '', name: 'Reporting', translate: true, target: '#report', icon: 'report', permission: ['report'] }, 'NavBarRight')

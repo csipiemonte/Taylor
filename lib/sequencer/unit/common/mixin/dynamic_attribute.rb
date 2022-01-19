@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sequencer
   class Unit
     module Common
@@ -9,6 +11,8 @@ class Sequencer
             class << base
 
               def inherited(base)
+                super
+
                 base.extend(Forwardable)
                 base.instance_delegate [:attribute] => base
               end

@@ -30,6 +30,7 @@ class App.UiElement.ticket_perform_action
         if groupKey is 'notification'
           elements["#{groupKey}.email"] = { name: 'email', display: 'Email' }
           elements["#{groupKey}.sms"] = { name: 'sms', display: 'SMS' }
+          elements["#{groupKey}.webhook"] = { name: 'webhook', display: 'Webhook' }
         else if groupKey is 'article'
           elements["#{groupKey}.note"] = { name: 'note', display: 'Note' }
           elements["#{groupKey}.note_ext_act"] = { name: 'note_ext_act', display: 'Nota External Activity' }
@@ -46,8 +47,13 @@ class App.UiElement.ticket_perform_action
             # ignore readonly attributes
             if !row.readonly
               config = _.clone(row)
-              if config.tag is 'tag'
-                config.operator = ['add', 'remove']
+
+              switch config.tag
+                when 'datetime'
+                  config.operator = ['static', 'relative']
+                when 'tag'
+                  config.operator = ['add', 'remove']
+
               elements["#{groupKey}.#{config.name}"] = config
 
     # add ticket deletion action
@@ -241,9 +247,9 @@ class App.UiElement.ticket_perform_action
     selection = $("<select class=\"form-control\" name=\"#{name}\"></select>")
     attributeConfig = elements[groupAndAttribute]
     if !attributeConfig || !attributeConfig.operator
-      elementRow.find('.js-operator').addClass('hide')
+      elementRow.find('.js-operator').parent().addClass('hide')
     else
-      elementRow.find('.js-operator').removeClass('hide')
+      elementRow.find('.js-operator').parent().removeClass('hide')
     if attributeConfig && attributeConfig.operator
       for operator in attributeConfig.operator
         operatorName = App.i18n.translateInline(operator)
@@ -290,12 +296,12 @@ class App.UiElement.ticket_perform_action
 
     if !preCondition
       elementRow.find('.js-preCondition select').html('')
-      elementRow.find('.js-preCondition').addClass('hide')
+      elementRow.find('.js-preCondition').closest('.controls').addClass('hide')
       toggleValue()
       @buildValue(elementFull, elementRow, groupAndAttribute, elements, meta, attribute)
       return
 
-    elementRow.find('.js-preCondition').removeClass('hide')
+    elementRow.find('.js-preCondition').closest('.controls').removeClass('hide')
     name = "#{attribute.name}::#{groupAndAttribute}::pre_condition"
 
     selection = $("<select class=\"form-control\" name=\"#{name}\" ></select>")
@@ -304,19 +310,21 @@ class App.UiElement.ticket_perform_action
       options =
         'current_user.id': App.i18n.translateInline('current user')
         'specific': App.i18n.translateInline('specific user')
-        #'set': App.i18n.translateInline('set')
+
+      if attributeSelected.null is true
+        options['not_set'] = App.i18n.translateInline('unassign user')
+
     else if preCondition is 'org'
       options =
         'current_user.organization_id': App.i18n.translateInline('current user organization')
         'specific': App.i18n.translateInline('specific organization')
-        #'set': App.i18n.translateInline('set')
 
     for key, value of options
       selected = ''
       if key is meta.pre_condition
         selected = 'selected="selected"'
       selection.append("<option value=\"#{key}\" #{selected}>#{App.i18n.translateInline(value)}</option>")
-    elementRow.find('.js-preCondition').removeClass('hide')
+    elementRow.find('.js-preCondition').closest('.controls').removeClass('hide')
     elementRow.find('.js-preCondition select').replaceWith(selection)
 
     elementRow.find('.js-preCondition select').bind('change', (e) ->
@@ -345,21 +353,42 @@ class App.UiElement.ticket_perform_action
       if attribute.value && attribute.value[groupAndAttribute]
         config['value'] = _.clone(attribute.value[groupAndAttribute]['value'])
       config.multiple = false
-      config.nulloption = false
+      config.nulloption = config.null
       if config.tag is 'checkbox'
         config.tag = 'select'
       tagSearch = "#{config.tag}_search"
+      if config.tag is 'datetime'
+        config.validationContainer = 'self'
       if App.UiElement[tagSearch]
         item = App.UiElement[tagSearch].render(config, {})
       else
         item = App.UiElement[config.tag].render(config, {})
-    if meta.operator is 'before (relative)' || meta.operator is 'within next (relative)' || meta.operator is 'within last (relative)' || meta.operator is 'after (relative)'
+
+    relative_operators = [
+      'before (relative)',
+      'within next (relative)',
+      'within last (relative)',
+      'after (relative)',
+      'till (relative)',
+      'from (relative)',
+      'relative'
+    ]
+
+    upcoming_operator = meta.operator
+
+    if !_.include(config.operator, upcoming_operator)
+      if Array.isArray(config.operator)
+        upcoming_operator = config.operator[0]
+      else
+        upcoming_operator = null
+
+    if _.include(relative_operators, upcoming_operator)
       config['name'] = "#{attribute.name}::#{groupAndAttribute}"
       if attribute.value && attribute.value[groupAndAttribute]
         config['value'] = _.clone(attribute.value[groupAndAttribute])
       item = App.UiElement['time_range'].render(config, {})
 
-    elementRow.find('.js-value').removeClass('hide').html(item)
+    elementRow.find('.js-setAttribute > .flex > .js-value').removeClass('hide').html(item)
 
   @buildNotificationArea: (notificationType, elementFull, elementRow, groupAndAttribute, elements, meta, attribute) ->
 
@@ -390,7 +419,7 @@ class App.UiElement.ticket_perform_action
       for recipient in meta.recipient
         if key is recipient
           selected = true
-      columnSelectOptions.push({ value: key, name: App.i18n.translateInline(value), selected: selected })
+      columnSelectOptions.push({ value: key, name: App.i18n.translatePlain(value), selected: selected })
 
     columnSelectRecipientUserOptions = []
     for user in App.User.all()
@@ -417,50 +446,88 @@ class App.UiElement.ticket_perform_action
 
     selectionRecipient = columnSelectRecipient.element()
 
-    notificationElement = $( App.view('generic/ticket_perform_action/notification')(
-      attribute: attribute
-      name: name
-      notificationType: notificationType
-      meta: meta || {}
-    ))
-    notificationElement.find('.js-recipient select').replaceWith(selectionRecipient)
+    if notificationType is 'webhook'
+      notificationElement = $( App.view('generic/ticket_perform_action/webhook')(
+        attribute: attribute
+        name: name
+        notificationType: notificationType
+        meta: meta || {}
+      ))
 
-    visibilitySelection = App.UiElement.select.render(
-      name: "#{name}::internal"
-      multiple: false
-      null: false
-      options: { true: 'internal', false: 'public' }
-      value: meta.internal || 'false'
-      translate: true
-    )
+      notificationElement.find('.js-recipient select').replaceWith(selectionRecipient)
 
-    notificationElement.find('.js-internal').html(visibilitySelection)
 
-    notificationElement.find('.js-body div[contenteditable="true"]').ce(
-      mode: 'richtext'
-      placeholder: 'message'
-      maxlength: messageLength
-    )
-    new App.WidgetPlaceholder(
-      el: notificationElement.find('.js-body div[contenteditable="true"]').parent()
-      objects: [
-        {
-          prefix: 'ticket'
-          object: 'Ticket'
-          display: 'Ticket'
-        },
-        {
-          prefix: 'article'
-          object: 'TicketArticle'
-          display: 'Article'
-        },
-        {
-          prefix: 'user'
-          object: 'User'
-          display: 'Current User'
-        },
-      ]
-    )
+      if App.Webhook.search(filter: { active: true }).length isnt 0 || !_.isEmpty(meta.webhook_id)
+        webhookSelection = App.UiElement.select.render(
+          name: "#{name}::webhook_id"
+          multiple: false
+          null: false
+          relation: 'Webhook'
+          value: meta.webhook_id
+          translate: false
+          nulloption: true
+        )
+      else
+        webhookSelection = App.view('generic/ticket_perform_action/webhook_not_available')( attribute: attribute )
+
+      notificationElement.find('.js-webhooks').html(webhookSelection)
+
+    else
+      notificationElement = $( App.view('generic/ticket_perform_action/notification')(
+        attribute: attribute
+        name: name
+        notificationType: notificationType
+        meta: meta || {}
+      ))
+
+      notificationElement.find('.js-recipient select').replaceWith(selectionRecipient)
+
+      visibilitySelection = App.UiElement.select.render(
+        name: "#{name}::internal"
+        multiple: false
+        null: false
+        options: { true: 'internal', false: 'public' }
+        value: meta.internal || 'false'
+        translate: true
+      )
+
+      includeAttachmentsCheckbox = App.UiElement.select.render(
+        name: "#{name}::include_attachments"
+        multiple: false
+        null: false
+        options: { true: 'Yes', false: 'No' }
+        value: meta.include_attachments || 'false'
+        translate: true
+      )
+
+      notificationElement.find('.js-internal').html(visibilitySelection)
+      notificationElement.find('.js-include_attachments').html(includeAttachmentsCheckbox)
+
+      notificationElement.find('.js-body div[contenteditable="true"]').ce(
+        mode: 'richtext'
+        placeholder: 'message'
+        maxlength: messageLength
+      )
+      new App.WidgetPlaceholder(
+        el: notificationElement.find('.js-body div[contenteditable="true"]').parent()
+        objects: [
+          {
+            prefix: 'ticket'
+            object: 'Ticket'
+            display: 'Ticket'
+          },
+          {
+            prefix: 'article'
+            object: 'TicketArticle'
+            display: 'Article'
+          },
+          {
+            prefix: 'user'
+            object: 'User'
+            display: 'Current User'
+          },
+        ]
+      )
 
     elementRow.find('.js-setNotification').html(notificationElement).removeClass('hide')
 
@@ -500,7 +567,6 @@ class App.UiElement.ticket_perform_action
     elementRow.find('.js-setArticle').empty()
 
     name = "#{attribute.name}::article.#{articleType}"
-
     selection = App.UiElement.select.render(
       name: "#{name}::internal"
       multiple: false

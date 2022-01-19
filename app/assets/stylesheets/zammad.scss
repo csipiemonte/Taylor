@@ -4,6 +4,7 @@ $ok-color:        hsl(41,100%,49%);
 $bad-color:       hsl(30,93%,50%);
 $superbad-color:  hsl(19,90%,51%);
 $ghost-color:     hsl(0,0%,80%);
+$danger-color:    hsl(0,65%,55%);
 
 $task-state-closed-color: $supergood-color;
 $task-state-pending-color: hsl(206,7%,28%);
@@ -16,6 +17,8 @@ $low-priority-color: hsl(200,68%,73%);
 $minWidth: 1024px;
 $sidebarWidth: 280px;
 $navigationWidth: 260px;
+$mobileNavigationWidth: 50px;
+$mobileNavigationWidthOpen: 220px;
 
 $highlight-color: hsl(205,90%,60%);
 
@@ -184,6 +187,16 @@ ol, ul {
   flex: 1;
   min-width: $minWidth;
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
+
+  @include phone {
+    min-width: auto;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+  }
 }
 
 .u-unclickable {
@@ -221,6 +234,15 @@ ol, ul {
   cursor: not-allowed;
 }
 
+.u-overflow-wrap {
+  word-break: break-word;
+
+  @supports (overflow-wrap: anywhere) {
+    overflow-wrap: anywhere;
+    word-break: unset;
+  }
+}
+
 .zIndex-1 {
   z-index: 100;
 }
@@ -250,6 +272,9 @@ ol, ul {
 }
 .zIndex-10 {
   z-index: 1000;
+}
+.zIndex-11 {
+  z-index: 1100;
 }
 
 .u-high-priority-color {
@@ -333,6 +358,26 @@ ol, ul {
   z-index: 1;
 }
 
+code {
+  background: hsla(0, 0%, 0%, 0.2);
+  border-radius: 3px;
+  box-decoration-break: clone;
+}
+
+code,
+.hljs {
+  padding: 2px 4px;
+  font-size: 0.88em;
+}
+
+.hljs {
+  background: none;
+}
+
+pre code.hljs {
+  font-size: 1em;
+}
+
 pre {
   display: block;
   padding: 9.5px;
@@ -346,30 +391,26 @@ pre {
   border: 1px solid hsl(0,0%,90%);
   border-radius: 3px;
 }
+
+.modal-content pre {
+  background: hsl(0, 0%, 97%);
+  border: 1px solid hsl(0, 0%, 87%);
+}
+
 pre code {
   padding: 0;
   font-size: inherit;
   color: inherit;
   white-space: pre-wrap;
-  background-color: transparent;
-  border-radius: 0;
-}
-
-.hljs,
-code {
   background: none;
-  padding: 2px 4px;
-  font-size: 0.88em;
-}
+  border-radius: 0;
+  border: none;
+  overflow-x: auto;
 
-code:not(.hljs) {
-  border: 1px solid rgba(0,0,0,.2);
-  border-radius: 3px;
-  white-space: nowrap;
-}
-
-pre code.hljs {
-  font-size: 1em;
+  &.hljs {
+    padding: 0;
+    background: none;
+  }
 }
 
 .textarea::placeholder,
@@ -394,9 +435,16 @@ pre code.hljs {
   text-decoration: none;
   @extend %clickable;
 
+  @include phone {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
   .icon {
     vertical-align: middle;
-    margin: -2px 5px 0 -2px;
+    margin-top: -2px;
+    @include bidi-style(margin-right, 5px, margin-right, -2px);
+    @include bidi-style(margin-left, -2px, margin-right, 5px);
     fill: currentColor;
     flex-shrink: 0;
   }
@@ -405,11 +453,13 @@ pre code.hljs {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: block;
   }
 
-  &--only-icon .icon {
-    margin-left: 0;
-    margin-right: 0;
+  &--only-icon .icon,
+  &--icon-only .icon {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
   }
 
   &--icon--last .icon {
@@ -584,15 +634,15 @@ pre code.hljs {
 
   &--danger {
     color: white;
-    background: hsl(0,65%,55%);
+    background: $danger-color;
 
     &:active {
-      background: hsl(0,65%,45%);
+      background: darken($danger-color, 10%);
     }
 
     &.btn--secondary {
       background: white;
-      color: hsl(0,65%,55%);
+      color: $danger-color;
 
       &:active {
         background: hsl(0,0%,98%);
@@ -625,13 +675,16 @@ pre code.hljs {
 
     .icon {
       opacity: 1;
-      @include ltr(margin-right, 6px);
-      @include ltr(margin-left, -2px);
-      @include rtl(margin-right, -2px);
-      @include rtl(margin-left, 6px);
+      @include bidi-style(margin-left, -2px, margin-right, 6px);
+      @include bidi-style(margin-right, 6px, margin-right, -2px);
       width: 16px;
       max-height: 16px;
       object-fit: contain;
+    }
+
+    &.btn--icon--last .icon {
+      @include bidi-style(margin-left, 6px, margin-right, -2px);
+      @include bidi-style(margin-right, -2px, margin-right, 6px);
     }
 
     &:active {
@@ -658,7 +711,7 @@ pre code.hljs {
     }
 
     &.btn--danger {
-      color: hsl(0,65%,55%);
+      color: $danger-color;
 
       &:active {
         color: hsl(0,65%,40%);
@@ -905,9 +958,23 @@ pre code.hljs {
   }
 }
 
+.dropdown-menu-right {
+  @include rtl(right, auto);
+  @include rtl(left, 0);
+}
+
+.dropdown-menu-left {
+  @include rtl(left, auto);
+  @include rtl(right, 0);
+}
+
 .status-fields {
   display: flex;
   max-width: 100%;
+
+  @include phone {
+    display: block;
+  }
 
   .dropdown li {
     display: flex;
@@ -939,6 +1006,10 @@ pre code.hljs {
   text-overflow: ellipsis;
   overflow: hidden;
 
+  @include phone {
+    border-bottom-width: 0;
+  }
+
   &.is-active {
     background: hsl(203,65%,55%);
     color: white;
@@ -950,26 +1021,53 @@ pre code.hljs {
 
   &:not(:last-child):not(:only-child) {
     @include bidi-style(border-right-width, 0, border-left-width, 1px);
+
+    @include phone {
+      border-right-width: 1px !important;
+    }
   }
 
   &:first-child {
     border-radius: 5px 0 0 5px;
     @include rtl(border-radius, 0 5px 5px 0);
 
+    @include phone {
+      border-radius: 5px 5px 0 0 !important;
+
+      .dropdown & {
+        flex: 1;
+        border-top-right-radius: 0 !important;
+        border-right-width: 0 !important;
+      }
+    }
+
     .dropdown.open & {
       border-radius: 5px 0 0 0;
 
       @include rtl(border-radius, 0 5px 0 0);
+
+      @include phone {
+        border-radius: 5px 0 0 0 !important;
+      }
     }
   }
 
   &:last-child {
     border-radius: 0 5px 5px 0;
     @include rtl(border-radius, 5px 0 0 5px);
+
+    @include phone {
+      border-radius: 0 0 5px 5px !important;
+      border-bottom-width: 1px;
+    }
   }
 
   &:only-child {
     border-radius: 5px;
+
+    @include phone {
+      border-radius: 5px !important;
+    }
   }
 
   .badge {
@@ -990,6 +1088,10 @@ pre code.hljs {
     border-left: none;
     width: 34px;
     justify-content: center;
+
+    @include phone {
+      border-top-right-radius: 5px !important;
+    }
 
     .icon {
       fill: currentColor;
@@ -1247,8 +1349,13 @@ th.align-right {
   }
 
   .avatar {
+    opacity: 0.5;
+  }
+
+  .avatar--unique {
     background: hsl(120,1%,86%);
     text-shadow: none;
+    opacity: initial;
   }
 }
 
@@ -1260,6 +1367,10 @@ td .icon-draggable,
 td .icon-trash {
   vertical-align: middle;
   //fill: hsl(240,1%,77%);
+}
+
+td .prefix-icon > .icon {
+  vertical-align: top;
 }
 
 .table-checkbox,
@@ -1353,9 +1464,9 @@ td .icon-trash {
 
   input[type="checkbox"],
   input[type="radio"] {
-    pointer-events: none;
     position: absolute;
     opacity: 0;
+    cursor: pointer;
 
     &:disabled ~ .icon {
       opacity: 0.33;
@@ -1654,22 +1765,15 @@ fieldset {
   margin: 0 -4px;
   @extend .clearfix;
 
+  @include phone {
+    width: calc(100% + 8px);
+  }
+
   h2,
   .help-text {
     margin-left: 4px;
     margin-right: 4px;
   }
-}
-
-/*
-
-Firefox Specific Hack
-to fix the overflow of column select with long names
-https://stackoverflow.com/questions/17408815/fieldset-resizes-wrong-appears-to-have-unremovable-min-width-min-content/17863685#17863685
-
-*/
-@-moz-document url-prefix() {
-  fieldset { display: table-cell; }
 }
 
 .form-field-group {
@@ -1693,6 +1797,11 @@ fieldset > .form-group {
 
   &.form-group--inactive {
     opacity: 0.5;
+  }
+
+  &.is-readonly {
+    pointer-events: none;
+    cursor: not-allowed !important;
   }
 }
 
@@ -1880,6 +1989,11 @@ fieldset > .form-group {
   width: 50%;
   float: left;
 
+  @include phone {
+    width: auto;
+    float: none;
+  }
+
   .form-control {
     min-width: initial;
   }
@@ -1959,6 +2073,10 @@ textarea,
   outline: none;
   appearance: none;
 
+  @include phone {
+    font-size: 16px;
+  }
+
   &.form-control--small {
     padding: 5px 8px 4px;
     height: 30px;
@@ -2008,6 +2126,10 @@ input[type=url] {
   min-width: 400px;
 }
 
+.sidebar-content input[type=url] {
+  min-width: inherit;
+}
+
 .user-select.form-control {
   padding-right: 35px;
   min-width: 300px;
@@ -2023,6 +2145,7 @@ input.timeframe,
 input.time {
   box-sizing: content-box;
   padding: 0 6px;
+  height: 39px;
   line-height: 42px;
   flex-shrink: 0;
 
@@ -2050,13 +2173,25 @@ input.time.time--12 {
 }
 
 .richtext.form-control {
-  padding-bottom: 28px;
+  padding: 0;
 }
 
 .richtext.form-control [contenteditable] {
   height: auto;
   min-height: 82px;
   background: none;
+  padding: 7px 12px 35px;
+}
+
+.richtext.form-control [contenteditable="false"] {
+    cursor: not-allowed;
+    opacity: 1;
+    background: hsl(210,17%,93%);
+    border-color: hsl(210,10%,85%);
+    &:focus,
+    &.focus {
+      border-color: hsl(200,71%,59%);
+    }
 }
 
 .richtext.form-control .attachments.attachments--list:not(:empty) {
@@ -2070,9 +2205,13 @@ input.time.time--12 {
 
 .richtext-controls {
   display: flex;
-  margin: 0 -5px 10px;
+  margin: 7px 7px 0;
   padding: 3px 5px 10px;
   border-bottom: 1px solid rgba(0,0,0,.04);
+
+  @include phone {
+    flex-wrap: nowrap;
+  }
 }
 
 textarea.form-control {
@@ -2320,8 +2459,21 @@ input.has-error {
 
 .content {
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
   position: relative;
   background-color: #f8f9fa;
+
+  @include phone {
+    @include bidi-style(margin-left, $mobileNavigationWidth, margin-right, 0);
+    -webkit-overflow-scrolling: touch;
+
+    .navigation:hover ~ &,
+    .navigation.is-hovered ~ &,
+    .navigation:active ~ & {
+      transform: translateX(#{$mobileNavigationWidthOpen - $mobileNavigationWidth});
+      @include rtl(transform, translateX(-#{$mobileNavigationWidthOpen - $mobileNavigationWidth}));
+    }
+  }
 }
 
   .content.fit {
@@ -2375,7 +2527,7 @@ input.has-error {
 
 .selected-clue {
   position: relative;
-  @extend .zIndex-7;
+  @extend .zIndex-11;
   pointer-events: none;
 }
 
@@ -2433,6 +2585,10 @@ input.has-error {
     box-shadow:
       0 8px 17px 0 rgba(0, 0, 0, 0.1),
       0 6px 20px 0 rgba(0, 0, 0, 0.05);
+
+    @include phone {
+      width: 280px;
+    }
   }
 
   .modal-controls {
@@ -2503,6 +2659,7 @@ input.has-error {
 
   &-container {
     display: flex;
+    flex-wrap: wrap;
     justify-content: flex-end;
     border: 1px solid hsl(213,14%,91%);
 
@@ -2520,7 +2677,7 @@ input.has-error {
   }
 
   a {
-    color: hsl(206,8%,50%);
+    color: inherit;
   }
 
   .label {
@@ -2638,6 +2795,11 @@ kbd {
   align-items: center;
   flex-wrap: wrap;
   width: 100%;
+
+  @include phone {
+    align-items: flex-start;
+    flex-wrap: nowrap;
+  }
 }
 
 .page-header--center {
@@ -2656,12 +2818,20 @@ kbd {
   h2 {
     margin-top: 9px;
     margin-bottom: 7px;
+
+    @include phone {
+      margin-top: 4px;
+    }
   }
 
   .suffix {
     margin-left: 5px;
     margin-top: 6px;
     display: inline-block;
+
+    @include phone {
+      margin-top: 4px;
+    }
   }
 }
 
@@ -2684,10 +2854,19 @@ kbd {
   flex: 1;
   min-width: 0; /* firefox flexbug */
 
+  @include phone {
+    flex: 0 1 auto;
+    min-width: auto;
+  }
+
   .btn {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+
+    @include phone {
+      flex-shrink: 0;
+    }
   }
 
   .btn + .btn {
@@ -2784,6 +2963,11 @@ kbd {
     0 8px 17px 0 rgba(0, 0, 0, 0.2),
     0 6px 20px 0 rgba(0, 0, 0, 0.19);
 
+  @include phone {
+    width: auto;
+    padding: 12px 15px;
+  }
+
   label {
     color: hsl(0,0%,60%);
   }
@@ -2816,8 +3000,12 @@ kbd {
 }
 
 .login {
-  padding: 24px 24px 97px;
+  padding: 24px;
   color: hsl(212,8%,40%);
+
+  @include phone {
+    padding: 15px 10px;
+  }
 
   a {
     color: hsl(229,2%,51%);
@@ -2851,6 +3039,10 @@ kbd {
 .login .hero-unit {
   width: 430px;
   margin: 0 0 28px;
+
+  @include phone {
+    width: auto;
+  }
 }
 
   .login .company-logo {
@@ -2858,12 +3050,20 @@ kbd {
     max-width: 200px;
     margin: 20px auto 42px;
     display: block;
+
+    @include phone {
+      margin: 15px auto 28px;
+    }
   }
 
   .login p {
     margin: 0 auto 22px;
     max-width: 400px;
     text-align: center;
+
+    @include phone {
+      margin: 0 auto 15px;
+    }
   }
 
   .login hr {
@@ -2882,13 +3082,9 @@ kbd {
   align-items: center;
   justify-content: center;
   color: hsl(233,7%,26%);
-  margin: auto 0 34px -16px;
-  @include rtl(margin, auto -16px 34px 0);
+  margin: 34px 0 10px -16px;
+  @include rtl(margin, 34px -16px 10px 0);
   cursor: default;
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
 
   .icon-logo {
     @include bidi-style(margin-right, 8px, margin-left, 0);
@@ -2904,10 +3100,14 @@ kbd {
 
 .fullscreen {
   @extend .fit;
-  display: table;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   width: 100%;
   height: 100%;
   min-height: 100vh;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .fullscreen p {
@@ -2915,9 +3115,7 @@ kbd {
 }
 
 .fullscreen-center {
-  display: table-cell;
-  vertical-align: middle;
-  text-align: center;
+  margin: auto;
 }
 
 .fullscreen-body {
@@ -2941,6 +3139,11 @@ ol.tabs li {
   border: 1px solid rgba(0,8,14,.08);
   border-radius: 3px;
   background: white;
+
+  @include phone {
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
   .tabs-condensed .tab {
@@ -2963,6 +3166,12 @@ ol.tabs li {
     min-width: 0;
     flex-grow: 1;
     @extend .u-clickable;
+
+    @include phone {
+      flex-shrink: 0;
+      display: block;
+      text-align: center;
+    }
 
     &.active {
       color: white;
@@ -3061,9 +3270,17 @@ ol.tabs li {
     font-size: 14px;
     border-radius: 8px;
 
+    @include phone {
+      margin: 5px auto 28px;
+    }
+
     .tab {
       height: auto;
       padding: 10px 23px 9px;
+
+      @include phone {
+        padding: 8px 20px;
+      }
 
       &:first-child {
         border-radius: 8px 0 0 8px;
@@ -3090,6 +3307,10 @@ ol.tabs li {
 
   .dashboard .tabs--big {
     width: 50%;
+
+    @include phone {
+      width: auto;
+    }
   }
 
 .separator {
@@ -3177,10 +3398,6 @@ ol.tabs li {
     background: hsl(10,78%,53%);
   }
 
-  &.auth-provider--oauth2 {
-    background: hsl(0,0%,15%);
-  }
-
   &.auth-provider--office365 {
     background: hsl(15,100%,47%);
   }
@@ -3197,10 +3414,14 @@ ol.tabs li {
     background: #13387e;
   }
 
-  .provider-icon.icon-csi-button{
+  .provider-icon.icon-csi-button {
       background-color:white;
       width: 29px;
       height: 28px;
+  }
+
+  &.auth-provider--sso {
+    background: #454545;
   }
 
   .provider-name {
@@ -3403,6 +3624,10 @@ ol.tabs li {
   fill: white;
 }
 
+.icon-sso-button {
+  fill: white;
+}
+
 
 /*
  * removed margin of forms to not break the layout with submit buttons within <form></form> area e. g. for modal dialogs
@@ -3448,6 +3673,10 @@ ol.tabs li {
     margin-left: -10px;
     margin-right: -10px;
 
+    @include phone {
+      display: block;
+    }
+
     fieldset {
       flex-basis: 100%;
       display: flex;
@@ -3472,6 +3701,10 @@ ol.tabs li {
       @each $size in $sizes {
         &[data-width="#{$size}"] {
           width: calc(#{$size} * 100%);
+
+          @include phone {
+            width: 100%;
+          }
         }
       }
     }
@@ -3560,6 +3793,10 @@ footer {
   display: none;
   align-items: center;
 
+  @include phone {
+    margin-top: 0;
+  }
+
   .tabsHolder {
     flex: 1;
     @include bidi-style(margin-right, 20px, margin-left, 0);
@@ -3569,6 +3806,16 @@ footer {
   .tabs {
     margin: 0;
     position: relative;
+
+    @include phone {
+      overflow: visible;
+    }
+  }
+
+  .tab {
+    @include phone {
+      flex-shrink: 1;
+    }
   }
 
   .tabs-clone {
@@ -3578,10 +3825,23 @@ footer {
   .dropdown {
     min-width: 0;
     width: 336px;
+
+    @include phone {
+      left: -1px;
+      right: auto;
+      width: calc(100vw - 70px);
+    }
   }
 
   @include small-desktop {
     display: flex;
+  }
+}
+
+.table-overview {
+  @include phone {
+    margin-left: -10px;
+    margin-right: -10px;
   }
 }
 
@@ -3592,8 +3852,7 @@ footer {
 .bulkAction {
   position: fixed;
   bottom: 0;
-  left: $sidebarWidth + $navigationWidth;
-  right: 0;
+  @include bidi-style(left, $sidebarWidth + $navigationWidth, right, 0);
   min-width: $minWidth - $sidebarWidth - $navigationWidth;
   background: white;
   z-index: 1;
@@ -3603,14 +3862,39 @@ footer {
     0 -3px rgba(0,0,0,.01);
 
   @include small-desktop {
-    left: $navigationWidth;
+    @include bidi-style(left, $navigationWidth, right, 0);
     min-width: $minWidth - $sidebarWidth;
+  }
+
+  &.no-sidebar {
+    @include bidi-style(left, $navigationWidth, right, 0);
+    min-width: $minWidth - $navigationWidth;
+
+    @include small-desktop {
+      min-width: $minWidth;
+    }
+  }
+
+  @include phone {
+    @include bidi-style(left, $mobileNavigationWidth, right, 0);
+    min-width: 0;
+
+    .navigation:hover ~ &,
+    .navigation.is-hovered ~ &,
+    .navigation:active ~ & {
+      @include bidi-style(left, $mobileNavigationWidthOpen, right, 0);
+    }
   }
 }
 
   .bulkAction-firstStep {
     display: flex;
     align-items: center;
+
+    @include phone {
+      flex-direction: column;
+      align-items: flex-end;
+    }
   }
 
   .bulkAction-firstStep .has-error {
@@ -3621,10 +3905,22 @@ footer {
   .bulkAction-secondStep {
     display: flex;
     flex-direction: column;
+
+    &-bottom {
+      display: flex;
+
+      @include phone {
+        display: block;
+      }
+    }
   }
 
   .bulkAction .btn {
     margin: 0 16px;
+
+    @include phone {
+      margin: 10px;
+    }
   }
 
   .bulkAction .btn--text {
@@ -3634,6 +3930,12 @@ footer {
   .bulkAction-controls {
     margin-top: 10px;
     @include bidi-style(margin-left, auto, margin-right, 0);
+
+    @include phone {
+      margin-top: 0;
+      display: flex;
+      justify-content: space-between;
+    }
   }
 
 .panel {
@@ -3742,11 +4044,34 @@ footer {
   width: $navigationWidth;
   background: hsl(232,10%,16%);
   position: relative;
-}
 
-  .navigation:empty {
-    display: none !important;
+  @include phone {
+    position: absolute;
+    @include bidi-style(left, 0, right, auto);
+    top: 0;
+    left: 0;
+    width: $mobileNavigationWidth;
+    height: 100%;
+    z-index: 1;
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    &:empty {
+      display: none !important;
+    }
+
+    &:hover,
+    &:active,
+    &.is-hovered {
+      width: $mobileNavigationWidthOpen;
+
+      .menu-item-name {
+        display: block;
+        padding-left: 15px;
+      }
+    }
   }
+}
 
 .menu {
   padding: 0;
@@ -3780,6 +4105,11 @@ footer {
     display: flex;
     align-items: center;
     @extend %clickable;
+
+    @include phone {
+      padding: 0 13px;
+      position: relative;
+    }
 
     .accessory-icon {
       fill: hsl(208,8%,29%);
@@ -3820,6 +4150,35 @@ footer {
     .dropdown-icon {
       fill: currentColor;
     }
+
+    .zammad-switch {
+      @include phone {
+        .navigation:not(:hover):not(:active):not(.is-hovered) & {
+          position: absolute;
+          right: 12px;
+          top: 12px;
+          width: auto;
+          height: auto;
+          border-radius: 0;
+
+          input:checked + label {
+            background: $supergood-color;
+          }
+
+          label {
+            width: 8px;
+            height: 8px;
+            background: red;
+            border-radius: 100%;
+            transition: none;
+
+            &:after {
+              display: none;
+            }
+          }
+        }
+      }
+    }
   }
 
   .menu-item-icon {
@@ -3827,11 +4186,24 @@ footer {
     width: 24px;
     height: 24px;
     fill: hsl(206,7%,37%);
+
+    @include phone {
+      @include bidi-style(margin-right, 0, margin-left, 0);
+    }
   }
 
   .menu-item-name {
     flex: 1;
     margin-top: 2px;
+
+    @include phone {
+      display: none;
+    }
+  }
+
+  .call-widgets {
+    overflow-y: auto;
+    max-height: 30vh;
   }
 
   .call-widget {
@@ -3877,6 +4249,12 @@ footer {
   background: #2c2d36;
   flex: 1;
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
+
+  @include phone {
+    overflow-x: hidden;
+    min-height: 60px;
+  }
 }
 
   .tasks.tasks--standalone {
@@ -3891,11 +4269,17 @@ footer {
       margin-bottom: 9px;
       display: flex;
 
-      .icon-holder .icon {
-        width: 16px;
-        height: 16px;
-        vertical-align: middle;
-        @include bidi-style(margin-right, 4px, margin-left, 0);
+      .icon-holder {
+        &:first-child .icon-task-state {
+          margin-left: -2px;
+        }
+
+        .icon {
+          width: 16px;
+          height: 16px;
+          vertical-align: middle;
+          @include bidi-style(margin-right, 4px, margin-left, 0);
+        }
       }
     }
 
@@ -3928,6 +4312,10 @@ footer {
     display: flex;
     align-items: center;
     @extend .u-clickable;
+
+    @include phone {
+      width: $mobileNavigationWidthOpen;
+    }
   }
 
     .tasks-navigation .nav-tab {
@@ -3941,6 +4329,12 @@ footer {
 
     .navigation .nav-tab-name {
       text-align: start;
+
+
+      &.is-inactive {
+        text-decoration: line-through;
+        opacity: .73;
+      }
     }
 
     .tasks-navigation .nav-tab-icon .error {
@@ -3970,6 +4364,11 @@ footer {
   .nav-tab.nav-tab--search {
     height: 30px;
     padding-top: 9px;
+
+    &.is-inactive {
+      text-decoration: line-through;
+      opacity: .73;
+    }
   }
 
   .nav-tab-icon {
@@ -4015,6 +4414,10 @@ footer {
     @extend .u-clickable;
     display: flex;
     align-items: center;
+
+    @include phone {
+      visibility: visible;
+    }
   }
 
     .nav-tab:hover .nav-tab-close {
@@ -4128,6 +4531,12 @@ footer {
   display: flex;
   align-items: flex-start;
   background-color: inherit;
+
+  @include phone {
+    padding: 10px 5px 5px;
+    @include rtl(padding, 10px 5px 5px);
+    display: block;
+  }
 }
 
   .search-holder {
@@ -4136,6 +4545,11 @@ footer {
     position: relative;
     transition: margin-right 120ms;
     will-change: margin-right;
+
+    @include phone {
+      transition: none;
+      will-change: initial;
+    }
   }
 
   .empty-search {
@@ -4163,7 +4577,7 @@ footer {
 
   .search input[type=search] {
     width: 100%;
-    padding: 5px 33px 5px 33px;
+    padding: 5px 33px;
     height: 30px;
     color: #ECECEC;
     background: #31373b;
@@ -4174,6 +4588,17 @@ footer {
     position: relative;
     z-index: 1;
     appearance: textfield;
+
+    @include phone {
+      padding: 5px 33px;
+      font-size: 16px;
+    }
+  }
+
+  .search:not(.filled):not(.focused) input[type=search] {
+    @include phone {
+      padding: 0;
+    }
   }
 
   input[type=search]::-webkit-search-cancel-button,
@@ -4210,6 +4635,7 @@ footer {
     opacity: .5;
     fill: white;
     transition: .1s 0s;
+    pointer-events: none;
   }
 
   .search.loading .icon-magnifier {
@@ -4220,11 +4646,36 @@ footer {
   .search.focused .search-holder {
     transition: margin-right 240ms;
     @include bidi-style(margin-right, -59px, margin-left, 0);
+
+    @include phone {
+      margin: 0 !important;
+    }
   }
 
   .search.focused .logo {
     opacity: 0;
     z-index: -1;
+
+    @include phone {
+      opacity: 1;
+      z-index: initial;
+    }
+  }
+
+  .search.filled {
+    .search-holder {
+      @include phone {
+        .navigation:not(:hover):not(:active):not(.is-hovered) & {
+          width: 210px;
+        }
+      }
+    }
+
+    .logo {
+      @include phone {
+        opacity: 0;
+      }
+    }
   }
 
   .search .logo {
@@ -4232,10 +4683,20 @@ footer {
     @extend .u-clickable, .zIndex-3;
     margin: -4px 10px 0 12px;
     transition: 240ms;
+
+    @include phone {
+      margin: 10px 0 0;
+    }
   }
 
   .search .logo .icon-logo {
     position: relative;
+
+    @include phone {
+      width: 35px;
+      height: 30px;
+      margin-left: 4px;
+    }
   }
 
     .search .logo .activity-counter {
@@ -4269,6 +4730,7 @@ footer {
     top: 53px;
     display: none;
     overflow: auto;
+    -webkit-overflow-scrolling: touch;
 
     .divider {
       height: 1px;
@@ -4332,6 +4794,10 @@ footer {
     position: relative;
     flex-shrink: 0;
     display: flex;
+
+    @include phone {
+      flex-direction: column;
+    }
   }
 
     .user-menu > li {
@@ -4347,6 +4813,10 @@ footer {
       display: flex;
       align-items: center;
       justify-content: center;
+
+      @include phone {
+        height: 46px;
+      }
     }
 
     .user-menu .list-button *:not(.dropdown-nose):not(.icon-crown) {
@@ -4401,6 +4871,10 @@ footer {
 
     .user-menu > li:not(:last-child) {
       border-right: 1px solid #2c2d36;
+
+      @include phone {
+        border: none;
+      }
     }
 
   .dropdown-nose {
@@ -4464,9 +4938,19 @@ footer {
   position: relative;
   flex-shrink: 0;
 
+  @include phone {
+    width: 30px;
+    height: 30px;
+  }
+
   &.size-30 {
     width: 30px;
     height: 30px;
+
+    @include phone {
+      width: 22px;
+      height: 22px;
+    }
   }
 
   .icon-crown {
@@ -4476,6 +4960,11 @@ footer {
     margin-left: -14px;
     top: -15px;
     fill: hsl(47,100%,59%);
+
+    @include phone {
+      width: 20px;
+      margin-left: -10px;
+    }
   }
 
   &-status {
@@ -4496,10 +4985,19 @@ footer {
     width: 50px;
     height: 50px;
 
+    @include phone {
+      width: 36px;
+      height: 36px;
+    }
+
     .icon-crown {
       width: 36px;
       margin-left: -18px;
-      top: -15px;
+
+      @include phone {
+        width: 26px;
+        margin-left: -13px;
+      }
     }
   }
 
@@ -4507,11 +5005,27 @@ footer {
     width: 82px;
     height: 82px;
 
+    @include phone {
+      width: 60px;
+      height: 60px;
+    }
+
     .icon-crown {
       width: 64px;
       margin-left: -32px;
       top: -16px;
+
+      @include phone {
+        width: 46px;
+        margin-left: -43px;
+        top: -15px;
+      }
     }
+  }
+
+  &--vacation {
+    filter: grayscale(70%);
+    opacity: 1;
   }
 
   &--idle {
@@ -4522,11 +5036,6 @@ footer {
   &--inactive {
     filter: grayscale(100%);
     opacity: 0.2;
-  }
-
-  &--vacation {
-    filter: grayscale(70%);
-    opacity: 1;
   }
 
   &--unique {
@@ -4541,22 +5050,38 @@ footer {
     text-shadow: 0 1px rgba(0,0,0,.2);
     cursor: default;
 
+    @include phone {
+      line-height: 30px;
+    }
+
     &.size-30 {
       font-size: 10px;
       line-height: 32px;
       background-size: 225px 170px;
+
+      @include phone {
+        line-height: 22px;
+      }
     }
 
     &.size-50 {
       font-size: 16px;
       line-height: 52px;
       background-size: 375px 283px;
+
+      @include phone {
+        line-height: 38px;
+      }
     }
 
     &.size-80 {
       font-size: 26px;
       line-height: 84px;
       background-size: 600px 452px;
+
+      @include phone {
+        line-height: 62px;
+      }
     }
   }
 
@@ -4635,6 +5160,7 @@ footer {
   background: white;
   @include bidi-style(border-right, 1px solid #e6e6e6, border-left, none);
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
 
   @include small-desktop {
     &.optional {
@@ -4682,6 +5208,23 @@ footer {
   .btn-list {
     margin-bottom: 5px;
   }
+
+  &-button {
+    .sidebar-block-header + &.text-muted {
+      margin-top: 3px;
+    }
+  }
+}
+
+.sidebar-git-issue-delete {
+  text-align: right;
+  @include rtl(text-align, left);
+  float: right;
+  @include rtl(float, left);
+}
+
+.sidebar-git-issue-content {
+  width: 90%;
 }
 
 .main + .sidebar {
@@ -4693,8 +5236,25 @@ footer {
 .NavBarProfile.sidebar, {
   width: $sidebarWidth;
 
+  @include phone {
+    width: 50px;
+    padding-left: 10px;
+    padding-right: 10px;
+
+    &:hover,
+    &:active {
+      width: 165px;
+      padding-left: 15px;
+      padding-right: 15px;
+    }
+  }
+
   h2 {
     margin: 21px 0 12px;
+
+    @include phone {
+      white-space: nowrap;
+    }
   }
 
   h2:first-child {
@@ -4798,7 +5358,12 @@ footer {
 .main {
   padding: 10px 20px;
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
   position: relative;
+
+  @include phone {
+    padding: 10px;
+  }
 
   &--large-padding {
     padding: 30px 40px;
@@ -4825,10 +5390,15 @@ footer {
   width: 372px;
   max-width: 9999px;
   border-radius: 0;
+  margin: 0 5px;
   border: none;
   color: hsl(206,7%,28%);
   box-shadow: 0 1px 14px rgba(0,8,14,.25);
   @include rtl(text-align, right);
+
+  @include phone {
+    width: auto;
+  }
 }
 
 .popover--has-horizontal-form {
@@ -4837,12 +5407,18 @@ footer {
 
   .popover-body {
     overflow: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .popover-title {
     border: none;
     background: none;
     padding: 21px 17px 4px;
+
+    .is-inactive {
+      text-decoration: line-through;
+      color: #ccc;
+    }
   }
 
   .popover-content {
@@ -4901,10 +5477,22 @@ footer {
     color: #a1a4a7;
   }
 
+  .popover .person {
+    &.is-inactive {
+      text-decoration: line-through;
+      color: #ccc;
+    }
+  }
+
   .popover .user-organization {
     @extend .u-textTruncate;
     margin-bottom: 8px;
     margin-top: -4px;
+
+    &.is-inactive {
+      text-decoration: line-through;
+      color: #ccc;
+    }
   }
 
   .popover-block {
@@ -4952,6 +5540,13 @@ footer {
     flex-direction: column;
     @extend .zIndex-10;
 
+    @include phone {
+      left: $mobileNavigationWidth;
+      @include rtl(right, $mobileNavigationWidth);
+      min-width: auto;
+      width: calc(100% - #{$mobileNavigationWidth} - 8px);
+    }
+
     &.is-visible {
       display: flex;
     }
@@ -4965,6 +5560,10 @@ footer {
       left: -11px;
       @include rtl(left, 408px);
       @include rtl(transform, rotate(180deg));
+
+      @include phone {
+        top: 61px !important;
+      }
     }
 
     .popover-content {
@@ -5022,15 +5621,26 @@ footer {
   padding: 2px 0 0 50px;
   position: relative;
   min-height: 40px;
-  max-width: 192px;
+  padding-right: 48px;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  min-width: 192px;
 
   .avatar {
     position: absolute;
     left: 0;
     top: 0;
+  }
+
+  .user-popover.is-inactive {
+    text-decoration: line-through;
+    opacity: .73;
+  }
+
+  .btn.js-newTicket {
+    position: absolute;
+    right: 0;
   }
 }
 
@@ -5097,6 +5707,7 @@ footer {
 .ok-color        { fill: $ok-color; }
 .bad-color       { fill: $bad-color; }
 .superbad-color  { fill: $superbad-color; }
+.danger-color    { color: $danger-color; }
 
 .stat-widgets {
   margin: -7px -7px 20px;
@@ -5138,6 +5749,10 @@ footer {
       top: 1px;
       opacity: .2;
       cursor: help;
+    }
+
+    .notification-icon-help {
+      opacity: .2;
     }
 
     .stat-label {
@@ -5404,6 +6019,14 @@ footer {
 
 .form-inline {
   display: flex;
+
+  @include phone {
+    flex-wrap: wrap;
+
+    .alert {
+      flex-basis: 100%;
+    }
+  }
 }
 
 .form-inline .input-group-addon,
@@ -5418,6 +6041,11 @@ footer {
     position: relative;
     height: 60px;
     flex: 1 1 auto;
+
+    @include phone {
+      width: 50%;
+      margin-bottom: 0;
+    }
 
     &.datetime {
       min-width: 140px;
@@ -5472,6 +6100,17 @@ footer {
   .form-inline .form-group:not(:last-child),
   .form-inline.form-inline--enclosed .form-group {
     border-right: 1px solid #f0f0f0;
+  }
+
+  .form-inline .form-group,
+  .form-inline.form-inline--enclosed .form-group {
+    @include phone {
+      border-bottom: 1px solid #f0f0f0;
+
+      &:nth-child(even) {
+        border-right-width: 0;
+      }
+    }
   }
 
   .form-inline .input-group-addon {
@@ -5533,6 +6172,14 @@ footer {
 
   .bulkAction-secondStep .form-group {
     min-width: 140px;
+
+    @include phone {
+      min-width: 0;
+
+      &.textarea {
+        border-bottom-width: 0;
+      }
+    }
   }
 
   .bulkAction-secondStep .form-inline .textarea.form-group {
@@ -5570,6 +6217,11 @@ footer {
   align-items: center;
   padding: 28px 0 0 0;
   @include bidi-style(margin-right, -40px, margin-left, 0);
+
+  @include phone {
+    padding: 10px;
+    @include bidi-style(margin-right, 0, margin-left, 0);
+  }
 }
 
 .icon-marker {
@@ -5581,10 +6233,18 @@ footer {
 .ticketZoom .ticketZoom-header {
   margin-top: 6px;
   padding: 0;
+
+  @include phone {
+    margin-top: 10px;
+  }
 }
 
 .ticketZoom .ticket-article {
   margin-top: 55px;
+
+  @include phone {
+    margin-top: 40px;
+  }
 }
 
 .ticketZoom > .overview-navigator {
@@ -5597,11 +6257,19 @@ footer {
   max-width: 1080px;
   margin: 0 auto;
   padding: 0 21px;
+
+  @include phone {
+    padding: 0 10px;
+  }
 }
 
   .ticket-title {
     max-width: 1080px;
     padding: 0 81px;
+
+    @include phone {
+      padding: 0 10px;
+    }
   }
 
   .ticket-title-update {
@@ -5634,6 +6302,11 @@ footer {
     position: absolute;
     right: 0;
     top: 5px;
+
+    @include phone {
+      position: static;
+      margin: 0 5px 7px;
+    }
   }
 
   &.agent .avatar {
@@ -5652,6 +6325,10 @@ footer {
     position: relative;
     height: 100%;
     margin: 0 55px;
+
+    @include phone {
+      margin: 0;
+    }
   }
 
   .article-content {
@@ -5659,6 +6336,14 @@ footer {
     position: relative;
     z-index: 1;
     padding: 0 55px;
+
+    @include phone {
+      padding: 0;
+    }
+
+    &.article-actions {
+      justify-content: space-around;
+    }
   }
 
   .article-content-meta {
@@ -5671,11 +6356,21 @@ footer {
     color: white;
     padding: 21px 25px 11px;
     margin: 0 12px;
+
+    @include phone {
+      margin: 0 5px;
+      padding: 10px 10px 5px;
+    }
   }
 
     .article-meta.bottom {
       padding-top: 17px;
       padding-bottom: 8px;
+
+      @include phone {
+        padding-top: 10px;
+        padding-bottom: 5px;
+      }
     }
 
     .article-meta-row {
@@ -5685,10 +6380,21 @@ footer {
     .article-meta-key {
       width: 20%;
       text-transform: uppercase;
+      flex-shrink: 0;
+
+      @include phone {
+        width: 50px;
+      }
     }
 
     .article-meta-value {
       @include bidi-style(margin-left, 8px, margin-right, 0);
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      span {
+        white-space: nowrap;
+      }
     }
 
     .article-meta-icon {
@@ -5775,6 +6481,10 @@ footer {
     border: 1px solid hsl(240,4%,95%);
     box-shadow: 0 0 1px rgba(0,0,0,.06) inset;
     position: relative;
+
+    @include phone {
+      padding: 10px;
+    }
 
     /* email css reset */
     p {
@@ -5867,6 +6577,13 @@ footer {
       left: -6px;
       top: 15px;
       overflow: hidden;
+
+      @include phone {
+        left: 14px !important;
+        top: -5px;
+        width: 9px;
+        height: 6px;
+      }
     }
 
     .bubble-arrow:after {
@@ -5880,11 +6597,22 @@ footer {
       border: 1px solid hsl(240,4%,95%);
       box-shadow: 0 0 1px rgba(0,0,0,.06) inset;
       transform: rotate(-45deg);
+
+      @include phone {
+        top: 2px;
+        left: -1px;
+      }
     }
 
     .customer.ticket-article-item .bubble-arrow {
       left: auto;
       right: -6px;
+
+      @include phone {
+        left: 14px;
+        right: auto;
+        top: -4px;
+      }
     }
 
     .customer.ticket-article-item .bubble-arrow:after {
@@ -5893,6 +6621,11 @@ footer {
       right: 2px;
       border-color: hsl(199,38%,92%);
       box-shadow: none;
+
+      @include phone {
+        left: -1px;
+        right: auto;
+      }
     }
 
   .attachments.attachments--list:not(:empty) {
@@ -5901,6 +6634,12 @@ footer {
     margin: 10px -20px 0;
     padding: 26px 20px 7px 72px;
     position: relative;
+
+    @include phone {
+      margin-left: -10px;
+      margin-right: -10px;
+      padding: 20px 15px 7px 30px;
+    }
   }
 
     .attachments.attachments--list .attachments-title {
@@ -5915,12 +6654,18 @@ footer {
       }
     }
 
-    .attachments .icon-paperclip,
-    .attachments .icon-overviews {
+    .attachments > .icon:first-child {
       position: absolute;
       left: 33px;
       top: 27px;
       fill: hsl(240,1%,84%);
+
+      @include phone {
+        width: 16px;
+        height: 16px;
+        left: 12px;
+        top: 20px;
+      }
     }
 
   .attachments-block {
@@ -5940,11 +6685,11 @@ footer {
   }
 
   .ticket-article-item .task-subline {
-    margin-top: 12px;
+    margin-top: 7px;
   }
 
   .article-action {
-    padding-top: 5px;
+    padding: 5px 16px 5px 16px;
     margin-top: 5px;
     color: hsl(198,4%,56%);
     font-size: 12px;
@@ -6025,6 +6770,7 @@ footer {
 
 .shortcut > .dropdown-menu {
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
   position: absolute;
   max-width: 100%;
   min-width: 0;
@@ -6034,6 +6780,13 @@ footer {
   position: absolute;
   left: 0;
   top: 5px;
+
+  @include phone {
+    position: static;
+    margin: 0 0 10px;
+    display: flex;
+    align-items: center;
+  }
 }
 
 .article-add[data-type=email] .editControls {
@@ -6045,8 +6798,26 @@ footer {
     top: 43px;
     @extend .u-clickable, .zIndex-4;
 
+    @include phone {
+      position: relative;
+      z-index: initial;
+      top: 0 !important;
+      transform: none !important;
+      opacity: 1 !important;
+    }
+
     &.is-hidden {
       display: none;
+
+      @include phone {
+        display: block;
+      }
+    }
+  }
+
+  .editControls-item:nth-child(2) {
+    @include phone {
+      z-index: 1;
     }
   }
 
@@ -6060,6 +6831,11 @@ footer {
 
   .editControls-item:not(:last-child) {
     border-bottom: 1px solid #e6e6e6;
+
+    @include phone {
+      border-bottom: 0;
+      border-right: 1px solid #e6e6e6;
+    }
   }
 
   .editControls-iconHolder {
@@ -6068,6 +6844,17 @@ footer {
     display: flex;
     align-items: center;
     justify-content: center;
+
+    @include phone {
+      width: 48px;
+      height: 32px;
+    }
+  }
+
+  .editControls-icon {
+    @include phone {
+      line-height: .7;
+    }
   }
 
   .editControls-icon .icon {
@@ -6083,6 +6870,11 @@ footer {
     justify-content: center;
     border-radius: 4px;
     box-shadow: 0 1px 7px rgba(0,8,14,.13);
+
+    @include phone {
+      top: -4px;
+      left: 7px;
+    }
 
     &.is-hidden {
       display: none;
@@ -6265,6 +7057,10 @@ footer {
       outline: none;
       resize: none;
       height: auto;
+
+      @include phone {
+        font-size: 16px;
+      }
     }
 
     .article-new .bubble-arrow:after {
@@ -6281,13 +7077,23 @@ footer {
     padding: 10px 0;
     color: #b3b3b3;
     overflow: hidden;
-    @extend .u-unclickable, .u-textTruncate;
+    @extend .u-textTruncate;
   }
 
     .attachments:not(:empty) {
       padding: 9px 5px;
       border-top: 1px solid hsl(0,0%,93%);
       margin: 6px -12px 30px;
+    }
+
+    .ticket-create .attachments:not(:empty) {
+      margin-left: 0;
+      margin-right: 0;
+      margin-bottom: 56px;
+    }
+
+    .ticket-create .attachment--row {
+      line-height: 1.45;
     }
 
     .attachment.attachment--row {
@@ -6352,6 +7158,10 @@ footer {
         white-space: nowrap;
         @include bidi-style(margin-left, auto, margin-right, 0);
         @extend .u-clickable;
+
+        @include phone {
+          display: block;
+        }
       }
 
       .attachment:hover .attachment--preview .attachment-delete {
@@ -6478,6 +7288,10 @@ footer {
   */
   overflow-x: hidden;
   overflow-y: scroll;
+
+  @include phone {
+    @include bidi-style(padding-right, 0 !important, padding-left, 0);
+  }
 }
 
 .tabsSidebar-sidebarSpacer {
@@ -6577,6 +7391,7 @@ footer {
     top: 0;
     bottom: 0;
     transition: 500ms;
+    z-index: 300;
 
     &.tabsSidebar--attributeBarSpacer {
       bottom: 60px;
@@ -6597,6 +7412,10 @@ footer {
     top: 0;
     bottom: 0;
     pointer-events: none;
+
+    @include phone {
+      @include bidi-style(left, -47px, right, auto);
+    }
   }
 
   .test {
@@ -6615,6 +7434,11 @@ footer {
     display: flex;
     align-items: center;
     justify-content: center;
+
+    @include phone {
+      width: 47px;
+      height: 50px;
+    }
   }
 
   .tabsSidebar-tab.is-changed:before {
@@ -6708,6 +7532,11 @@ footer {
     line-height: 14px;
     color: hsl(197,20%,93%);
 
+    @include phone {
+      left: 4px;
+      top: 4px;
+    }
+
     [data-tab="organization"] & {
       left: 7px;
 
@@ -6792,7 +7621,11 @@ footer {
   }
 
   &--success {
-    background: hsl(145,51%,45%);
+    &,
+    &[contenteditable]:hover,
+    &[contenteditable]:focus {
+      background: hsl(145,51%,45%);
+    }
   }
 
   &--warning {
@@ -6894,16 +7727,39 @@ footer {
 }
 
 .attributeBar {
-  height: 60px;
   background: white;
   transition: margin 250ms;
   flex-shrink: 0;
-  padding: 10px;
-  display: flex;
-  justify-content: flex-end;
 
   &.is-closed {
     margin-bottom: -60px;
+  }
+
+  @include phone {
+    &-reset {
+      flex-shrink: 5;
+    }
+
+    .btn,
+    .buttonDropdown {
+      min-width: 20px;
+
+      &--only-icon {
+        min-width: 36px;
+      }
+    }
+  }
+
+  &-inner {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 10px;
+  }
+
+  &-avatars {
+    margin-right: 10px;
   }
 
   &--border {
@@ -6917,6 +7773,10 @@ footer {
 
 .newTicket {
   padding: 14px 34px;
+
+  @include phone {
+    padding: 0;
+  }
 }
 
   .newTicket .sidebar {
@@ -6977,6 +7837,12 @@ footer {
     max-width: 1080px;
     margin-left: auto;
     margin-right: auto;
+
+    @include phone {
+      margin: 0;
+      border: none;
+      padding: 15px;
+    }
   }
 
   .box .page-header {
@@ -7021,6 +7887,10 @@ footer {
     margin-left: 4px;
     margin-right: 4px;
     width: calc(50% - 8px);
+
+    @include phone {
+      width: auto;
+    }
   }
 
   .box-controls {
@@ -7078,12 +7948,25 @@ footer {
   border-bottom: 1px solid hsl(0,0%,90%);
 }
 
+.type-tabs {
+  @include phone {
+    overflow: hidden;
+    -webkit-overflow-scrolling: none;
+  }
+}
+
 .type-tabs .tab {
   height: 40px;
   line-height: 42px;
   padding: 0 12px 0 12px;
   list-style: none;
   align-items: flex-start;
+
+  @include phone {
+    display: block;
+    text-align: center;
+    flex-shrink: 1;
+  }
 }
 
 .type-tabs .tab-icon {
@@ -7094,6 +7977,7 @@ footer {
   @include bidi-style(margin-right, 9px, margin-left, 0);
   margin-top: 11px;
   transform: scale(1.2);
+  flex-shrink: 0;
 }
 
 .type-tabs .tab.active .tab-icon {
@@ -7190,6 +8074,7 @@ footer {
   position: absolute;
   max-height: 380px;
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .ui-menu {
@@ -7202,6 +8087,11 @@ footer {
   .ui-menu-item {
     padding: 9px 15px;
     list-style-image: none;
+
+    &.is-inactive {
+      text-decoration: line-through;
+      opacity: .73;
+    }
 
     &:not(:first-child) {
       box-shadow: 0 1px rgba(255,255,255,.13) inset;
@@ -7362,6 +8252,11 @@ footer {
   margin-top: 35px;
   margin-bottom: 35px;
 
+  @include phone {
+    max-width: calc(100vw - 20px) !important;
+    margin: 10px;
+  }
+
   &.wizard {
     margin: 35px auto;
   }
@@ -7389,10 +8284,19 @@ footer {
   .modal-header {
     padding: 30px 23px 23px;
     border: none;
+
+    @include phone {
+      padding: 14px 15px;
+    }
   }
 
   .modal-header h1 {
     text-align: center;
+
+    @include phone {
+      text-align: initial;
+      line-height: 1.2;
+    }
   }
 
   .modal-close {
@@ -7403,6 +8307,13 @@ footer {
     @include rtl(left, 0);
     top: 0;
     @extend .u-clickable;
+
+    @include phone {
+      position: static;
+      padding: 21px;
+      margin: -14px -15px 0 0;
+      float: right;
+    }
   }
 
   .modal-close .icon-diagonal-cross {
@@ -7415,6 +8326,10 @@ footer {
 
   .modal-body {
     padding: 0 23px;
+
+    @include phone {
+      padding: 0 15px;
+    }
 
     h2:first-child {
       margin-top: 0;
@@ -7435,6 +8350,10 @@ footer {
     border: none;
     display: flex;
     @include rtl(text-align, left);
+
+    @include phone {
+      padding: 15px;
+    }
   }
 
   .modal-leftFooter,
@@ -7450,6 +8369,10 @@ footer {
   padding: 0 40px;
   @extend .zIndex-9;
   @include bidi-style(padding-left, 40px, padding-right, 0);
+
+  @include phone {
+    padding: 0 !important;
+  }
 
   .modal-backdrop {
     background: hsla(210,17%,93%,.55);
@@ -7553,6 +8476,20 @@ footer {
     }
   }
 
+  .dropdown li.with-category, .dropdown.dropdown--actions li.with-category {
+    line-height: 19.5px;
+
+    small {
+      color: #fff !important;
+    }
+  }
+
+  .dropdown.dropdown--actions li.with-category {
+    height: 39px;
+    padding: 0px 15px;
+    display: list-item;
+  }
+
   .dropdown li:not(:first-child) {
     box-shadow: 0 1px rgba(255,255,255,.13) inset;
   }
@@ -7568,7 +8505,7 @@ footer {
 
   .dropdown-menu > li.danger:hover,
   .dropdown-menu > li.danger.is-active {
-    background: hsl(0,65%,55%);
+    background: $danger-color;
   }
 
   .dropdown-menu > li.create:hover,
@@ -7730,6 +8667,13 @@ footer {
   display: flex;
   align-items: center;
   @extend .u-clickable;
+
+  &.is-inactive {
+    .recipientList-name {
+      text-decoration: line-through;
+      opacity: .73;
+    }
+  }
 }
 
   .recipientList-entry .recipientList-iconSpacer {
@@ -7784,6 +8728,10 @@ footer {
 
   .recipientList-detail {
     opacity: 0.5;
+
+    &.is-inactive > span {
+      text-decoration: line-through;
+    }
   }
 
   .recipientList-icon.plus {
@@ -8143,6 +9091,11 @@ footer {
   margin-bottom: 42px;
   max-width: 700px;
 
+  @include phone {
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   &--stretched {
     max-width: none;
   }
@@ -8178,11 +9131,26 @@ footer {
   right: 0;
   padding: 0 22px;
   position: absolute;
-  transform: translateY(-64px);
+  transform: translateY(-100%);
+
+  @include phone {
+    height: 50px;
+    padding: 0 6px;
+    overflow: hidden;
+
+    &.is-closed {
+      overflow: visible;
+    }
+  }
 }
 
   .scrollPageHeader small {
     color: hsl(198,19%,72%);
+
+    @include phone {
+      margin-top: 1px;
+      @include bidi-style(margin-left, 3px, margin-right, 0);
+    }
   }
 
   .scrollPageHeader .ticket-title {
@@ -8196,6 +9164,11 @@ footer {
     font-size: 19px;
     margin: 0 15px;
     @extend .u-textTruncate;
+
+    @include phone {
+      font-size: 17px;
+      margin: 0 5px;
+    }
   }
 
 .wizard {
@@ -8235,6 +9208,10 @@ footer {
 .wizard-body {
   flex: 1;
   padding-bottom: 15px;
+
+  @include phone {
+    width: 100%;
+  }
 
   .form-control {
     min-width: 0;
@@ -8349,6 +9326,14 @@ label + .wizard-buttonList {
   width: 52px;
   border-radius: 0 5px 5px 0;
   background: linear-gradient(to right, rgba(255,255,255,0), white 33%);
+
+  &--no-background {
+    background: none;
+  }
+}
+
+.input-feedback--no-background {
+  background: none;
 }
 
 .input-feedback .icon {
@@ -8369,6 +9354,7 @@ label + .wizard-buttonList {
 .progressTable td {
   padding: 8px;
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
   width: 33%;
 }
 
@@ -8616,7 +9602,13 @@ label + .wizard-buttonList {
 .profile {
   padding: 60px;
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
   flex: 1;
+
+  @include phone {
+    padding: 0;
+    margin: 0;
+  }
 
   h1 {
     margin: 18px 0 0;
@@ -8639,6 +9631,10 @@ label + .wizard-buttonList {
 .profile-section {
   padding: 20px 50px;
 
+  @include phone {
+    padding: 10px;
+  }
+
   &.profile-memberSection {
     margin-bottom: 10px;
   }
@@ -8651,11 +9647,21 @@ label + .wizard-buttonList {
 .profile-action {
   @include bidi-style(margin-right, -20px, margin-left, 0);
 
+  @include phone {
+    @include bidi-style(margin-right, 0, margin-left, 0);
+  }
+
   .dropdown-toggle {
     margin-top: -20px;
     @include bidi-style(margin-right, -30px, margin-left, 0);
     margin-bottom: 8px;
     padding: 26px 40px 2px;
+
+    @include phone {
+      margin-top: -5px;
+      padding: 10px 0 5px;
+      @include bidi-style(margin-right, 0, margin-left, 0);
+    }
   }
 
   label {
@@ -8709,6 +9715,11 @@ label + .wizard-buttonList {
 .profile-ticketLists {
   display: flex;
   margin: 0 -25px;
+
+  @include phone {
+    display: block;
+    margin: 0;
+  }
 }
 
 .profile-ticketList {
@@ -8717,6 +9728,15 @@ label + .wizard-buttonList {
   flex: 1 1 50%;
   padding: 0 25px;
   min-width: 0; /* Firefox wrong content-calculation with word-wrap workaround */
+
+  @include phone {
+    padding: 0;
+    margin-bottom: 10px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
 
   .tasks {
     margin-bottom: 10px;
@@ -8728,6 +9748,10 @@ label + .wizard-buttonList {
 
 .profile .frequency.stat-widget {
   height: 230px;
+
+  @include phone {
+    display: none;
+  }
 
   .stat-bars {
     height: 100px;
@@ -8842,32 +9866,57 @@ label + .wizard-buttonList {
     border-top: none;
   }
 
-  .controls,
-  input {
-    @include bidi-style(margin-right, 5px, margin-left, 0);
-  }
-
-  .controls-label {
-    margin-left: 0;
-    margin-right: 5px;
-    @include rtl(margin-left, 5px);
-    @include rtl(margin-right, 0);
-  }
-
   select,
   input {
     border-color: hsl(198,19%,86%);
   }
 
   input[type=text] {
-    width: auto;
+    width: 100%;
+  }
+
+  input[data-item=time] {
+    width: 4.5ch;
   }
 }
 
 .horizontal-filter-body {
   display: flex;
-  flex-wrap: wrap;
   flex: 1;
+  min-width: 100px;
+
+  @include phone {
+    display: block;
+    margin-right: 5px;
+  }
+
+  > .controls,
+  > input {
+    @include bidi-style(margin-right, 5px, margin-left, 0);
+
+    @include phone {
+      margin: 0 0 5px !important;
+    }
+
+    > .controls-label {
+      margin-left: 0;
+      margin-right: 5px;
+      @include rtl(margin-left, 5px);
+      @include rtl(margin-right, 0);
+    }
+
+    .horizontal-filter-value {
+      max-width: 100%;
+    }
+  }
+
+  > .controls > .controls {
+    max-width: 100%;
+
+    + .controls {
+      @include bidi-style(margin-left, 5px, margin-right, 0);
+    }
+  }
 }
 
 .horizontal-filter-group {
@@ -8883,11 +9932,20 @@ label + .wizard-buttonList {
 }
 
 .horizontal-filter-value {
-  flex-shrink: 0;
+  max-width: 60%;
+  flex-grow: 1;
+
+  @include phone {
+    max-width: 100%;
+  }
 
   // lower the min-width of url input fields (normally 400px) so that it fits in
   input[type=url] {
     min-width: 200px;
+  }
+
+  .dropdown:only-child {
+    flex-grow: 1;
   }
 }
 
@@ -8917,7 +9975,7 @@ label + .wizard-buttonList {
 
 output {
   border-bottom: 1px solid hsl(200,71%,59%);
-  margin: 14px 0 0;
+  margin: 14px 0 19px;
   display: inline-block;
   padding: 10px 12px 8px;
   background: hsl(201,62%,93%);
@@ -9096,8 +10154,6 @@ output {
   color: hsl(60,1%,34%);
   table-layout: auto;
   margin-bottom: 20px;
-  word-break: break-word;
-  word-wrap: break-word;
 
   &.is-invalid {
     border-radius: 3px;
@@ -9169,6 +10225,10 @@ output {
     background: hsl(197,20%,93%);
     border-bottom: none;
     word-break: normal;
+  }
+
+  td {
+    word-break: break-all;
   }
 
   td.empty-cell {
@@ -9406,6 +10466,11 @@ output {
     & + .icon {
       @include bidi-style(margin-left, 10px, margin-right, 0);
     }
+
+    &.is-inactive {
+      opacity: .73;
+      text-decoration: line-through;
+    }
   }
 
   &.dropdown li {
@@ -9482,6 +10547,17 @@ output {
     & > *:not(.action-controls) {
       opacity: 0.33;
     }
+  }
+
+  &--placeholder {
+    padding: 30px;
+    align-items: center;
+    justify-content: center;
+    color: hsl(206,9%,69%);
+    box-shadow: none;
+    background: none;
+    border-style: dashed;
+    font-style: italic;
   }
 
   &-alert {
@@ -9617,6 +10693,7 @@ output {
 
   th {
     background: none;
+    font-weight: bold;
   }
 
   th, td {
@@ -9646,6 +10723,7 @@ output {
     font-size: 12px;
     padding: 5px 5px 0;
     text-align: center;
+    vertical-align: inherit;
   }
 
   .day {
@@ -9653,6 +10731,8 @@ output {
     height: 26px;
     border-radius: 14px;
     padding: 1px 0 0 !important;
+    background-color: inherit;
+    vertical-align: inherit;
   }
 
   .month,
@@ -9791,8 +10871,41 @@ output {
   flex-direction: column;
   padding: 0 14px;
 
+  @include phone {
+    padding: 0;
+  }
+
   .page-header {
     margin: 15px 6px 5px;
+
+    @include phone {
+      flex-wrap: wrap;
+      margin: 0;
+      padding: 5px 8px;
+    }
+  }
+
+  .page-header-title {
+    @include phone {
+      order: 1;
+    }
+  }
+
+  .page-header-center {
+    @include phone {
+      flex-basis: 100%;
+      padding: 0;
+      order: 3;
+    }
+  }
+
+  .page-header-meta {
+    @include phone {
+      order: 2;
+      @include bidi-style(margin-left, auto, margin-right, auto);
+      padding-top: 4px;
+      @include bidi-style(padding-left, 10px, padding-right, 0);
+    }
   }
 }
 
@@ -9802,6 +10915,15 @@ output {
   padding: 0 0 10px;
   margin: 0 -4px;
   flex: 1;
+
+  @include phone {
+    margin: 0;
+    padding: 0;
+    flex-wrap: nowrap;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-mode: x mandatory;
+  }
 }
 
 .chat-window {
@@ -9813,10 +10935,19 @@ output {
   transition: all 500ms;
   transform: scale(0);
 
+  @include phone {
+    min-width: calc(100vw - #{$mobileNavigationWidth} - 16px);
+    scroll-snap-align: center;
+  }
+
   &.is-open {
     flex: 1 0 25%;
     transform: scale(1);
     padding: 10px;
+
+    @include phone {
+      padding: 8px;
+    }
   }
 
   &.is-offline {
@@ -9925,6 +11056,7 @@ output {
   font-size: 13px;
   line-height: 18px;
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
   @include bidi-style(border-right, 1px solid hsl(0,0%,91%), border-left, none);
   border-left: 1px solid hsl(0,0%,91%);
   position: relative;
@@ -9952,6 +11084,7 @@ output {
   color: hsl(10,5%,78%);
   margin-bottom: 4px;
   align-self: center;
+  word-break: break-word;
 }
 
 .chat-timestamp-label {
@@ -10094,38 +11227,89 @@ output {
 
   .form-control {
     overflow: auto;
+    -webkit-overflow-scrolling: touch;
     max-height: 50vh;
   }
 }
 
 .browser {
   margin: 0 0 20px;
-  border: 1px solid hsl(0,0%,90%);
-  border-radius: 5px;
   position: relative;
-  transition: 500ms;
-  width: 100%;
+
+  &[data-size] {
+    padding-bottom: 65%; // 16:10 aspect ratio;
+
+    .browser-ratio {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      left: 0;
+      top: 0;
+      transition: 500ms;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .browser-body {
+      padding: 0;
+    }
+  }
+
+  &[data-size="mobile"] .browser-ratio {
+    width: 375px;
+  }
+
+  &-ratio {
+    border: 1px solid hsl(0,0%,90%);
+    border-radius: 5px;
+  }
+}
+
+@media screen and (min-width: #{1280 + $sidebarWidth + $navigationWidth}) {
+  // hide 1:1 button when it gets inrelevant
+  [data-size="1:1"] {
+    display: none;
+  }
+
+  .browser[data-size="mobile"] .browser-ratio {
+    width: 500px;
+  }
 }
 
 .browser-body {
+  flex: 1;
   position: relative;
   overflow: hidden;
-  height: 450px;
-  width: 100%;
+  padding: 20px;
+
+  &-inner {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+  }
 
   .browser-website {
     position: relative;
     height: 100%;
-    transform-origin: left top;
+    transform-origin: right bottom;
+    transition: 500ms;
     overflow: hidden;
 
     &.is-picking {
       cursor: image_url("/assets/images/eyedropper.gif") 0 15, auto;
     }
-  }
 
-  img {
-    vertical-align: bottom;
+    &-background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: left top;
+    }
   }
 }
 
@@ -10302,6 +11486,7 @@ output {
   &-column--selected {
     flex: 1 1 66%;
     overflow: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 7px;
   }
 
@@ -10322,6 +11507,7 @@ output {
   &-pool {
     flex: 1 1 auto;
     overflow: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 7px;
   }
 
@@ -10435,6 +11621,7 @@ output {
     display: block;
     width: 100%;
     overflow: auto;
+    -webkit-overflow-scrolling: touch;
     word-break: break-all;
 
     col {
@@ -10462,6 +11649,7 @@ output {
     border-radius: 3px;
     border: none;
     overflow: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   hr {
@@ -10577,11 +11765,7 @@ output {
     bottom: -50px; // extra space for bounce animation
 
     .batch-overlay-box-inner {
-      max-height: 310px;
-
-      @media screen and (min-height: 1000px) {
-        max-height: 465px;
-      }
+      max-height: 40vh;
     }
 
     &-group {
@@ -10646,12 +11830,8 @@ output {
     top: -50px; // extra space for bounce animation
 
     .batch-overlay-box-inner {
-      max-height: 146px;
+      max-height: 55vh;
       margin: 24px 12px;
-
-      @media screen and (min-height: 800px) {
-        max-height: 292px;
-      }
     }
 
     &-entry {
@@ -10670,6 +11850,14 @@ output {
       &.is-hovered {
         border-color: $highlight-color;
         transform: scale(1.05);
+      }
+
+      &.small {
+        @include small-desktop {
+          height: 80px;
+          width: 80px;
+          padding: 11px 11px 8px;
+        }
       }
     }
   }
@@ -10701,7 +11889,7 @@ output {
       color: inherit;
     }
 
-    td {
+    td:not(:first-child) {
       display: block;
       padding: 0 12px;
       white-space: nowrap;
@@ -10716,6 +11904,11 @@ output {
       &:nth-child(n+4) {
         display: none;
       }
+    }
+
+    .checkbox-replacement > .icon,
+    .radio-replacement > .icon {
+      fill: none;
     }
   }
 
@@ -10753,13 +11946,21 @@ output {
 .breadcrumbs {
   display: flex;
   align-items: center;
-  min-width: 0;
+  min-width: 88px;
+
+  @include phone {
+    overflow: hidden;
+  }
 
   &-menu {
     display: flex;
     @include ltr(margin-left, auto);
     @include rtl(margin-right, auto);
     @include bidi-style(padding-left, 20px, padding-right, 0);
+
+    @include phone {
+      @include bidi-style(padding-left, 10px, padding-right, 0);
+    }
   }
 }
 
@@ -10774,6 +11975,10 @@ output {
   color: inherit;
   cursor: pointer;
   @extend .u-textTruncate;
+
+  @include phone {
+    flex-shrink: 0;
+  }
 
   &:before,
   &:after {
@@ -10989,7 +12194,8 @@ output {
     width: 200px;
     height: 150px;
     margin: 14px;
-    margin-right: 0;
+    @include ltr(margin-right, 0);
+    @include rtl(margin-left, 0);
     $i: 0;
     $rainbow: ();
     @while $i <= 360 {
@@ -11225,6 +12431,7 @@ body.fit {
 
 .scrollable {
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .flex {
@@ -11333,12 +12540,27 @@ body.fit {
   flex-wrap: wrap;
 }
 
+.two-columns,
+.three-columns {
+  @include phone {
+    display: block;
+  }
+}
+
 .two-columns > .column {
   width: 50%;
+
+  @include phone {
+    width: auto;
+  }
 }
 
 .three-columns > .column {
   width: 33.33%;
+
+  @include phone {
+    width: auto;
+  }
 }
 
 .align-left {
@@ -11355,6 +12577,18 @@ body.fit {
 
 .space-right {
   @include bidi-style(margin-right, 10px, margin-left, 0);
+}
+
+.half-space-left {
+  @include bidi-style(margin-left, 5px, margin-right, 0);
+}
+
+.half-space-right {
+  @include bidi-style(margin-right, 5px, margin-left, 0);
+}
+
+.min-fit-content {
+  min-width: fit-content;
 }
 
 .align-center {
@@ -11464,6 +12698,12 @@ span.is-disabled {
     border-bottom: 1px solid hsl(0,0%,90%);
     padding: 7px;
 
+    @include phone {
+      flex-shrink: 0;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
     .breadcrumb:not(:first-child) .breadcrumb-icon {
       width: 16px;
       height: 16px;
@@ -11473,6 +12713,11 @@ span.is-disabled {
   &-body {
     position: relative;
     overflow-x: hidden;
+
+    @include phone {
+      flex-direction: column-reverse;
+      overflow: visible;
+    }
   }
 
   &-sidebar {
@@ -11483,8 +12728,17 @@ span.is-disabled {
     width: 280px;
     height: 100%;
     overflow: auto;
+    -webkit-overflow-scrolling: touch;
     transition: transform 500ms;
     @include bidi-style(border-left, 1px solid #e6e6e6, border-right, none);
+
+    @include phone {
+      width: auto;
+      position: static;
+      @include bidi-style(border-left, none, border-right, none);
+      border-top: 1px solid #e6e6e6;
+      overflow: visible;
+    }
 
     @include desktop {
       width: 28%;
@@ -11495,6 +12749,11 @@ span.is-disabled {
       visibility: visible !important;
       @include ltr(transform, translateX(100%));
       @include rtl(transform, translateX(-100%));
+
+      @include phone {
+        transform: none !important;
+        display: none !important;
+      }
 
       + .knowledge-base-main {
         @include ltr(margin-right, 0);
@@ -11509,10 +12768,15 @@ span.is-disabled {
   }
 
   &-main {
+    width: 100%;
     @include ltr(transition, margin-right 500ms);
     @include ltr(margin-right, 280px);
     @include rtl(transition, margin-left 500ms);
     @include rtl(margin-left, 280px);
+
+    @include phone {
+      margin: 0 0 10px !important;
+    }
 
     @include desktop {
       @include ltr(margin-right, 28%);
@@ -11525,7 +12789,8 @@ span.is-disabled {
   }
 
   .richtext-content {
-    word-break: break-all;
+    word-break: break-word;
+    word-wrap: anywhere;
   }
 
   .page-header {
@@ -11610,6 +12875,10 @@ span.is-disabled {
       .section {
         width: 25%;
 
+        @include phone {
+          width: 100%;
+        }
+
         a {
           font-size: 14px;
         }
@@ -11630,12 +12899,12 @@ span.is-disabled {
       .section {
         width: 33.33%;
 
-        a {
-          font-size: 15px;
+        @include phone {
+          width: 100%;
         }
 
-        [data-font] {
-          font-size: 60px;
+        a {
+          font-size: 15px;
         }
 
         .modified-icon-modifier {
@@ -11758,15 +13027,51 @@ span.is-disabled {
     border-radius: 2px;
     padding: 50px 50px 10px;
     border: 1px solid hsl(239,4%,95%);
+
+    @include phone {
+      padding: 15px 15px 5px;
+    }
   }
 
   &-content {
     margin-bottom: 40px;
+
+    @include phone {
+      margin-bottom: 10px;
+    }
   }
 
   &-attachments,
+  &-tags,
   &-linked-tickets {
     margin: 0 -30px;
+
+    @include phone {
+      margin: 0 -5px;
+    }
+  }
+
+  .tasks {
+    @include bidi-style(margin-left, 7px, margin-right, 0);
+  }
+
+  &-tags--container {
+    padding: 6px 5px 11px;
+    display: flex;
+    flex-wrap: wrap;
+
+    .tag {
+      margin: 2px;
+      display: inline-block;
+      background: #0F94D6;
+      color: white;
+      border-radius: 999px;
+      padding: 2px 12px 1px;
+
+      &:hover {
+        background: hsl(200deg, 87%, 34%);
+      }
+    }
   }
 
   &-nav {
@@ -11777,6 +13082,10 @@ span.is-disabled {
       max-width: 50%;
       display: flex;
       align-items: center;
+
+      .knowledge-base-article > & {
+        margin-top: -10px;
+      }
 
       .spacer {
         width: 5px
@@ -11813,6 +13122,7 @@ span.is-disabled {
     flex: 1 1 33%;
     height: 300px;
     overflow: auto;
+    -webkit-overflow-scrolling: touch;
     border-right: 1px solid hsl(0,0%,85%);
 
     &:last-child {
@@ -11924,75 +13234,13 @@ span.is-disabled {
   margin-bottom: 12px
 }
 
-.bounce {
-    -webkit-animation-name: bounce;
-    animation-name: bounce;
-    -webkit-transform-origin: center bottom;
-    -ms-transform-origin: center bottom;
-    transform-origin: center bottom;
-    -webkit-animation-duration: 1s;
-    animation-duration: 1s;
-    -webkit-animation-fill-mode: both;
-    animation-fill-mode: both;
-    }
-    @-webkit-keyframes bounce {
-    0%, 20%, 53%, 80%, 100% {
-    -webkit-transition-timing-function: cubic-bezier(0.215, 0.610, 0.355, 1.000);
-    transition-timing-function: cubic-bezier(0.215, 0.610, 0.355, 1.000);
-    -webkit-transform: translate3d(0,0,0);
-    transform: translate3d(0,0,0);
-    }
-    40%, 43% {
-    -webkit-transition-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
-    transition-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
-    -webkit-transform: translate3d(0, -30px, 0);
-    transform: translate3d(0, -30px, 0);
-    }
-    70% {
-    -webkit-transition-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
-    transition-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
-    -webkit-transform: translate3d(0, -15px, 0);
-    transform: translate3d(0, -15px, 0);
-    }
-    90% {
-    -webkit-transform: translate3d(0,-4px,0);
-    transform: translate3d(0,-4px,0);
-    }
-    }
-
-    @keyframes bounce {
-    0%, 20%, 53%, 80%, 100% {
-    -webkit-transition-timing-function: cubic-bezier(0.215, 0.610, 0.355, 1.000);
-    transition-timing-function: cubic-bezier(0.215, 0.610, 0.355, 1.000);
-    -webkit-transform: translate3d(0,0,0);
-    transform: translate3d(0,0,0);
-    }
-    40%, 43% {
-    -webkit-transition-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
-    transition-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
-    -webkit-transform: translate3d(0, -30px, 0);
-    transform: translate3d(0, -30px, 0);
-    }
-    70% {
-    -webkit-transition-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
-    transition-timing-function: cubic-bezier(0.755, 0.050, 0.855, 0.060);
-    -webkit-transform: translate3d(0, -15px, 0);
-    transform: translate3d(0, -15px, 0);
-    }
-    90% { -webkit-transform: translate3d(0,-4px,0); transform: translate3d(0,-4px,0);
-    }
+.text-modules-box {
+  max-height: 40vh;
 }
 
-
-@keyframes blink {
-  from {background-color: white;}
-  to {background-color: #ff00004a;}
+.sla_times {
+  .sla_radio_container {
+    padding-top: 0.5em;
+    padding-left: 0.5em;
+  }
 }
-
-/* The element to apply the animation to */
-.flashing-row {
-  animation-name: example;
-  animation-duration: 0.5;
-  animation-iteration-count: infinite;
-}
-

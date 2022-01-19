@@ -1,15 +1,17 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe 'User Organization', type: :request, searchindex: true do
 
-  let!(:admin_user) do
-    create(:admin_user, groups: Group.all)
+  let!(:admin) do
+    create(:admin, groups: Group.all)
   end
-  let!(:agent_user) do
-    create(:agent_user, groups: Group.all)
+  let!(:agent) do
+    create(:agent, groups: Group.all)
   end
-  let!(:customer_user) do
-    create(:customer_user)
+  let!(:customer) do
+    create(:customer)
   end
   let!(:organization) do
     create(:organization, name: 'Rest Org', note: 'Rest Org A')
@@ -20,8 +22,8 @@ RSpec.describe 'User Organization', type: :request, searchindex: true do
   let!(:organization3) do
     create(:organization, name: 'Rest Org #3', note: 'Rest Org C')
   end
-  let!(:customer_user2) do
-    create(:customer_user, organization: organization)
+  let!(:customer2) do
+    create(:customer, organization: organization)
   end
 
   before do
@@ -41,7 +43,7 @@ RSpec.describe 'User Organization', type: :request, searchindex: true do
   describe 'request handling' do
 
     it 'does organization index with agent' do
-      authenticated_as(agent_user)
+      authenticated_as(agent)
       get '/api/v1/organizations', params: {}, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Array)
@@ -113,7 +115,7 @@ RSpec.describe 'User Organization', type: :request, searchindex: true do
     end
 
     it 'does organization index with customer1' do
-      authenticated_as(customer_user)
+      authenticated_as(customer)
       get '/api/v1/organizations', params: {}, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Array)
@@ -133,11 +135,11 @@ RSpec.describe 'User Organization', type: :request, searchindex: true do
       # search
       Scheduler.worker(true)
       get "/api/v1/organizations/search?query=#{CGI.escape('Zammad')}", params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
     end
 
     it 'does organization index with customer2' do
-      authenticated_as(customer_user2)
+      authenticated_as(customer2)
       get '/api/v1/organizations', params: {}, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Array)
@@ -150,14 +152,14 @@ RSpec.describe 'User Organization', type: :request, searchindex: true do
       expect('Rest Org').to eq(json_response['name'])
 
       get "/api/v1/organizations/#{organization2.id}", params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['name']).to be_nil
 
       # search
       Scheduler.worker(true)
       get "/api/v1/organizations/search?query=#{CGI.escape('Zammad')}", params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
     end
   end
 end

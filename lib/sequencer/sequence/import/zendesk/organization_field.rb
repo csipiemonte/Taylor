@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sequencer
   class Sequence
     module Import
@@ -7,6 +9,7 @@ class Sequencer
           def self.sequence
             [
               'Common::ModelClass::Organization',
+              'Import::Zendesk::ObjectAttribute::SanitizedType',
               'Import::Zendesk::ObjectAttribute::SanitizedName',
               'Import::Zendesk::ObjectAttribute::Add',
             ]

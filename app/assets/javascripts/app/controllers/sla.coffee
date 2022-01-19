@@ -1,4 +1,4 @@
-class Index extends App.ControllerSubContent
+class Sla extends App.ControllerSubContent
   requiredPermission: 'admin.sla'
   header: 'SLAs'
   events:
@@ -26,12 +26,6 @@ class Index extends App.ControllerSubContent
       sortBy: 'name'
     )
     for sla in slas
-      if sla.first_response_time
-        sla.first_response_time_in_text = @toText(sla.first_response_time)
-      if sla.update_time
-        sla.update_time_in_text = @toText(sla.update_time)
-      if sla.solution_time
-        sla.solution_time_in_text = @toText(sla.solution_time)
       sla.rules = App.UiElement.ticket_selector.humanText(sla.condition)
       sla.calendar = App.Calendar.find(sla.calendar_id)
 
@@ -95,21 +89,8 @@ class Index extends App.ControllerSubContent
 
   description: (e) =>
     new App.ControllerGenericDescription(
-      description: App.Calendar.description
+      description: App.Sla.description
       container:   @el.closest('.content')
     )
 
-  toText: (m) ->
-    m = parseInt(m)
-    return if !m
-    minutes = m % 60
-    hours = Math.floor(m / 60)
-
-    if minutes < 10
-      minutes = "0#{minutes}"
-    if hours < 10
-      hours = "0#{hours}"
-
-    "#{hours}:#{minutes}"
-
-App.Config.set('Sla', { prio: 2900, name: 'SLAs', parent: '#manage', target: '#manage/slas', controller: Index, permission: ['admin.sla'] }, 'NavBarAdmin')
+App.Config.set('Sla', { prio: 2900, name: 'SLAs', parent: '#manage', target: '#manage/slas', controller: Sla, permission: ['admin.sla'] }, 'NavBarAdmin')

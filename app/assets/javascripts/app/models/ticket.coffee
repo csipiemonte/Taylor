@@ -16,6 +16,9 @@ class App.Ticket extends App.Model
       { name: 'article_count',            display: 'Article#',     readonly: 1, width: '12%' },
       { name: 'time_unit',                display: 'Accounted Time',          readonly: 1, width: '12%' },
       { name: 'escalation_at',            display: 'Escalation at',           tag: 'datetime', null: true, readonly: 1, width: '110px', class: 'escalation' },
+      { name: 'first_response_escalation_at', display: 'Escalation at (First Response Time)', tag: 'datetime', null: true, readonly: 1, width: '110px', class: 'escalation' },
+      { name: 'update_escalation_at', display: 'Escalation at (Update Time)', tag: 'datetime', null: true, readonly: 1, width: '110px', class: 'escalation' },
+      { name: 'close_escalation_at', display: 'Escalation at (Close Time)', tag: 'datetime', null: true, readonly: 1, width: '110px', class: 'escalation' },
       { name: 'last_contact_at',          display: 'Last contact',            tag: 'datetime', null: true, readonly: 1, width: '110px' },
       { name: 'last_contact_agent_at',    display: 'Last contact (agent)',    tag: 'datetime', null: true, readonly: 1, width: '110px' },
       { name: 'last_contact_customer_at', display: 'Last contact (customer)', tag: 'datetime', null: true, readonly: 1, width: '110px' },
@@ -99,20 +102,28 @@ class App.Ticket extends App.Model
 
   activityMessage: (item) ->
     return if !item
-    if item.type is 'create'
-      return App.i18n.translateContent('%s created Ticket |%s|', item.created_by.displayName(), item.title)
-    else if item.type is 'update'
-      return App.i18n.translateContent('%s updated Ticket |%s|', item.created_by.displayName(), item.title)
-    else if item.type is 'reminder_reached'
-      return App.i18n.translateContent('Pending reminder reached for Ticket |%s|', item.title)
-    else if item.type is 'escalation'
-      return App.i18n.translateContent('Ticket |%s| is escalated!', item.title)
-    else if item.type is 'escalation_warning'
-      return App.i18n.translateContent('Ticket |%s| will escalate soon!', item.title)
-    else if item.type is 'external_activity'
-      $('#external_activity_reload').click()
-      return App.i18n.translateContent('Update on an external activity related to Ticket |%s|', item.title)
-    return "Unknow action for (#{@objectDisplayName()}/#{item.type}), extend activityMessage() of model."
+    return if !item.created_by
+
+    switch item.type
+      when 'create'
+        App.i18n.translateContent('%s created Ticket |%s|', item.created_by.displayName(), item.title)
+      when 'update'
+        App.i18n.translateContent('%s updated Ticket |%s|', item.created_by.displayName(), item.title)
+      when 'reminder_reached'
+        App.i18n.translateContent('Pending reminder reached for Ticket |%s|', item.title)
+      when 'escalation'
+        App.i18n.translateContent('Ticket |%s| is escalated!', item.title)
+      when 'escalation_warning'
+        App.i18n.translateContent('Ticket |%s| will escalate soon!', item.title)
+      when 'update.merged_into'
+        App.i18n.translateContent('Ticket |%s| was merged into another ticket', item.title)
+      when 'update.received_merge'
+        App.i18n.translateContent('Another ticket was merged into ticket |%s|', item.title)
+      when 'external_activity'
+        $('#external_activity_reload').click()
+        App.i18n.translateContent('Update on an external activity related to Ticket |%s|', item.title)
+      else
+        "Unknow action for (#{@objectDisplayName()}/#{item.type}), extend activityMessage() of model."
 
   # apply macro
   @macro: (params) ->
@@ -124,7 +135,7 @@ class App.Ticket extends App.Model
 
         # apply tag changes
         if attributes[1] is 'tags'
-          tags = content.value.split(',')
+          tags = content.value.split(/\s*,\s*/)
           for tag in tags
             if content.operator is 'remove'
               if params.callback && params.callback.tagRemove
@@ -136,6 +147,25 @@ class App.Ticket extends App.Model
                 params.callback.tagAdd(tag)
               else
                 @tagAdd(params.ticket.id, tag)
+
+        # apply pending date changes
+        else if attributes[1] is 'pending_time' && content.operator is 'relative'
+          pendtil = new Date
+          diff    = parseInt(content.value, 10)
+
+          switch content.range
+            when 'day'
+              pendtil.setDate(pendtil.getDate() + diff)
+            when 'minute'
+              pendtil.setMinutes(pendtil.getMinutes() + diff)
+            when 'hour'
+              pendtil.setHours(pendtil.getHours() + diff)
+            when 'month'
+              pendtil.setMonth(pendtil.getMonth() + diff)
+            when 'year'
+              pendtil.setYear(pendtil.getYear() + diff)
+
+          params.ticket[attributes[1]] = pendtil.toISOString()
 
         # apply user changes
         else if attributes[1] is 'owner_id'
@@ -152,7 +182,7 @@ class App.Ticket extends App.Model
       else if attributes[0] is 'article'
 
         # preload required attributes
-        if attributes[1]
+        if !content.type_id
           type = App.TicketArticleType.findByAttribute('name', attributes[1])
           if type
             params.article.type_id = type.id
@@ -162,6 +192,8 @@ class App.Ticket extends App.Model
             content.sender_id = sender.id
         if !content.from
           content.from = App.Session.get('login')
+        if !content.content_type
+          params.article.content_type = 'text/html'
 
         # apply direct value changes
         for articleKey, aricleValue of content
@@ -178,6 +210,15 @@ class App.Ticket extends App.Model
       if objectAttribute == 'article.subject' && !ticket['article']['subject']
         objectName    = 'ticket'
         attributeName = 'title'
+
+      if objectAttribute == 'ticket.mention_user_ids'
+        if condition['pre_condition'] isnt 'not_set'
+          if condition['pre_condition'] is 'specific'
+            condition.value = parseInt(condition.value)
+          if condition.operator is 'is'
+            condition.operator = 'contains one'
+          else if condition.operator is 'is not'
+            condition.operator = 'contains all not'
 
       # for new articles there is no created_by_id so we set the current user
       # if no id is given
@@ -229,6 +270,9 @@ class App.Ticket extends App.Model
     contains_regex = new RegExp(App.Utils.escapeRegExp(conditionValue.toString()), 'i')
 
     # move value to array if it is not already
+    if objectName is 'ticket' && attributeName is 'tags'
+      conditionValue = conditionValue.split(/\s*,\s*/)
+
     if !_.isArray(objectValue)
       objectValue = [objectValue]
     # move value to array if it is not already
@@ -290,12 +334,47 @@ class App.Ticket extends App.Model
   editable: (permission = 'change') ->
     user = App.User.current()
     return false if !user?
+    return true if @currentView() is 'customer' && @userIsCustomer()
+    return true if @currentView() is 'customer' && user.organization_id && @organization_id && user.organization_id is @organization_id
+    return @userGroupAccess(permission)
+
+  userGroupAccess: (permission) ->
+    user = App.User.current()
+    return @isAccessibleByGroup(user, permission)
+
+  userIsCustomer: ->
+    user = App.User.current()
     return true if user.id is @customer_id
-    return true if user.organization_id && @organization_id && user.organization_id is @organization_id
-    return false if !@group_id
+    false
+
+  userIsOwner: ->
+    user = App.User.current()
+    return @isAccessibleByOwner(user)
+
+  currentView: ->
+    return 'agent' if App.User.current()?.permission('ticket.agent') && @userGroupAccess('read')
+    return 'customer' if App.User.current()?.permission('ticket.customer')
+    return
+
+  isAccessibleByOwner: (user) ->
+    return false if !user
+    return true if user.id is @owner_id
+    false
+
+  isAccessibleByGroup: (user, permission) ->
+    return false if !user
+
     group_ids = user.allGroupIds(permission)
+    return false if !@group_id
+
     for local_group_id in group_ids
       if local_group_id.toString() is @group_id.toString()
         return true
-    false
 
+    return false
+
+  isAccessibleBy: (user, permission) ->
+    return false if !user
+    return false if !user.permission('ticket.agent')
+    return true if @isAccessibleByOwner(user)
+    return @isAccessibleByGroup(user, permission)

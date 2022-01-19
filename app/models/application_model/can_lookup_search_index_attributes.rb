@@ -1,13 +1,34 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module ApplicationModel::CanLookupSearchIndexAttributes
   extend ActiveSupport::Concern
 
+  class RequestCache < ActiveSupport::CurrentAttributes
+    attribute :integer_attribute_names
+
+    def integer_fields(class_name)
+      self.integer_attribute_names ||= {}
+
+      updated_at = ObjectManager::Attribute.maximum('updated_at')
+      return self.integer_attribute_names[class_name][:data] if self.integer_attribute_names[class_name].present? && self.integer_attribute_names[class_name][:updated_at] == updated_at
+
+      self.integer_attribute_names[class_name] = {
+        updated_at: updated_at,
+        data:       ObjectManager::Attribute.where(object_lookup: ObjectLookup.find_by(name: class_name), data_type: 'integer', editable: true).pluck(:name),
+      }
+      self.integer_attribute_names[class_name][:data]
+    end
+  end
+
 =begin
 
-lookup name of ref. objects
+This function return the attributes for the elastic search with relation hash values.
+
+It can be run with parameter include_references: false to skip the relational hashes to prevent endless loops.
 
   ticket = Ticket.find(3)
   attributes = ticket.search_index_attribute_lookup
+  attributes = ticket.search_index_attribute_lookup(include_references: false)
 
 returns
 
@@ -15,10 +36,11 @@ returns
 
 =end
 
-  def search_index_attribute_lookup
-
+  def search_index_attribute_lookup(include_references: true)
     attributes = self.attributes
     self.attributes.each do |key, value|
+      break if !include_references
+
       attribute_name = key.to_s
 
       # ignore standard attribute if needed
@@ -48,6 +70,14 @@ returns
       attributes[ attribute_ref_name ] = value
     end
 
+    if is_a? HasObjectManagerAttributes
+      RequestCache.integer_fields(self.class.to_s).each do |field|
+        next if attributes[field].blank?
+
+        attributes["#{field}_text"] = attributes[field].to_s
+      end
+    end
+
     attributes
   end
 
@@ -74,34 +104,7 @@ returns
     relation_model = relation_class.lookup(id: attributes[attribute_name])
     return if !relation_model
 
-    relation_model.search_index_value
-  end
-
-=begin
-
-This function returns the relational search value.
-
-  organization = Organization.find(1)
-  value = organization.search_index_value
-
-returns
-
-  value = {"name"=>"Zammad Foundation"}
-
-=end
-
-  def search_index_value
-
-    # get name of ref object
-    value = nil
-    if respond_to?('name')
-      value = send('name')
-    elsif respond_to?('search_index_data')
-      value = send('search_index_data')
-      return if value == true
-    end
-
-    value
+    relation_model.search_index_attribute_lookup(include_references: false)
   end
 
 =begin

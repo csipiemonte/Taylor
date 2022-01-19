@@ -1,10 +1,12 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 require 'lib/import/zendesk/object_attribute/base_examples'
 
 RSpec.describe Import::Zendesk::ObjectAttribute::Textarea do
   it_behaves_like Import::Zendesk::ObjectAttribute::Base
 
-  it 'imports input object attribute from textarea object field' do
+  it 'imports textarea object attribute from textarea object field' do
 
     attribute = double(
       title:              'Example attribute',
@@ -22,7 +24,7 @@ RSpec.describe Import::Zendesk::ObjectAttribute::Textarea do
       object:        'Ticket',
       name:          'example_field',
       display:       'Example attribute',
-      data_type:     'input',
+      data_type:     'textarea',
       data_option:   {
         null:      false,
         note:      'Example attribute description',

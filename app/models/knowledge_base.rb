@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class KnowledgeBase < ApplicationModel
   include HasTranslations
   include HasAgentAllowedParams
@@ -15,7 +16,7 @@ class KnowledgeBase < ApplicationModel
 
   accepts_nested_attributes_for :kb_locales, allow_destroy: true
   validates                     :kb_locales, presence: true
-  validates                     :kb_locales, length: { maximum: 1 }, unless: :multi_lingual_support?
+  validates                     :kb_locales, length: { maximum: 1, message: 'System supports only one locale for knowledge base. Upgrade your plan to use more locales.' }, unless: :multi_lingual_support?
 
   has_many :categories, class_name: 'KnowledgeBase::Category',
                         inverse_of: :knowledge_base,
@@ -26,18 +27,13 @@ class KnowledgeBase < ApplicationModel
   validates :category_layout, inclusion: { in: KnowledgeBase::LAYOUTS }
   validates :homepage_layout, inclusion: { in: KnowledgeBase::LAYOUTS }
 
-  validates :color_highlight, presence: true, color: true
-  validates :color_header,    presence: true, color: true
+  validates :color_highlight,   presence: true, color: true
+  validates :color_header,      presence: true, color: true
+  validates :color_header_link, presence: true, color: true
 
   validates :iconset, inclusion: { in: KnowledgeBase::ICONSETS }
 
   scope :active, -> { where(active: true) }
-
-  scope :check_active_unless_editor, lambda { |user|
-    return if user&.permissions? 'knowledge_base.editor'
-
-    active
-  }
 
   alias assets_essential assets
 
@@ -93,6 +89,38 @@ class KnowledgeBase < ApplicationModel
     false
   end
 
+  def custom_address_prefix(request)
+    host        = custom_address_uri.host || request.headers.env['SERVER_NAME']
+    port        = request.headers.env['SERVER_PORT']
+    port_silent = (request.ssl? && port == '443') || (!request.ssl? && port == '80')
+    port_string = port_silent ? '' : ":#{port}"
+
+    "#{custom_address_uri.scheme}://#{host}#{port_string}"
+  end
+
+  def custom_address_path(path)
+    uri = custom_address_uri
+
+    return path if !uri
+
+    custom_path  = custom_address_uri.path || ''
+    applied_path = path.gsub(%r{^/help}, custom_path)
+
+    applied_path.presence || '/'
+  end
+
+  def canonical_host
+    custom_address_uri&.host || Setting.get('fqdn')
+  end
+
+  def canonical_scheme_host
+    "#{Setting.get('http_type')}://#{canonical_host}"
+  end
+
+  def canonical_url(path)
+    "#{canonical_scheme_host}#{custom_address_path(path)}"
+  end
+
   def full_destroy!
     ChecksKbClientNotification.disable_in_all_classes!
 
@@ -143,13 +171,14 @@ class KnowledgeBase < ApplicationModel
     end
   end
 
+  before_validation :patch_custom_address
   after_create :set_defaults
 
   def validate_custom_address
     return if custom_address.nil?
 
     # not domain, but no leading slash
-    if !custom_address.include?('.') && custom_address[0] != '/'
+    if custom_address.exclude?('.') && custom_address[0] != '/'
       errors.add(:custom_address, 'must begin with a slash ("/").')
     end
 
@@ -172,8 +201,6 @@ class KnowledgeBase < ApplicationModel
     self.custom_address = nil if custom_address == ''
   end
 
-  before_validation :patch_custom_address
-
   def multi_lingual_support?
     Setting.get 'kb_multi_lingual_support'
   end
@@ -183,6 +210,6 @@ class KnowledgeBase < ApplicationModel
     CanBePublished.update_active_publicly!
   end
 
-  after_save    :set_kb_active_setting
   after_destroy :set_kb_active_setting
+  after_save    :set_kb_active_setting
 end

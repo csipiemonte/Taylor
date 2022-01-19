@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Integration::CheckMkController < ApplicationController
   skip_before_action :verify_csrf_token
@@ -39,11 +39,11 @@ class Integration::CheckMkController < ApplicationController
     title = "#{params[:host]} is #{params[:state]}"
     body = "EventID: #{params[:event_id]}
 Host: #{params[:host]}
-Service: #{params[:service]}
+Service: #{params[:service] || '-'}
 State: #{params[:state]}
-Text: #{params[:text]}
+Text: #{params[:text] || '-'}
 RemoteIP: #{request.remote_ip}
-UserAgent: #{request.env['HTTP_USER_AGENT']}
+UserAgent: #{request.env['HTTP_USER_AGENT'] || '-'}
 "
 
     # add article
@@ -61,7 +61,7 @@ UserAgent: #{request.env['HTTP_USER_AGENT']}
           internal:  false,
         )
       end
-      if (!auto_close && params[:state].match(/#{state_recovery_match}/i)) || !params[:state].match(/#{state_recovery_match}/i)
+      if (!auto_close && params[:state].match(%r{#{state_recovery_match}}i)) || !params[:state].match(%r{#{state_recovery_match}}i)
         render json: {
           result:     'ticket already open, added note',
           ticket_ids: ticket_ids_found,
@@ -71,7 +71,7 @@ UserAgent: #{request.env['HTTP_USER_AGENT']}
     end
 
     # check if service is recovered
-    if auto_close && params[:state].present? && params[:state].match(/#{state_recovery_match}/i)
+    if auto_close && params[:state].present? && params[:state].match(%r{#{state_recovery_match}}i)
       if ticket_ids_found.blank?
         render json: {
           result: 'no open tickets found, ignore action',

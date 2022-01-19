@@ -5,18 +5,31 @@ include:
 .template_rspec: &template_rspec
   extends:
     - .env_base
-  variables:
-    RAILS_ENV: "test"
+    - .variables_rspec_slicing
   script:
     - bundle exec rake zammad:db:init
-    - bundle exec rspec -t ~type:system -t ~searchindex
+    - echo "RSpec filter:" "$RSPEC_EXAMPLE_MATCHES"
+    - bundle exec rspec --require ./spec/rspec_extensions.rb --example-matches "$RSPEC_EXAMPLE_MATCHES" --exclude-pattern "spec/{system,integration}/**/*_spec.rb" -t ~searchindex --profile 10
 
-# we need at least one job to store and include this template
-# $IGNORE is not defined
-ignore:
+# RSpec 3rd party integration tests are independent of the database
+# therefore we need only one job and choose a random database for each run
+# Optionally pass INTEGRATION_TESTS=enabled to run them in private- branch
+
+rspec:integration:
   stage: test
-  only:
-    variables:
-      - $IGNORE
+  extends:
+    - .env_base
+    - .services_mysql_postgresql_redis_memcached
+    - .rules_integration_manual_start
+  variables:
+    RAILS_ENV: "test"
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      when: never
+    - if: '$CI_COMMIT_BRANCH =~ /^private/ && $INTEGRATION_TESTS != "enabled"'
+      when: manual
+      allow_failure: true
+    - when: always
   script:
-    - ''
+    - bundle exec rake zammad:db:init
+    - bundle exec rspec -t type:integration --profile 10

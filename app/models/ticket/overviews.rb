@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module Ticket::Overviews
 
 =begin
@@ -18,35 +19,10 @@ returns
 =end
 
   def self.all(data)
-    current_user = data[:current_user]
-    links        = data[:links]
-
-    # get customer overviews
-    role_ids = User.joins(:roles).where(users: { id: current_user.id, active: true }, roles: { active: true }).pluck('roles.id')
-    if current_user.permissions?('ticket.customer')
-      overview_filter = { active: true, organization_shared: false }
-      if current_user.organization_id && current_user.organization.shared
-        overview_filter.delete(:organization_shared)
-      end
-      if links.present?
-        overview_filter[:link] = links
-      end
-      overviews = Overview.joins(:roles).left_joins(:users).where(overviews_roles: { role_id: role_ids }, overviews_users: { user_id: nil }, overviews: overview_filter).or(Overview.joins(:roles).left_joins(:users).where(overviews_roles: { role_id: role_ids }, overviews_users: { user_id: current_user.id }, overviews: overview_filter)).distinct('overview.id').order(:prio, :name)
-      return overviews
-    end
-
-    # get agent overviews
-    return [] if !current_user.permissions?('ticket.agent')
-
-    overview_filter = { active: true }
-    overview_filter_not = { out_of_office: true }
-    if User.where('out_of_office = ? AND out_of_office_start_at <= ? AND out_of_office_end_at >= ? AND out_of_office_replacement_id = ? AND active = ?', true, Time.zone.today, Time.zone.today, current_user.id, true).count.positive?
-      overview_filter_not = {}
-    end
-    if links.present?
-      overview_filter[:link] = links
-    end
-    Overview.joins(:roles).left_joins(:users).where(overviews_roles: { role_id: role_ids }, overviews_users: { user_id: nil }, overviews: overview_filter).or(Overview.joins(:roles).left_joins(:users).where(overviews_roles: { role_id: role_ids }, overviews_users: { user_id: current_user.id }, overviews: overview_filter)).where.not(overview_filter_not).distinct('overview.id').order(:prio, :name)
+    Ticket::OverviewsPolicy::Scope.new(data[:current_user], Overview).resolve
+                                  .where({ link: data[:links] }.compact)
+                                  .distinct
+                                  .order(:prio, :name)
   end
 
 =begin
@@ -99,18 +75,14 @@ returns
     )
     return [] if overviews.blank?
 
-    # get only tickets with permissions
-    access_condition = Ticket.access_condition(user, 'overview')
-
     ticket_attributes = Ticket.new.attributes
-    list = []
-    overviews.each do |overview|
+    overviews.map do |overview|
       query_condition, bind_condition, tables = Ticket.selector2sql(overview.condition, current_user: user)
       direction = overview.order[:direction]
       order_by = overview.order[:by]
 
       # validate direction
-      raise "Invalid order direction '#{direction}'" if direction && direction !~ /^(ASC|DESC)$/i
+      raise "Invalid order direction '#{direction}'" if direction && direction !~ %r{^(ASC|DESC)$}i
 
       # check if order by exists
       if !ticket_attributes.key?(order_by)
@@ -135,13 +107,17 @@ returns
         end
       end
 
-      ticket_result = Ticket.distinct
-                            .where(access_condition)
-                            .where(query_condition, *bind_condition)
-                            .joins(tables)
-                            .order(Arel.sql("#{order_by} #{direction}"))
-                            .limit(2000)
-                            .pluck(:id, :updated_at, Arel.sql(order_by))
+      scope = TicketPolicy::OverviewScope
+      if overview.condition['ticket.mention_user_ids'].present?
+        scope = TicketPolicy::ReadScope
+      end
+      ticket_result = scope.new(user).resolve
+                                                .distinct
+                                                .where(query_condition, *bind_condition)
+                                                .joins(tables)
+                                                .order(Arel.sql("#{order_by} #{direction}"))
+                                                .limit(2000)
+                                                .pluck(:id, :updated_at, Arel.sql(order_by))
 
       tickets = ticket_result.map do |ticket|
         {
@@ -150,8 +126,13 @@ returns
         }
       end
 
-      count = Ticket.distinct.where(access_condition).where(query_condition, *bind_condition).joins(tables).count()
-      item = {
+      count = TicketPolicy::OverviewScope.new(user).resolve
+                                                              .distinct
+                                                              .where(query_condition, *bind_condition)
+                                                              .joins(tables)
+                                                              .count()
+
+      {
         overview: {
           name:       overview.name,
           id:         overview.id,
@@ -161,10 +142,7 @@ returns
         tickets:  tickets,
         count:    count,
       }
-
-      list.push item
     end
-    list
   end
 
 end

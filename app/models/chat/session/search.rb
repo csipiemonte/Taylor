@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Chat::Session
   module Search
     extend ActiveSupport::Concern
@@ -78,10 +79,10 @@ returns
         # fallback do sql query
         # - stip out * we already search for *query* -
         query.delete! '*'
-        chat_sessions = Chat::Session.where(
+        Chat::Session.where(
           'name LIKE ?', "%#{query}%"
         ).order('name').offset(offset).limit(limit).to_a
-        chat_sessions
+
       end
     end
   end

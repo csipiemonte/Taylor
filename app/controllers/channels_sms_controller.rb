@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class ChannelsSmsController < ApplicationController
   prepend_before_action -> { authentication_check && authorize! }, except: [:webhook]
   skip_before_action :verify_csrf_token, only: [:webhook]
@@ -53,22 +55,24 @@ class ChannelsSmsController < ApplicationController
   def webhook
     raise Exceptions::UnprocessableEntity, 'token param missing' if params['token'].blank?
 
-    channel = nil
-    Channel.where(active: true, area: 'Sms::Account').each do |local_channel|
-      next if local_channel.options[:webhook_token] != params['token']
+    ApplicationHandleInfo.in_context('sms') do
+      channel = nil
+      Channel.where(active: true, area: 'Sms::Account').each do |local_channel|
+        next if local_channel.options[:webhook_token] != params['token']
 
-      channel = local_channel
-    end
-    if !channel
-      render(
-        json:   { message: 'channel not found' },
-        status: :not_found
-      )
-      return
-    end
+        channel = local_channel
+      end
+      if !channel
+        render(
+          json:   { message: 'channel not found' },
+          status: :not_found
+        )
+        return
+      end
 
-    conten_type, content = channel.process(params.permit!.to_h)
-    send_data content, type: conten_type
+      content_type, content = channel.process(params.permit!.to_h)
+      send_data content, type: content_type
+    end
   end
 
   private
@@ -96,7 +100,8 @@ class ChannelsSmsController < ApplicationController
     list = []
     Dir.glob(Rails.root.join('app/models/channel/driver/sms/*.rb')).each do |path|
       filename = File.basename(path)
-      require_dependency "channel/driver/sms/#{filename.sub('.rb', '')}"
+      next if !Channel.driver_class("sms/#{filename}").const_defined?(:NAME)
+
       list.push Channel.driver_class("sms/#{filename}").definition
     end
     list

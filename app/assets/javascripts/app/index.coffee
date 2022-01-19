@@ -5,6 +5,7 @@
 #= require_tree ./lib/mixins
 #= require ./config.coffee
 #= require_tree ./models
+#= require_tree ./controllers/_application_controller
 #= require_tree ./controllers
 #= require_tree ./views
 #= require_tree ./lib/app_post
@@ -52,7 +53,7 @@ class App extends Spine.Controller
   @viewPrintItem: (item, attributeConfig = {}, valueRef, table, object) ->
     return '-' if item is undefined
     return '-' if item is ''
-    return item if item is null
+    return '-' if item is null
     result = ''
     items = [item]
     if _.isArray(item)
@@ -114,8 +115,8 @@ class App extends Spine.Controller
         isHtmlEscape = true
         resultLocal = App.i18n.translateDate(resultLocal)
 
-      linktemplate = @_placeholderReplacement(object, attributeConfig, resultLocal)
-      if linktemplate && isHtmlEscape is false
+      linktemplate = @_placeholderReplacement(object, attributeConfig, resultLocal, isHtmlEscape)
+      if linktemplate
         resultLocal = linktemplate
         isHtmlEscape = true
 
@@ -133,14 +134,23 @@ class App extends Spine.Controller
       else if attributeConfig.tag is 'datetime'
         isHtmlEscape = true
         timestamp = App.i18n.translateTimestamp(resultLocal)
+
         escalation = false
         cssClass = attributeConfig.class || ''
         if cssClass.match 'escalation'
           escalation = true
+
         humanTime = ''
         if !table
           humanTime = App.PrettyDate.humanTime(resultLocal, escalation)
-        resultLocal = "<time class=\"humanTimeFromNow #{cssClass}\" datetime=\"#{resultLocal}\" title=\"#{timestamp}\">#{humanTime}</time>"
+
+        title = timestamp
+        timezone = ''
+        if attributeConfig.include_timezone
+          timezone = " timezone=\"#{App.Config.get('timezone_default')}\""
+          title += ' ' + App.Config.get('timezone_default')
+
+        resultLocal = "<time class=\"humanTimeFromNow #{cssClass}\" datetime=\"#{resultLocal}\" title=\"#{title}\"#{timezone}>#{humanTime}</time>"
 
       if !isHtmlEscape && typeof resultLocal is 'string'
         resultLocal = App.Utils.htmlEscape(resultLocal)
@@ -151,7 +161,7 @@ class App extends Spine.Controller
 
     result
 
-  @_placeholderReplacement: (object, attributeConfig, resultLocal) ->
+  @_placeholderReplacement: (object, attributeConfig, resultLocal, isHtmlEscape) ->
     return if !object
     return if !attributeConfig
     return if _.isEmpty(attributeConfig.linktemplate)
@@ -160,7 +170,12 @@ class App extends Spine.Controller
     return if _.isEmpty(object[attributeConfig.name])
     placeholderObjects = { attribute: attributeConfig, session: App.Session.get(), config: App.Config.all() }
     placeholderObjects[object.constructor.className.toLowerCase()] = object
-    "<a href=\"#{App.Utils.replaceTags(attributeConfig.linktemplate, placeholderObjects, true)}\" target=\"blank\">#{App.Utils.htmlEscape(resultLocal)}</a>"
+
+    value = resultLocal
+    if !isHtmlEscape
+      value = App.Utils.htmlEscape(value)
+
+    "<a href=\"#{App.Utils.replaceTags(attributeConfig.linktemplate, placeholderObjects, true)}\" target=\"blank\">#{value}</a>"
 
   @view: (name) ->
     template = (params = {}) ->

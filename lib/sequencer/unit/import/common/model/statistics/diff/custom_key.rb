@@ -1,4 +1,5 @@
-require_dependency 'sequencer/unit/import/common/model/statistics/mixin/action_diff'
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sequencer
   class Unit
     module Import

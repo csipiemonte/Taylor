@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class ChannelsEmailController < ApplicationController
   prepend_before_action { authentication_check && authorize! }
@@ -31,7 +31,7 @@ class ChannelsEmailController < ApplicationController
 
       email_address_ids.push email_address.id
       assets = email_address.assets(assets)
-      if !email_address.channel_id || !email_address.active || !Channel.find_by(id: email_address.channel_id)
+      if !email_address.channel_id || !email_address.active || !Channel.exists?(id: email_address.channel_id)
         not_used_email_address_ids.push email_address.id
       end
     end
@@ -61,9 +61,7 @@ class ChannelsEmailController < ApplicationController
     )
 
     # verify if user+host already exists
-    if result[:result] == 'ok'
-      return if account_duplicate?(result)
-    end
+    return if result[:result] == 'ok' && account_duplicate?(result)
 
     render json: result
   end
@@ -226,7 +224,7 @@ class ChannelsEmailController < ApplicationController
 
       Channel.where(area: 'Email::Notification').each do |channel|
         active = false
-        if adapter.match?(/^#{channel.options[:outbound][:adapter]}$/i)
+        if adapter.match?(%r{^#{channel.options[:outbound][:adapter]}$}i)
           active = true
           channel.options = {
             outbound: {
@@ -269,7 +267,7 @@ class ChannelsEmailController < ApplicationController
   def check_online_service
     return true if !Setting.get('system_online_service')
 
-    raise Exceptions::NotAuthorized
+    raise Exceptions::Forbidden
   end
 
   def check_access(id = nil)
@@ -281,6 +279,6 @@ class ChannelsEmailController < ApplicationController
     channel = Channel.find(id)
     return true if channel.preferences && !channel.preferences[:online_service_disable]
 
-    raise Exceptions::NotAuthorized
+    raise Exceptions::Forbidden
   end
 end

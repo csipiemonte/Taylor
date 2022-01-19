@@ -1,4 +1,4 @@
-require_dependency 'sequencer/unit/import/common/model/mixin/handle_failure'
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Sequencer
   class Unit

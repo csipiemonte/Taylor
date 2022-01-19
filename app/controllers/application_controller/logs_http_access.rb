@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module ApplicationController::LogsHttpAccess
   extend ActiveSupport::Concern
 
@@ -33,7 +35,7 @@ module ApplicationController::LogsHttpAccess
     end
     body = request.body.read
     if body
-      request_data[:content] += "\n" + body
+      request_data[:content] += "\n#{body}"
     end
     request_data[:content] = request_data[:content].slice(0, 8000)
 
@@ -50,7 +52,7 @@ module ApplicationController::LogsHttpAccess
     end
     body = response.body
     if body
-      response_data[:content] += "\n" + body
+      response_data[:content] += "\n#{body}"
     end
     response_data[:content] = response_data[:content].slice(0, 8000)
     record = {

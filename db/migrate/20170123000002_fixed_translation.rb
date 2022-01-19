@@ -1,8 +1,10 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class FixedTranslation < ActiveRecord::Migration[4.2]
   def up
 
     # return if it's a new setup
-    return if !Setting.find_by(name: 'system_init_done')
+    return if !Setting.exists?(name: 'system_init_done')
 
     settings_update = [
       {
@@ -39,16 +41,6 @@ class FixedTranslation < ActiveRecord::Migration[4.2]
         'name'        => 'ui_client_storage',
         'title'       => nil,
         'description' => 'Use client storage to cache data to enhance performance of application.',
-      },
-      {
-        'name'        => 'auth_oauth2',
-        'title'       => nil,
-        'description' => 'Enables user authentication via generic OAuth2. Register your app first.',
-      },
-      {
-        'name'        => 'auth_oauth2_credentials',
-        'title'       => nil,
-        'description' => 'Enables user authentication via generic OAuth2.',
       },
       {
         'name'        => 'password_min_size',
@@ -411,7 +403,7 @@ class FixedTranslation < ActiveRecord::Migration[4.2]
     ]
 
     settings_update.each do |setting|
-      fetched_setting = Setting.find_by(name: setting['name'] )
+      fetched_setting = Setting.find_by(name: setting['name'])
       next if !fetched_setting
 
       if setting['title']

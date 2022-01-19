@@ -1,7 +1,9 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class JobUnableToCreateIssue432 < ActiveRecord::Migration[4.2]
   def up
     # return if it's a new setup
-    return if !Setting.find_by(name: 'system_init_done')
+    return if !Setting.exists?(name: 'system_init_done')
 
     ActiveRecord::Migration.change_table :jobs do |t|
       t.change :timeplan, :string, limit: 2500

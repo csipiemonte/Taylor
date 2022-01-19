@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Channel::Driver::Sms::Massenversand
   NAME = 'sms/massenversand'.freeze
 
@@ -8,18 +10,28 @@ class Channel::Driver::Sms::Massenversand
 
     Rails.logger.info "Backend sending Massenversand SMS to #{attr[:recipient]}"
     begin
-      url = build_url(options, attr)
-
-      if Setting.get('developer_mode') != true
-        response = Faraday.get(url).body
-        raise response if !response.match?('OK')
-      end
+      send_create(options, attr)
 
       true
     rescue => e
-      Rails.logger.debug "Massenversand error: #{e.inspect}"
-      raise e
+      message = "Error while performing request to gateway URL '#{url}'"
+      Rails.logger.error message
+      Rails.logger.error e
+      raise message
     end
+  end
+
+  def send_create(options, attr)
+    url = build_url(options, attr)
+
+    return if Setting.get('developer_mode')
+
+    response = Faraday.get(url).body
+    return if response.match?('OK')
+
+    message = "Received non-OK response from gateway URL '#{url}'"
+    Rails.logger.error "#{message}: #{response.inspect}"
+    raise message
   end
 
   def self.definition
@@ -46,6 +58,6 @@ class Channel::Driver::Sms::Massenversand
       sender:    options[:sender]
     }
 
-    options[:gateway] + '?' + URI.encode_www_form(params)
+    "#{options[:gateway]}?#{URI.encode_www_form(params)}"
   end
 end

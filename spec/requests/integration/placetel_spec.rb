@@ -1,13 +1,15 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe 'Integration Placetel', type: :request do
 
-  let(:agent_user) do
-    create(:agent_user)
+  let(:agent) do
+    create(:agent)
   end
-  let!(:customer_user1) do
+  let!(:customer1) do
     create(
-      :customer_user,
+      :customer,
       login:     'ticket-caller_id_cti-customer1@example.com',
       firstname: 'CallerId',
       lastname:  'Customer1',
@@ -17,18 +19,18 @@ RSpec.describe 'Integration Placetel', type: :request do
       note:      'Phone at home: +49 99999 222224',
     )
   end
-  let!(:customer_user2) do
+  let!(:customer2) do
     create(
-      :customer_user,
+      :customer,
       login:     'ticket-caller_id_cti-customer2@example.com',
       firstname: 'CallerId',
       lastname:  'Customer2',
       phone:     '+49 99999 222222 2',
     )
   end
-  let!(:customer_user3) do
+  let!(:customer3) do
     create(
-      :customer_user,
+      :customer,
       login:     'ticket-caller_id_cti-customer3@example.com',
       firstname: 'CallerId',
       lastname:  'Customer3',
@@ -512,17 +514,17 @@ RSpec.describe 'Integration Placetel', type: :request do
 
       # get caller list
       get '/api/v1/cti/log'
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
 
-      authenticated_as(agent_user)
+      authenticated_as(agent)
       get '/api/v1/cti/log', as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response['list']).to be_a_kind_of(Array)
       expect(json_response['list'].count).to eq(7)
       expect(json_response['assets']).to be_truthy
       expect(json_response['assets']['User']).to be_truthy
-      expect(json_response['assets']['User'][customer_user2.id.to_s]).to be_truthy
-      expect(json_response['assets']['User'][customer_user3.id.to_s]).to be_truthy
+      expect(json_response['assets']['User'][customer2.id.to_s]).to be_truthy
+      expect(json_response['assets']['User'][customer3.id.to_s]).to be_truthy
       expect(json_response['list'][0]['call_id']).to eq('1234567890-7')
       expect(json_response['list'][1]['call_id']).to eq('1234567890-6')
       expect(json_response['list'][2]['call_id']).to eq('1234567890-5')
@@ -590,7 +592,7 @@ RSpec.describe 'Integration Placetel', type: :request do
       expect(log.duration_talking_time).to be_nil
 
       # check if cache is filled
-      expect(Cache.get('placetelGetVoipUsers')['777008478072@example.com']).to eq('Bob Smith')
+      expect(Cache.read('placetelGetVoipUsers')['777008478072@example.com']).to eq('Bob Smith')
 
       params = 'event=IncomingCall&direction=in&to=030600000000&from=012345&call_id=1234567890-3&peer=777008478072@example.com'
       post "/api/v1/placetel/#{token}", params: params
@@ -612,7 +614,7 @@ RSpec.describe 'Integration Placetel', type: :request do
       expect(log.duration_talking_time).to be_nil
 
       # check if cache is filled
-      expect(Cache.get('placetelGetVoipUsers')['777008478072@example.com']).to eq('Bob Smith')
+      expect(Cache.read('placetelGetVoipUsers')['777008478072@example.com']).to eq('Bob Smith')
     end
   end
 end

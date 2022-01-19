@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module HasAgentAllowedParams
   extend ActiveSupport::Concern
 
@@ -19,7 +20,7 @@ module HasAgentAllowedParams
       return [] if !const_defined?(:AGENT_ALLOWED_NESTED_RELATIONS)
 
       const_get(:AGENT_ALLOWED_NESTED_RELATIONS).map do |relation_identifier|
-        key = "#{relation_identifier}_attributes".to_sym
+        key = :"#{relation_identifier}_attributes"
         value = reflect_on_association(relation_identifier).klass.agent_allowed_params
 
         if reflect_on_association(relation_identifier).is_a? ActiveRecord::Reflection::HasManyReflection

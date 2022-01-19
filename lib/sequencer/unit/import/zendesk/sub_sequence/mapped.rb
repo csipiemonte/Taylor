@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sequencer
   class Unit
     module Import
@@ -7,10 +9,12 @@ class Sequencer
             module ClassMethods
 
               def resource_map
-                "#{resource_klass.underscore}_map".to_sym
+                :"#{resource_klass.underscore}_map"
               end
 
               def inherited(base)
+                super
+
                 base.provides(base.resource_map)
 
                 base.extend(Forwardable)

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Trigger
   module Assets
@@ -37,6 +37,12 @@ returns
       data[ app_model_calendar ] ||= {}
       Calendar.find_each do |calendar|
         data = calendar.assets(data)
+      end
+
+      app_model_webhook = Webhook.to_app_model
+      data[ app_model_webhook ] ||= {}
+      Webhook.find_each do |webhook|
+        data = webhook.assets(data)
       end
 
       app_model_user = User.to_app_model

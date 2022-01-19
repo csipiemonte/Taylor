@@ -1,10 +1,14 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 require 'models/application_model_examples'
+require 'models/concerns/has_xss_sanitized_note_examples'
 
 RSpec.describe Trigger, type: :model do
   subject(:trigger) { create(:trigger, condition: condition, perform: perform) }
 
   it_behaves_like 'ApplicationModel', can_assets: { selectors: %i[condition perform] }
+  it_behaves_like 'HasXssSanitizedNote', model_factory: :trigger
 
   describe 'validation' do
 
@@ -37,8 +41,8 @@ RSpec.describe Trigger, type: :model do
 
   describe 'Send-email triggers' do
     before do
-      described_class.destroy_all  # Default DB state includes three sample triggers
-      trigger              # create subject trigger
+      described_class.destroy_all # Default DB state includes three sample triggers
+      trigger # create subject trigger
     end
 
     let(:perform) do
@@ -51,6 +55,135 @@ RSpec.describe Trigger, type: :model do
       }
     end
 
+    shared_examples 'include ticket attachment' do
+      context 'notification.email include_attachments' do
+        let(:perform) do
+          {
+            'notification.email' => {
+              'recipient' => 'ticket_customer',
+              'subject'   => 'Example subject',
+              'body'      => 'Example body',
+            }
+          }.deep_merge(additional_options).deep_stringify_keys
+        end
+
+        let(:ticket) { create(:ticket) }
+
+        shared_examples 'add a new article' do
+          it 'adds a new article' do
+            expect { TransactionDispatcher.commit }
+              .to change(ticket.articles, :count).by(1)
+          end
+        end
+
+        shared_examples 'add attachment to new article' do
+          include_examples 'add a new article'
+
+          it 'adds attachment to the new article' do
+            ticket && trigger
+
+            TransactionDispatcher.commit
+            article = ticket.articles.last
+
+            expect(article.type.name).to eq('email')
+            expect(article.sender.name).to eq('System')
+            expect(article.attachments.count).to eq(1)
+            expect(article.attachments[0].filename).to eq('some_file.pdf')
+            expect(article.attachments[0].preferences['Content-ID']).to eq('image/pdf@01CAB192.K8H512Y9')
+          end
+        end
+
+        shared_examples 'does not add attachment to new article' do
+          include_examples 'add a new article'
+
+          it 'does not add attachment to the new article' do
+            ticket && trigger
+
+            TransactionDispatcher.commit
+            article = ticket.articles.last
+
+            expect(article.type.name).to eq('email')
+            expect(article.sender.name).to eq('System')
+            expect(article.attachments.count).to eq(0)
+          end
+        end
+
+        context 'with include attachment present' do
+          let(:additional_options) do
+            {
+              'notification.email' => {
+                include_attachments: 'true'
+              }
+            }
+          end
+
+          context 'when ticket has an attachment' do
+
+            before do
+              UserInfo.current_user_id = 1
+              ticket_article = create(:ticket_article, ticket: ticket)
+
+              Store.add(
+                object:        'Ticket::Article',
+                o_id:          ticket_article.id,
+                data:          'dGVzdCAxMjM=',
+                filename:      'some_file.pdf',
+                preferences:   {
+                  'Content-Type': 'image/pdf',
+                  'Content-ID':   'image/pdf@01CAB192.K8H512Y9',
+                },
+                created_by_id: 1,
+              )
+            end
+
+            include_examples 'add attachment to new article'
+          end
+
+          context 'when ticket does not have an attachment' do
+
+            include_examples 'does not add attachment to new article'
+          end
+        end
+
+        context 'with include attachment not present' do
+          let(:additional_options) do
+            {
+              'notification.email' => {
+                include_attachments: 'false'
+              }
+            }
+          end
+
+          context 'when ticket has an attachment' do
+
+            before do
+              UserInfo.current_user_id = 1
+              ticket_article = create(:ticket_article, ticket: ticket)
+
+              Store.add(
+                object:        'Ticket::Article',
+                o_id:          ticket_article.id,
+                data:          'dGVzdCAxMjM=',
+                filename:      'some_file.pdf',
+                preferences:   {
+                  'Content-Type': 'image/pdf',
+                  'Content-ID':   'image/pdf@01CAB192.K8H512Y9',
+                },
+                created_by_id: 1,
+              )
+            end
+
+            include_examples 'does not add attachment to new article'
+          end
+
+          context 'when ticket does not have an attachment' do
+
+            include_examples 'does not add attachment to new article'
+          end
+        end
+      end
+    end
+
     context 'for condition "ticket created"' do
       let(:condition) do
         { 'ticket.action' => { 'operator' => 'is', 'value' => 'create' } }
@@ -60,9 +193,37 @@ RSpec.describe Trigger, type: :model do
         let!(:ticket) { create(:ticket) }
 
         it 'fires (without altering ticket state)' do
-          expect { Observer::Transaction.commit }
+          expect { TransactionDispatcher.commit }
             .to change(Ticket::Article, :count).by(1)
             .and not_change { ticket.reload.state.name }.from('new')
+        end
+      end
+
+      context 'when ticket has tags' do
+        let(:tag1) { create(:'tag/item', name: 't1') }
+        let(:tag2) { create(:'tag/item', name: 't2') }
+        let(:tag3) { create(:'tag/item', name: 't3') }
+        let!(:ticket) do
+          ticket = create(:ticket)
+          create(:tag, o: ticket, tag_item: tag1)
+          create(:tag, o: ticket, tag_item: tag2)
+          create(:tag, o: ticket, tag_item: tag3)
+          ticket
+        end
+
+        let(:perform) do
+          {
+            'notification.email' => {
+              'recipient' => 'ticket_customer',
+              'subject'   => 'foo',
+              'body'      => 'some body with #{ticket.tags}', # rubocop:disable Lint/InterpolationCheck
+            }
+          }
+        end
+
+        it 'fires body with replaced tags' do
+          TransactionDispatcher.commit
+          expect(Ticket::Article.last.body).to eq('some body with t1, t2, t3')
         end
       end
 
@@ -107,10 +268,10 @@ RSpec.describe Trigger, type: :model do
             <p>Geschäftsführer der example Straubing-Bogen</p>
             <p>Klosterhof 1 | 94327 Bogen-Oberalteich</p>
             <p>Tel: 09422-505601 | Fax: 09422-505620</p>
-            <p>Internet: <a href="http://example-straubing-bogen.de/" rel="nofollow noreferrer noopener" target="_blank">http://example-straubing-bogen.de</a></p>
-            <p>Facebook: <a href="http://facebook.de/examplesrbog" rel="nofollow noreferrer noopener" target="_blank">http://facebook.de/examplesrbog</a></p>
-            <p><b><img border="0" src="cid:image001.jpg@01CDB132.D8A510F0" alt="Beschreibung: Beschreibung: efqmLogo" style="width:60px;height:19px;"></b><b> - European Foundation für Quality Management</b></p>
-            <p> </p>
+            <p><span>Internet: <a href="http://example-straubing-bogen.de/" rel="nofollow noreferrer noopener" target="_blank"><span style="color:blue;">http://example-straubing-bogen.de</span></a></span></p>
+            <p><span lang="EN-US">Facebook: </span><a href="http://facebook.de/examplesrbog" rel="nofollow noreferrer noopener" target="_blank"><span lang="EN-US" style="color:blue;">http://facebook.de/examplesrbog</span></a><span lang="EN-US"></span></p>
+            <p><b><span style="color:navy;"><img border="0" src="cid:image001.jpg@01CDB132.D8A510F0" alt="Beschreibung: Beschreibung: efqmLogo" style="width:60px;height:19px;"></span></b><b><span lang="EN-US" style="color:navy;"> - European Foundation für Quality Management</span></b><span lang="EN-US"></span></p>
+            <p><span lang="EN-US"><p> </p></span></p>
             </div>&gt;/snip&lt;
           RAW
                                     )
@@ -133,7 +294,7 @@ RSpec.describe Trigger, type: :model do
           }
         end
 
-        before { Observer::Transaction.commit }
+        before { TransactionDispatcher.commit }
 
         context 'mix of recipient group keyword and single recipient users' do
           let(:recipient) { [ 'ticket_customer', "userid_#{recipient1.id}", "userid_#{recipient2.id}", "userid_#{recipient3.id}" ] }
@@ -197,7 +358,7 @@ RSpec.describe Trigger, type: :model do
         let(:email_address) { create(:email_address, email: system_email_address) }
 
         let(:group) { create(:group, email_address: email_address) }
-        let(:customer) { create(:customer_user, email: customer_email_address) }
+        let(:customer) { create(:customer, email: customer_email_address) }
 
         let(:security_preferences) { Ticket::Article.last.preferences[:security] }
 
@@ -216,7 +377,7 @@ RSpec.describe Trigger, type: :model do
         context 'sending articles' do
 
           before do
-            Observer::Transaction.commit
+            TransactionDispatcher.commit
           end
 
           context 'expired certificate' do
@@ -319,7 +480,7 @@ RSpec.describe Trigger, type: :model do
               let(:group) { create(:group) }
 
               it 'does not fire' do
-                expect { Observer::Transaction.commit }
+                expect { TransactionDispatcher.commit }
                   .to change(Ticket::Article, :count).by(0)
               end
             end
@@ -337,7 +498,7 @@ RSpec.describe Trigger, type: :model do
               let(:customer) { create(:customer) }
 
               it 'does not fire' do
-                expect { Observer::Transaction.commit }
+                expect { TransactionDispatcher.commit }
                   .to change(Ticket::Article, :count).by(0)
               end
             end
@@ -358,7 +519,7 @@ RSpec.describe Trigger, type: :model do
                 let(:group) { create(:group) }
 
                 it 'does not fire' do
-                  expect { Observer::Transaction.commit }
+                  expect { TransactionDispatcher.commit }
                     .to change(Ticket::Article, :count).by(0)
                 end
               end
@@ -377,7 +538,7 @@ RSpec.describe Trigger, type: :model do
                 let(:customer) { create(:customer) }
 
                 it 'does not fire' do
-                  expect { Observer::Transaction.commit }
+                  expect { TransactionDispatcher.commit }
                     .to change(Ticket::Article, :count).by(0)
                 end
               end
@@ -385,6 +546,8 @@ RSpec.describe Trigger, type: :model do
           end
         end
       end
+
+      include_examples 'include ticket attachment'
     end
 
     context 'for condition "ticket updated"' do
@@ -392,14 +555,14 @@ RSpec.describe Trigger, type: :model do
         { 'ticket.action' => { 'operator' => 'is', 'value' => 'update' } }
       end
 
-      let!(:ticket) { create(:ticket).tap { Observer::Transaction.commit } }
+      let!(:ticket) { create(:ticket).tap { TransactionDispatcher.commit } }
 
       context 'when new article is created directly' do
         context 'with empty #preferences hash' do
-          let!(:article) { create(:ticket_article, ticket: ticket)  }
+          let!(:article) { create(:ticket_article, ticket: ticket) }
 
           it 'fires (without altering ticket state)' do
-            expect { Observer::Transaction.commit }
+            expect { TransactionDispatcher.commit }
               .to change { ticket.reload.articles.count }.by(1)
               .and not_change { ticket.reload.state.name }.from('new')
           end
@@ -413,7 +576,7 @@ RSpec.describe Trigger, type: :model do
           end
 
           it 'does not fire' do
-            expect { Observer::Transaction.commit }
+            expect { TransactionDispatcher.commit }
               .not_to change { ticket.reload.articles.count }
           end
         end
@@ -424,8 +587,8 @@ RSpec.describe Trigger, type: :model do
           let!(:article) do
             create(:ticket_article,
                    ticket:     ticket,
-                   message_id: raw_email[/(?<=^References: )\S*/],
-                   subject:    raw_email[/(?<=^Subject: Re: ).*$/])
+                   message_id: raw_email[%r{(?<=^References: )\S*}],
+                   subject:    raw_email[%r{(?<=^Subject: Re: ).*$}])
           end
 
           let(:raw_email) { File.read(Rails.root.join('test/data/mail/mail005.box')) }
@@ -442,7 +605,7 @@ RSpec.describe Trigger, type: :model do
           let!(:article) do
             create(:ticket_article,
                    ticket:     ticket,
-                   message_id: raw_email[/(?<=^Message-ID: )\S*/])
+                   message_id: raw_email[%r{(?<=^Message-ID: )\S*}])
           end
 
           let(:raw_email) { File.read(Rails.root.join('test/data/mail/mail055.box')) }
@@ -469,12 +632,12 @@ RSpec.describe Trigger, type: :model do
 
         it 'does trigger only in working time' do
           travel_to Time.zone.parse('2020-02-12T12:00:00Z0')
-          expect { Observer::Transaction.commit }.to change { ticket.reload.title }.to('triggered')
+          expect { TransactionDispatcher.commit }.to change { ticket.reload.title }.to('triggered')
         end
 
         it 'does not trigger out of working time' do
           travel_to Time.zone.parse('2020-02-12T02:00:00Z0')
-          Observer::Transaction.commit
+          TransactionDispatcher.commit
           expect(ticket.reload.title).to eq('Test Ticket')
         end
       end
@@ -486,13 +649,13 @@ RSpec.describe Trigger, type: :model do
 
         it 'does not trigger in working time' do
           travel_to Time.zone.parse('2020-02-12T12:00:00Z0')
-          Observer::Transaction.commit
+          TransactionDispatcher.commit
           expect(ticket.reload.title).to eq('Test Ticket')
         end
 
         it 'does trigger out of working time' do
           travel_to Time.zone.parse('2020-02-12T02:00:00Z0')
-          expect { Observer::Transaction.commit }.to change { ticket.reload.title }.to('triggered')
+          expect { TransactionDispatcher.commit }.to change { ticket.reload.title }.to('triggered')
         end
       end
     end
@@ -523,7 +686,7 @@ RSpec.describe Trigger, type: :model do
         end
 
         it 'does not trigger because of the last article is created my system address' do
-          expect { Observer::Transaction.commit }.to change { ticket.reload.articles.count }.by(0)
+          expect { TransactionDispatcher.commit }.to change { ticket.reload.articles.count }.by(0)
           expect(Ticket::Article.where(ticket: ticket).last.subject).not_to eq('foo last sender')
           expect(Ticket::Article.where(ticket: ticket).last.to).not_to eq(system_address.email)
         end
@@ -538,11 +701,13 @@ RSpec.describe Trigger, type: :model do
         end
 
         it 'does not trigger because of the last article is created my system address' do
-          expect { Observer::Transaction.commit }.to change { ticket.reload.articles.count }.by(0)
+          expect { TransactionDispatcher.commit }.to change { ticket.reload.articles.count }.by(0)
           expect(Ticket::Article.where(ticket: ticket).last.subject).not_to eq('foo last sender')
           expect(Ticket::Article.where(ticket: ticket).last.to).not_to eq(system_address.email)
         end
       end
+
+      include_examples 'include ticket attachment'
     end
   end
 
@@ -552,7 +717,7 @@ RSpec.describe Trigger, type: :model do
     end
 
     let(:user) do
-      user = create(:agent_user)
+      user = create(:agent)
       user.roles.first.groups << group
       user
     end
@@ -574,11 +739,196 @@ RSpec.describe Trigger, type: :model do
 
       it "for #{attribute}" do
         ticket && trigger
-        expect { Observer::Transaction.commit }.to change { ticket.reload.title }.to('triggered')
+        expect { TransactionDispatcher.commit }.to change { ticket.reload.title }.to('triggered')
       end
     end
 
     it_behaves_like 'successful trigger', attribute: 'ticket.updated_by_id'
     it_behaves_like 'successful trigger', attribute: 'ticket.owner_id'
+  end
+
+  describe 'Multi-trigger interactions:' do
+    let(:ticket) { create(:ticket) }
+
+    context 'cascading (i.e., trigger A satisfies trigger B satisfies trigger C)' do
+      subject!(:triggers) do
+        [
+          create(:trigger, condition: initial_state, perform: first_change, name: 'A'),
+          create(:trigger, condition: first_change, perform: second_change, name: 'B'),
+          create(:trigger, condition: second_change, perform: third_change, name: 'C')
+        ]
+      end
+
+      context 'in a chain' do
+        let(:initial_state) do
+          {
+            'ticket.state_id' => {
+              'operator' => 'is',
+              'value'    => Ticket::State.lookup(name: 'new').id.to_s,
+            }
+          }
+        end
+
+        let(:first_change) do
+          {
+            'ticket.state_id' => {
+              'operator' => 'is',
+              'value'    => Ticket::State.lookup(name: 'open').id.to_s,
+            }
+          }
+        end
+
+        let(:second_change) do
+          {
+            'ticket.state_id' => {
+              'operator' => 'is',
+              'value'    => Ticket::State.lookup(name: 'closed').id.to_s,
+            }
+          }
+        end
+
+        let(:third_change) do
+          {
+            'ticket.state_id' => {
+              'operator' => 'is',
+              'value'    => Ticket::State.lookup(name: 'merged').id.to_s,
+            }
+          }
+        end
+
+        context 'in alphabetical order (by name)' do
+          it 'fires all triggers in sequence' do
+            expect { TransactionDispatcher.commit }
+              .to change { ticket.reload.state.name }.to('merged')
+          end
+        end
+
+        context 'out of alphabetical order (by name)' do
+          before do
+            triggers.first.update(name: 'E')
+            triggers.second.update(name: 'F')
+            triggers.third.update(name: 'D')
+          end
+
+          context 'with Setting ticket_trigger_recursive: true' do
+            before { Setting.set('ticket_trigger_recursive', true) }
+
+            it 'evaluates triggers in sequence, then loops back to the start and re-evalutes skipped triggers' do
+              expect { TransactionDispatcher.commit }
+                .to change { ticket.reload.state.name }.to('merged')
+            end
+          end
+
+          context 'with Setting ticket_trigger_recursive: false' do
+            before { Setting.set('ticket_trigger_recursive', false) }
+
+            it 'evaluates triggers in sequence, firing only the ones that match' do
+              expect { TransactionDispatcher.commit }
+                .to change { ticket.reload.state.name }.to('closed')
+            end
+          end
+        end
+      end
+
+      context 'in circular reference (i.e., trigger A satisfies trigger B satisfies trigger C satisfies trigger A...)' do
+        let(:initial_state) do
+          {
+            'ticket.priority_id' => {
+              'operator' => 'is',
+              'value'    => Ticket::Priority.lookup(name: '2 normal').id.to_s,
+            }
+          }
+        end
+
+        let(:first_change) do
+          {
+            'ticket.priority_id' => {
+              'operator' => 'is',
+              'value'    => Ticket::Priority.lookup(name: '3 high').id.to_s,
+            }
+          }
+        end
+
+        let(:second_change) do
+          {
+            'ticket.priority_id' => {
+              'operator' => 'is',
+              'value'    => Ticket::Priority.lookup(name: '1 low').id.to_s,
+            }
+          }
+        end
+
+        let(:third_change) do
+          {
+            'ticket.priority_id' => {
+              'operator' => 'is',
+              'value'    => Ticket::Priority.lookup(name: '2 normal').id.to_s,
+            }
+          }
+        end
+
+        context 'with Setting ticket_trigger_recursive: true' do
+          before { Setting.set('ticket_trigger_recursive', true) }
+
+          it 'fires each trigger once, without being caught in an endless loop' do
+            expect { Timeout.timeout(2) { TransactionDispatcher.commit } }
+              .to not_change { ticket.reload.priority.name }
+              .and not_raise_error
+          end
+        end
+
+        context 'with Setting ticket_trigger_recursive: false' do
+          before { Setting.set('ticket_trigger_recursive', false) }
+
+          it 'fires each trigger once, without being caught in an endless loop' do
+            expect { Timeout.timeout(2) { TransactionDispatcher.commit } }
+              .to not_change { ticket.reload.priority.name }
+              .and not_raise_error
+          end
+        end
+      end
+    end
+
+    context 'competing (i.e., trigger A un-satisfies trigger B)' do
+      subject!(:triggers) do
+        [
+          create(:trigger, condition: initial_state, perform: change_a, name: 'A'),
+          create(:trigger, condition: initial_state, perform: change_b, name: 'B')
+        ]
+      end
+
+      let(:initial_state) do
+        {
+          'ticket.state_id' => {
+            'operator' => 'is',
+            'value'    => Ticket::State.lookup(name: 'new').id.to_s,
+          }
+        }
+      end
+
+      let(:change_a) do
+        {
+          'ticket.state_id' => {
+            'operator' => 'is',
+            'value'    => Ticket::State.lookup(name: 'open').id.to_s,
+          }
+        }
+      end
+
+      let(:change_b) do
+        {
+          'ticket.priority_id' => {
+            'operator' => 'is',
+            'value'    => Ticket::Priority.lookup(name: '3 high').id.to_s,
+          }
+        }
+      end
+
+      it 'evaluates triggers in sequence, firing only the ones that match' do
+        expect { TransactionDispatcher.commit }
+          .to change { ticket.reload.state.name }.to('open')
+          .and not_change { ticket.reload.priority.name }
+      end
+    end
   end
 end

@@ -1,21 +1,23 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'test_helper'
 
 class HtmlSanitizerTest < ActiveSupport::TestCase
 
   test 'xss' do
     assert_equal(HtmlSanitizer.strict('<b>123</b>'), '<b>123</b>')
-    assert_equal(HtmlSanitizer.strict('<script><b>123</b></script>'), '&lt;b&gt;123&lt;/b&gt;')
-    assert_equal(HtmlSanitizer.strict('<script><style><b>123</b></style></script>'), '&lt;style&gt;&lt;b&gt;123&lt;/b&gt;&lt;/style&gt;')
+    assert_equal(HtmlSanitizer.strict('<script><b>123</b></script>'), '')
+    assert_equal(HtmlSanitizer.strict('<script><style><b>123</b></style></script>'), '')
     assert_equal(HtmlSanitizer.strict('<abc><i><b>123</b><bbb>123</bbb></i></abc>'), '<i><b>123</b>123</i>')
     assert_equal(HtmlSanitizer.strict('<abc><i><b>123</b><bbb>123<i><ccc>abc</ccc></i></bbb></i></abc>'), '<i><b>123</b>123<i>abc</i></i>')
     assert_equal(HtmlSanitizer.strict('<not_existing>123</not_existing>'), '123')
-    assert_equal(HtmlSanitizer.strict('<script type="text/javascript">alert("XSS!");</script>'), 'alert("XSS!");')
+    assert_equal(HtmlSanitizer.strict('<script type="text/javascript">alert("XSS!");</script>'), '')
     assert_equal(HtmlSanitizer.strict('<SCRIPT SRC=http://xss.rocks/xss.js></SCRIPT>'), '')
     assert_equal(HtmlSanitizer.strict('<IMG SRC="javascript:alert(\'XSS\');">'), '')
     assert_equal(HtmlSanitizer.strict('<IMG SRC=javascript:alert(\'XSS\')>'), '')
     assert_equal(HtmlSanitizer.strict('<IMG SRC=JaVaScRiPt:alert(\'XSS\')>'), '')
     assert_equal(HtmlSanitizer.strict('<IMG SRC=`javascript:alert("RSnake says, \'XSS\'")`>'), '')
-    assert_equal(HtmlSanitizer.strict('<IMG """><SCRIPT>alert("XSS")</SCRIPT>">'), '<img>alert("XSS")"&gt;')
+    assert_equal(HtmlSanitizer.strict('<IMG """><SCRIPT>alert("XSS")</SCRIPT>">'), '<img>"&gt;')
     assert_equal(HtmlSanitizer.strict('<IMG SRC=# onmouseover="alert(\'xxs\')">'), '<img src="#">')
     assert_equal(HtmlSanitizer.strict('<IMG SRC="jav  ascript:alert(\'XSS\');">'), '')
     assert_equal(HtmlSanitizer.strict('<IMG SRC="jav&#x09;ascript:alert(\'XSS\');">'), '')
@@ -25,13 +27,13 @@ class HtmlSanitizerTest < ActiveSupport::TestCase
     assert_equal(HtmlSanitizer.strict('<SCRIPT/XSS SRC="http://xss.rocks/xss.js"></SCRIPT>'), '')
     assert_equal(HtmlSanitizer.strict('<BODY onload!#$%&()*~+-_.,:;?@[/|\]^`=alert("XSS")>'), '')
     assert_equal(HtmlSanitizer.strict('<SCRIPT/SRC="http://xss.rocks/xss.js"></SCRIPT>'), '')
-    assert_equal(HtmlSanitizer.strict('<<SCRIPT>alert("XSS");//<</SCRIPT>'), '&lt;alert("XSS");//&lt;')
+    assert_equal(HtmlSanitizer.strict('<<SCRIPT>alert("XSS");//<</SCRIPT>'), '&lt;')
     assert_equal(HtmlSanitizer.strict('<SCRIPT SRC=http://xss.rocks/xss.js?< B >'), '')
     assert_equal(HtmlSanitizer.strict('<SCRIPT SRC=//xss.rocks/.j>'), '')
     assert_equal(HtmlSanitizer.strict('<IMG SRC="javascript:alert(\'XSS\')"'), '')
     assert_equal(HtmlSanitizer.strict('<IMG SRC="javascript:alert(\'XSS\')" abc<b>123</b>'), '123')
     assert_equal(HtmlSanitizer.strict('<iframe src=http://xss.rocks/scriptlet.html <'), '')
-    assert_equal(HtmlSanitizer.strict('</script><script>alert(\'XSS\');</script>'), 'alert(\'XSS\');')
+    assert_equal(HtmlSanitizer.strict('</script><script>alert(\'XSS\');</script>'), '')
     assert_equal(HtmlSanitizer.strict('<STYLE>li {list-style-image: url("javascript:alert(\'XSS\')");}</STYLE><UL><LI>XSS</br>'), '<ul><li>XSS</li></ul>')
     assert_equal(HtmlSanitizer.strict('<IMG SRC=\'vbscript:msgbox("XSS")\'>'), '')
     assert_equal(HtmlSanitizer.strict('<IMG SRC="livescript:[code]">'), '')
@@ -53,9 +55,9 @@ class HtmlSanitizerTest < ActiveSupport::TestCase
     assert_equal(HtmlSanitizer.strict(' <HEAD><META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=UTF-7"> </HEAD>+ADw-SCRIPT+AD4-alert(\'XSS\');+ADw-/SCRIPT+AD4-'), '  +ADw-SCRIPT+AD4-alert(\'XSS\');+ADw-/SCRIPT+AD4-')
     assert_equal(HtmlSanitizer.strict('<SCRIPT a=">" SRC="httx://xss.rocks/xss.js"></SCRIPT>'), '')
     assert_equal(HtmlSanitizer.strict('<A HREF="h
-tt  p://6 6.000146.0x7.147/">XSS</A>'), '<a href="htt%20%20p://6%206.000146.0x7.147/" rel="nofollow noreferrer noopener" target="_blank" title="htt  p://6 6.000146.0x7.147/">XSS</a>')
+tt  p://6 6.000146.0x7.147/">XSS</A>'), '<a href="h%0Att%20%20p://6%206.000146.0x7.147/" rel="nofollow noreferrer noopener" target="_blank" title="h%0Att%20%20p://6%206.000146.0x7.147/">XSS</a>')
     assert_equal(HtmlSanitizer.strict('<A HREF="h
-tt  p://6 6.000146.0x7.147/">XSS</A>', true), '<a href="htt%20%20p://6%206.000146.0x7.147/" rel="nofollow noreferrer noopener" target="_blank" title="htt  p://6 6.000146.0x7.147/">XSS</a>')
+tt  p://6 6.000146.0x7.147/">XSS</A>', true), '<a href="http://h%0Att%20%20p://6%206.000146.0x7.147/" rel="nofollow noreferrer noopener" target="_blank" title="http://h%0Att%20%20p://6%206.000146.0x7.147/">XSS</a>')
     assert_equal(HtmlSanitizer.strict('<A HREF="//www.google.com/">XSS</A>'), '<a href="//www.google.com/" rel="nofollow noreferrer noopener" target="_blank" title="//www.google.com/">XSS</a>')
     assert_equal(HtmlSanitizer.strict('<A HREF="//www.google.com/">XSS</A>', true), '<a href="//www.google.com/" rel="nofollow noreferrer noopener" target="_blank" title="//www.google.com/">XSS</a>')
     assert_equal(HtmlSanitizer.strict('<form id="test"></form><button form="test" formaction="javascript:alert(1)">X</button>'), 'X')
@@ -71,7 +73,7 @@ tt  p://6 6.000146.0x7.147/">XSS</A>', true), '<a href="htt%20%20p://6%206.00014
     assert_equal(HtmlSanitizer.strict('<img[a][b]src=x[d]onerror[c]=[e]"alert(1)">'), '<img>')
     assert_equal(HtmlSanitizer.strict('<a href="[a]java[b]script[c]:alert(1)">XXX</a>'), '<a href="%5Ba%5Djava%5Bb%5Dscript%5Bc%5D:alert(1)">XXX</a>')
     assert_equal(HtmlSanitizer.strict('<a href="[a]java[b]script[c]:alert(1)">XXX</a>', true), '<a href="http://%5Ba%5Djava%5Bb%5Dscript%5Bc%5D:alert(1)" rel="nofollow noreferrer noopener" target="_blank" title="http://%5Ba%5Djava%5Bb%5Dscript%5Bc%5D:alert(1)">XXX</a>')
-    assert_equal(HtmlSanitizer.strict('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'), 'alert(1)')
+    assert_equal(HtmlSanitizer.strict('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'), '')
     assert_equal(HtmlSanitizer.strict('<a style="position:fixed;top:0;left:0;width: 260px;height:100vh;background-color:red;display: block;" href="http://example.com"></a>'), '<a href="http://example.com" rel="nofollow noreferrer noopener" target="_blank" title="http://example.com"></a>')
     assert_equal(HtmlSanitizer.strict('<a style="position:fixed;top:0;left:0;width: 260px;height:100vh;background-color:red;display: block;" href="http://example.com"></a>', true), '<a href="http://example.com" rel="nofollow noreferrer noopener" target="_blank" title="http://example.com"></a>')
     assert_equal(HtmlSanitizer.strict('<div>
@@ -104,6 +106,21 @@ style="BORDER-LEFT: #000000 2px solid; PADDING-LEFT: 5px; PADDING-RIGHT: 0px; MA
 test 123
 <blockquote></blockquote>
 </div>')
+    assert_equal(HtmlSanitizer.strict('<style><!--
+/* Font Definitions */
+@font-face
+  {font-family:"Cambria Math";
+  panose-1:2 4 5 3 5 4 6 3 2 4;}
+  {page:WordSection1;}</style><!--[if gte mso 9]><xml>
+<o:shapedefaults v:ext="edit" spidmax="1026" />
+</xml><![endif]--><!--[if gte mso 9]><xml>
+<o:shapelayout v:ext="edit">
+<o:idmap v:ext="edit" data="1" />
+</o:shapelayout></xml><![endif]-->
+<div>123</div>
+<a href="#DAB4FAD8-2DD7-40BB-A1B8-4E2AA1F9FDF2" width="1" height="1">abc</a></div>'), '
+<div>123</div>
+<a href="#DAB4FAD8-2DD7-40BB-A1B8-4E2AA1F9FDF2">abc</a>')
     assert_equal(HtmlSanitizer.strict('<table><tr style="font-size: 0"><td>123</td></tr></table>'), '<table><tr><td>123</td></tr></table>')
     assert_equal(HtmlSanitizer.strict('<table><tr style="font-size: 0px"><td>123</td></tr></table>'), '<table><tr><td>123</td></tr></table>')
     assert_equal(HtmlSanitizer.strict('<table><tr style="font-size:0"><td>123</td></tr></table>'), '<table><tr><td>123</td></tr></table>')
@@ -114,8 +131,8 @@ test 123
     assert_equal(HtmlSanitizer.strict('<table><tr style="font-size:0%;visibility:hidden;"><td>123</td></tr></table>'), '<table><tr><td>123</td></tr></table>')
     assert_equal(HtmlSanitizer.strict('<table><tr style="font-size:0%;visibility:hidden;"><td>123</td></tr></table>'), '<table><tr><td>123</td></tr></table>')
     assert_equal(HtmlSanitizer.strict('<a href="/some/path%20test.pdf">test</a>'), '<a href="/some/path%20test.pdf">test</a>')
-    assert_equal(HtmlSanitizer.strict('<a href="https://somehost.domain/path%20test.pdf">test</a>'), '<a href="https://somehost.domain/path%20test.pdf" rel="nofollow noreferrer noopener" target="_blank" title="https://somehost.domain/path test.pdf">test</a>')
-    assert_equal(HtmlSanitizer.strict('<a href="https://somehost.domain/zaihan%20test">test</a>'), '<a href="https://somehost.domain/zaihan%20test" rel="nofollow noreferrer noopener" target="_blank" title="https://somehost.domain/zaihan test">test</a>')
+    assert_equal(HtmlSanitizer.strict('<a href="https://somehost.domain/path%20test.pdf">test</a>'), '<a href="https://somehost.domain/path%20test.pdf" rel="nofollow noreferrer noopener" target="_blank" title="https://somehost.domain/path%20test.pdf">test</a>')
+    assert_equal(HtmlSanitizer.strict('<a href="https://somehost.domain/zaihan%20test">test</a>'), '<a href="https://somehost.domain/zaihan%20test" rel="nofollow noreferrer noopener" target="_blank" title="https://somehost.domain/zaihan%20test">test</a>')
 
     api_path            = Rails.configuration.api_path
     http_type           = Setting.get('http_type')
@@ -134,6 +151,6 @@ test 123
     attachment_url_evil_other = "#{attachment_url}?disposition=some_other"
     assert_equal(HtmlSanitizer.strict("<a href=\"#{attachment_url_evil_other}\">Evil link</a>"), "<a href=\"#{attachment_url_good}\" rel=\"nofollow noreferrer noopener\" target=\"_blank\" title=\"#{attachment_url_good}\">Evil link</a>")
 
-    assert_equal(HtmlSanitizer.strict('<a href="mailto:testäöü@example.com">test</a>'), 'testäöü@example.com')
+    assert_equal(HtmlSanitizer.strict('<a href="mailto:testäöü@example.com" id="123">test</a>'), '<a href="mailto:test%C3%A4%C3%B6%C3%BC@example.com">test</a>')
   end
 end

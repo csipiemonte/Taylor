@@ -1,14 +1,13 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sequencer
   class Unit
     module Import
       module Zendesk
         module TicketField
           class SanitizedName < Sequencer::Unit::Import::Common::ObjectAttribute::SanitizedName
-            prepend ::Sequencer::Unit::Import::Common::Model::Mixin::Skip::Action
 
-            skip_action :skipped
-
-            uses :resource, :action
+            uses :resource
 
             private
 
@@ -17,6 +16,8 @@ class Sequencer
               # Model IDs
               # Model / Name
               # Model Name
+              # Model Name?
+              # Model::Name
               resource.title
             end
           end

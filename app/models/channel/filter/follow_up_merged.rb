@@ -1,8 +1,8 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 module Channel::Filter::FollowUpMerged
 
-  def self.run(_channel, mail)
+  def self.run(_channel, mail, _transaction_params)
     return if mail[:'x-zammad-ticket-id'].blank?
 
     ticket = Ticket.find_by(id: mail[:'x-zammad-ticket-id'])

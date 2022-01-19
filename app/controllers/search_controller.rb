@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class SearchController < ApplicationController
   prepend_before_action :authentication_check
@@ -16,10 +16,10 @@ class SearchController < ApplicationController
 
     # convert objects string into array of class names
     # e.g. user-ticket-another_object = %w( User Ticket AnotherObject )
-    objects = if !params[:objects]
-                Setting.get('models_searchable')
-              else
+    objects = if params[:objects]
                 params[:objects].split('-').map(&:camelize)
+              else
+                Setting.get('models_searchable')
               end
 
     # get priorities of result
@@ -65,7 +65,6 @@ class SearchController < ApplicationController
       if objects_with_direct_search_index.present?
         items = SearchIndexBackend.search(query, objects_with_direct_search_index, limit: limit)
         items.each do |item|
-          require_dependency item[:type].to_filename
           local_class = item[:type].constantize
           record = local_class.lookup(id: item[:id])
           next if !record
@@ -80,7 +79,7 @@ class SearchController < ApplicationController
       objects_without_direct_search_index.each do |object|
         object_result = search_generic_backend(object.constantize, assets, generic_search_params)
         if object_result.present?
-          result = result.concat(object_result)
+          result.concat(object_result)
         end
       end
 
@@ -102,7 +101,7 @@ class SearchController < ApplicationController
       objects_in_order.each do |object|
         object_result = search_generic_backend(object, assets, generic_search_params)
         if object_result.present?
-          result = result.concat(object_result)
+          result.concat(object_result)
         end
       end
     end

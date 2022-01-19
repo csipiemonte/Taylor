@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module Import
   module OTRS
     class User
@@ -102,7 +104,7 @@ module Import
           permissions ||= user['GroupIDs'][ queue['GroupID'].to_s ]
 
           next if !permissions
-          next if !permissions.include?('rw')
+          next if permissions.exclude?('rw')
 
           result.push queue['QueueID']
         end
@@ -161,8 +163,8 @@ module Import
           result.push 'Admin'
         end
 
-        return result if !group['Name'].match?(/^(stats|report)/)
-        return result if !( permissions.include?('ro') || permissions.include?('rw') )
+        return result if !group['Name'].match?(%r{^(stats|report)})
+        return result if !(permissions.include?('ro') || permissions.include?('rw'))
 
         result.push 'Report'
         result
@@ -172,7 +174,7 @@ module Import
         result = []
         roles  = Import::OTRS::Requester.load('Role')
         roles.each do |role|
-          next if !user['RoleIDs'].include?(role['ID'])
+          next if user['RoleIDs'].exclude?(role['ID'])
 
           result += groups_from_otrs_groups(role)
         end

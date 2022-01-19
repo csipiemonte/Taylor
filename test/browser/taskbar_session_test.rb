@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'browser_test_helper'
 
 class TaskbarSessionTest < TestCase
@@ -41,7 +43,7 @@ class TaskbarSessionTest < TestCase
     browser1 = browser_instance
     login(
       browser:  browser1,
-      username: 'master@example.com',
+      username: 'admin@example.com',
       password: 'test',
       url:      browser_url,
     )

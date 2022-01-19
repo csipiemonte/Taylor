@@ -53,6 +53,7 @@ class App.TicketList extends App.Controller
       attribute =
         name:         'icon'
         display:      ''
+        parentClass:  'noTruncate'
         translation:  false
         width:        '28px'
         displayWidth: 28
@@ -116,11 +117,13 @@ class App.TicketList extends App.Controller
       overview: @columns || [ 'number', 'title', 'customer', 'group', 'created_at' ]
       model:    App.Ticket
       objects:  list
+      checkbox: @checkbox
       #bindRow:
       #  events:
       #    'click': openTicket
       callbackHeader: callbackHeader
       callbackAttributes: callbackAttributes
+      bindCheckbox: @bindCheckbox
       radio: @radio
     )
 

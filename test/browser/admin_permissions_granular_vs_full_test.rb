@@ -1,15 +1,17 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'browser_test_helper'
 
 class AdminPermissionsGranularVsFullTest < TestCase
   def test_permissions_selecting
-    new_group_name = "permissions_test_group#{rand(99_999_999)}"
+    new_group_name = "permissions_test_group#{SecureRandom.uuid}"
     @browser = browser_instance
     login(
-      username: 'master@example.com',
+      username: 'admin@example.com',
       password: 'test',
       url:      browser_url,
     )
-    tasks_close_all()
+    tasks_close_all
 
     click(css: 'a[href="#manage"]')
     click(css: '.content.active a[href="#manage/groups"]')
@@ -28,7 +30,7 @@ class AdminPermissionsGranularVsFullTest < TestCase
     user_css = '.user-list .js-tableBody tr td'
     watch_for(css: user_css)
     @browser.find_elements(css: '.content.active .user-list td:first-child').each do |entry|
-      next if entry.text.strip != 'master@example.com'
+      next if entry.text.strip != 'admin@example.com'
 
       entry.click
       break

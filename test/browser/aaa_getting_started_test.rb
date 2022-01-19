@@ -1,9 +1,11 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'browser_test_helper'
 
 class AaaGettingStartedTest < TestCase
   def test_a_getting_started
     if !ENV['MAILBOX_INIT']
-      #raise "Need MAILBOX_INIT as ENV variable like export MAILBOX_INIT='unittest01@znuny.com:somepass'"
+      # raise "Need MAILBOX_INIT as ENV variable like export MAILBOX_INIT='unittest01@znuny.com:somepass'"
       puts "NOTICE: Need MAILBOX_INIT as ENV variable like export MAILBOX_INIT='unittest01@znuny.com:somepass'"
       return
     end
@@ -23,7 +25,7 @@ class AaaGettingStartedTest < TestCase
     )
     set(
       css:   '.js-admin input[name="firstname"]',
-      value: 'Test Master',
+      value: 'Test Admin',
     )
     set(
       css:   '.js-admin input[name="lastname"]',
@@ -31,19 +33,19 @@ class AaaGettingStartedTest < TestCase
     )
     set(
       css:   '.js-admin input[name="email"]',
-      value: 'master@example.com',
+      value: 'admin@example.com',
     )
     set(
       css:   '.js-admin input[name="firstname"]',
-      value: 'Test Master',
+      value: 'Test Admin',
     )
     set(
       css:   '.js-admin input[name="password"]',
-      value: 'test1234äöüß',
+      value: 'TEst1234äöüß',
     )
     set(
       css:   '.js-admin input[name="password_confirm"]',
-      value: 'test1234äöüß',
+      value: 'TEst1234äöüß',
     )
     click(css: '.js-admin .btn--success')
 
@@ -65,7 +67,7 @@ class AaaGettingStartedTest < TestCase
     )
     watch_for(
       css:   'body',
-      value: 'A URL looks like',
+      value: 'An URL looks like this',
     )
     set(
       css:   '.js-base input[name="url"]',
@@ -144,9 +146,9 @@ class AaaGettingStartedTest < TestCase
       value: 'agent1@example.com',
     )
     # not needed since we hide group selections if only one group exists
-    #click(
+    # click(
     #  css: '.js-agent input[name="group_ids"][value="1"]',
-    #)
+    # )
     click(
       css: '.js-agent .btn--success',
     )

@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module CanBePublished
   extend ActiveSupport::Concern
 
@@ -32,12 +33,13 @@ module CanBePublished
     after_touch   :update_active_publicly
 
     %i[archived published internal].each do |scope_name|
-      local  = "#{scope_name}_by".to_sym
+      local  = :"#{scope_name}_by"
       remote = inverse_relation_name(scope_name).to_sym
 
       belongs_to local, class_name: 'User', inverse_of: remote, optional: true
 
-      User.has_many remote, class_name: model_name, inverse_of: local, foreign_key: "#{local}_id"
+      # Deletion of users is handled in User.destroy_move_dependency_ownership and resets fields to user_id: 1, so skip dependent: here.
+      User.has_many remote, class_name: model_name, inverse_of: local, foreign_key: "#{local}_id" # rubocop:disable Rails/HasManyOrHasOneDependent
       User.association_attributes_ignored remote
     end
 
@@ -77,20 +79,6 @@ module CanBePublished
 
     scope :date_later_or_nil, lambda { |field, timestamp|
       where arel_table[field].gt(timestamp).or(arel_table[field].eq(nil))
-    }
-
-    scope :check_published_unless_editor, lambda { |user|
-      return if user&.permissions? 'knowledge_base.editor'
-
-      published
-    }
-
-    scope :check_internal_unless_editor, lambda { |user|
-      return if user&.permissions? 'knowledge_base.editor'
-
-      return internal if user&.permissions? 'knowledge_base.reader'
-
-      published
     }
   end
 
@@ -150,7 +138,6 @@ module CanBePublished
     KnowledgeBase::Answer
       .published
       .joins(category: :knowledge_base)
-      .where(knowledge_bases: { active: true })
-      .exists?
+      .exists?(knowledge_bases: { active: true })
   end
 end

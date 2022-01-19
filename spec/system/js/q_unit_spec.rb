@@ -1,6 +1,8 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
-RSpec.describe 'QUnit', type: :system, authenticated: false, set_up: true, websocket: false do
+RSpec.describe 'QUnit', type: :system, authenticated_as: false, set_up: true, websocket: false do
 
   def q_unit_tests(test_name)
 
@@ -14,8 +16,8 @@ RSpec.describe 'QUnit', type: :system, authenticated: false, set_up: true, webso
 
   def async_q_unit_tests(*args)
     q_unit_tests(*args) do
-      wait(10, interval: 4).until_constant do
-        find('.total').text
+      wait(120, interval: 3).until_constant do
+        page.has_css?('.total', wait: 0) ? find('.total').text : nil
       end
     end
   end
@@ -62,6 +64,14 @@ RSpec.describe 'QUnit', type: :system, authenticated: false, set_up: true, webso
     it 'Ticket selector' do
       q_unit_tests('ticket_selector')
     end
+
+    it 'Image Service' do
+      q_unit_tests('image_service')
+    end
+
+    it 'View helpers' do
+      q_unit_tests('view_helpers')
+    end
   end
 
   context 'Form' do
@@ -103,7 +113,11 @@ RSpec.describe 'QUnit', type: :system, authenticated: false, set_up: true, webso
     end
 
     it 'Ticket perform action' do
-      q_unit_tests('form_ticket_perform_action')
+      async_q_unit_tests('form_ticket_perform_action')
+    end
+
+    it 'Ticket macro' do
+      q_unit_tests('ticket_macro')
     end
 
     it 'Validation' do
@@ -116,6 +130,25 @@ RSpec.describe 'QUnit', type: :system, authenticated: false, set_up: true, webso
 
     it 'SLA times' do
       q_unit_tests('form_sla_times')
+    end
+
+    it 'DateTime' do
+      q_unit_tests('form_datetime')
+    end
+
+    it 'Core Workflow' do
+      q_unit_tests('form_core_workflow')
+    end
+  end
+
+  context 'Form AJAX', searchindex: true do
+    before do
+      configure_elasticsearch
+      rebuild_searchindex
+    end
+
+    it 'autocompletion ajax' do
+      async_q_unit_tests('form_autocompletion_ajax')
     end
   end
 
@@ -135,6 +168,12 @@ RSpec.describe 'QUnit', type: :system, authenticated: false, set_up: true, webso
 
     it 'Taskbar' do
       q_unit_tests('taskbar')
+    end
+  end
+
+  context 'Knowlede Base Editor' do
+    it 'Vdeo Embeding' do
+      q_unit_tests('kb_video_embeding')
     end
   end
 end

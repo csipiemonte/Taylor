@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module PunditPolicy
 
   attr_reader :user, :custom_exception
@@ -16,7 +18,7 @@ module PunditPolicy
   def user_required!
     return if user
 
-    raise Exceptions::NotAuthorized, 'authentication failed'
+    raise Exceptions::Forbidden, 'Authentication required'
   end
 
   private
@@ -25,7 +27,7 @@ module PunditPolicy
     if details
       details = "Not authorized (#{details})!"
     end
-    @custom_exception = Exceptions::NotAuthorized.new(details)
+    @custom_exception = Exceptions::Forbidden.new(details)
     false
   end
 

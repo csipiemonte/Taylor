@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Link < ApplicationModel
 
@@ -23,7 +23,7 @@ class Link < ApplicationModel
 =end
 
   def self.list(data)
-    linkobject = link_object_get( name: data[:link_object] )
+    linkobject = link_object_get(name: data[:link_object])
     return if !linkobject
 
     items = []
@@ -35,8 +35,8 @@ class Link < ApplicationModel
 
     list.each do |item|
       link = {}
-      link['link_type']         = @map[ Link::Type.find( item.link_type_id ).name ]
-      link['link_object']       = Link::Object.find( item.link_object_target_id ).name
+      link['link_type']         = @map[ Link::Type.find(item.link_type_id).name ]
+      link['link_object']       = Link::Object.find(item.link_object_target_id).name
       link['link_object_value'] = item.link_object_target_value
       items.push link
     end
@@ -47,13 +47,17 @@ class Link < ApplicationModel
     )
     list.each do |item|
       link = {}
-      link['link_type']         = Link::Type.find( item.link_type_id ).name
-      link['link_object']       = Link::Object.find( item.link_object_source_id ).name
+      link['link_type']         = Link::Type.find(item.link_type_id).name
+      link['link_object']       = Link::Object.find(item.link_object_source_id).name
       link['link_object_value'] = item.link_object_source_value
       items.push link
     end
 
-    items
+    return items if data[:user].blank?
+
+    items.select do |item|
+      authorized_item?(data[:user], item)
+    end
   end
 
 =begin
@@ -226,8 +230,7 @@ class Link < ApplicationModel
 
   def self.reduce_assets(assets, link_references)
     link_items = link_references
-                 .map { |elem| lookup_linked_object(elem) }
-                 .compact
+                 .filter_map { |elem| lookup_linked_object(elem) }
 
     ApplicationModel::CanAssets.reduce(link_items, assets)
   end
@@ -244,4 +247,46 @@ class Link < ApplicationModel
     end
   end
 
+  def self.duplicates(object1_id:, object1_value:, object2_value:, object2_id: nil)
+    if !object2_id
+      object2_id = object1_id
+    end
+
+    Link.joins(', links as linksb').where('
+       (
+         links.link_type_id = linksb.link_type_id
+         AND links.link_object_source_id = linksb.link_object_source_id
+         AND links.link_object_source_value = linksb.link_object_source_value
+         AND links.link_object_target_id = ?
+         AND linksb.link_object_target_id = ?
+         AND links.link_object_target_value = ?
+         AND linksb.link_object_target_value = ?
+       )
+       OR
+       (
+         links.link_type_id = linksb.link_type_id
+         AND links.link_object_target_id = linksb.link_object_target_id
+         AND links.link_object_target_value = linksb.link_object_target_value
+         AND links.link_object_source_id = ?
+         AND linksb.link_object_source_id = ?
+         AND links.link_object_source_value = ?
+         AND linksb.link_object_source_value = ?
+       )
+    ', object1_id, object2_id, object1_value, object2_value, object1_id, object2_id, object1_value, object2_value)
+  end
+
+  def self.authorized_item?(user, item)
+    record = item['link_object'].constantize.lookup(id: item['link_object_value'])
+
+    # non-ID records are not checked for authorization
+    return true if record.blank?
+
+    Pundit.authorize(user, record, :show?).present?
+  rescue Pundit::NotAuthorizedError
+    false
+  rescue NameError, Pundit::NotDefinedError
+    # NameError: no Model means no authorization check possible
+    # Pundit::NotDefinedError: no Policy means no authorization check necessary
+    true
+  end
 end

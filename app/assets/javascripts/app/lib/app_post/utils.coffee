@@ -1,6 +1,9 @@
 # coffeelint: disable=no_unnecessary_double_quotes
 class App.Utils
   @mapTagAttributes:
+    'FONT': ['color']
+    'SPAN': ['style']
+    'DIV': ['style']
     'TABLE': ['align', 'bgcolor', 'border', 'cellpadding', 'cellspacing', 'frame', 'rules', 'sortable', 'summary', 'width', 'style']
     'TD': ['abbr', 'align', 'axis', 'colspan', 'headers', 'rowspan', 'valign', 'width', 'style']
     'TH': ['abbr', 'align', 'axis', 'colspan', 'headers', 'rowspan', 'scope', 'sorted', 'valign', 'width', 'style']
@@ -9,6 +12,12 @@ class App.Utils
     'IMG': ['align', 'alt', 'border', 'height', 'src', 'srcset', 'width', 'style']
 
   @mapCss:
+    'SPAN': [
+      'color',
+    ]
+    'DIV': [
+      'color',
+    ]
     'TABLE': [
       'background', 'background-color', 'color', 'font-size', 'vertical-align',
       'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
@@ -58,6 +67,111 @@ class App.Utils
     ]
     'IMG': [
       'width', 'height',
+    ]
+
+  @cssValuesBacklist:
+    'DIV': [
+      'color:white',
+      'color:black',
+      'color:#000',
+      'color:#000000',
+      'color:#fff',
+      'color:#ffffff',
+      'color:rgb(0,0,0)',
+      'color:#585856', # use in UI, ignore it
+      'color:rgb(88, 88, 86)' # use in UI, ignore it
+      'color:#b3b3b3' # use in UI, ignore it
+      'color:rgb(34, 34, 34)' # use in UI, ignore it
+    ],
+    'SPAN': [
+      'color:white',
+      'color:black',
+      'color:#000',
+      'color:#000000',
+      'color:#fff',
+      'color:#ffffff',
+      'color:rgb(0,0,0)',
+      'color:#585856', # use in UI, ignore it
+      'color:rgb(88, 88, 86)' # use in UI, ignore it
+      'color:#b3b3b3' # use in UI, ignore it
+      'color:rgb(34, 34, 34)' # use in UI, ignore it
+    ],
+    'TABLE': [
+      'font-size:0',
+      'font-size:0px',
+      'font-size:0em',
+      'font-size:0%',
+      'font-size:1px',
+      'font-size:1em',
+      'font-size:1%',
+      'font-size:2',
+      'font-size:2px',
+      'font-size:2em',
+      'font-size:2%',
+      'font-size:3',
+      'font-size:3px',
+      'font-size:3em',
+      'font-size:3%',
+      'display:none',
+      'visibility:hidden',
+    ],
+    'TH': [
+      'font-size:0',
+      'font-size:0px',
+      'font-size:0em',
+      'font-size:0%',
+      'font-size:1px',
+      'font-size:1em',
+      'font-size:1%',
+      'font-size:2',
+      'font-size:2px',
+      'font-size:2em',
+      'font-size:2%',
+      'font-size:3',
+      'font-size:3px',
+      'font-size:3em',
+      'font-size:3%',
+      'display:none',
+      'visibility:hidden',
+    ],
+    'TR': [
+      'font-size:0',
+      'font-size:0px',
+      'font-size:0em',
+      'font-size:0%',
+      'font-size:1',
+      'font-size:1px',
+      'font-size:1em',
+      'font-size:1%',
+      'font-size:2',
+      'font-size:2px',
+      'font-size:2em',
+      'font-size:2%',
+      'font-size:3',
+      'font-size:3px',
+      'font-size:3em',
+      'font-size:3%',
+      'display:none',
+      'visibility:hidden',
+    ],
+    'TD': [
+      'font-size:0',
+      'font-size:0px',
+      'font-size:0em',
+      'font-size:0%',
+      'font-size:1px',
+      'font-size:1em',
+      'font-size:1%',
+      'font-size:2',
+      'font-size:2px',
+      'font-size:2em',
+      'font-size:2%',
+      'font-size:3',
+      'font-size:3px',
+      'font-size:3em',
+      'font-size:3%',
+      'display:none',
+      'visibility:hidden',
     ]
 
   # textCleand = App.Utils.textCleanup(rawText)
@@ -269,7 +383,7 @@ class App.Utils
     @_stripDoubleDomainAnchors(html)
 
     # remove tags, keep content
-    html.find('font, small, time, form, label').replaceWith( ->
+    html.find('small, time, form, label').replaceWith( ->
       $(@).contents()
     )
 
@@ -293,7 +407,7 @@ class App.Utils
     )
 
     # remove tags & content
-    html.find('font, svg, input, select, button, style, applet, embed, noframes, canvas, script, frame, iframe, meta, link, title, head, fieldset').remove()
+    html.find('svg, input, select, button, style, applet, embed, noframes, canvas, script, frame, iframe, meta, link, title, head, fieldset').remove()
 
     # remove style and class
     @_cleanAttributes(html)
@@ -341,7 +455,7 @@ class App.Utils
           prop = local_pear.split(':')
           if prop[0] && prop[0].trim
             key = prop[0].trim()
-            if _.contains(@mapCss[element.nodeName], key)
+            if !(@cssValuesBacklist[element.nodeName] && _.contains(@cssValuesBacklist[element.nodeName], local_pear.toLowerCase())) && _.contains(@mapCss[element.nodeName], key)
               styleNew += "#{local_pear};"
         if styleNew isnt ''
           element.setAttribute('style', styleNew)
@@ -657,7 +771,7 @@ class App.Utils
     if @isMicrosoftOffice message
       return @signatureIdentifyByPlaintext message
 
-    message_element = $($.parseHTML(message))
+    message_element = $(App.Utils.safeParseHtml(message))
     if message_element.length == 1 && $(message_element[0])?.children()?.length
       message_element[0].innerHTML = @signatureIdentifyByHtmlHelper(message_element[0].innerHTML)
       return message_element[0].outerHTML
@@ -678,7 +792,13 @@ class App.Utils
       return true if tag is 'DIV' && (el.data('signature') || el.prop('class') is 'yahoo_quoted')
       _.some el.children(), (el) -> isQuoteOrSignature el
 
-    $('<div/>').html(message).contents().each (index, node) ->
+    try content = $('<div/>').html(message)
+    catch e then content = $('<div/>').html('<div>' + message + '</div>')
+
+    # Invalid html signature detection for exchange warning boxes #3571
+    return message if content.find("div:first:contains('CAUTION:')").length > 0
+
+    content.contents().each (index, node) ->
       text = $(node).text()
       if node.nodeType == Node.TEXT_NODE
         # convert text back to HTML as it was before
@@ -888,7 +1008,10 @@ class App.Utils
       valueTmp = value.toString().toLowerCase()
       byNames.push valueTmp
       byNamesWithValue[valueTmp] = [i, value]
-    byNames = byNames.sort()
+    
+    # sort() by default doesn't compare non-ascii characters such as ['é', 'a', 'ú', 'c']
+    # hence using localecompare in sorting for translated strings
+    byNames = byNames.sort((a, b) -> a.localeCompare(b))
 
     # do a reverse, if needed
     if order == 'DESC'
@@ -1086,7 +1209,7 @@ class App.Utils
       # the article we are replying to is an outbound call
       if article.sender.name is 'Agent'
         if article.to?.match(/@/)
-          articleNew.to = article.to
+          articleNew.to = App.Utils.parseAddressListLocal(article.to).join(', ')
 
       # the article we are replying to is an incoming call
       else if article.from?.match(/@/)
@@ -1133,7 +1256,7 @@ class App.Utils
 
       # sender is local
       if senderIsLocal
-        articleNew.to = article.to
+        articleNew.to = article.reply_to || article.to
 
       # sender is agent - sent via system
       else if article.sender.name is 'Agent' && article_created_by_email && article.from && article.from.toString().toLowerCase().match(article_created_by_email) && !recipientIsLocal
@@ -1191,6 +1314,14 @@ class App.Utils
         autocomplete: {
           source: source
           minLength: 2
+          create: ->
+            $(@).data('ui-autocomplete')._renderItem = (ul, item) ->
+              option_html = App.Utils.htmlEscape(item.label)
+              additional_class = ''
+              if item.inactive
+                option_html += '<span style="float: right;">' + App.i18n.translateContent('inactive') + '</span>'
+                additional_class = 'is-inactive'
+              return $('<li>').addClass(additional_class).append(option_html).appendTo(ul)
         },
       ).on('tokenfield:createtoken', (e) ->
         if type is 'email' && !e.attrs.value.match(/@/) || e.attrs.value.match(/\s/)
@@ -1222,9 +1353,11 @@ class App.Utils
     canvas.width = img.width
     canvas.height = img.height
     ctx = canvas.getContext('2d')
-    ctx.drawImage(img, 0, 0)
+    ctx.drawImage(img, 0, 0, img.width, img.height)
     try
-      data = canvas.toDataURL('image/png')
+      # img alt attribute is used to get file type
+      # if not present, then it will default to image/png
+      data = canvas.toDataURL(App.Utils.getMimeTypeFromFilename(img.alt))
       params.success(img, data) if params.success
       return data
     catch e
@@ -1242,12 +1375,11 @@ class App.Utils
       return if !src? or src.match(/^(data|cid):/i)
       App.Utils._htmlImage2DataUrlAsync(@,
         success: (img, data) ->
-          $img = $(img)
-          $img.attr('src', data)
-          $img.css('max-width','100%')
-          params.success(img, data) if params.success
+          element.attr('src', data)
+          element.css('max-width','100%')
+          params.success(element, data) if params.success
         fail: (img) ->
-          img.remove()
+          element.remove()
           params.fail(img) if params.fail
       )
     )
@@ -1283,10 +1415,11 @@ class App.Utils
     imageCache = new Image()
     imageCache.crossOrigin = 'anonymous'
     imageCache.onload = ->
-      App.Utils._htmlImage2DataUrl(originalImage, params)
+      App.Utils._htmlImage2DataUrl(imageCache, params)
     imageCache.onerror = ->
       App.Log.notice('Utils', "Unable to load image from #{originalImage.src}")
       params.fail(originalImage) if params.fail
+    imageCache.alt = originalImage.alt
     imageCache.src = originalImage.src
 
   @baseUrl: ->
@@ -1344,3 +1477,20 @@ class App.Utils
         htmlString = App.Utils.text2html(text)
 
     htmlString
+
+  # Parses HTML text to DOM tree
+  # jQuery's parseHTML sometimes fail when element does not have a single root element
+  # in that case, fall back to fake root element and try again
+  @safeParseHtml: (input) ->
+    try $.parseHTML(input)
+    catch e then $.parseHTML('<div>' + input + '</div>')[0].childNodes
+
+
+  # Gets file Mime Type from file name
+  # For e.g. oscar-menu.jpg returns image/jpeg
+  # For other file types it return image/png as default mimeType
+  @getMimeTypeFromFilename: (filename) ->
+    if filename?.match(/\.(jpe?g)$/i)
+      return 'image/jpeg'
+
+    return 'image/png'

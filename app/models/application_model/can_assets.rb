@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module ApplicationModel::CanAssets
   extend ActiveSupport::Concern
 
@@ -61,8 +62,12 @@ get assets and record_ids of selector
     # get assets of condition
     models = Models.all
     send(selector).each do |item, content|
-      attribute = item.split(/\./)
+      attribute = item.split('.')
       next if !attribute[1]
+
+      if attribute[0] == 'customer' || attribute[0] == 'session'
+        attribute[0] = 'user'
+      end
 
       begin
         attribute_class = attribute[0].to_classname.constantize
@@ -80,12 +85,12 @@ get assets and record_ids of selector
         attribute_ref_class = ::User
         item_ids            = []
         Array(content['recipient']).each do |identifier|
-          next if identifier !~ /\Auserid_(\d+)\z/
+          next if identifier !~ %r{\Auserid_(\d+)\z}
 
           item_ids.push($1)
         end
       else
-        reflection = attribute[1].sub(/_id$/, '')
+        reflection = attribute[1].sub(%r{_id$}, '')
         next if !models[attribute_class]
         next if !models[attribute_class][:reflections]
         next if !models[attribute_class][:reflections][reflection]
@@ -156,7 +161,6 @@ get assets of object list
 
     def assets_of_object_list(list, assets = {})
       list.each do |item|
-        require_dependency item['object'].to_filename
         record = item['object'].constantize.lookup(id: item['o_id'])
         next if record.blank?
 

@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module Import
   module OTRS
 
@@ -18,6 +20,9 @@ module Import
       # @option opts [Boolean] :diff request only changed/added entries since the last import
       #
       # @example
+      #   Import::OTRS::Requester.load('Ticket', offset: '208', limit: '1')
+      #   #=> [{'TicketNumber':'1234', ...}, ...]
+      #
       #   Import::OTRS::Requester.load('State', offset: '0', limit: '50')
       #   #=> [{'Name':'pending reminder', ...}, ...]
       #
@@ -95,7 +100,7 @@ module Import
       end
 
       def handle_response(response)
-        encoded_body = response.body.to_utf8
+        encoded_body = response.body.to_utf8(fallback: :read_as_sanitized_binary)
         # remove null bytes otherwise PostgreSQL will fail
         encoded_body.delete('\u0000')
         JSON.parse(encoded_body)
@@ -106,8 +111,8 @@ module Import
         params[:Action] = 'ZammadMigrator'
         params[:Key]    = Setting.get('import_otrs_endpoint_key')
 
-        log 'POST: ' + url
-        log 'PARAMS: ' + params.inspect
+        log "POST: #{url}"
+        log "PARAMS: #{params.inspect}"
 
         response = UserAgent.post(
           url,

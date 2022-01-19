@@ -1,13 +1,13 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Role < ApplicationModel
   include CanBeImported
   include HasActivityStreamLog
   include ChecksClientNotification
+  include ChecksHtmlSanitized
   include ChecksLatestChangeObserved
   include HasGroups
   include HasCollectionUpdate
-  include HasTicketCreateScreenImpact
 
   include Role::Assets
 
@@ -17,7 +17,7 @@ class Role < ApplicationModel
                           after_add:     :cache_update,
                           before_remove: :last_admin_check_by_permission,
                           after_remove:  :cache_update
-  validates               :name,  presence: true
+  validates               :name, presence: true
   store                   :preferences
 
   before_create  :check_default_at_signup_permissions
@@ -28,6 +28,8 @@ class Role < ApplicationModel
   association_attributes_ignored :users
 
   activity_stream_permission 'admin.role'
+
+  sanitized_html :note
 
 =begin
 
@@ -42,7 +44,7 @@ grant permission to role
     raise "Invalid permission #{key}" if !permission
     return true if permission_ids.include?(permission.id)
 
-    self.permission_ids = permission_ids.push permission.id
+    self.permission_ids = permission_ids.push permission.id # rubocop:disable Style/RedundantSelfAssignment
     true
   end
 
@@ -57,7 +59,7 @@ revoke permission of role
   def permission_revoke(key)
     permission = Permission.lookup(name: key)
     raise "Invalid permission #{key}" if !permission
-    return true if !permission_ids.include?(permission.id)
+    return true if permission_ids.exclude?(permission.id)
 
     self.permission_ids = self.permission_ids -= [permission.id]
     true
@@ -113,9 +115,9 @@ returns
 
   def self.with_permissions(keys)
     permission_ids = Role.permission_ids_by_name(keys)
-    Role.joins(:roles_permissions).joins(:permissions).where(
+    Role.joins(:permissions_roles).joins(:permissions).where(
       'permissions_roles.permission_id IN (?) AND roles.active = ? AND permissions.active = ?', permission_ids, true, true
-    ).distinct()
+    ).distinct
   end
 
 =begin
@@ -137,9 +139,9 @@ returns
 
   def with_permission?(keys)
     permission_ids = Role.permission_ids_by_name(keys)
-    return true if Role.joins(:roles_permissions).joins(:permissions).where(
+    return true if Role.joins(:permissions_roles).joins(:permissions).where(
       'roles.id = ? AND permissions_roles.permission_id IN (?) AND permissions.active = ?', id, permission_ids, true
-    ).distinct().count.nonzero?
+    ).distinct.count.nonzero?
 
     false
   end
@@ -189,7 +191,7 @@ returns
 
   def last_admin_check_admin_count
     admin_role_ids = Role.joins(:permissions).where(permissions: { name: ['admin', 'admin.user'], active: true }, roles: { active: true }).where.not(id: id).pluck(:id)
-    User.joins(:roles).where(roles: { id: admin_role_ids }, users: { active: true }).distinct().count
+    User.joins(:roles).where(roles: { id: admin_role_ids }, users: { active: true }).distinct.count
   end
 
   def validate_agent_limit_by_attributes
@@ -199,8 +201,8 @@ returns
     return true if !with_permission?('ticket.agent')
 
     ticket_agent_role_ids = Role.joins(:permissions).where(permissions: { name: 'ticket.agent', active: true }, roles: { active: true }).pluck(:id)
-    currents = User.joins(:roles).where(roles: { id: ticket_agent_role_ids }, users: { active: true }).distinct().pluck(:id)
-    news = User.joins(:roles).where(roles: { id: id }, users: { active: true }).distinct().pluck(:id)
+    currents = User.joins(:roles).where(roles: { id: ticket_agent_role_ids }, users: { active: true }).distinct.pluck(:id)
+    news = User.joins(:roles).where(roles: { id: id }, users: { active: true }).distinct.pluck(:id)
     count = currents.concat(news).uniq.count
     raise Exceptions::UnprocessableEntity, 'Agent limit exceeded, please check your account settings.' if count > Setting.get('system_agent_limit').to_i
 
@@ -215,20 +217,19 @@ returns
 
     ticket_agent_role_ids = Role.joins(:permissions).where(permissions: { name: 'ticket.agent' }, roles: { active: true }).pluck(:id)
     ticket_agent_role_ids.push(id)
-    count = User.joins(:roles).where(roles: { id: ticket_agent_role_ids }, users: { active: true }).distinct().count
+    count = User.joins(:roles).where(roles: { id: ticket_agent_role_ids }, users: { active: true }).distinct.count
     raise Exceptions::UnprocessableEntity, 'Agent limit exceeded, please check your account settings.' if count > Setting.get('system_agent_limit').to_i
 
     true
   end
 
   def check_default_at_signup_permissions
-    all_permissions = Permission.all.pluck(:id)
-    admin_permissions = Permission.where('name LIKE ? OR name = ?', 'admin%', 'ticket.agent').pluck(:id) # admin.*/ticket.agent permissions
-    normal_permissions = (all_permissions - admin_permissions) | (admin_permissions - all_permissions) # all other permissions besides admin.*/ticket.agent
-    return true if default_at_signup != true # means if default_at_signup = false, no need further checks
-    return true if self.permission_ids.all? { |i| normal_permissions.include? i } # allow user to choose only normal permissions
+    return true if !default_at_signup
 
-    raise Exceptions::UnprocessableEntity, 'Cannot set default at signup when role has admin or ticket.agent permissions.'
+    forbidden_permissions = permissions.reject(&:allow_signup)
+    return true if forbidden_permissions.blank?
+
+    raise Exceptions::UnprocessableEntity, "Cannot set default at signup when role has #{forbidden_permissions.join(', ')} permissions."
   end
 
 end

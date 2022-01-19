@@ -1,5 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
-require 'csv'
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Translation < ApplicationModel
   before_create :set_initial
@@ -84,6 +83,7 @@ push translations to online
         json:         true,
         open_timeout: 8,
         read_timeout: 24,
+        verify_ssl:   true,
       }
     )
     raise "Can't push translations to #{url}: #{result.error}" if !result.success?
@@ -174,7 +174,7 @@ get list of translations
 
         presorted_list.push item
         list.delete item
-        #list.unshift presort
+        # list.unshift presort
       end
     end
     data['list'] = presorted_list.concat list
@@ -226,7 +226,7 @@ or
 
   def self.timestamp(locale, timezone, timestamp)
 
-    if timestamp.class == String
+    if timestamp.instance_of?(String)
       begin
         timestamp_parsed = Time.zone.parse(timestamp)
         return timestamp.to_s if !timestamp_parsed
@@ -243,7 +243,7 @@ or
       return timestamp.to_s
     end
 
-    record = Translation.where(locale: locale, source: 'timestamp', format: 'time').pluck(:target).first
+    record = Translation.where(locale: locale, source: 'timestamp', format: 'time').pick(:target)
     return timestamp.to_s if !record
 
     record.sub!('dd', format('%<day>02d', day: timestamp.day))
@@ -272,7 +272,7 @@ or
 
   def self.date(locale, date)
 
-    if date.class == String
+    if date.instance_of?(String)
       begin
         date_parsed = Date.parse(date)
         return date.to_s if !date_parsed
@@ -285,7 +285,7 @@ or
 
     return date.to_s if date.class != Date
 
-    record = Translation.where(locale: locale, source: 'date', format: 'time').pluck(:target).first
+    record = Translation.where(locale: locale, source: 'date', format: 'time').pick(:target)
     return date.to_s if !record
 
     record.sub!('dd', format('%<day>02d', day: date.day))
@@ -354,6 +354,7 @@ all:
           json:         true,
           open_timeout: 8,
           read_timeout: 24,
+          verify_ssl:   true,
         }
       )
       raise "Can't load translations from #{url}: #{result.error}" if !result.success?
@@ -404,8 +405,9 @@ Get source file at https://i18n.zammad.com/api/v1/translations_empty_translation
     params = {
       col_sep: ',',
     }
+    require 'csv' # Only load it when it's really needed to save memory.
     rows = ::CSV.parse(content, params)
-    rows.shift  # remove header
+    rows.shift # remove header
 
     translation_raw = []
     rows.each do |row|
@@ -416,7 +418,7 @@ Get source file at https://i18n.zammad.com/api/v1/translations_empty_translation
         next
       end
       raise "Can't import translation, format is missing" if row[2].blank?
-      raise "Can't import translation, format is invalid (#{row[2]})" if !row[2].match?(/^(time|string)$/)
+      raise "Can't import translation, format is invalid (#{row[2]})" if !row[2].match?(%r{^(time|string)$})
 
       item = {
         'locale'         => locale.locale,
@@ -470,13 +472,13 @@ Get source file at https://i18n.zammad.com/api/v1/translations_empty_translation
 
   private_class_method def self.locals_to_sync(dedicated_locale = nil)
     locales_list = []
-    if !dedicated_locale
+    if dedicated_locale
+      locales_list = [dedicated_locale]
+    else
       locales = Locale.to_sync
       locales.each do |locale|
         locales_list.push locale.locale
       end
-    else
-      locales_list = [dedicated_locale]
     end
     locales_list
   end
@@ -492,17 +494,17 @@ Get source file at https://i18n.zammad.com/api/v1/translations_empty_translation
   end
 
   def cache_clear
-    Cache.delete('TranslationMapOnlyContent::' + locale.downcase)
+    Cache.delete("TranslationMapOnlyContent::#{locale.downcase}")
     true
   end
 
   def self.cache_set(locale, data)
-    Cache.write('TranslationMapOnlyContent::' + locale.downcase, data)
+    Cache.write("TranslationMapOnlyContent::#{locale.downcase}", data)
   end
   private_class_method :cache_set
 
   def self.cache_get(locale)
-    Cache.get('TranslationMapOnlyContent::' + locale.downcase)
+    Cache.read("TranslationMapOnlyContent::#{locale.downcase}")
   end
   private_class_method :cache_get
 end

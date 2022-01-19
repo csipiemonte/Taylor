@@ -1,20 +1,23 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class EmailAddress < ApplicationModel
+  include ChecksHtmlSanitized
   include ChecksLatestChangeObserved
   include HasCollectionUpdate
 
-  has_many        :groups,   after_add: :cache_update, after_remove: :cache_update
+  has_many        :groups, after_add: :cache_update, after_remove: :cache_update
   belongs_to      :channel, optional: true
   validates       :realname, presence: true
   validates       :email,    presence: true
 
   before_validation :check_email
   before_create   :check_if_channel_exists_set_inactive
-  before_update   :check_if_channel_exists_set_inactive
   after_create    :update_email_address_id
+  before_update   :check_if_channel_exists_set_inactive
   after_update    :update_email_address_id
   before_destroy  :delete_group_reference
+
+  sanitized_html :note
 
   collection_push_permission('ticket.agent')
 
@@ -63,7 +66,7 @@ check and if channel not exists reset configured channels for email addresses
   def check_if_channel_exists_set_inactive
 
     # set to active if channel exists
-    if channel_id && Channel.find_by(id: channel_id)
+    if channel_id && Channel.exists?(id: channel_id)
       self.active = true
       return true
     end

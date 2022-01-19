@@ -1,14 +1,26 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Taskbar < ApplicationModel
+  include ChecksClientNotification
+  include ::Taskbar::HasAttachments
+
   store           :state
   store           :params
   store           :preferences
+
+  belongs_to :user
+
   before_create   :update_last_contact, :set_user, :update_preferences_infos
   before_update   :update_last_contact, :set_user, :update_preferences_infos
 
   after_update    :notify_clients
   after_destroy   :update_preferences_infos, :notify_clients
+
+  association_attributes_ignored :user
+
+  client_notification_events_ignored :create, :update, :touch
+
+  client_notification_send_to :user_id
 
   attr_accessor :local_update
 
@@ -32,7 +44,7 @@ class Taskbar < ApplicationModel
     false
   end
 
-  def attributes_with_association_names
+  def attributes_with_association_names(empty_keys: false)
     add_attachments_to_attributes(super)
   end
 
@@ -44,24 +56,7 @@ class Taskbar < ApplicationModel
     add_attachments_to_attributes(super)
   end
 
-  # form_id is saved directly in a new ticket, but inside of the article when updating an existing ticket
-  def persisted_form_id
-    state&.dig(:form_id) || state&.dig(:article, :form_id)
-  end
-
   private
-
-  def attachments
-    return [] if persisted_form_id.blank?
-
-    UploadCache.new(persisted_form_id).attachments
-  end
-
-  def add_attachments_to_attributes(attributes)
-    attributes.tap do |result|
-      result['attachments'] = attachments.map(&:attributes_for_display)
-    end
-  end
 
   def update_last_contact
     return true if local_update
@@ -88,6 +83,7 @@ class Taskbar < ApplicationModel
   end
 
   def update_preferences_infos
+    return true if key == 'Search'
     return true if local_update
 
     # find other same open tasks

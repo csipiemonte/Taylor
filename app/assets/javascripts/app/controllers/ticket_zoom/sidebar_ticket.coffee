@@ -1,12 +1,21 @@
-class Edit extends App.ObserverController
-  model: 'Ticket'
-  observeNot:
-    created_at: true
-    updated_at: true
-  globalRerender: false
+# No usage of a ControllerObserver here because we want to use
+# the data of the ticket zoom ajax request which is using the all=true parameter
+# and contain the core workflow information as well. Without observer we also
+# dont have double rendering because of the zoom (all=true) and observer (full=true) render callback
+class Edit extends App.Controller
+  constructor: (params) ->
+    super
+    @controllerBind('ui::ticket::load', (data) =>
+      return if data.ticket_id.toString() isnt @ticket.id.toString()
 
-  render: (ticket, diff) =>
-    defaults = ticket.attributes()
+      @ticket   = App.Ticket.find(@ticket.id)
+      @formMeta = data.form_meta
+      @render()
+    )
+    @render()
+
+  render: =>
+    defaults = @ticket.attributes()
     delete defaults.article # ignore article infos
     followUpPossible = App.Group.find(defaults.group_id).follow_up_possible
     ticketState = App.TicketState.find(defaults.state_id).name
@@ -16,49 +25,50 @@ class Edit extends App.ObserverController
 
     if !_.isEmpty(taskState)
       defaults = _.extend(defaults, taskState)
+      # remove core workflow data because it should trigger a request to get data
+      # for the new ticket + eventually changed task state
+      @formMeta.core_workflow = undefined
 
-    # CSI custom: get subitems to perform prefiltering
+    editable = @ticket.editable()
+    if followUpPossible == 'new_ticket' && ticketState != 'closed' || followUpPossible != 'new_ticket' || @permissionCheck('admin') || @ticket.currentView() is 'agent'
+      editable = !editable
+
+    # reset updated_at for the sidbar because we render a new state
+    # it is used to compare the ticket with the rendered data later
+    # and needed to prevent race conditions
+    @el.removeAttr('data-ticket-updated-at')
+
+    # CSI Piemonte custom: get subitems to perform prefiltering, and added events
     subItems = App.ServiceCatalogSubItem.select (item) -> item.parent_service == defaults.service_catalog_item_id
     @formMeta.filter['service_catalog_sub_item_id'] = (item.id for item in subItems)
 
-    if followUpPossible == 'new_ticket' && ticketState != 'closed' ||
-       followUpPossible != 'new_ticket' ||
-       @permissionCheck('admin') || @permissionCheck('ticket.agent')
-      new App.ControllerForm(
-        elReplace:      @el
-        model:          App.Ticket
-        screen:         'edit'
-        handlersConfig: handlers
-        filter:         @formMeta.filter
-        formMeta:       @formMeta
-        params:         defaults
-        isDisabled:     !ticket.editable()
-        taskKey:        @taskKey
-        events:
-          "change [name='service_catalog_item_id']": (e) => @filter_service_catalog_sub_items(e)
-        #bookmarkable:  true
-      )
-    else
-      new App.ControllerForm(
-        elReplace:      @el
-        model:          App.Ticket
-        screen:         'edit'
-        handlersConfig: handlers
-        filter:         @formMeta.filter
-        formMeta:       @formMeta
-        params:         defaults
-        isDisabled:     ticket.editable()
-        taskKey:        @taskKey
-        #bookmarkable:  true
-      )
+    @controllerFormSidebarTicket = new App.ControllerForm(
+      elReplace:      @el
+      model:          { className: 'Ticket', configure_attributes: @formMeta.configure_attributes || App.Ticket.configure_attributes }
+      screen:         'edit'
+      handlersConfig: handlers
+      filter:         @formMeta.filter
+      formMeta:       @formMeta
+      params:         defaults
+      isDisabled:     editable
+      taskKey:        @taskKey
+      core_workflow: {
+        callbacks: [@markForm]
+      }
+      events:
+        "change [name='service_catalog_item_id']": (e) => @filter_service_catalog_sub_items(e)
+      #bookmarkable:  true
+    )
 
+    # set updated_at for the sidbar because we render a new state
+    @el.attr('data-ticket-updated-at', defaults.updated_at)
     @markForm(true)
 
     return if @resetBind
     @resetBind = true
-    @bind('ui::ticket::taskReset', (data) =>
-      return if data.ticket_id.toString() isnt ticket.id.toString()
-      @render(ticket)
+    @controllerBind('ui::ticket::taskReset', (data) =>
+      return if data.ticket_id.toString() isnt @ticket.id.toString()
+      @render()
     )
 
   # CSI custom: filter service_catalog_sub_items based on service_catalog_item
@@ -85,7 +95,7 @@ class Edit extends App.ObserverController
 class SidebarTicket extends App.Controller
   constructor: ->
     super
-    @bind 'config_update_local', (data) => @configUpdated(data)
+    @controllerBind('config_update_local', (data) => @configUpdated(data))
 
   configUpdated: (data) ->
     if data.name != 'kb_active'
@@ -103,7 +113,7 @@ class SidebarTicket extends App.Controller
       sidebarHead: 'Ticket'
       sidebarCallback: @editTicket
     }
-    if @permissionCheck('ticket.agent')
+    if @ticket.currentView() is 'agent'
       @item.sidebarActions = [
         {
           title:    'History'
@@ -129,6 +139,8 @@ class SidebarTicket extends App.Controller
     if @tagWidget
       if args.tags
         @tagWidget.reload(args.tags)
+      if args.mentions
+        @mentionWidget.reload(args.mentions)
       if args.tagAdd
         @tagWidget.add(args.tagAdd, args.source)
       if args.tagRemove
@@ -147,6 +159,7 @@ class SidebarTicket extends App.Controller
 
     @edit = new Edit(
       object_id: @ticket.id
+      ticket:    @ticket
       el:        localEl.find('.edit')
       taskGet:   @taskGet
       formMeta:  @formMeta
@@ -154,15 +167,20 @@ class SidebarTicket extends App.Controller
       taskKey:   @taskKey
     )
 
-    if @permissionCheck('ticket.agent')
+    if @ticket.currentView() is 'agent'
+      @mentionWidget = new App.WidgetMention(
+        el:       localEl.filter('.js-subscriptions')
+        object:   @ticket
+        mentions: @mentions
+      )
       @tagWidget = new App.WidgetTag(
-        el:          localEl.filter('.tags')
+        el:          localEl.filter('.js-tags')
         object_type: 'Ticket'
         object:      @ticket
         tags:        @tags
       )
       @linkWidget = new App.WidgetLink.Ticket(
-        el:          localEl.filter('.links')
+        el:          localEl.filter('.js-links')
         object_type: 'Ticket'
         object:      @ticket
         links:       @links
@@ -179,7 +197,7 @@ class SidebarTicket extends App.Controller
 
       if @permissionCheck('knowledge_base.*') and App.Config.get('kb_active')
         @linkKbAnswerWidget = new App.WidgetLinkKbAnswer(
-          el:          localEl.filter('.link_kb_answers')
+          el:          localEl.filter('.js-linkKbAnswers')
           object_type: 'Ticket'
           object:      @ticket
           links:       @links

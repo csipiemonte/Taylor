@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module HasActiveJobLock
   extend ActiveSupport::Concern
 
@@ -81,14 +83,12 @@ module HasActiveJobLock
 
   private
 
-  def in_active_job_lock_transaction
+  def in_active_job_lock_transaction(&block)
     # re-use active DB transaction if present
     return yield if ActiveRecord::Base.connection.open_transactions.nonzero?
 
     # start own serializable DB transaction to prevent race conditions on DB level
-    ActiveJobLock.transaction(isolation: :serializable) do
-      yield
-    end
+    ActiveJobLock.transaction(isolation: :serializable, &block)
   rescue ActiveRecord::SerializationFailure => e
     # PostgeSQL prevents locking on records that are already locked
     # for UPDATE in Serializable Isolation Level transactions,
@@ -122,7 +122,6 @@ module HasActiveJobLock
   end
 
   def existing_active_job_lock!
-    logger.info "Won't enqueue #{self.class.name} (Job ID: #{job_id}) because of already existing job with lock key '#{lock_key}'."
     throw :abort
   end
 end

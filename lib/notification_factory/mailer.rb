@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class NotificationFactory::Mailer
 
 =begin
@@ -26,6 +28,9 @@ returns
     map = {
       'escalation_warning' => 'escalation'
     }
+
+    type = type.split('.').first # pick parent type of a subtype. Eg. update vs update.merged_into
+
     if map[type]
       type = map[type]
     end
@@ -33,7 +38,7 @@ returns
     # this cache will optimize the preference catch performance
     # because of the yaml deserialization its pretty slow
     # on many tickets you we cache it.
-    user_preferences = Cache.get("NotificationFactory::Mailer.notification_settings::#{user.id}")
+    user_preferences = Cache.read("NotificationFactory::Mailer.notification_settings::#{user.id}")
     if user_preferences.blank?
       user_preferences = user.preferences
 
@@ -48,9 +53,11 @@ returns
 
     owned_by_nobody = false
     owned_by_me = false
-    if ticket.owner_id == 1
+    subscribed = false
+    case ticket.owner_id
+    when 1
       owned_by_nobody = true
-    elsif ticket.owner_id == user.id
+    when user.id
       owned_by_me = true
     else
       # check the replacement chain of max 10
@@ -68,14 +75,17 @@ returns
       end
     end
 
+    # always trigger notifications for user if he is subscribed
+    if owned_by_me == false && ticket.mentions.exists?(user: user)
+      subscribed = true
+    end
+
     # check if group is in selected groups
-    if !owned_by_me
+    if !owned_by_me && !subscribed
       selected_group_ids = user_preferences['notification_config']['group_ids']
       if selected_group_ids.is_a?(Array)
         hit = nil
-        if selected_group_ids.blank?
-          hit = true
-        elsif selected_group_ids[0] == '-' && selected_group_ids.count == 1
+        if selected_group_ids.blank? || (selected_group_ids[0] == '-' && selected_group_ids.count == 1)
           hit = true
         else
           hit = false
@@ -110,6 +120,12 @@ returns
         channels: channels
       }
     end
+    if data['criteria']['subscribed'] && subscribed
+      return {
+        user:     user,
+        channels: channels
+      }
+    end
     return if !data['criteria']['no']
 
     {
@@ -136,7 +152,7 @@ returns
     raise Exceptions::UnprocessableEntity, "Unable to send mail to user with id #{data[:recipient][:id]} because there is no email available." if data[:recipient][:email].blank?
 
     sender = Setting.get('notification_sender')
-    Rails.logger.info "Send notification to: #{data[:recipient][:email]} (from:#{sender}/subject:#{data[:subject]})"
+    Rails.logger.debug { "Send notification to: #{data[:recipient][:email]} (from:#{sender}/subject:#{data[:subject]})" }
 
     content_type = 'text/plain'
     if data[:content_type]
@@ -233,8 +249,8 @@ retunes
     result.each do |item|
       next if item['type'] != 'notification'
       next if item['object'] != 'Ticket'
-      next if !item['value_to'].match?(/#{recipient.email}/i)
-      next if !item['value_to'].match?(/#{type}/i)
+      next if !item['value_to'].match?(%r{#{recipient.email}}i)
+      next if !item['value_to'].match?(%r{#{type}}i)
 
       count += 1
     end
@@ -308,7 +324,8 @@ returns
       locale:   data[:locale],
       timezone: data[:timezone],
       template: template[:subject],
-      escape:   false
+      escape:   false,
+      trusted:  true,
     ).render
 
     # strip off the extra newline at the end of the subject to avoid =0A suffixes (see #2726)
@@ -318,7 +335,8 @@ returns
       objects:  data[:objects],
       locale:   data[:locale],
       timezone: data[:timezone],
-      template: template[:body]
+      template: template[:body],
+      trusted:  true,
     ).render
 
     if !data[:raw]
@@ -332,7 +350,8 @@ returns
         objects:  data[:objects],
         locale:   data[:locale],
         timezone: data[:timezone],
-        template: application_template
+        template: application_template,
+        trusted:  true,
       ).render
     end
     {

@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module KnowledgeBaseRichTextHelper
   def prepare_rich_text(input)
     prepare_rich_text_videos(prepare_rich_text_links(input))
@@ -22,13 +24,12 @@ module KnowledgeBaseRichTextHelper
       end
     end
 
-    parsed = Loofah.scrub_fragment(input, scrubber).to_s.html_safe # rubocop:disable Rails/OutputSafety
+    Loofah.scrub_fragment(input, scrubber).to_s.html_safe # rubocop:disable Rails/OutputSafety
 
-    parsed
   end
 
   def prepare_rich_text_videos(input)
-    input.gsub(/\((\s*)widget:(\s*)video\W([\s\S])+?\)/) do |match|
+    input.gsub(%r{\((\s*)widget:(\s*)video\W([\s\S])+?\)}) do |match|
       settings = match
         .slice(1...-1)
         .split(',')
@@ -43,9 +44,9 @@ module KnowledgeBaseRichTextHelper
               "https://player.vimeo.com/video/#{settings[:id]}"
             end
 
-      return match unless url
+      return match if !url
 
-      "<div class='videoWrapper'><iframe id='#{settings[:provider]}#{settings[:id]}' type='text/html' src='#{url}' frameborder='0'></iframe></div>"
+      "<div class='videoWrapper'><iframe allowfullscreen id='#{settings[:provider]}#{settings[:id]}' type='text/html' src='#{url}' frameborder='0'></iframe></div>"
     end
   end
 end

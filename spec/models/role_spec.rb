@@ -1,18 +1,20 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 require 'models/application_model_examples'
 require 'models/concerns/can_be_imported_examples'
 require 'models/concerns/has_groups_examples'
 require 'models/concerns/has_collection_update_examples'
-require 'models/concerns/has_ticket_create_screen_impact_examples'
+require 'models/concerns/has_xss_sanitized_note_examples'
 
 RSpec.describe Role do
+  subject(:role) { create(:role) }
+
   it_behaves_like 'ApplicationModel'
   it_behaves_like 'CanBeImported'
   it_behaves_like 'HasGroups', group_access_factory: :role
   it_behaves_like 'HasCollectionUpdate', collection_factory: :role
-  it_behaves_like 'HasTicketCreateScreenImpact', create_screen_factory: :role
-
-  subject(:role) { create(:role) }
+  it_behaves_like 'HasXssSanitizedNote', model_factory: :role
 
   describe 'Default state' do
     describe 'of whole table:' do
@@ -72,13 +74,13 @@ RSpec.describe Role do
 
         it 'cannot be created' do
           expect { create(:role, permissions: [permission]) }
-            .to raise_error(/is disabled/)
+            .to raise_error(%r{is disabled})
             .and change(described_class, :count).by(0)
         end
 
         it 'cannot be added' do
           expect { role.permissions << permission }
-            .to raise_error(/is disabled/)
+            .to raise_error(%r{is disabled})
             .and change { role.permissions.count }.by(0)
         end
       end
@@ -88,7 +90,7 @@ RSpec.describe Role do
 
         it 'cannot be created' do
           expect { create(:role, permissions: [Permission.first, permission]) }
-            .to raise_error(/conflicts with/)
+            .to raise_error(%r{conflicts with})
             .and change(described_class, :count).by(0)
         end
 
@@ -96,7 +98,7 @@ RSpec.describe Role do
           role.permissions << Permission.first
 
           expect { role.permissions << permission }
-            .to raise_error(/conflicts with/)
+            .to raise_error(%r{conflicts with})
             .and change { role.permissions.count }.by(0)
         end
       end
@@ -125,7 +127,7 @@ RSpec.describe Role do
         context 'when reactivating a role adds new agents' do
           subject(:role) { create(:agent_role, active: false) }
 
-          before { create(:user, roles: [role])  }
+          before { create(:user, roles: [role]) }
 
           context 'exceeding the system limit' do
             before { Setting.set('system_agent_limit', agents.count) }
@@ -148,14 +150,14 @@ RSpec.describe Role do
           role.default_at_signup = true
 
           expect { role.save }
-            .to raise_error(Exceptions::UnprocessableEntity, /Cannot set default at signup/)
+            .to raise_error(Exceptions::UnprocessableEntity, %r{Cannot set default at signup})
         end
 
         it 'cannot be changed to true' do
           role.save
 
           expect { role.update(default_at_signup: true) }
-            .to raise_error(Exceptions::UnprocessableEntity, /Cannot set default at signup/)
+            .to raise_error(Exceptions::UnprocessableEntity, %r{Cannot set default at signup})
         end
       end
 
@@ -168,14 +170,14 @@ RSpec.describe Role do
           role.default_at_signup = true
 
           expect { role.save }
-            .to raise_error(Exceptions::UnprocessableEntity, /Cannot set default at signup/)
+            .to raise_error(Exceptions::UnprocessableEntity, %r{Cannot set default at signup})
         end
 
         it 'cannot be changed to true' do
           role.save
 
           expect { role.update(default_at_signup: true) }
-            .to raise_error(Exceptions::UnprocessableEntity, /Cannot set default at signup/)
+            .to raise_error(Exceptions::UnprocessableEntity, %r{Cannot set default at signup})
         end
       end
 
@@ -186,14 +188,14 @@ RSpec.describe Role do
           role.default_at_signup = true
 
           expect { role.save }
-            .to raise_error(Exceptions::UnprocessableEntity, /Cannot set default at signup/)
+            .to raise_error(Exceptions::UnprocessableEntity, %r{Cannot set default at signup})
         end
 
         it 'cannot be changed to true' do
           role.save
 
           expect { role.update(default_at_signup: true) }
-            .to raise_error(Exceptions::UnprocessableEntity, /Cannot set default at signup/)
+            .to raise_error(Exceptions::UnprocessableEntity, %r{Cannot set default at signup})
         end
       end
     end

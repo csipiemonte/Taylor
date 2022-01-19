@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'test_helper'
 
 class ChatTest < ActiveSupport::TestCase
@@ -51,7 +53,7 @@ class ChatTest < ActiveSupport::TestCase
 
     skip "Can't properly disconnect while Spring is in use." if defined?(Spring)
 
-    class DummyWs
+    class DummyWs # rubocop:disable Lint/ConstantDefinitionInBlock
       def send(msg)
         Rails.logger.info "WS send: #{msg}"
       end

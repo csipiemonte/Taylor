@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 module Import
 
@@ -11,6 +11,8 @@ module Import
   class IntegrationBase < Import::Base
 
     def self.inherited(subclass)
+      super
+
       subclass.extend(Forwardable)
 
       # delegate instance methods to the generic class implementations

@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module HasRichText
   extend ActiveSupport::Concern
 
@@ -50,14 +52,15 @@ Checks if file is used inline
     parsed = Loofah.scrub_fragment(raw, scrubber).to_s
     parsed = HtmlSanitizer.strict(parsed)
 
+    line_breaks = ["\n", "\r", "\r\n"]
     scrubber_cleaner = Loofah::Scrubber.new(direction: :bottom_up) do |node|
       case node.name
       when 'span'
-        node.children.reject { |t| ["\n", "\r", "\r\n"].include?(t.text) }.each { |child| node.before child }
+        node.children.reject { |t| line_breaks.include?(t.text) }.each { |child| node.before child }
 
         node.remove
       when 'div'
-        node.children.to_a.select { |t| t.text.match?(/\A([\n\r]+)\z/) }.each(&:remove)
+        node.children.to_a.select { |t| t.text.match?(%r{\A([\n\r]+)\z}) }.each(&:remove)
 
         node.remove if node.children.none? && node.classes.none?
       end
@@ -137,7 +140,7 @@ Checks if file is used inline
         next if node.name != 'img'
         next if !node['src']&.start_with?('cid:')
 
-        cid = node['src'].sub(/^cid:/, '')
+        cid = node['src'].sub(%r{^cid:}, '')
         lookup_cids = [cid, "<#{cid}>"]
 
         attachment = attachments.find do |file|
@@ -150,9 +153,8 @@ Checks if file is used inline
         node['src'] = Rails.application.routes.url_helpers.attachment_path(attachment.id)
       end
 
-      parsed = Loofah.scrub_fragment(raw, scrubber).to_s
+      Loofah.scrub_fragment(raw, scrubber).to_s
 
-      parsed
     end
 
     def has_rich_text_inline_cids(object, attr) # rubocop:disable Naming/PredicateName
@@ -164,7 +166,7 @@ Checks if file is used inline
         next if node.name != 'img'
         next if !node['src']&.start_with? 'cid:'
 
-        cid = node['src'].sub(/^cid:/, '')
+        cid = node['src'].sub(%r{^cid:}, '')
         inline_cids << cid
       end
 

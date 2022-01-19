@@ -1,15 +1,17 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe 'Monitoring', type: :request do
 
-  let!(:admin_user) do
-    create(:admin_user, groups: Group.all)
+  let!(:admin) do
+    create(:admin, groups: Group.all)
   end
-  let!(:agent_user) do
-    create(:agent_user, groups: Group.all)
+  let!(:agent) do
+    create(:agent, groups: Group.all)
   end
-  let!(:customer_user) do
-    create(:customer_user)
+  let!(:customer) do
+    create(:customer)
   end
   let!(:token) do
     SecureRandom.urlsafe_base64(64)
@@ -48,7 +50,7 @@ RSpec.describe 'Monitoring', type: :request do
 
       # health_check
       get '/api/v1/monitoring/health_check', params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
 
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['healthy']).to be_falsey
@@ -56,7 +58,7 @@ RSpec.describe 'Monitoring', type: :request do
 
       # status
       get '/api/v1/monitoring/status', params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
 
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['agents']).to be_falsey
@@ -67,11 +69,11 @@ RSpec.describe 'Monitoring', type: :request do
 
       # token
       post '/api/v1/monitoring/token', params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
 
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['token']).to be_falsey
-      expect(json_response['error']).to eq('authentication failed')
+      expect(json_response['error']).to eq('Authentication required')
 
     end
 
@@ -79,7 +81,7 @@ RSpec.describe 'Monitoring', type: :request do
 
       # health_check
       get '/api/v1/monitoring/health_check?token=abc', params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
 
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['healthy']).to be_falsey
@@ -87,7 +89,7 @@ RSpec.describe 'Monitoring', type: :request do
 
       # status
       get '/api/v1/monitoring/status?token=abc', params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
 
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['agents']).to be_falsey
@@ -98,11 +100,11 @@ RSpec.describe 'Monitoring', type: :request do
 
       # token
       post '/api/v1/monitoring/token', params: { token: 'abc' }, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
 
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['token']).to be_falsey
-      expect(json_response['error']).to eq('authentication failed')
+      expect(json_response['error']).to eq('Authentication required')
 
     end
 
@@ -128,6 +130,7 @@ RSpec.describe 'Monitoring', type: :request do
 
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to be_falsey
+      expect(json_response['issues']).to eq([])
       expect(json_response['healthy']).to eq(true)
       expect(json_response['message']).to eq('success')
 
@@ -179,8 +182,8 @@ RSpec.describe 'Monitoring', type: :request do
         expect(json_response['storage']).to be_truthy
         expect(json_response['storage']).to be_key('kB')
 
-        # check if the stores got summarized. value should be the same because the file has the same fingerprint
-        expect(json_response['storage']['kB']).to eq(first_json_response_kb)
+        # check if the stores got summarized.
+        expect(json_response['storage']['kB']).to eq(first_json_response_kb * 2)
         expect(json_response['storage']).to be_key('MB')
         expect(json_response['storage']).to be_key('GB')
       else
@@ -190,7 +193,7 @@ RSpec.describe 'Monitoring', type: :request do
       Store.add(
         object:        'User',
         o_id:          1,
-        data:          string + '123',
+        data:          "#{string}123",
         filename:      'filename2.txt',
         created_by_id: 1,
       )
@@ -220,18 +223,18 @@ RSpec.describe 'Monitoring', type: :request do
 
       # token
       post '/api/v1/monitoring/token', params: { token: token }, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
 
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['token']).to be_falsey
-      expect(json_response['error']).to eq('authentication failed')
+      expect(json_response['error']).to eq('Authentication required')
 
     end
 
     it 'does monitoring with admin user' do
 
       # health_check
-      authenticated_as(admin_user)
+      authenticated_as(admin)
       get '/api/v1/monitoring/health_check', params: {}, as: :json
       expect(response).to have_http_status(:ok)
 
@@ -264,9 +267,9 @@ RSpec.describe 'Monitoring', type: :request do
     it 'does monitoring with agent user' do
 
       # health_check
-      authenticated_as(agent_user)
+      authenticated_as(agent)
       get '/api/v1/monitoring/health_check', params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
 
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['healthy']).to be_falsey
@@ -274,7 +277,7 @@ RSpec.describe 'Monitoring', type: :request do
 
       # status
       get '/api/v1/monitoring/status', params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
 
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['agents']).to be_falsey
@@ -285,7 +288,7 @@ RSpec.describe 'Monitoring', type: :request do
 
       # token
       post '/api/v1/monitoring/token', params: { token: token }, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
 
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['token']).to be_falsey
@@ -300,9 +303,9 @@ RSpec.describe 'Monitoring', type: :request do
       permission.save!
 
       # health_check
-      authenticated_as(admin_user)
+      authenticated_as(admin)
       get '/api/v1/monitoring/health_check', params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
 
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['healthy']).to be_falsey
@@ -310,7 +313,7 @@ RSpec.describe 'Monitoring', type: :request do
 
       # status
       get '/api/v1/monitoring/status', params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
 
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['agents']).to be_falsey
@@ -321,7 +324,7 @@ RSpec.describe 'Monitoring', type: :request do
 
       # token
       post '/api/v1/monitoring/token', params: { token: token }, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
 
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['token']).to be_falsey
@@ -359,11 +362,11 @@ RSpec.describe 'Monitoring', type: :request do
 
       # token
       post '/api/v1/monitoring/token', params: { token: token }, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
 
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['token']).to be_falsey
-      expect(json_response['error']).to eq('authentication failed')
+      expect(json_response['error']).to eq('Authentication required')
 
       permission.active = true
       permission.save!
@@ -508,11 +511,25 @@ RSpec.describe 'Monitoring', type: :request do
       expect(json_response['healthy']).to eq(false)
       expect(json_response['message']).to eq("Channel: Email::Notification out  ;unprocessable mails: 1;Failed to run import backend 'Import::Ldap'. Cause: Some bad error;Stuck import backend 'Import::Ldap' detected. Last update: #{stuck_updated_at_timestamp}")
 
+      privacy_stuck_updated_at_timestamp = 30.minutes.ago
+      task = create(:data_privacy_task, deletable: customer)
+      task.update(updated_at: privacy_stuck_updated_at_timestamp)
+
+      # health_check
+      get "/api/v1/monitoring/health_check?token=#{token}", params: {}, as: :json
+      expect(response).to have_http_status(:ok)
+
+      expect(json_response).to be_a_kind_of(Hash)
+      expect(json_response['message']).to be_truthy
+      expect(json_response['issues']).to be_truthy
+      expect(json_response['healthy']).to eq(false)
+      expect(json_response['message']).to eq("Channel: Email::Notification out  ;unprocessable mails: 1;Failed to run import backend 'Import::Ldap'. Cause: Some bad error;Stuck import backend 'Import::Ldap' detected. Last update: #{stuck_updated_at_timestamp};Stuck data privacy task (ID #{task.id}) detected. Last update: #{privacy_stuck_updated_at_timestamp}")
+
       Setting.set('ldap_integration', false)
     end
 
     it 'does check restart_failed_jobs' do
-      authenticated_as(admin_user)
+      authenticated_as(admin)
       post '/api/v1/monitoring/restart_failed_jobs', params: {}, as: :json
       expect(response).to have_http_status(:ok)
     end
@@ -532,43 +549,43 @@ RSpec.describe 'Monitoring', type: :request do
       migration = ObjectManager::Attribute.migration_execute
       expect(true).to eq(migration)
 
-      authenticated_as(admin_user)
+      authenticated_as(admin)
       post "/api/v1/object_manager_attributes/#{object.id}", params: {}, as: :json
       token = @response.headers['CSRF-TOKEN']
 
       # parameters for updating
       params = {
-        'name':        'test4',
-        'object':      'Ticket',
-        'display':     'Test 4',
-        'active':      true,
-        'data_type':   'input',
-        'data_option': {
-          'default':   'test',
-          'type':      'text',
-          'maxlength': 120
+        name:        'test4',
+        object:      'Ticket',
+        display:     'Test 4',
+        active:      true,
+        data_type:   'input',
+        data_option: {
+          default:   'test',
+          type:      'text',
+          maxlength: 120
         },
-        'screens':     {
-          'create_middle': {
+        screens:     {
+          create_middle: {
             'ticket.customer': {
-              'shown':      true,
-              'item_class': 'column'
+              shown:      true,
+              item_class: 'column'
             },
             'ticket.agent':    {
-              'shown':      true,
-              'item_class': 'column'
+              shown:      true,
+              item_class: 'column'
             }
           },
-          'edit':          {
+          edit:          {
             'ticket.customer': {
-              'shown': true
+              shown: true
             },
             'ticket.agent':    {
-              'shown': true
+              shown: true
             }
           }
         },
-        'id':          'c-196'
+        id:          'c-196'
       }
 
       # update the object
@@ -595,7 +612,7 @@ RSpec.describe 'Monitoring', type: :request do
       expect(json_response['message']).to be_truthy
       expect(json_response['issues']).to be_truthy
       expect(json_response['healthy']).to eq(false)
-      expect( json_response['message']).to eq("Failed to run background job #1 'SearchIndexJob' 1 time(s) with 1 attempt(s).")
+      expect(json_response['message']).to eq("Failed to run background job #1 'SearchIndexAssociationsJob' 1 time(s) with 1 attempt(s).")
 
       # add another job
       manual_added = SearchIndexJob.perform_later('Ticket', 1)
@@ -609,17 +626,16 @@ RSpec.describe 'Monitoring', type: :request do
       expect(json_response['message']).to be_truthy
       expect(json_response['issues']).to be_truthy
       expect(json_response['healthy']).to eq(false)
-      expect( json_response['message']).to eq("Failed to run background job #1 'SearchIndexJob' 2 time(s) with 11 attempt(s).")
+      expect(json_response['message']).to eq("Failed to run background job #1 'SearchIndexAssociationsJob' 1 time(s) with 1 attempt(s).;Failed to run background job #2 'SearchIndexJob' 1 time(s) with 10 attempt(s).")
 
       # add another job
       dummy_class = Class.new(ApplicationJob) do
-
         def perform
-          puts 'work work'
+          true
         end
       end
 
-      manual_added = Delayed::Job.enqueue( dummy_class.new )
+      manual_added = Delayed::Job.enqueue(dummy_class.new)
       manual_added.update!(attempts: 5)
 
       # health_check
@@ -630,14 +646,14 @@ RSpec.describe 'Monitoring', type: :request do
       expect(json_response['message']).to be_truthy
       expect(json_response['issues']).to be_truthy
       expect(json_response['healthy']).to eq(false)
-      expect( json_response['message']).to eq("Failed to run background job #1 'Object' 1 time(s) with 5 attempt(s).;Failed to run background job #2 'SearchIndexJob' 2 time(s) with 11 attempt(s).")
+      expect(json_response['message']).to eq("Failed to run background job #1 'Object' 1 time(s) with 5 attempt(s).;Failed to run background job #2 'SearchIndexAssociationsJob' 1 time(s) with 1 attempt(s).;Failed to run background job #3 'SearchIndexJob' 1 time(s) with 10 attempt(s).")
 
       # reset settings
       Setting.set('es_url', prev_es_config)
 
       # add some more failing job
       10.times do
-        manual_added = Delayed::Job.enqueue( dummy_class.new )
+        manual_added = Delayed::Job.enqueue(dummy_class.new)
         manual_added.update!(attempts: 5)
       end
 
@@ -649,7 +665,7 @@ RSpec.describe 'Monitoring', type: :request do
       expect(json_response['message']).to be_truthy
       expect(json_response['issues']).to be_truthy
       expect(json_response['healthy']).to eq(false)
-      expect(json_response['message']).to eq("13 failing background jobs;Failed to run background job #1 'Object' 8 time(s) with 40 attempt(s).;Failed to run background job #2 'SearchIndexJob' 2 time(s) with 11 attempt(s).")
+      expect(json_response['message']).to eq("13 failing background jobs;Failed to run background job #1 'Object' 8 time(s) with 40 attempt(s).;Failed to run background job #2 'SearchIndexAssociationsJob' 1 time(s) with 1 attempt(s).;Failed to run background job #3 'SearchIndexJob' 1 time(s) with 10 attempt(s).")
 
       # cleanup
       Delayed::Job.delete_all

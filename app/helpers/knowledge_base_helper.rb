@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module KnowledgeBaseHelper
   def effective_layout_name(knowledge_base, object)
     layout_prefix = object.present? ? :category : :homepage
@@ -6,19 +8,15 @@ module KnowledgeBaseHelper
   end
 
   def custom_path_if_needed(path, knowledge_base, full: false)
-    return path unless knowledge_base.custom_address_matches? request
+    return path if !knowledge_base.custom_address_matches?(request)
 
     custom_address = knowledge_base.custom_address_uri
-    return path unless custom_address
+    return path if !custom_address
 
-    output = path.gsub(%r{^/help}, custom_address.path || '').presence || '/'
+    custom_path = knowledge_base.custom_address_path(path)
+    prefix      = full ? knowledge_base.custom_address_prefix(request) : ''
 
-    if full
-      fqdn = request.headers.env['SERVER_NAME']
-      output = "#{custom_address.scheme}://#{custom_address.host || fqdn}#{output}"
-    end
-
-    output
+    "#{prefix}#{custom_path}"
   end
 
   def translation_locale_code(translation)
@@ -64,5 +62,19 @@ module KnowledgeBaseHelper
 
   def dropdown_menu_direction
     system_locale_via_uri.dir == 'ltr' ? 'right' : 'left'
+  end
+
+  def canonical_link_tag(knowledge_base, *objects)
+    path = kb_public_system_path(*objects)
+
+    tag.link(rel: 'canonical', href: knowledge_base.canonical_url(path))
+  end
+
+  def kb_public_system_path(*objects)
+    objects
+      .compact
+      .map { |elem| elem.is_a?(HasTranslations) ? elem.translation.to_param : elem }
+      .unshift(help_root_path)
+      .join('/')
   end
 end

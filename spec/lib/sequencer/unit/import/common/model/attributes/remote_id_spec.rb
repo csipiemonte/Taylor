@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe Sequencer::Unit::Import::Common::Model::Attributes::RemoteId, sequencer: :unit do
@@ -22,7 +24,7 @@ RSpec.describe Sequencer::Unit::Import::Common::Model::Attributes::RemoteId, seq
     }
 
     provided = process(parameters) do |instance|
-      expect(instance).to receive(:attribute).and_return(:other_attribute)
+      allow(instance).to receive(:attribute).and_return(:other_attribute)
     end
 
     expect(provided).to include(remote_id: '123abc')

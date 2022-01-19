@@ -1,6 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
-require_dependency 'net/ldap'
-require_dependency 'net/ldap/entry'
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 # Class for establishing LDAP connections. A wrapper around Net::LDAP needed for Auth and Sync.
 # ATTENTION: Loads custom 'net/ldap/entry' from 'lib/core_ext' which extends the Net::LDAP::Entry class.
@@ -64,9 +62,9 @@ class Ldap
   #  #=> <Net::LDAP::Entry...>
   #
   # @return [true] Returns always true
-  def search(filter, base: nil, scope: nil, attributes: nil)
+  def search(filter, base: nil, scope: nil, attributes: nil, &block)
 
-    base  ||= base_dn()
+    base  ||= base_dn
     scope ||= Net::LDAP::SearchScope_WholeSubtree
 
     connection.search(
@@ -75,9 +73,8 @@ class Ldap
       scope:         scope,
       attributes:    attributes,
       return_result: false, # improves performance
-    ) do |entry|
-      yield entry
-    end
+      &block
+    )
   end
 
   # Checks if there are any entries for the given search criteria.
@@ -190,7 +187,7 @@ class Ldap
   end
 
   def parse_host
-    return if @host !~ /\A([^:]+):(.+?)\z/
+    return if @host !~ %r{\A([^:]+):(.+?)\z}
 
     @host = $1
     @port = $2.to_i

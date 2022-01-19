@@ -1,10 +1,12 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 # Fixes issue #2333 - Object country already exists
 # The country column already exists in the database, but there is no corresponding ObjectManager::Attribute for it
 # This migration adds the User.country attribute if and only if it does not exist already
 class AddCountryAttributeToUsers < ActiveRecord::Migration[5.1]
   def up
     # return if it's a new setup
-    return if !Setting.find_by(name: 'system_init_done')
+    return if !Setting.exists?(name: 'system_init_done')
 
     # return if the country attribute already exists
     current_country_attribute = ObjectManager::Attribute.find_by(object_lookup_id: ObjectLookup.by_name('User'), name: 'country')

@@ -1,17 +1,21 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Calendar < ApplicationModel
   include ChecksClientNotification
   include CanUniqName
+  include HasEscalationCalculationImpact
 
   store :business_hours
   store :public_holidays
 
-  before_create  :validate_public_holidays, :validate_hours, :fetch_ical
-  before_update  :validate_public_holidays, :validate_hours, :fetch_ical
-  after_create   :sync_default, :min_one_check
-  after_update   :sync_default, :min_one_check
-  after_destroy  :min_one_check
+  validate :validate_hours
+
+  before_save :ensure_public_holidays_details, :fetch_ical
+
+  after_destroy :min_one_check
+  after_save    :min_one_check
+
+  after_save :sync_default
 
 =begin
 
@@ -26,12 +30,12 @@ returns calendar object
   def self.init_setup(ip = nil)
 
     # ignore client ip if not public ip
-    if ip && ip =~ /^(::1|127\.|10\.|172\.1[6-9]\.|172\.2[0-9]\.|172\.3[0-1]\.|192\.168\.)/
+    if ip && ip =~ %r{^(::1|127\.|10\.|172\.1[6-9]\.|172\.2[0-9]\.|172\.3[0-1]\.|192\.168\.)}
       ip = nil
     end
 
     # prevent multiple setups for same ip
-    cache = Cache.get('Calendar.init_setup.done')
+    cache = Cache.read('Calendar.init_setup.done')
     return if cache && cache[:ip] == ip
 
     Cache.write('Calendar.init_setup.done', { ip: ip }, { expires_in: 1.hour })
@@ -155,7 +159,7 @@ returns
     # only sync every 5 days
     if id
       cache_key = "CalendarIcal::#{id}"
-      cache = Cache.get(cache_key)
+      cache = Cache.read(cache_key)
       return if !last_log && cache && cache[:ical_url] == ical_url
     end
 
@@ -213,7 +217,7 @@ returns
   end
 
   def self.fetch_parse(location)
-    if location.match?(/^http/i)
+    if location.match?(%r{^http}i)
       result = UserAgent.get(location)
       if !result.success?
         raise result.error
@@ -261,7 +265,7 @@ returns
     comment = comment.to_utf8(fallback: :read_as_sanitized_binary)
 
     # ignore daylight saving time entries
-    return if comment.match?(/(daylight saving|sommerzeit|summertime)/i)
+    return if comment.match?(%r{(daylight saving|sommerzeit|summertime)}i)
 
     [day, comment]
   end
@@ -284,20 +288,17 @@ returns
 =end
 
   def business_hours_to_hash
-    hours = {}
-    business_hours.each do |day, meta|
-      next if !meta[:active]
-      next if !meta[:timeframes]
+    business_hours
+      .filter { |_, value| value[:active] && value[:timeframes] }
+      .each_with_object({}) do |(day, meta), days_memo|
+        days_memo[day.to_sym] = meta[:timeframes]
+          .each_with_object({}) do |(from, to), hours_memo|
+            next if !from || !to
 
-      hours[day.to_sym] = {}
-      meta[:timeframes].each do |frame|
-        next if !frame[0]
-        next if !frame[1]
-
-        hours[day.to_sym][frame[0]] = frame[1]
+            # convert "last minute of the day" format from Zammad/UI to biz-gem
+            hours_memo[from] = to == '23:59' ? '24:00' : to
+          end
       end
-    end
-    hours
   end
 
 =begin
@@ -327,7 +328,7 @@ returns
     holidays
   end
 
-  def biz
+  def biz(breaks: {})
     Biz::Schedule.new do |config|
 
       # get business hours
@@ -338,7 +339,10 @@ returns
 
       # get holidays
       config.holidays = public_holidays_to_array
+
       config.time_zone = timezone
+
+      config.breaks = breaks
     end
   end
 
@@ -360,7 +364,7 @@ returns
 
   # check if min one is set to default true
   def min_one_check
-    if !Calendar.find_by(default: true)
+    if !Calendar.exists?(default: true)
       first = Calendar.order(:created_at, :id).limit(1).first
       return true if !first
 
@@ -376,7 +380,7 @@ returns
         sla.save!
         next
       end
-      if !Calendar.find_by(id: sla.calendar_id)
+      if !Calendar.exists?(id: sla.calendar_id)
         sla.calendar_id = default_calendar.id
         sla.save!
       end
@@ -390,8 +394,8 @@ returns
     true
   end
 
-  # validate format of public holidays
-  def validate_public_holidays
+  # ensure integrity of details of public holidays
+  def ensure_public_holidays_details
 
     # fillup feed info
     before = public_holidays_was
@@ -413,7 +417,13 @@ returns
 
     # get business hours
     hours = business_hours_to_hash
-    raise Exceptions::UnprocessableEntity, 'No configured business hours found!' if hours.blank?
+
+    if hours.blank?
+      errors.add :base, 'No configured business hours found!'
+      return
+    end
+
+    # raise Exceptions::UnprocessableEntity, 'No configured business hours found!' if hours.blank?
 
     # validate if business hours are usable by execute a try calculation
     begin
@@ -422,10 +432,8 @@ returns
       end
       Biz.time(10, :minutes).after(Time.zone.parse('Tue, 05 Feb 2019 21:40:28 UTC +00:00'))
     rescue => e
-      raise Exceptions::UnprocessableEntity, e.message
+      errors.add :base, e.message
     end
-
-    true
   end
 
 end

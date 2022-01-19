@@ -1,12 +1,14 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe 'Integration SMIME', type: :request do
 
-  let(:admin_user) { create(:admin_user) }
+  let(:admin) { create(:admin) }
   let(:email_address) { 'smime1@example.com' }
 
   before do
-    authenticated_as(admin_user)
+    authenticated_as(admin)
   end
 
   describe '/integration/smime/certificate' do
@@ -30,16 +32,16 @@ RSpec.describe 'Integration SMIME', type: :request do
         end.to change(SMIMECertificate, :count).by(1)
 
         expect(response).to have_http_status(:ok)
-        expect(DateTime.parse(json_response['response']['not_after_at'])).to eq(parsed_certificate.not_after)
+        expect(DateTime.parse(json_response['response'][0]['not_after_at'])).to eq(parsed_certificate.not_after)
       end
 
       it 'adds certificate by file' do
         expect do
-          post endpoint, params: { file: Rack::Test::UploadedFile.new(certificate_path, 'text/plain', true)  }
+          post endpoint, params: { file: Rack::Test::UploadedFile.new(certificate_path, 'text/plain', true) }
         end.to change(SMIMECertificate, :count).by(1)
 
         expect(response).to have_http_status(:ok)
-        expect(DateTime.parse(json_response['response']['not_after_at'])).to eq(parsed_certificate.not_after)
+        expect(DateTime.parse(json_response['response'][0]['not_after_at'])).to eq(parsed_certificate.not_after)
       end
     end
 

@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 # Be sure to restart your server when you modify this file.
 
 # Add new inflection rules using the following format. Inflections
@@ -19,6 +21,8 @@ ActiveSupport::Inflector.inflections(:en) do |inflect|
 
   # Rails thinks the singularized version of knowledge_bases is knowledge_basis?!
   # see: KnowledgeBase.table_name.singularize
-  inflect.singular(/(knowledge_base)s$/i, '\1')
+  inflect.singular(%r{(knowledge_base)s$}i, '\1')
   inflect.acronym 'SMIME'
+  inflect.acronym 'GitLab'
+  inflect.acronym 'GitHub'
 end

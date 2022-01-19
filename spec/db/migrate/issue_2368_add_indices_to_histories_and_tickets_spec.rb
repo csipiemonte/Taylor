@@ -1,7 +1,8 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
-RSpec.describe Issue2368AddIndicesToHistoriesAndTickets, type: :db_migration do
-  self.use_transactional_tests = false # see comments on #without_index method
+RSpec.describe Issue2368AddIndicesToHistoriesAndTickets, type: :db_migration, db_strategy: :reset do
 
   before { without_index(table, column: columns) }
 

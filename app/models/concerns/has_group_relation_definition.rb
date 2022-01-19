@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module HasGroupRelationDefinition
   extend ActiveSupport::Concern
 
@@ -59,7 +60,7 @@ module HasGroupRelationDefinition
     end
 
     def ref_key
-      @ref_key ||= "#{group_relation_model_identifier}_id".to_sym
+      @ref_key ||= :"#{group_relation_model_identifier}_id"
     end
   end
 end

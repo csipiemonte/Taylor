@@ -27,6 +27,14 @@ test( "model ui basic tests", function() {
     name: 'textarea', display: 'textarea 1',  tag: 'textarea', null: true
   };
   App.Ticket.configure_attributes.push( attribute2 )
+  var attribute3 = {
+    name: 'link1', display: 'link 1', linktemplate: 'http://zammad.com',  tag: 'input', null: true, translate: true
+  };
+  App.Ticket.configure_attributes.push( attribute3 )
+  var attribute4 = {
+    name: 'link2', display: 'link 1', linktemplate: 'http://zammad.com',  tag: 'input', null: true
+  };
+  App.Ticket.configure_attributes.push( attribute4 )
 
   var ticket = new App.Ticket()
   ticket.load({
@@ -35,7 +43,9 @@ test( "model ui basic tests", function() {
     state_id:   2,
     updated_at: '2014-11-07T23:43:08.000Z',
     date:       '2015-02-07',
-    textarea:   "some new\nline"
+    textarea:   "some new\nline",
+    link1:      'closed',
+    link2:      'closed',
   })
 
   App.i18n.set('en-us')
@@ -47,7 +57,18 @@ test( "model ui basic tests", function() {
   equal( App.viewPrint( ticket, 'updated_at' ), '<time class="humanTimeFromNow " datetime="2014-11-07T23:43:08.000Z" title="11/07/2014 23:43">11/07/2014</time>')
   equal( App.viewPrint( ticket, 'date' ), '02/07/2015')
   equal( App.viewPrint( ticket, 'textarea' ), '<div>some new</div><div>line</div>')
+  equal( App.viewPrint( ticket, 'link1' ), '<a href="http://zammad.com" target="blank">closed</a>')
+  equal( App.viewPrint( ticket, 'link2' ), '<a href="http://zammad.com" target="blank">closed</a>')
 
+  let stub = sinon.stub(App.Config, 'get')
+  stub.withArgs('timezone_default').returns('Example/Timezone')
+  let attr = App.Ticket.configure_attributes.find(e => { return e.name == 'updated_at' })
+  attr.include_timezone = true
+
+  equal( App.viewPrint( ticket, 'updated_at' ), '<time class="humanTimeFromNow " datetime="2014-11-07T23:43:08.000Z" title="11/07/2014 23:43 Example/Timezone" timezone="Example/Timezone">11/07/2014</time>')
+
+  attr.include_timezone = false
+  stub.restore()
 
   App.i18n.set('de-de')
   equal( App.viewPrint( ticket, 'id' ), 1000)
@@ -58,6 +79,8 @@ test( "model ui basic tests", function() {
   equal( App.viewPrint( ticket, 'updated_at' ), '<time class="humanTimeFromNow " datetime="2014-11-07T23:43:08.000Z" title="07.11.2014 23:43">07.11.2014</time>')
   equal( App.viewPrint( ticket, 'date' ), '07.02.2015')
   equal( App.viewPrint( ticket, 'textarea' ), '<div>some new</div><div>line</div>')
+  equal( App.viewPrint( ticket, 'link1' ), '<a href="http://zammad.com" target="blank">geschlossen</a>')
+  equal( App.viewPrint( ticket, 'link2' ), '<a href="http://zammad.com" target="blank">closed</a>')
 
 
   App.i18n.set('en-us')

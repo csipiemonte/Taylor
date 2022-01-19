@@ -1,11 +1,13 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe 'Twilio SMS', type: :request do
 
   describe 'request handling' do
 
-    let(:agent_user) do
-      create(:agent_user, groups: Group.all)
+    let(:agent) do
+      create(:agent, groups: Group.all)
     end
 
     it 'does basic call' do
@@ -131,15 +133,15 @@ RSpec.describe 'Twilio SMS', type: :request do
         body:      'some test',
         type:      'sms',
       }
-      authenticated_as(agent_user)
+      authenticated_as(agent)
       post '/api/v1/ticket_articles', params: params, as: :json
       expect(response).to have_http_status(:created)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['subject']).to be_nil
       expect(json_response['body']).to eq('some test')
       expect(json_response['content_type']).to eq('text/plain')
-      expect(json_response['updated_by_id']).to eq(agent_user.id)
-      expect(json_response['created_by_id']).to eq(agent_user.id)
+      expect(json_response['updated_by_id']).to eq(agent.id)
+      expect(json_response['created_by_id']).to eq(agent.id)
 
       stub_request(:post, 'https://api.twilio.com/2010-04-01/Accounts/111/Messages.json')
         .with(
@@ -159,7 +161,7 @@ RSpec.describe 'Twilio SMS', type: :request do
       expect(article.preferences[:delivery_retry]).to be_nil
       expect(article.preferences[:delivery_status]).to be_nil
 
-      Observer::Transaction.commit
+      TransactionDispatcher.commit
       Scheduler.worker(true)
 
       article = Ticket::Article.find(json_response['id'])
@@ -171,11 +173,11 @@ RSpec.describe 'Twilio SMS', type: :request do
     it 'does customer based on already existing mobile attibute' do
 
       customer = create(
-        :customer_user,
+        :customer,
         email:  'me@example.com',
         mobile: '01710000000',
       )
-      Observer::Transaction.commit
+      TransactionDispatcher.commit
       Scheduler.worker(true)
 
       UserInfo.current_user_id = 1
@@ -197,6 +199,28 @@ RSpec.describe 'Twilio SMS', type: :request do
       expect(1).to eq(xml_response.elements.count)
 
       expect(customer.id).to eq(User.last.id)
+    end
+
+    it 'does basic call when ticket has a custom attribute', db_strategy: :reset do
+      create(:object_manager_attribute_text, screens: attributes_for(:required_screen))
+      ObjectManager::Attribute.migration_execute
+
+      UserInfo.current_user_id = 1
+      create(
+        :channel,
+        area:     'Sms::Account',
+        options:  {
+          adapter:       'sms/twilio',
+          webhook_token: 'f409460e50f76d331fdac8ba7b7963b6',
+          account_id:    '111',
+          token:         '223',
+          sender:        '333',
+        },
+        group_id: Group.first.id,
+      )
+
+      post '/api/v1/sms_webhook/f409460e50f76d331fdac8ba7b7963b6', params: read_message('inbound_sms1'), as: :json
+      expect(response).to have_http_status(:ok)
     end
 
     def read_message(file)

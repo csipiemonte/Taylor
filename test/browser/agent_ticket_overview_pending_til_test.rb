@@ -1,18 +1,20 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'browser_test_helper'
 
 class AgentTicketOverviewPendingTil < TestCase
 
   # regression for issue #2367 - cannot sort by Pending Til
   def test_sorting_by_pending_til
-    name = "overview_pending_til_#{rand(999_999)}"
+    name = "overview_pending_til_#{SecureRandom.uuid}"
 
     @browser = browser_instance
     login(
-      username: 'master@example.com',
+      username: 'admin@example.com',
       password: 'test',
       url:      browser_url,
     )
-    tasks_close_all()
+    tasks_close_all
 
     # create 4 tickets, 2 with pending til data and 2 without
     tickets = []
@@ -45,12 +47,12 @@ class AgentTicketOverviewPendingTil < TestCase
       }
     )
     overview_open(
-      name:    name,
+      name: name,
     )
 
     # sort by Pending Til
     click(
-      css:      '.content.active table.table th.js-tableHead[data-column-key="pending_time"]',
+      css: '.content.active table.table th.js-tableHead[data-column-key="pending_time"]',
     )
 
     # check if the first and second rows both correctly contain 'pending close'

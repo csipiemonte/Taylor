@@ -1,8 +1,10 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class CtiGenericApi2 < ActiveRecord::Migration[5.1]
   def up
 
     # return if it's a new setup
-    return if !Setting.find_by(name: 'system_init_done')
+    return if !Setting.exists?(name: 'system_init_done')
     return if !column_exists?(:cti_logs, :initialized_at)
     return if column_exists?(:cti_logs, :initialized_at_cleanup)
 

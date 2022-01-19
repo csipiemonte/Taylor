@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2015 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Channel::Driver::Telegram
 
@@ -26,8 +26,8 @@ class Channel::Driver::Telegram
     options = check_external_credential(options)
 
     @client = Telegram.new(options[:auth][:api_key])
-    message = @client.from_article(article)
-    message
+    @client.from_article(article)
+
   end
 
 =begin

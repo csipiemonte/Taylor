@@ -1,7 +1,9 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module PushMessages
 
   def self.enabled?
-    return true if Thread.current[:push_messages].class == Array
+    return true if Thread.current[:push_messages].instance_of?(Array)
 
     false
   end

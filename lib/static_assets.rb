@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module StaticAssets
 
 =begin
@@ -16,7 +18,7 @@ returns
 
   def self.data_url_attributes(data_url)
     data = {}
-    if data_url =~ /^data:(.+?);base64,(.+?)$/
+    if data_url =~ %r{^data:(.+?);base64,(.+?)$}
       data[:mime_type] = $1
       data[:content]   = Base64.decode64($2)
       if data[:mime_type] =~ %r{/(.+?)$}
@@ -24,7 +26,7 @@ returns
       end
       return data
     end
-    raise "Unable to parse data url: #{data_url.substr(0, 100)}"
+    raise "Unable to parse data url: #{data_url&.slice(0, 100)}"
   end
 
 =begin
@@ -69,7 +71,7 @@ returns
   def self.read_raw
     list = Store.list(object: 'System::Logo', o_id: 1)
     if list && list[0]
-      return Store.find( list[0] )
+      return Store.find(list[0])
     end
 
     raise 'No such raw logo!'
@@ -126,7 +128,7 @@ returns
     end
 
     # store hash in config
-    return  if !list || !list[0]
+    return if !list || !list[0]
 
     file = Store.find(list[0].id)
     filelocation = filename(file)
@@ -145,13 +147,14 @@ generate filename based on Store model
   def self.filename(file)
     hash = Digest::MD5.hexdigest(file.content)
     extention = ''
-    if file.preferences['Content-Type'].match?(/jpg|jpeg/i)
+    case file.preferences['Content-Type']
+    when %r{jpg|jpeg}i
       extention = '.jpg'
-    elsif file.preferences['Content-Type'].match?(/png/i)
+    when %r{png}i
       extention = '.png'
-    elsif file.preferences['Content-Type'].match?(/gif/i)
+    when %r{gif}i
       extention = '.gif'
-    elsif file.preferences['Content-Type'].match?(/svg/i)
+    when %r{svg}i
       extention = '.svg'
     end
     "#{hash}#{extention}"

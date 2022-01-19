@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class KnowledgeBase::Translation < ApplicationModel
   include HasAgentAllowedParams
   include HasSearchIndexBackend
@@ -10,7 +11,7 @@ class KnowledgeBase::Translation < ApplicationModel
   belongs_to :kb_locale,      inverse_of: :knowledge_base_translations, class_name: 'KnowledgeBase::Locale'
 
   validates :title,        presence: true, length: { maximum: 250 }
-  validates :kb_locale_id, uniqueness: { scope: :knowledge_base_id }
+  validates :kb_locale_id, uniqueness: { case_sensitive: true, scope: :knowledge_base_id }
 
   def assets(data)
     return data if assets_added_to?(data)
@@ -19,7 +20,7 @@ class KnowledgeBase::Translation < ApplicationModel
     knowledge_base.assets(data)
   end
 
-  def search_index_attribute_lookup
+  def search_index_attribute_lookup(include_references: true)
     attrs = super
 
     attrs['title'] = ActionController::Base.helpers.strip_tags attrs['title']
@@ -28,7 +29,7 @@ class KnowledgeBase::Translation < ApplicationModel
   end
 
   class << self
-    def search_fallback(query, scope = nil)
+    def search_fallback(query, scope = nil, options: {})
       fields = %w[title]
 
       output = where_or_cis(fields, query)

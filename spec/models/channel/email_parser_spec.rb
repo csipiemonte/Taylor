@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe Channel::EmailParser, type: :model do
@@ -42,9 +44,9 @@ RSpec.describe Channel::EmailParser, type: :model do
   end
 
   describe '#process' do
-    let(:raw_mail)  { File.read(mail_file) }
+    let(:raw_mail) { File.read(mail_file) }
 
-    before { Trigger.destroy_all }  # triggers may cause additional articles to be created
+    before { Trigger.destroy_all } # triggers may cause additional articles to be created
 
     describe 'auto-creating new users' do
       context 'with one unrecognized email address' do
@@ -124,8 +126,23 @@ RSpec.describe Channel::EmailParser, type: :model do
           expect(Ticket.last.state.name).to eq('new')
         end
 
+        context 'when no channel is given but a group with the :to address exists' do
+          let!(:email_address) { create(:email_address, email: 'baz@qux.net', channel: nil) }
+          let!(:group) { create(:group, name: 'baz headquarter', email_address: email_address) }
+          let!(:channel) do
+            channel = create(:email_channel, group: group)
+            email_address.update(channel: channel)
+            channel
+          end
+
+          it 'sets the group based on the :to field' do
+            described_class.new.process({}, raw_mail)
+            expect(Ticket.last.group.id).to eq(group.id)
+          end
+        end
+
         context 'when from address matches an existing agent' do
-          let!(:agent) { create(:agent_user, email: 'foo@bar.com') }
+          let!(:agent) { create(:agent, email: 'foo@bar.com') }
 
           it 'sets article.sender to "Agent"' do
             described_class.new.process({}, raw_mail)
@@ -140,8 +157,26 @@ RSpec.describe Channel::EmailParser, type: :model do
           end
         end
 
+        context 'when from address matches an existing agent customer' do
+          let!(:agent_customer) { create(:agent_and_customer, email: 'foo@bar.com') }
+          let!(:ticket) { create(:ticket, customer: agent_customer) }
+          let!(:raw_email) { <<~RAW.chomp }
+            From: foo@bar.com
+            To: myzammad@example.com
+            Subject: [#{Setting.get('ticket_hook') + Setting.get('ticket_hook_divider') + ticket.number}] test
+
+            Lorem ipsum dolor
+          RAW
+
+          it 'sets article.sender to "Customer"' do
+            described_class.new.process({}, raw_email)
+
+            expect(Ticket::Article.last.sender.name).to eq('Customer')
+          end
+        end
+
         context 'when from address matches an existing customer' do
-          let!(:customer) { create(:customer_user, email: 'foo@bar.com') }
+          let!(:customer) { create(:customer, email: 'foo@bar.com') }
 
           it 'sets article.sender to "Customer"' do
             described_class.new.process({}, raw_mail)
@@ -162,6 +197,61 @@ RSpec.describe Channel::EmailParser, type: :model do
 
             expect(Ticket.last.articles.first.sender.name).to eq('Customer')
           end
+        end
+      end
+
+      context 'when email contains x-headers' do
+        let(:raw_mail) { <<~RAW.chomp }
+          From: foo@bar.com
+          To: baz@qux.net
+          Subject: Foo
+          X-Zammad-Ticket-priority: 3 high
+
+          Lorem ipsum dolor
+        RAW
+
+        context 'when channel is not trusted' do
+          let(:channel) { create(:channel, options: { inbound: { trusted: false } }) }
+
+          it 'does not change the priority of the ticket (no channel)' do
+            described_class.new.process({}, raw_mail)
+
+            expect(Ticket.last.priority.name).to eq('2 normal')
+          end
+
+          it 'does not change the priority of the ticket (untrusted)' do
+            described_class.new.process(channel, raw_mail)
+
+            expect(Ticket.last.priority.name).to eq('2 normal')
+          end
+        end
+
+        context 'when channel is trusted' do
+          let(:channel) { create(:channel, options: { inbound: { trusted: true } }) }
+
+          it 'does not change the priority of the ticket' do
+            described_class.new.process(channel, raw_mail)
+
+            expect(Ticket.last.priority.name).to eq('3 high')
+          end
+        end
+      end
+
+      context 'Mentions:' do
+        let(:agent) { create(:agent) }
+        let(:raw_mail) { <<~RAW.chomp }
+          From: foo@bar.com
+          To: baz@qux.net
+          Subject: Foo
+
+          Lorem ipsum dolor <a data-mention-user-id=\"#{agent.id}\">agent</a>
+        RAW
+
+        it 'creates a ticket and article without mentions and no exception raised' do
+          expect { described_class.new.process({}, raw_mail) }
+            .to change(Ticket, :count).by(1)
+            .and change(Ticket::Article, :count).by_at_least(1)
+            .and not_change(Mention, :count)
         end
       end
     end
@@ -812,12 +902,34 @@ RSpec.describe Channel::EmailParser, type: :model do
           expect { described_class.new.process({}, raw_mail) }
             .to change { ticket.reload.state.name }.to('open')
         end
+
+        context 'when group has follow_up_assignment true' do
+          let(:group) { create(:group, follow_up_assignment: true) }
+          let(:agent) { create(:agent, groups: [group]) }
+          let(:ticket) { create(:ticket, state_name: 'closed', owner: agent, group: group) }
+
+          it 'does not change the owner' do
+            expect { described_class.new.process({}, raw_mail) }
+              .not_to change { ticket.reload.owner.login }
+          end
+        end
+
+        context 'when group has follow_up_assignment false' do
+          let(:group) { create(:group, follow_up_assignment: false) }
+          let(:agent) { create(:agent, groups: [group]) }
+          let(:ticket) { create(:ticket, state_name: 'closed', owner: agent, group: group) }
+
+          it 'does change the owner' do
+            expect { described_class.new.process({}, raw_mail) }
+              .to change { ticket.reload.owner.login }.to eq(User.find(1).login)
+          end
+        end
       end
     end
 
     describe 'assigning ticket.customer' do
-      let(:agent) { create(:agent_user) }
-      let(:customer) { create(:customer_user) }
+      let(:agent) { create(:agent) }
+      let(:customer) { create(:customer) }
 
       let(:raw_mail) { <<~RAW.chomp }
         From: #{agent.email}
@@ -976,6 +1088,49 @@ RSpec.describe Channel::EmailParser, type: :model do
           expect(article.attachments.first.content).to eq('Hello Zammad')
         end
       end
+
+      # https://github.com/zammad/zammad/issues/3529
+      context 'Attachments sent by Zammad not shown in Outlook' do
+        subject(:mail) do
+          Channel::EmailBuild.build(
+            from:         'sender@example.com',
+            to:           'recipient@example.com',
+            body:         body,
+            content_type: 'text/html',
+            attachments:  Store.where(filename: 'super-seven.jpg')
+          )
+        end
+
+        let(:mail_file) { Rails.root.join('test/data/mail/mail101.box') }
+
+        before do
+          described_class.new.process({}, raw_mail)
+        end
+
+        context 'when no reference in body' do
+          let(:body) { 'no reference here' }
+
+          it 'does not have content disposition inline' do
+            expect(mail.to_s).to include('Content-Disposition: attachment').and not_include('Content-Disposition: inline')
+          end
+        end
+
+        context 'when reference in body' do
+          let(:body) { %(somebody with some text <img src="cid:#{Store.find_by(filename: 'super-seven.jpg').preferences['Content-ID']}">) }
+
+          it 'does have content disposition inline' do
+            expect(mail.to_s).to include('Content-Disposition: inline').and not_include('Content-Disposition: attachment')
+          end
+
+          context 'when encoded as ISO-8859-1' do
+            let(:body) { super().encode('ISO-8859-1') }
+
+            it 'does not raise exception' do
+              expect { mail.to_s }.not_to raise_error
+            end
+          end
+        end
+      end
     end
 
     describe 'inline image handling' do
@@ -993,34 +1148,100 @@ RSpec.describe Channel::EmailParser, type: :model do
     end
 
     describe 'ServiceNow handling' do
-      context 'when emails with service now reference are sent' do
+
+      context 'new Ticket' do
         let(:mail_file) { Rails.root.join('test/data/mail/mail089.box') }
-        let(:mail_file_answer) { Rails.root.join('test/data/mail/mail090.box') }
-        let(:raw_mail_answer)  { File.read(mail_file_answer) }
 
-        it 'does create a ticket with external sync reference' do
-          expect { described_class.new.process({}, raw_mail) }
-            .to change(Ticket, :count).by(1)
-            .and change(Ticket::Article, :count).by(1)
-            .and change(ExternalSync, :count).by(1)
+        it 'creates an ExternalSync reference' do
+          described_class.new.process({}, raw_mail)
 
-          expect(ExternalSync.last.source).to eq('ServiceNow')
-          expect(ExternalSync.last.source_id).to eq('INC678439')
-          expect(ExternalSync.last.object).to eq('Ticket')
-          expect(ExternalSync.last.o_id).to eq(Ticket.last.id)
-          expect(Ticket.last.articles.last.subject).to eq('Incident INC678439 -- zugewiesen an EXT-XXXINIS')
+          expect(ExternalSync.last).to have_attributes(
+            source:    'ServiceNow-example@service-now.com',
+            source_id: 'INC678439',
+            object:    'Ticket',
+            o_id:      Ticket.last.id,
+          )
+        end
+      end
 
-          expect { described_class.new.process({}, raw_mail_answer) }
-            .to change(Ticket, :count).by(0)
-            .and change(Ticket::Article, :count).by(1)
-            .and change(ExternalSync, :count).by(0)
+      context 'follow up' do
 
-          expect(Ticket.last.articles.last.subject).to eq('Incident INC678439 -- Arbeitsnotizen beigefügt')
+        let(:mail_file) { Rails.root.join('test/data/mail/mail090.box') }
+        let(:ticket) { create(:ticket) }
+        let!(:external_sync) do
+          create(:external_sync,
+                 source:    'ServiceNow-example@service-now.com',
+                 source_id: 'INC678439',
+                 object:    'Ticket',
+                 o_id:      ticket.id,)
+        end
+
+        it 'adds Article to existing Ticket' do
+          expect { described_class.new.process({}, raw_mail) }.to change { ticket.reload.articles.count }
+        end
+
+        context 'key insensitive sender address' do
+
+          let(:raw_mail) { super().gsub('example@service-now.com', 'Example@Service-Now.com') }
+
+          it 'adds Article to existing Ticket' do
+            expect { described_class.new.process({}, raw_mail) }.to change { ticket.reload.articles.count }
+          end
+        end
+      end
+    end
+
+    describe 'Jira handling' do
+
+      context 'new Ticket' do
+        let(:mail_file) { Rails.root.join('test/data/mail/mail103.box') }
+
+        it 'creates an ExternalSync reference' do
+          described_class.new.process({}, raw_mail)
+
+          expect(ExternalSync.last).to have_attributes(
+            source:    'Jira-example@jira.com',
+            source_id: 'SYS-422',
+            object:    'Ticket',
+            o_id:      Ticket.last.id,
+          )
+        end
+      end
+
+      context 'follow up' do
+
+        let(:mail_file) { Rails.root.join('test/data/mail/mail104.box') }
+        let(:ticket) { create(:ticket) }
+        let!(:external_sync) do
+          create(:external_sync,
+                 source:    'Jira-example@jira.com',
+                 source_id: 'SYS-422',
+                 object:    'Ticket',
+                 o_id:      ticket.id,)
+        end
+
+        it 'adds Article to existing Ticket' do
+          expect { described_class.new.process({}, raw_mail) }.to change { ticket.reload.articles.count }
+        end
+
+        context 'key insensitive sender address' do
+
+          let(:raw_mail) { super().gsub('example@service-now.com', 'Example@Service-Now.com') }
+
+          it 'adds Article to existing Ticket' do
+            expect { described_class.new.process({}, raw_mail) }.to change { ticket.reload.articles.count }
+          end
         end
       end
     end
 
     describe 'XSS protection' do
+
+      before do
+        # XSS processing may run into a timeout on slow CI systems, so turn the timeout off for the test.
+        stub_const("#{HtmlSanitizer}::PROCESSING_TIMEOUT", nil)
+      end
+
       let(:article) { described_class.new.process({}, raw_mail).second }
 
       let(:raw_mail) { <<~RAW.chomp }
@@ -1037,7 +1258,7 @@ RSpec.describe Channel::EmailParser, type: :model do
         let(:content_type) { 'text/html' }
 
         it 'removes injected <script> tags from body' do
-          expect(article.body).to eq("no HTML alert('XSS')")
+          expect(article.body).to eq('no HTML')
         end
       end
 
@@ -1055,7 +1276,7 @@ RSpec.describe Channel::EmailParser, type: :model do
     context 'for “delivery failed” notifications (a.k.a. bounce messages)' do
       let(:ticket) { article.ticket }
       let(:article) { create(:ticket_article, sender_name: 'Agent', message_id: message_id) }
-      let(:message_id) { raw_mail[/(?<=^(References|Message-ID): )\S*/] }
+      let(:message_id) { raw_mail[%r{(?<=^(References|Message-ID): )\S*}] }
 
       context 'with future retries (delayed)' do
         let(:mail_file) { Rails.root.join('test/data/mail/mail078.box') }
@@ -1156,7 +1377,7 @@ RSpec.describe Channel::EmailParser, type: :model do
       it 'applies the OutOfOfficeCheck filter to given message' do
         expect(Channel::Filter::OutOfOfficeCheck)
           .to receive(:run)
-          .with(kind_of(Hash), hash_including(subject: subject_line))
+          .with(kind_of(Hash), hash_including(subject: subject_line), kind_of(Hash))
 
         described_class.new.process({}, raw_mail)
       end
@@ -1195,7 +1416,7 @@ RSpec.describe Channel::EmailParser, type: :model do
 
     describe 'suppressing normal Ticket::Article callbacks' do
       context 'from sender: "Agent"' do
-        let(:agent) { create(:agent_user) }
+        let(:agent) { create(:agent) }
 
         it 'does not dispatch an email on article creation' do
           expect(TicketArticleCommunicateEmailJob).not_to receive(:perform_later)
@@ -1243,7 +1464,7 @@ RSpec.describe Channel::EmailParser, type: :model do
 
             Postmaster of zammad.example.com
           BODY
-          body.gsub(/\n/, "\r\n")
+          body.gsub(%r{\n}, "\r\n")
         end
       end
     end
@@ -1266,8 +1487,65 @@ RSpec.describe Channel::EmailParser, type: :model do
 
             Postmaster von zammad.example.com
           BODY
-          body.gsub(/\n/, "\r\n")
+          body.gsub(%r{\n}, "\r\n")
         end
+      end
+    end
+  end
+
+  describe '#mail_to_group' do
+
+    context 'when EmailAddress exists' do
+
+      context 'when gives address matches exactly' do
+
+        let(:group) { create(:group) }
+        let(:channel) { create(:email_channel, group: group) }
+        let!(:email_address) { create(:email_address, channel: channel) }
+
+        it 'returns the Channel Group' do
+          expect(described_class.mail_to_group(email_address.email)).to eq(group)
+        end
+      end
+
+      context 'when gives address matches key insensitive' do
+
+        let(:group) { create(:group) }
+        let(:channel) { create(:email_channel, group: group) }
+        let(:address) { 'KeyInsensitive@example.COM' }
+        let!(:email_address) { create(:email_address, email: address, channel: channel) }
+
+        it 'returns the Channel Group' do
+          expect(described_class.mail_to_group(address)).to eq(group)
+        end
+      end
+
+      context 'when no Channel is assigned' do
+
+        let!(:email_address) { create(:email_address, channel: nil) }
+
+        it 'returns nil' do
+          expect(described_class.mail_to_group(email_address.email)).to be_nil
+        end
+      end
+
+      context 'when Channel has no Group assigned' do
+
+        let(:channel) { create(:email_channel, group: nil) }
+        let!(:email_address) { create(:email_address, channel: channel) }
+
+        it 'returns nil' do
+          expect(described_class.mail_to_group(email_address.email)).to be_nil
+        end
+      end
+    end
+
+    context 'when given address is not parse-able' do
+
+      let(:address) { 'this_is_not_a_valid_email_address' }
+
+      it 'returns nil' do
+        expect(described_class.mail_to_group(address)).to be_nil
       end
     end
   end

@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sequencer
   class Unit
     module Import
@@ -41,27 +43,32 @@ class Sequencer
             def resource_iteration(&block)
               resource_collection.public_send(resource_iteration_method, &block)
             rescue ZendeskAPI::Error::NetworkError => e
+              return if expected_exception?(e)
+              raise if !retry_exception?(e)
+              raise if (fail_count ||= 1) > 10
+
+              logger.error e
+              logger.info "Sleeping 10 seconds after ZendeskAPI::Error::NetworkError and retry (##{fail_count}/10)."
+              sleep 10
+
+              fail_count += 1
+              retry
+            end
+
+            # #2262 Zendesk-Import fails for User & Organizations when 403 "access" denied
+            def expected_exception?(e)
               status = e.response.status.to_s
+              return false if status != '403'
 
-              if status.match?(/^(4|5)\d\d$/)
+              %w[UserField OrganizationField].include?(resource_klass)
+            end
 
-                # #2262 Zendesk-Import fails for User & Organizations when 403 "access" denied
-                return if status == '403' && resource_klass.in?(%w[UserField OrganizationField])
-
-                raise if (fail_count ||= 1) > 10
-
-                logger.error e
-                logger.info "Sleeping 10 seconds after ZendeskAPI::Error::NetworkError and retry (##{fail_count}/10)."
-                sleep 10
-
-                (fail_count += 1) && retry
-              end
-
-              raise
+            def retry_exception?(e)
+              !(200..399).cover? e&.response&.status
             end
 
             def resource_collection
-              collection_provider.public_send(resource_collection_attribute)
+              @resource_collection ||= collection_provider.public_send(resource_collection_attribute)
             end
 
             def resource_iteration_method

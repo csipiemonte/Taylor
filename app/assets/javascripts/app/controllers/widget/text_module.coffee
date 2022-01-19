@@ -19,7 +19,7 @@ class App.WidgetTextModule extends App.Controller
 
     @subscribeId = App.TextModule.subscribe(@update, initFetch: true)
 
-    @bind('TextModulePreconditionUpdate', (data) =>
+    @controllerBind('TextModulePreconditionUpdate', (data) =>
       return if data.taskKey isnt @taskKey
       @searchCondition = data.params
       @update()
@@ -55,5 +55,7 @@ class App.WidgetTextModule extends App.Controller
     # set new data
     if @bindElements[0]
       for element in @bindElements
-        if $(element).data().plugin_textmodule
-          $(element).data().plugin_textmodule.collection = @all
+        continue if !$(element).data().plugin_textmodule
+
+        $(element).data().plugin_textmodule.searchCondition = @searchCondition
+        $(element).data().plugin_textmodule.collection      = @all

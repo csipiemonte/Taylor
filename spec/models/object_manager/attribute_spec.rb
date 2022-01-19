@@ -1,58 +1,49 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe ObjectManager::Attribute, type: :model do
 
-  let(:user_attribute_permissions) do
-    create(:user, roles: [role_attribute_permissions])
-  end
-
-  let(:role_attribute_permissions) do
-    create(:role).tap do |role|
-      role.permission_grant('admin.organization')
-      role.permission_grant('ticket.agent')
-    end
-  end
-
   describe 'callbacks' do
     context 'for setting default values on local data options' do
-      let(:subject) { described_class.new }
+      subject(:attr) { described_class.new }
 
       context ':null' do
         it 'sets nil values to true' do
-          expect { subject.validate }
-            .to change { subject.data_option[:null] }.to(true)
+          expect { attr.validate }
+            .to change { attr.data_option[:null] }.to(true)
         end
 
         it 'does not overwrite false values' do
-          subject.data_option[:null] = false
+          attr.data_option[:null] = false
 
-          expect { subject.validate }
-            .not_to change { subject.data_option[:null] }
+          expect { attr.validate }
+            .not_to change { attr.data_option[:null] }
         end
       end
 
       context ':maxlength' do
         context 'for data_type: select / tree_select / checkbox' do
-          let(:subject) { described_class.new(data_type: 'select') }
+          subject(:attr) { described_class.new(data_type: 'select') }
 
           it 'sets nil values to 255' do
-            expect { subject.validate }
-              .to change { subject.data_option[:maxlength] }.to(255)
+            expect { attr.validate }
+              .to change { attr.data_option[:maxlength] }.to(255)
           end
         end
       end
 
       context ':nulloption' do
         context 'for data_type: select / tree_select / checkbox' do
-          let(:subject) { described_class.new(data_type: 'select') }
+          subject(:attr) { described_class.new(data_type: 'select') }
 
           it 'sets nil values to true' do
-            expect { subject.validate }
-              .to change { subject.data_option[:nulloption] }.to(true)
+            expect { attr.validate }
+              .to change { attr.data_option[:nulloption] }.to(true)
           end
 
           it 'does not overwrite false values' do
-            subject.data_option[:nulloption] = false
+            attr.data_option[:nulloption] = false
 
             expect { subject.validate }
               .not_to change { subject.data_option[:nulloption] }
@@ -73,7 +64,7 @@ RSpec.describe ObjectManager::Attribute, type: :model do
       it "rejects Zammad reserved word '#{reserved_word}'" do
         expect do
           described_class.add attributes_for :object_manager_attribute_text, name: reserved_word
-        end.to raise_error(ActiveRecord::RecordInvalid, /is a reserved word! \(1\)/)
+        end.to raise_error(ActiveRecord::RecordInvalid, %r{is a reserved word! \(1\)})
       end
     end
 
@@ -82,6 +73,22 @@ RSpec.describe ObjectManager::Attribute, type: :model do
         expect do
           described_class.add attributes_for :object_manager_attribute_text, name: reserved_word
         end.to raise_error(ActiveRecord::RecordInvalid, "Validation failed: Name can't get used because *_id and *_ids are not allowed")
+      end
+    end
+
+    %w[title tags number].each do |not_editable_attribute|
+      it "rejects '#{not_editable_attribute}' which is used" do
+        expect do
+          described_class.add attributes_for :object_manager_attribute_text, name: not_editable_attribute
+        end.to raise_error(ActiveRecord::RecordInvalid, 'Validation failed: Name Attribute not editable!')
+      end
+    end
+
+    %w[priority state note].each do |existing_attribute|
+      it "rejects '#{existing_attribute}' which is used" do
+        expect do
+          described_class.add attributes_for :object_manager_attribute_text, name: existing_attribute
+        end.to raise_error(ActiveRecord::RecordInvalid, "Validation failed: Name #{existing_attribute} already exists!")
       end
     end
 
@@ -119,35 +126,42 @@ RSpec.describe ObjectManager::Attribute, type: :model do
     end
   end
 
-  describe 'attribute permissions', db_strategy: :reset do
-    it 'merges attribute permissions' do
-      create(:object_manager_attribute_text, screens: { create: { 'admin.organization': { shown: true }, 'ticket.agent': { shown: false } } }, name: 'test_permissions')
+  describe 'validate that referenced attributes are not set as inactive' do
+    subject(:attr) { create(:object_manager_attribute_text) }
 
-      migration = described_class.migration_execute
-      expect(migration).to be true
+    before do
+      allow(described_class)
+        .to receive(:attribute_used_by_references?)
+        .with(attr.object_lookup.name, attr.name)
+        .and_return(is_referenced)
 
-      attribute = described_class.by_object('Ticket', user_attribute_permissions).detect { |attr| attr[:name] == 'test_permissions' }
-      expect(attribute[:screen]['create']['shown']).to be true
+      attr.active = active
     end
 
-    it 'overwrites permissions if all get set' do
-      create(:object_manager_attribute_text, screens: { create: { '-all-': { shown: true }, 'admin.organization': { shown: false }, 'ticket.agent': { shown: false } } }, name: 'test_permissions_all')
+    context 'when is used and changing to inactive' do
+      let(:active)        { false }
+      let(:is_referenced) { true }
 
-      migration = described_class.migration_execute
-      expect(migration).to be true
+      it { is_expected.not_to be_valid }
 
-      attribute = described_class.by_object('Ticket', user_attribute_permissions).detect { |attr| attr[:name] == 'test_permissions_all' }
-      expect(attribute[:screen]['create']['shown']).to be true
+      it do
+        attr.valid?
+        expect(attr.errors).not_to be_blank
+      end
     end
 
-    it 'is able to handle other values than true or false' do
-      create(:object_manager_attribute_text, screens: { create: { '-all-': { shown: true, item_class: 'column' }, 'admin.organization': { shown: false }, 'ticket.agent': { shown: false } } }, name: 'test_permissions_item')
+    context 'when is not used and changing to inactive' do
+      let(:active)        { false }
+      let(:is_referenced) { false }
 
-      migration = described_class.migration_execute
-      expect(migration).to be true
+      it { is_expected.to be_valid }
+    end
 
-      attribute = described_class.by_object('Ticket', user_attribute_permissions).detect { |attr| attr[:name] == 'test_permissions_item' }
-      expect(attribute[:screen]['create']['item_class']).to eq('column')
+    context 'when is used and staying active and chan' do
+      let(:active)        { true }
+      let(:is_referenced) { true }
+
+      it { is_expected.to be_valid }
     end
   end
 end

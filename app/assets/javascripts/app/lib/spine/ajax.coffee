@@ -239,11 +239,13 @@ class Singleton extends Base
         when 'DELETE' then @destroyFailed()
       # add errors to calllback
       @record.trigger('ajaxError', @record, xhr, statusText, error, settings)
+
       #options.fail?.call(@record, settings)
       detailsRaw = xhr.responseText
       if !_.isEmpty(detailsRaw)
         details = JSON.parse(detailsRaw)
       options.fail?.call(@record, settings, details)
+
       @record.trigger('destroy', @record)
       # /add errors to calllback
 

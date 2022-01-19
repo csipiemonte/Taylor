@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class WebsocketServer
 
   cattr_reader :clients, :options
@@ -8,7 +10,7 @@ class WebsocketServer
 
     Rails.configuration.interface = 'websocket'
     EventMachine.run do
-      EventMachine::WebSocket.start( host: @options[:b], port: @options[:p], secure: @options[:s], tls_options: @options[:tls_options] ) do |ws|
+      EventMachine::WebSocket.start(host: @options[:b], port: @options[:p], secure: @options[:s], tls_options: @options[:tls_options]) do |ws|
 
         # register client connection
         ws.onopen do |handshake|
@@ -49,8 +51,8 @@ class WebsocketServer
   def self.onopen(websocket, handshake)
     headers = handshake.headers
     client_id = websocket.object_id.to_s
-    log 'notice', 'Client connected.', client_id
-    Sessions.create( client_id, {}, { type: 'websocket' } )
+    log 'info', 'Client connected.', client_id
+    Sessions.create(client_id, {}, { type: 'websocket' })
 
     return if @clients.include? client_id
 
@@ -64,7 +66,7 @@ class WebsocketServer
 
   def self.onclose(websocket)
     client_id = websocket.object_id.to_s
-    log 'notice', 'Client disconnected.', client_id
+    log 'info', 'Client disconnected.', client_id
 
     # removed from current client list
     if @clients.include? client_id
@@ -112,13 +114,15 @@ class WebsocketServer
     else
       log 'error', "unknown message '#{data.inspect}'", client_id
     end
+  ensure
+    ActiveSupport::CurrentAttributes.clear_all
   end
 
   def self.websocket_send(client_id, data)
-    msg = if data.class != Array
-            "[#{data.to_json}]"
-          else
+    msg = if data.instance_of?(Array)
             data.to_json
+          else
+            "[#{data.to_json}]"
           end
     log 'debug', "send #{msg}", client_id
     if !@clients[client_id]
@@ -129,16 +133,16 @@ class WebsocketServer
   end
 
   def self.check_unused_connections
-    log 'notice', 'check unused idle connections...'
+    log 'info', 'check unused idle connections...'
 
     idle_time_in_sec = 4 * 60
 
     # close unused web socket sessions
     @clients.each do |client_id, client|
 
-      next if ( client[:last_ping].to_i + idle_time_in_sec ) >= Time.now.utc.to_i
+      next if (client[:last_ping].to_i + idle_time_in_sec) >= Time.now.utc.to_i
 
-      log 'notice', 'closing idle websocket connection', client_id
+      log 'info', 'closing idle websocket connection', client_id
 
       # remember to not use this connection anymore
       client[:disconnect] = true
@@ -154,14 +158,14 @@ class WebsocketServer
     # close unused ajax long polling sessions
     clients = Sessions.destroy_idle_sessions(idle_time_in_sec)
     clients.each do |client_id|
-      log 'notice', 'closing idle long polling connection', client_id
+      log 'info', 'closing idle long polling connection', client_id
     end
   end
 
   def self.send_to_client
     return if @clients.size.zero?
 
-    #log 'debug', 'checking for data to send...'
+    # log 'debug', 'checking for data to send...'
     @clients.each do |client_id, client|
       next if client[:disconnect]
 
@@ -170,17 +174,15 @@ class WebsocketServer
         queue = Sessions.queue(client_id)
         next if queue.blank?
 
-        log 'notice', 'send data to client', client_id
+        log 'info', 'send data to client', client_id
         websocket_send(client_id, queue)
       rescue => e
-        log 'error', 'problem:' + e.inspect, client_id
+        log 'error', "problem:#{e.inspect}", client_id
 
         # disconnect client
         client[:error_count] += 1
-        if client[:error_count] > 20
-          if @clients.include? client_id
-            @clients.delete client_id
-          end
+        if client[:error_count] > 20 && @clients.include?(client_id)
+          @clients.delete client_id
         end
       end
     end
@@ -188,9 +190,9 @@ class WebsocketServer
 
   def self.log_status
     # websocket
-    log 'notice', "Status: websocket clients: #{@clients.size}"
+    log 'info', "Status: websocket clients: #{@clients.size}"
     @clients.each_key do |client_id|
-      log 'notice', 'working...', client_id
+      log 'info', 'working...', client_id
     end
 
     # ajax
@@ -199,21 +201,20 @@ class WebsocketServer
     client_list.each_value do |client|
       next if client[:meta][:type] == 'websocket'
 
-      clients = clients + 1
+      clients += 1
     end
-    log 'notice', "Status: ajax clients: #{clients}"
+    log 'info', "Status: ajax clients: #{clients}"
     client_list.each do |client_id, client|
       next if client[:meta][:type] == 'websocket'
 
-      log 'notice', 'working...', client_id
+      log 'info', 'working...', client_id
     end
   end
 
   def self.log(level, data, client_id = '-')
-    if !@options[:v]
-      return if level == 'debug'
-    end
+    return if !@options[:v] && level == 'debug'
+
     puts "#{Time.now.utc.iso8601}:client(#{client_id}) #{data}" # rubocop:disable Rails/Output
-    #puts "#{Time.now.utc.iso8601}:#{ level }:client(#{ client_id }) #{ data }"
+    # puts "#{Time.now.utc.iso8601}:#{ level }:client(#{ client_id }) #{ data }"
   end
 end

@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module KnowledgeBasePublicMatchers
   module HaveBreadcrumb
     extend RSpec::Matchers::DSL
@@ -6,7 +8,7 @@ module KnowledgeBasePublicMatchers
       match { breadcrumb_found? && of_specified_length? }
 
       chain(:with, :length)
-      chain(:items) {}
+      chain(:items) { nil }
 
       description do
         if @length.present?

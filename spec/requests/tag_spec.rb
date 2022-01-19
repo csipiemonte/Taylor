@@ -1,10 +1,12 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe Tag, type: :request do
 
   describe 'request handling' do
 
-    let(:agent) { create(:agent_user) }
+    let(:agent) { create(:agent) }
 
     context 'tag search' do
       before do
@@ -23,18 +25,18 @@ RSpec.describe Tag, type: :request do
       let(:foobar_tag) { tags.first }
 
       shared_examples 'foobar tag found using' do |search_term:|
-        it "found  1  tag  using search term '#{search_term}'" do
+        it "found 1 tag using search term '#{search_term}'" do
           get '/api/v1/tag_search', params: { term: search_term }
           expect(response).to have_http_status(:ok)
-          expect(json_response).to contain_exactly( 'id' => foobar_tag.id, 'value' => foobar_tag.name )
+          expect(json_response).to contain_exactly('id' => foobar_tag.id, 'value' => foobar_tag.name)
         end
       end
 
       shared_examples 'no tag found using' do |search_term:|
-        it "found  0  tags using search term '#{search_term}'" do
+        it "found 0 tags using search term '#{search_term}'" do
           get '/api/v1/tag_search', params: { term: search_term }
           expect(response).to have_http_status(:ok)
-          expect(json_response).to contain_exactly()
+          expect(json_response).to contain_exactly
         end
       end
 

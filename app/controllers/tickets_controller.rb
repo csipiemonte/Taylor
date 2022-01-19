@@ -1,30 +1,23 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class TicketsController < ApplicationController
   include CreatesTicketArticles
   include ClonesTicketArticleAttachments
   include ChecksUserAttributesByCurrentUserPermission
   include TicketStats
+  include CanPaginate
 
   prepend_before_action -> { authorize! }, only: %i[create selector import_example import_start ticket_customer ticket_history ticket_related ticket_recent ticket_merge ticket_split]
   prepend_before_action :authentication_check
 
   # GET /api/v1/tickets
   def index
-    offset = 0
-    per_page = 100
+    paginate_with(max: 100)
 
-    if params[:page] && params[:per_page]
-      offset = (params[:page].to_i - 1) * params[:per_page].to_i
-      per_page = params[:per_page].to_i
-    end
-
-    if per_page > 100
-      per_page = 100
-    end
-
-    access_condition = Ticket.access_condition(current_user, 'read')
-    tickets = Ticket.where(access_condition).order(id: :asc).offset(offset).limit(per_page)
+    tickets = TicketPolicy::ReadScope.new(current_user).resolve
+                                     .order(id: :asc)
+                                     .offset(pagination.offset)
+                                     .limit(pagination.limit)
 
     if response_expand?
       list = []
@@ -80,7 +73,7 @@ class TicketsController < ApplicationController
   # POST /api/v1/tickets
   def create
     customer = {}
-    if params[:customer].class == ActionController::Parameters
+    if params[:customer].instance_of?(ActionController::Parameters)
       customer = params[:customer]
       params.delete(:customer)
     end
@@ -95,8 +88,9 @@ class TicketsController < ApplicationController
       clean_params[:customer_id] = current_user.id
     end
 
-    # try to create customer if needed
-    if clean_params[:customer_id].present? && clean_params[:customer_id] =~ /^guess:(.+?)$/
+    # The parameter :customer_id is 'abused' in cases where it is not an integer, but a string like
+    #   'guess:customers.email@domain.com' which implies that the customer should be looked up.
+    if clean_params[:customer_id].is_a?(String) && clean_params[:customer_id] =~ %r{^guess:(.+?)$}
       email_address = $1
       email_address_validation = EmailAddressValidation.new(email_address)
       if !email_address_validation.valid_format?
@@ -142,7 +136,9 @@ class TicketsController < ApplicationController
     end
 
     clean_params = Ticket.param_cleanup(clean_params, true)
+    clean_params[:screen] = 'create_middle'
     ticket = Ticket.new(clean_params)
+    authorize!(ticket, :create?)
 
     # check if article is given
     if !params[:article]
@@ -156,9 +152,17 @@ class TicketsController < ApplicationController
 
       # create tags if given
       if params[:tags].present?
-        tags = params[:tags].split(/,/)
+        tags = params[:tags].split(',')
         tags.each do |tag|
           ticket.tag_add(tag)
+        end
+      end
+
+      # create mentions if given
+      if params[:mentions].present?
+        authorize!(Mention.new, :create?)
+        Array(params[:mentions]).each do |user_id|
+          Mention.where(mentionable: ticket, user_id: user_id).first_or_create(mentionable: ticket, user_id: user_id)
         end
       end
 
@@ -229,6 +233,7 @@ class TicketsController < ApplicationController
 
     # only apply preferences changes (keep not updated keys/values)
     clean_params = ticket.param_preferences_merge(clean_params)
+    clean_params[:screen] = 'edit'
 
     # disable changes on ticket number
     clean_params.delete('number')
@@ -242,7 +247,7 @@ class TicketsController < ApplicationController
 
     ticket.with_lock do
       ticket.update!(clean_params)
-      if params[:article]
+      if params[:article].present?
         article_create(ticket, params[:article])
       end
     end
@@ -307,36 +312,26 @@ class TicketsController < ApplicationController
     ticket = Ticket.find(params[:ticket_id])
     assets = ticket.assets({})
 
-    # open tickets by customer
-    access_condition = Ticket.access_condition(current_user, 'read')
-
-    ticket_lists = Ticket
-                   .where(
-                     customer_id: ticket.customer_id,
-                     state_id:    Ticket::State.by_category(:open).pluck(:id),
-                   )
-                   .where(access_condition)
-                   .where('id != ?', [ ticket.id ])
-                   .order(created_at: :desc)
-                   .limit(6)
+    tickets = TicketPolicy::ReadScope.new(current_user).resolve
+                                     .where(
+                                       customer_id: ticket.customer_id,
+                                       state_id:    Ticket::State.by_category(:open).select(:id),
+                                     )
+                                     .where.not(id: ticket.id)
+                                     .order(created_at: :desc)
+                                     .limit(6)
 
     # if we do not have open related tickets, search for any tickets
-    if ticket_lists.blank?
-      ticket_lists = Ticket
-                     .where(
-                       customer_id: ticket.customer_id,
-                     ).where.not(
-                       state_id: Ticket::State.by_category(:merged).pluck(:id),
-                     )
-                     .where(access_condition)
-                     .where('id != ?', [ ticket.id ])
-                     .order(created_at: :desc)
-                     .limit(6)
-    end
+    tickets ||= TicketPolicy::ReadScope.new(current_user).resolve
+                                       .where(customer_id: ticket.customer_id)
+                                       .where.not(state_id: Ticket::State.by_category(:merged).pluck(:id))
+                                       .where.not(id: ticket.id)
+                                       .order(created_at: :desc)
+                                       .limit(6)
 
     # get related assets
     ticket_ids_by_customer = []
-    ticket_lists.each do |ticket_list|
+    tickets.each do |ticket_list|
       ticket_ids_by_customer.push ticket_list.id
       assets = ticket_list.assets(assets)
     end
@@ -372,42 +367,42 @@ class TicketsController < ApplicationController
     }
   end
 
-  # GET /api/v1/ticket_merge/1/1
+  # PUT /api/v1/ticket_merge/1/1
   def ticket_merge
 
-    # check master ticket
-    ticket_master = Ticket.find_by(number: params[:master_ticket_number])
-    if !ticket_master
+    # check target ticket
+    target_ticket = Ticket.find_by(number: params[:target_ticket_number])
+    if !target_ticket
       render json: {
         result:  'failed',
-        message: 'No such master ticket number!',
+        message: 'No such target ticket number!',
       }
       return
     end
-    authorize!(ticket_master, :update?)
+    authorize!(target_ticket, :update?)
 
-    # check slave ticket
-    ticket_slave = Ticket.find_by(id: params[:slave_ticket_id])
-    if !ticket_slave
+    # check source ticket
+    source_ticket = Ticket.find_by(id: params[:source_ticket_id])
+    if !source_ticket
       render json: {
         result:  'failed',
-        message: 'No such slave ticket!',
+        message: 'No such source ticket!',
       }
       return
     end
-    authorize!(ticket_slave, :update?)
+    authorize!(source_ticket, :update?)
 
     # merge ticket
-    ticket_slave.merge_to(
-      ticket_id:     ticket_master.id,
+    source_ticket.merge_to(
+      ticket_id:     target_ticket.id,
       created_by_id: current_user.id,
     )
 
     # return result
     render json: {
       result:        'success',
-      master_ticket: ticket_master.attributes,
-      slave_ticket:  ticket_slave.attributes,
+      target_ticket: target_ticket.attributes,
+      source_ticket: source_ticket.attributes,
     }
   end
 
@@ -432,6 +427,8 @@ class TicketsController < ApplicationController
 
     # get attributes to update
     attributes_to_change = Ticket::ScreenOptions.attributes_to_change(
+      view:         'ticket_create',
+      screen:       'create_middle',
       current_user: current_user,
     )
     render json: attributes_to_change
@@ -445,14 +442,7 @@ class TicketsController < ApplicationController
       params.require(:condition).permit!
     end
 
-    per_page = params[:per_page] || params[:limit] || 50
-    per_page = per_page.to_i
-    if per_page > 200
-      per_page = 200
-    end
-    page = params[:page] || 1
-    page = page.to_i
-    offset = (page - 1) * per_page
+    paginate_with(max: 200, default: 50)
 
     query = params[:query]
     if query.respond_to?(:permit!)
@@ -463,8 +453,8 @@ class TicketsController < ApplicationController
     tickets = Ticket.search(
       query:        query,
       condition:    params[:condition].to_h,
-      limit:        per_page,
-      offset:       offset,
+      limit:        pagination.limit,
+      offset:       pagination.offset,
       order_by:     params[:order_by],
       sort_by:      params[:sort_by],
       current_user: current_user,
@@ -523,7 +513,6 @@ class TicketsController < ApplicationController
     # lookup open user tickets
     limit            = 100
     assets           = {}
-    access_condition = Ticket.access_condition(current_user, 'read')
 
     user_tickets = {}
     if params[:user_id]
@@ -562,7 +551,7 @@ class TicketsController < ApplicationController
       condition = {
         'tickets.customer_id' => user.id,
       }
-      user_tickets[:volume_by_year] = ticket_stats_last_year(condition, access_condition)
+      user_tickets[:volume_by_year] = ticket_stats_last_year(condition)
 
     end
 
@@ -604,7 +593,7 @@ class TicketsController < ApplicationController
       condition = {
         'tickets.organization_id' => organization.id,
       }
-      org_tickets[:volume_by_year] = ticket_stats_last_year(condition, access_condition)
+      org_tickets[:volume_by_year] = ticket_stats_last_year(condition)
     end
 
     # return result
@@ -650,7 +639,7 @@ class TicketsController < ApplicationController
   # @example          curl -u 'me@example.com:test' http://localhost:3000/api/v1/tickets/import_example
   #
   # @response_message 200 File download.
-  # @response_message 401 Invalid session.
+  # @response_message 403 Forbidden / Invalid session.
   def import_example
     csv_string = Ticket.csv_example(
       col_sep: ',',
@@ -672,7 +661,7 @@ class TicketsController < ApplicationController
   # @example          curl -u 'me@example.com:test' -F 'file=@/path/to/file/tickets.csv' 'https://your.zammad/api/v1/tickets/import'
   #
   # @response_message 201 Import started.
-  # @response_message 401 Invalid session.
+  # @response_message 403 Forbidden / Invalid session.
   def import_start
     if Setting.get('import_mode') != true
       raise 'Only can import tickets if system is in import mode.'
@@ -701,7 +690,8 @@ class TicketsController < ApplicationController
     # get attributes to update
     attributes_to_change = Ticket::ScreenOptions.attributes_to_change(
       current_user: current_user,
-      ticket:       ticket
+      ticket:       ticket,
+      screen:       'edit',
     )
 
     # get related users
@@ -721,12 +711,19 @@ class TicketsController < ApplicationController
     links = Link.list(
       link_object:       'Ticket',
       link_object_value: ticket.id,
+      user:              current_user,
     )
 
     assets = Link.reduce_assets(assets, links)
 
     # get tags
     tags = ticket.tag_list
+
+    # get mentions
+    mentions = Mention.where(mentionable: ticket).order(created_at: :desc)
+    mentions.each do |mention|
+      assets = mention.assets(assets)
+    end
 
     # return result
     {
@@ -735,6 +732,7 @@ class TicketsController < ApplicationController
       assets:             assets,
       links:              links,
       tags:               tags,
+      mentions:           mentions.pluck(:id),
       form_meta:          attributes_to_change[:form_meta],
     }
   end

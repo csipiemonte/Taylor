@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sequencer
   class Sequence
     module Import
@@ -8,8 +10,9 @@ class Sequencer
             [
               'Common::ModelClass::Ticket',
               'Import::Zendesk::TicketField::CheckCustom',
+              'Import::Zendesk::ObjectAttribute::SanitizedType',
               'Import::Zendesk::TicketField::SanitizedName',
-              'Import::Zendesk::TicketField::Add',
+              'Import::Zendesk::ObjectAttribute::Add',
             ]
           end
         end

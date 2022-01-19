@@ -1,8 +1,10 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class OrganizationsController < ApplicationController
   prepend_before_action -> { authorize! }, except: %i[index show]
   prepend_before_action { authentication_check }
+
+  include CanPaginate
 
 =begin
 
@@ -48,48 +50,7 @@ curl http://localhost/api/v1/organizations -v -u #{login}:#{password}
 =end
 
   def index
-    offset = 0
-    per_page = 500
-
-    if params[:page] && params[:per_page]
-      offset = (params[:page].to_i - 1) * params[:per_page].to_i
-      per_page = params[:per_page].to_i
-    end
-
-    if per_page > 500
-      per_page = 500
-    end
-
-    organizations = policy_scope(Organization).order(id: :asc).offset(offset).limit(per_page)
-
-    if response_expand?
-      list = []
-      organizations.each do |organization|
-        list.push organization.attributes_with_association_names
-      end
-      render json: list, status: :ok
-      return
-    end
-
-    if response_full?
-      assets = {}
-      item_ids = []
-      organizations.each do |item|
-        item_ids.push item.id
-        assets = item.assets(assets)
-      end
-      render json: {
-        record_ids: item_ids,
-        assets:     assets,
-      }, status: :ok
-      return
-    end
-
-    list = []
-    organizations.each do |organization|
-      list.push organization.attributes_with_association_ids
-    end
-    render json: list
+    model_index_render(policy_scope(Organization), params)
   end
 
 =begin
@@ -217,23 +178,14 @@ curl http://localhost/api/v1/organization/{id} -v -u #{login}:#{password} -H "Co
 
   # GET /api/v1/organizations/search
   def search
-    per_page = params[:per_page] || params[:limit] || 100
-    per_page = per_page.to_i
-    if per_page > 500
-      per_page = 500
-    end
-    page = params[:page] || 1
-    page = page.to_i
-    offset = (page - 1) * per_page
-
     query = params[:query]
     if query.respond_to?(:permit!)
       query = query.permit!.to_h
     end
     query_params = {
       query:        query,
-      limit:        per_page,
-      offset:       offset,
+      limit:        pagination.limit,
+      offset:       pagination.offset,
       sort_by:      params[:sort_by],
       order_by:     params[:order_by],
       current_user: current_user,
@@ -306,7 +258,7 @@ curl http://localhost/api/v1/organization/{id} -v -u #{login}:#{password} -H "Co
   # @example          curl -u 'me@example.com:test' http://localhost:3000/api/v1/organizations/import_example
   #
   # @response_message 200 File download.
-  # @response_message 401 Invalid session.
+  # @response_message 403 Forbidden / Invalid session.
   def import_example
     send_data(
       Organization.csv_example,
@@ -324,7 +276,7 @@ curl http://localhost/api/v1/organization/{id} -v -u #{login}:#{password} -H "Co
   # @example          curl -u 'me@example.com:test' -F 'file=@/path/to/file/organizations.csv' 'https://your.zammad/api/v1/organizations/import'
   #
   # @response_message 201 Import started.
-  # @response_message 401 Invalid session.
+  # @response_message 403 Forbidden / Invalid session.
   def import_start
     string = params[:data]
     if string.blank? && params[:file].present?

@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Ticket::Article < ApplicationModel
   include CanBeImported
   include HasActivityStreamLog
@@ -7,9 +8,23 @@ class Ticket::Article < ApplicationModel
   include ChecksHtmlSanitized
   include CanCsvImport
   include CanCloneAttachments
-  include HasObjectManagerAttributesValidation
+  include HasObjectManagerAttributes
 
   include Ticket::Article::Assets
+  include Ticket::Article::EnqueueCommunicateEmailJob
+  include Ticket::Article::EnqueueCommunicateFacebookJob
+  include Ticket::Article::EnqueueCommunicateSmsJob
+  include Ticket::Article::EnqueueCommunicateTelegramJob
+  include Ticket::Article::EnqueueCommunicateTwitterJob
+  include Ticket::Article::HasTicketContactAttributesImpact
+  include Ticket::Article::ResetsTicketState
+
+  # AddsMetadataGeneral depends on AddsMetadataOriginById, so load that first
+  include Ticket::Article::AddsMetadataOriginById
+  include Ticket::Article::AddsMetadataGeneral
+  include Ticket::Article::AddsMetadataEmail
+
+  include HasTransactionDispatcher
 
   belongs_to :ticket, optional: true
   has_one    :ticket_time_accounting, class_name: 'Ticket::TimeAccounting', foreign_key: :ticket_article_id, dependent: :destroy, inverse_of: :ticket_article
@@ -19,9 +34,11 @@ class Ticket::Article < ApplicationModel
   belongs_to :updated_by, class_name: 'User', optional: true
   belongs_to :origin_by,  class_name: 'User', optional: true
 
+  before_validation :check_mentions, on: :create
+  before_save :touch_ticket_if_needed
   before_create :check_subject, :check_body, :check_message_id_md5
   before_update :check_subject, :check_body, :check_message_id_md5
-  after_destroy :store_delete
+  after_destroy :store_delete, :update_time_units
 
   store :preferences
 
@@ -71,10 +88,10 @@ returns
   def self.insert_urls(article)
     return article if article['attachments'].blank?
     return article if !article['content_type'].match?(%r{text/html}i)
-    return article if article['body'] !~ /<img/i
+    return article if article['body'] !~ %r{<img}i
 
     inline_attachments = {}
-    article['body'].gsub!( /(<img[[:space:]](|.+?)src=")cid:(.+?)"(|.+?)>/im ) do |item|
+    article['body'].gsub!(%r{(<img[[:space:]](|.+?)src=")cid:(.+?)"(|.+?)>}im) do |item|
       tag_start = $1
       cid = $3
       tag_end = $4
@@ -82,7 +99,7 @@ returns
 
       # look for attachment
       article['attachments'].each do |file|
-        next if !file[:preferences] || !file[:preferences]['Content-ID'] || (file[:preferences]['Content-ID'] != cid && file[:preferences]['Content-ID'] != "<#{cid}>" )
+        next if !file[:preferences] || !file[:preferences]['Content-ID'] || (file[:preferences]['Content-ID'] != cid && file[:preferences]['Content-ID'] != "<#{cid}>")
 
         replace = "#{tag_start}/api/v1/ticket_attachment/#{article['ticket_id']}/#{article['id']}/#{file[:id]}?view=inline\"#{tag_end}>"
         inline_attachments[file[:id]] = true
@@ -115,13 +132,13 @@ returns
 
   def attachments_inline
     inline_attachments = {}
-    body.gsub( /<img[[:space:]](|.+?)src="cid:(.+?)"(|.+?)>/im ) do |_item|
+    body.gsub(%r{<img[[:space:]](|.+?)src="cid:(.+?)"(|.+?)>}im) do |_item|
       cid = $2
 
       # look for attachment
       attachments.each do |file|
         content_id = file.preferences['Content-ID'] || file.preferences['content_id']
-        next if content_id.blank? || (content_id != cid && content_id != "<#{cid}>" )
+        next if content_id.blank? || (content_id != cid && content_id != "<#{cid}>")
 
         inline_attachments[file.id] = true
         break
@@ -237,7 +254,7 @@ returns:
     return true if attribute != :body
     return false if content_type.blank?
 
-    content_type =~ /html/i
+    content_type =~ %r{html}i
   end
 
 =begin
@@ -253,7 +270,7 @@ returns
 
 =end
 
-  def attributes_with_association_names
+  def attributes_with_association_names(empty_keys: false)
     attributes = super
     add_attachments_to_attributes(attributes)
     Ticket::Article.insert_urls(attributes)
@@ -292,7 +309,7 @@ returns
   def check_subject
     return true if subject.blank?
 
-    subject.gsub!(/\s|\t|\r/, ' ')
+    subject.gsub!(%r{\s|\t|\r}, ' ')
     true
   end
 
@@ -304,10 +321,31 @@ returns
     current_length = body.length
     return true if body.length <= limit
 
-    raise Exceptions::UnprocessableEntity, "body of article is too large, #{current_length} chars - only #{limit} allowed" if !ApplicationHandleInfo.postmaster?
+    raise Exceptions::UnprocessableEntity, "body of article is too large, #{current_length} chars - only #{limit} allowed" if !ApplicationHandleInfo.postmaster? && !Setting.get('import_mode')
 
     logger.warn "WARNING: cut string because of database length #{self.class}.body(#{limit} but is #{current_length})"
     self.body = body[0, limit]
+  end
+
+  def check_mentions
+    begin
+      mention_user_ids = Nokogiri::HTML(body).css('a[data-mention-user-id]').map do |link|
+        link['data-mention-user-id']
+      end
+    rescue => e
+      Rails.logger.error "Can't parse body '#{body}' as HTML for extracting Mentions."
+      Rails.logger.error e
+      return
+    end
+
+    return if mention_user_ids.blank?
+    return if ApplicationHandleInfo.postmaster? && !MentionPolicy.new(updated_by, Mention.new).create?
+    raise "User #{updated_by_id} has no permission to mention other Users!" if !MentionPolicy.new(updated_by, Mention.new).create?
+
+    user_ids = User.where(id: mention_user_ids).pluck(:id)
+    user_ids.each do |user_id|
+      Mention.where(mentionable: ticket, user_id: user_id).first_or_create(mentionable: ticket, user_id: user_id)
+    end
   end
 
   def history_log_attributes
@@ -338,4 +376,14 @@ returns
     )
   end
 
+  # recalculate time accounting
+  def update_time_units
+    Ticket::TimeAccounting.update_ticket(ticket)
+  end
+
+  def touch_ticket_if_needed
+    return if !internal_changed?
+
+    ticket&.touch # rubocop:disable Rails/SkipsModelValidations
+  end
 end

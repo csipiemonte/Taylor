@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class KnowledgeBase::Answer::Translation < ApplicationModel
   include HasAgentAllowedParams
   include HasLinks
@@ -11,14 +12,15 @@ class KnowledgeBase::Answer::Translation < ApplicationModel
 
   belongs_to :kb_locale,  class_name: 'KnowledgeBase::Locale', inverse_of: :answer_translations
   belongs_to :answer,     class_name: 'KnowledgeBase::Answer', inverse_of: :translations, touch: true
-  #belongs_to :updated_by, class_name: 'User', inverse_of: :answer_translations
+  belongs_to :created_by, class_name: 'User'
+  belongs_to :updated_by, class_name: 'User'
 
   belongs_to                    :content, class_name: 'KnowledgeBase::Answer::Translation::Content', inverse_of: :translation, dependent: :destroy
   accepts_nested_attributes_for :content, update_only: true
 
-  validates :title,        presence: true,            length: { maximum: 250 }
+  validates :title,        presence: true, length: { maximum: 250 }
   validates :content,      presence: true
-  validates :kb_locale_id, uniqueness: { scope: :answer_id }
+  validates :kb_locale_id, uniqueness: { case_sensitive: true, scope: :answer_id }
 
   scope :neighbours_of, ->(translation) { joins(:answer).where(knowledge_base_answers: { category_id: translation.answer&.category_id }) }
 
@@ -27,7 +29,7 @@ class KnowledgeBase::Answer::Translation < ApplicationModel
   def attributes_with_association_ids
     key = "#{self.class}::aws::#{id}"
 
-    cache = Cache.get(key)
+    cache = Cache.read(key)
     return cache if cache
 
     attrs = super
@@ -51,15 +53,16 @@ class KnowledgeBase::Answer::Translation < ApplicationModel
     [answer_id, title.parameterize].join('-')
   end
 
-  def search_index_attribute_lookup
+  def search_index_attribute_lookup(include_references: true)
     attrs = super
 
-    attrs['title']      = ActionController::Base.helpers.strip_tags attrs['title']
-    attrs['content']    = content.search_index_attribute_lookup if content
-    attrs['scope_id']   = answer.category_id
-    attrs['attachment'] = answer.attachments_for_search_index_attribute_lookup
-
-    attrs
+    attrs.merge({
+                  title:      ActionController::Base.helpers.strip_tags(attrs['title']),
+                  content:    content&.search_index_attribute_lookup,
+                  scope_id:   answer.category_id,
+                  attachment: answer.attachments_for_search_index_attribute_lookup,
+                  tags:       answer.tag_list
+                })
   end
 
   def linked_references
@@ -96,12 +99,32 @@ class KnowledgeBase::Answer::Translation < ApplicationModel
       }
     end
 
-    def search_fallback(query, scope = nil)
+    def search_es_filter(es_response, _query, kb_locales, options)
+      return es_response if options[:user]&.permissions?('knowledge_base.editor')
+
+      answer_translations_id = es_response.pluck(:id)
+
+      allowed_answer_translation_ids = KnowledgeBase::Answer
+        .internal
+        .joins(:translations)
+        .where(knowledge_base_answer_translations: { id: answer_translations_id, kb_locale_id: kb_locales.map(&:id) })
+        .pluck('knowledge_base_answer_translations.id')
+
+      es_response.filter { |elem| allowed_answer_translation_ids.include? elem[:id].to_i }
+    end
+
+    def search_fallback(query, scope = nil, options: {})
       fields = %w[title]
       fields << KnowledgeBase::Answer::Translation::Content.arel_table[:body]
 
       output = where_or_cis(fields, query)
                .joins(:content)
+
+      if !options[:user]&.permissions?('knowledge_base.editor')
+        answer_ids = KnowledgeBase::Answer.internal.pluck(:id)
+
+        output = output.where(answer_id: answer_ids)
+      end
 
       if scope.present?
         output = output

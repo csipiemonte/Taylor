@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe Sequencer::Unit::Import::Common::Model::Associations::Assign, sequencer: :unit do
@@ -14,7 +16,7 @@ RSpec.describe Sequencer::Unit::Import::Common::Model::Associations::Assign, seq
     let(:instance)     { create(:user) }
     let(:action)       { :created }
     let(:associations) do
-      alt_org = Organization.where('id <> ?', instance.organization_id.to_i).pluck(:id).sample
+      alt_org = Organization.where.not(id: instance.organization_id.to_i).pluck(:id).sample
       { organization_id: alt_org }
     end
 

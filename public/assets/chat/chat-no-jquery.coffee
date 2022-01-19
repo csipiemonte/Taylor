@@ -190,6 +190,7 @@ do(window) ->
     showTimeEveryXMinutes: 2
     lastTimestamp: null
     lastAddedType: null
+    inputDisabled: false
     inputTimeout: null
     isTyping: false
     state: 'offline'
@@ -274,12 +275,12 @@ do(window) ->
         'Send': 'Envoyer'
         'Chat closed by %s': 'Chat fermé par %s'
         'Compose your message...': 'Composez votre message...'
-        'All colleagues are busy.': 'Tous les collègues sont actuellement occupés.'
-        'You are on waiting list position <strong>%s</strong>.': 'Vous êtes actuellement en <strong>%s</strong> position dans la file d\'attente.'
+        'All colleagues are busy.': 'Tous les collaborateurs sont occupés actuellement.'
+        'You are on waiting list position <strong>%s</strong>.': 'Vous êtes actuellement en position <strong>%s</strong> dans la file d\'attente.'
         'Start new conversation': 'Démarrer une nouvelle conversation'
-        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Si vous ne répondez pas dans les <strong>%s</strong> minutes, votre conversation avec %s va être fermée.'
+        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Si vous ne répondez pas dans les <strong>%s</strong> minutes, votre conversation avec %s sera fermée.'
         'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Si vous ne répondez pas dans les %s minutes, votre conversation va être fermée.'
-        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Nous sommes désolés, il faut plus de temps que prévu pour obtenir un emplacement vide. Veuillez réessayer ultérieurement ou nous envoyer un courriel. Je vous remercie!'
+        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Nous sommes désolés, il faut plus de temps que prévu pour obtenir un emplacement vide. Veuillez réessayer ultérieurement ou nous envoyer un courriel. Nous vous remercions!'
       'he':
         '<strong>Chat</strong> with us!': '<strong>שוחח</strong>איתנו!'
         'Scroll down to see new messages': 'גלול מטה כדי לראות הודעות חדשות'
@@ -485,6 +486,23 @@ do(window) ->
         'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Ettersom du ikke har respondert i løpet av de siste %s minuttene av samtalen, vil samtalen med  <strong>%s</strong> nå avsluttes.'
         'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Ettersom du ikke har respondert i løpet av de siste %s minuttene, har samtalen nå blitt avsluttet.'
         'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Vi beklager, men det tar lengre tid enn vanlig å få en ledig plass i vår chat. Vennligst prøv igjen på et senere tidspunkt eller send oss en e-post. Tusen takk!'
+      'el':
+        '<strong>Chat</strong> with us!': '<strong>Επικοινωνήστε</strong> μαζί μας!'
+        'Scroll down to see new messages': 'Μεταβείτε κάτω για να δείτε τα νέα μηνύματα'
+        'Online': 'Σε σύνδεση'
+        'Offline': 'Αποσυνδεμένος'
+        'Connecting': 'Σύνδεση'
+        'Connection re-established': 'Η σύνδεση αποκαταστάθηκε'
+        'Today': 'Σήμερα'
+        'Send': 'Αποστολή'
+        'Chat closed by %s': 'Η συνομιλία έκλεισε από τον/την %s'
+        'Compose your message...': 'Γράψτε το μήνυμα σας...'
+        'All colleagues are busy.': 'Όλοι οι συνάδελφοι μας είναι απασχολημένοι.'
+        'You are on waiting list position <strong>%s</strong>.': 'Βρίσκεστε σε λίστα αναμονής στη θέση <strong>%s</strong>.'
+        'Start new conversation': 'Έναρξη νέας συνομιλίας'
+        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Από τη στιγμή που δεν απαντήσατε τα τελευταία %s λεπτά η συνομιλία σας με τον/την <strong>%s</strong> έκλεισε.'
+        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Από τη στιγμή που δεν απαντήσατε τα τελευταία %s λεπτά η συνομιλία σας έκλεισε.'
+        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Λυπούμαστε που χρειάζεται περισσότερος χρόνος από τον αναμενόμενο για να βρεθεί μία κενή θέση. Παρακαλούμε δοκιμάστε ξανά αργότερα ή στείλτε μας ένα email. Ευχαριστούμε!'
     sessionId: undefined
     scrolledToBottom: true
     scrollSnapTolerance: 10
@@ -581,7 +599,7 @@ do(window) ->
       # disable open button
       btn = document.querySelector(".#{ @options.buttonClass }")
       if btn
-        btn.classList.add @inactiveClass
+        btn.classList.add @options.inactiveClass
 
       @setAgentOnlineState 'online'
 
@@ -598,10 +616,10 @@ do(window) ->
 
     renderBase: ->
       @el.remove() if @el
-      @options.target.innerHTML += @view('chat')(
+      @options.target.insertAdjacentHTML('beforeend', @view('chat')(
         title: @options.title,
         scrollHint: @options.scrollHint
-      )
+      ))
       @el = @options.target.querySelector('.zammad-chat')
       @input = @el.querySelector('.zammad-chat-input')
       @body = @el.querySelector('.zammad-chat-body')
@@ -744,7 +762,11 @@ do(window) ->
       console.log('p', docType, text)
       if docType is 'html'
         html = document.createElement('div')
-        html.innerHTML = text
+        # can't log because might contain malicious content
+        # @log.debug 'HTML clipboard', text
+        sanitized = DOMPurify.sanitize(text)
+        @log.debug 'sanitized HTML clipboard', sanitized
+        html.innerHTML = sanitized
         match = false
         htmlTmp = text
         regex = new RegExp('<(/w|w)\:[A-Za-z]')
@@ -802,7 +824,7 @@ do(window) ->
 
     onKeydown: (e) =>
       # check for enter
-      if not e.shiftKey and e.keyCode is 13
+      if not @inputDisabled and not e.shiftKey and e.keyCode is 13
         e.preventDefault()
         @sendMessage()
 
@@ -876,7 +898,7 @@ do(window) ->
       btn = document.querySelector(".#{ @options.buttonClass }")
       if btn
         btn.addEventListener('click', @open)
-        btn.classList.remove(@inactiveClass)
+        btn.classList.remove(@options.inactiveClass)
 
       @options.onReady?()
 
@@ -931,7 +953,7 @@ do(window) ->
     onInput: =>
       # remove unread-state from messages
       for message in @el.querySelectorAll('.zammad-chat-message--unread')
-        node.classList.remove 'zammad-chat-message--unread'
+        message.classList.remove 'zammad-chat-message--unread'
 
       sessionStorage.setItem 'unfinished_message', @input.innerHTML
 
@@ -1075,15 +1097,13 @@ do(window) ->
         return
       if @initDelayId
         clearTimeout(@initDelayId)
-      if !@sessionId
-        @log.debug 'can\'t close widget without sessionId'
-        return
+      if @sessionId
+        @log.debug 'session close before widget close'
+        @sessionClose()
 
       @log.debug 'close widget'
 
       event.stopPropagation() if event
-
-      @sessionClose()
 
       if @isFullscreen
         @enableScrollOnRoot()
@@ -1125,11 +1145,14 @@ do(window) ->
       @el.classList.add('zammad-chat-is-shown')
 
     disableInput: ->
-      @input.disabled = true
+      @inputDisabled = true
+      @input.setAttribute('contenteditable', false)
       @el.querySelector('.zammad-chat-send').disabled = true
+      @io.close()
 
     enableInput: ->
-      @input.disabled = false
+      @inputDisabled = false
+      @input.setAttribute('contenteditable', true)
       @el.querySelector('.zammad-chat-send').disabled = false
 
     hideModal: ->
@@ -1251,6 +1274,12 @@ do(window) ->
       if params.remove && @el
         @el.remove()
 
+        # Remove button, because it can no longer be used.
+        btn = document.querySelector(".#{ @options.buttonClass }")
+        if btn
+          btn.classList.add @options.inactiveClass
+          btn.style.display = 'none';
+
       # stop all timer
       if @waitingListTimeout
         @waitingListTimeout.stop()
@@ -1360,7 +1389,7 @@ do(window) ->
         url = @options.host
           .replace(/^wss/i, 'https')
           .replace(/^ws/i, 'http')
-          .replace(/\/ws/i, '')
+          .replace(/\/ws$/i, '') # WebSocket may run on example.com/ws path
         url += '/assets/chat/chat.css'
 
       @log.debug "load css from '#{url}'"

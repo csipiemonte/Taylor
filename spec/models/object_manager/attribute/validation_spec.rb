@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 require 'lib/mixin/has_backends_examples'
 
@@ -68,7 +70,7 @@ RSpec.describe ObjectManager::Attribute::Validation, application_handle: 'applic
       end
 
       it 'is skipped because of import_mode is active' do
-        expect(Setting).to receive(:get).with('import_mode').and_return(true)
+        allow(Setting).to receive(:get).with('import_mode').and_return(true)
         subject.validate(record)
         expect(backend).not_to have_received(:validate)
       end
@@ -93,6 +95,42 @@ RSpec.describe ObjectManager::Attribute::Validation, application_handle: 'applic
           subject.validate(record)
           expect(backend).not_to have_received(:validate)
         end
+      end
+    end
+
+    context 'when custom attribute exists' do
+      before do
+        allow(subject).to receive(:attributes_unchanged?) # rubocop:disable RSpec/SubjectStub
+      end
+
+      it 'runs validation in default context' do
+        ApplicationHandleInfo.in_context(nil) do
+          subject.validate(record)
+        end
+
+        expect(subject).to have_received(:attributes_unchanged?) # rubocop:disable RSpec/SubjectStub
+      end
+
+      it 'does not run validations in contexts that do not use custom attributes' do
+        ApplicationHandleInfo.in_context('merge') do
+          subject.validate(record)
+        end
+
+        expect(subject).not_to have_received(:attributes_unchanged?) # rubocop:disable RSpec/SubjectStub
+      end
+    end
+  end
+
+  describe '#validation_needed' do
+    it 'runs validation in default context' do
+      ApplicationHandleInfo.in_context(nil) do
+        expect(subject.send(:validation_needed?)).to be true
+      end
+    end
+
+    it 'does not run validations in contexts that do not use custom attributes' do
+      ApplicationHandleInfo.in_context('merge') do
+        expect(subject.send(:validation_needed?)).to be false
       end
     end
   end

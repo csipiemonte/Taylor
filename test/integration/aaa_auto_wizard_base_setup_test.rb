@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'browser_test_helper'
 
 class AaaAutoWizardBaseSetupTest < TestCase
@@ -8,7 +10,7 @@ class AaaAutoWizardBaseSetupTest < TestCase
     watch_for(
       css:       '.user-menu .user a',
       attribute: 'title',
-      value:     'master@example.com',
+      value:     'admin@example.com',
       timeout:   14,
     )
   end

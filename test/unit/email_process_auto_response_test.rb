@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'test_helper'
 
 class EmailProcessAutoResponseTest < ActiveSupport::TestCase
@@ -57,7 +59,7 @@ Subject: some new subject
 Some Text"
 
     _ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(true, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(true, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
     assert_equal(2, article_p.ticket.articles.count)
 
@@ -69,7 +71,7 @@ X-Loop: yes
 Some Text"
 
     _ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(false, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(false, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
     assert_equal(1, article_p.ticket.articles.count)
 
@@ -81,7 +83,7 @@ Precedence: Bulk
 Some Text"
 
     _ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(false, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(false, mail[:'x-zammad-send-auto-response'])
 
     email_raw_string = "From: me@example.com
 To: customer@example.com
@@ -93,7 +95,7 @@ Some Text"
     assert_equal(1, article_p.ticket.articles.count)
 
     _ticket_p, _article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(false, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(false, mail[:'x-zammad-send-auto-response'])
 
     email_raw_string = "From: me@example.com
 To: customer@example.com
@@ -104,7 +106,7 @@ X-Auto-Response-Suppress: All
 Some Text"
 
     _ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(false, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(false, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
     assert_equal(1, article_p.ticket.articles.count)
 
@@ -117,7 +119,7 @@ Message-ID: <1234@#{fqdn}>
 Some Text"
 
     _ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(false, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(false, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
     assert_equal(1, article_p.ticket.articles.count)
 
@@ -130,7 +132,7 @@ Message-ID: <1234@not_matching.#{fqdn}>
 Some Text"
 
     _ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(true, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(true, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
     assert_equal(2, article_p.ticket.articles.count)
 
@@ -180,7 +182,7 @@ Content-Disposition: inline
 test"
 
     _ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(false, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(false, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
     assert_equal(1, article_p.ticket.articles.count)
 
@@ -221,7 +223,7 @@ X-Loop: yes
 Some Text"
 
     ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(false, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(false, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
 
     tags = ticket_p.tag_list
@@ -238,16 +240,16 @@ Some Text"
     assert_equal('Customer', article_customer.sender.name)
     assert_equal('email', article_customer.type.name)
     article_notification = article_p.ticket.articles[1]
-    assert_match(/New Ticket add. info/, article_notification.subject)
-    assert_no_match(/me@example.com/, article_notification.to)
-    assert_match(/#{agent1.email}/, article_notification.to)
+    assert_match(%r{New Ticket add. info}, article_notification.subject)
+    assert_no_match(%r{me@example.com}, article_notification.to)
+    assert_match(%r{#{agent1.email}}, article_notification.to)
     assert_equal('System', article_notification.sender.name)
     assert_equal('email', article_notification.type.name)
 
     Setting.set('ticket_trigger_recursive', true)
 
     ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(false, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(false, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
 
     tags = ticket_p.tag_list
@@ -264,9 +266,9 @@ Some Text"
     assert_equal('Customer', article_customer.sender.name)
     assert_equal('email', article_customer.type.name)
     article_notification = article_p.ticket.articles[1]
-    assert_match(/New Ticket add. info/, article_notification.subject)
-    assert_no_match(/me@example.com/, article_notification.to)
-    assert_match(/#{agent1.email}/, article_notification.to)
+    assert_match(%r{New Ticket add. info}, article_notification.subject)
+    assert_no_match(%r{me@example.com}, article_notification.to)
+    assert_match(%r{#{agent1.email}}, article_notification.to)
     assert_equal('System', article_notification.sender.name)
     assert_equal('email', article_notification.type.name)
 
@@ -279,7 +281,7 @@ Subject: some new subject
 Some Text"
 
     ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(true, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(true, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
 
     tags = ticket_p.tag_list
@@ -296,21 +298,21 @@ Some Text"
     assert_equal('Customer', article_customer.sender.name)
     assert_equal('email', article_customer.type.name)
     article_notification = article_p.ticket.articles[1]
-    assert_match(/New Ticket add. info/, article_notification.subject)
-    assert_no_match(/me@example.com/, article_notification.to)
-    assert_match(/#{agent1.email}/, article_notification.to)
+    assert_match(%r{New Ticket add. info}, article_notification.subject)
+    assert_no_match(%r{me@example.com}, article_notification.to)
+    assert_match(%r{#{agent1.email}}, article_notification.to)
     assert_equal('System', article_notification.sender.name)
     assert_equal('email', article_notification.type.name)
     article_auto_reply = article_p.ticket.articles[2]
-    assert_match(/Thanks for your inquiry/, article_auto_reply.subject)
-    assert_match(/me@example.com/, article_auto_reply.to)
+    assert_match(%r{Thanks for your inquiry}, article_auto_reply.subject)
+    assert_match(%r{me@example.com}, article_auto_reply.to)
     assert_equal('System', article_auto_reply.sender.name)
     assert_equal('email', article_auto_reply.type.name)
 
     Setting.set('ticket_trigger_recursive', true)
 
     ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(true, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(true, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
     tags = ticket_p.tag_list
     assert_equal('new', ticket_p.state.name)
@@ -326,14 +328,14 @@ Some Text"
     assert_equal('Customer', article_customer.sender.name)
     assert_equal('email', article_customer.type.name)
     article_notification = article_p.ticket.articles[1]
-    assert_match(/New Ticket add. info/, article_notification.subject)
-    assert_no_match(/me@example.com/, article_notification.to)
-    assert_match(/#{agent1.email}/, article_notification.to)
+    assert_match(%r{New Ticket add. info}, article_notification.subject)
+    assert_no_match(%r{me@example.com}, article_notification.to)
+    assert_match(%r{#{agent1.email}}, article_notification.to)
     assert_equal('System', article_notification.sender.name)
     assert_equal('email', article_notification.type.name)
     article_auto_reply = article_p.ticket.articles[2]
-    assert_match(/Thanks for your inquiry/, article_auto_reply.subject)
-    assert_match(/me@example.com/, article_auto_reply.to)
+    assert_match(%r{Thanks for your inquiry}, article_auto_reply.subject)
+    assert_match(%r{me@example.com}, article_auto_reply.to)
     assert_equal('System', article_auto_reply.sender.name)
     assert_equal('email', article_auto_reply.type.name)
 
@@ -394,7 +396,7 @@ Subject: some new subject
 Some Text"
 
     _ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(true, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(true, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
     assert_equal(2, article_p.ticket.articles.count)
 
@@ -406,7 +408,7 @@ X-Loop: yes
 Some Text"
 
     _ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(false, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(false, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
     assert_equal(1, article_p.ticket.articles.count)
 
@@ -418,7 +420,7 @@ Precedence: Bulk
 Some Text"
 
     _ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(false, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(false, mail[:'x-zammad-send-auto-response'])
 
     email_raw_string = "From: me@example.com
 To: customer@example.com
@@ -430,7 +432,7 @@ Some Text"
     assert_equal(1, article_p.ticket.articles.count)
 
     _ticket_p, _article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(false, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(false, mail[:'x-zammad-send-auto-response'])
 
     email_raw_string = "From: me@example.com
 To: customer@example.com
@@ -441,7 +443,7 @@ X-Auto-Response-Suppress: All
 Some Text"
 
     _ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(false, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(false, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
     assert_equal(1, article_p.ticket.articles.count)
 
@@ -454,7 +456,7 @@ Message-ID: <1234@#{fqdn}>
 Some Text"
 
     _ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(false, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(false, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
     assert_equal(1, article_p.ticket.articles.count)
 
@@ -467,7 +469,7 @@ Message-ID: <1234@not_matching.#{fqdn}>
 Some Text"
 
     _ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(true, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(true, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
     assert_equal(2, article_p.ticket.articles.count)
 
@@ -517,7 +519,7 @@ Content-Disposition: inline
 test"
 
     _ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(false, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(false, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
     assert_equal(1, article_p.ticket.articles.count)
 
@@ -558,7 +560,7 @@ X-Loop: yes
 Some Text"
 
     ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(false, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(false, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
 
     tags = ticket_p.tag_list
@@ -575,16 +577,16 @@ Some Text"
     assert_equal('Customer', article_customer.sender.name)
     assert_equal('email', article_customer.type.name)
     article_notification = article_p.ticket.articles[1]
-    assert_match(/New Ticket add. info/, article_notification.subject)
-    assert_no_match(/me@example.com/, article_notification.to)
-    assert_match(/#{agent1.email}/, article_notification.to)
+    assert_match(%r{New Ticket add. info}, article_notification.subject)
+    assert_no_match(%r{me@example.com}, article_notification.to)
+    assert_match(%r{#{agent1.email}}, article_notification.to)
     assert_equal('System', article_notification.sender.name)
     assert_equal('email', article_notification.type.name)
 
     Setting.set('ticket_trigger_recursive', true)
 
     ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(false, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(false, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
 
     tags = ticket_p.tag_list
@@ -601,9 +603,9 @@ Some Text"
     assert_equal('Customer', article_customer.sender.name)
     assert_equal('email', article_customer.type.name)
     article_notification = article_p.ticket.articles[1]
-    assert_match(/New Ticket add. info/, article_notification.subject)
-    assert_no_match(/me@example.com/, article_notification.to)
-    assert_match(/#{agent1.email}/, article_notification.to)
+    assert_match(%r{New Ticket add. info}, article_notification.subject)
+    assert_no_match(%r{me@example.com}, article_notification.to)
+    assert_match(%r{#{agent1.email}}, article_notification.to)
     assert_equal('System', article_notification.sender.name)
     assert_equal('email', article_notification.type.name)
 
@@ -616,7 +618,7 @@ Subject: some new subject
 Some Text"
 
     ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(true, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(true, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
 
     tags = ticket_p.tag_list
@@ -633,21 +635,21 @@ Some Text"
     assert_equal('Customer', article_customer.sender.name)
     assert_equal('email', article_customer.type.name)
     article_auto_reply = article_p.ticket.articles[1]
-    assert_match(/Thanks for your inquiry/, article_auto_reply.subject)
-    assert_match(/me@example.com/, article_auto_reply.to)
+    assert_match(%r{Thanks for your inquiry}, article_auto_reply.subject)
+    assert_match(%r{me@example.com}, article_auto_reply.to)
     assert_equal('System', article_auto_reply.sender.name)
     assert_equal('email', article_auto_reply.type.name)
     article_notification = article_p.ticket.articles[2]
-    assert_match(/New Ticket add. info/, article_notification.subject)
-    assert_no_match(/me@example.com/, article_notification.to)
-    assert_match(/#{agent1.email}/, article_notification.to)
+    assert_match(%r{New Ticket add. info}, article_notification.subject)
+    assert_no_match(%r{me@example.com}, article_notification.to)
+    assert_match(%r{#{agent1.email}}, article_notification.to)
     assert_equal('System', article_notification.sender.name)
     assert_equal('email', article_notification.type.name)
 
     Setting.set('ticket_trigger_recursive', true)
 
     ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(true, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(true, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
     tags = ticket_p.tag_list
     assert_equal('new', ticket_p.state.name)
@@ -663,14 +665,14 @@ Some Text"
     assert_equal('Customer', article_customer.sender.name)
     assert_equal('email', article_customer.type.name)
     article_auto_reply = article_p.ticket.articles[1]
-    assert_match(/Thanks for your inquiry/, article_auto_reply.subject)
-    assert_match(/me@example.com/, article_auto_reply.to)
+    assert_match(%r{Thanks for your inquiry}, article_auto_reply.subject)
+    assert_match(%r{me@example.com}, article_auto_reply.to)
     assert_equal('System', article_auto_reply.sender.name)
     assert_equal('email', article_auto_reply.type.name)
     article_notification = article_p.ticket.articles[2]
-    assert_match(/New Ticket add. info/, article_notification.subject)
-    assert_no_match(/me@example.com/, article_notification.to)
-    assert_match(/#{agent1.email}/, article_notification.to)
+    assert_match(%r{New Ticket add. info}, article_notification.subject)
+    assert_no_match(%r{me@example.com}, article_notification.to)
+    assert_match(%r{#{agent1.email}}, article_notification.to)
     assert_equal('System', article_notification.sender.name)
     assert_equal('email', article_notification.type.name)
 
@@ -764,7 +766,7 @@ X-Loop: yes
 Some Text"
 
     ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(false, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(false, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
 
     tags = ticket_p.tag_list
@@ -781,16 +783,16 @@ Some Text"
     assert_equal('Customer', article_customer.sender.name)
     assert_equal('email', article_customer.type.name)
     article_notification = article_p.ticket.articles[1]
-    assert_match(/New Ticket add. info/, article_notification.subject)
-    assert_no_match(/me@example.com/, article_notification.to)
-    assert_match(/#{agent1.email}/, article_notification.to)
+    assert_match(%r{New Ticket add. info}, article_notification.subject)
+    assert_no_match(%r{me@example.com}, article_notification.to)
+    assert_match(%r{#{agent1.email}}, article_notification.to)
     assert_equal('System', article_notification.sender.name)
     assert_equal('email', article_notification.type.name)
 
     Setting.set('ticket_trigger_recursive', true)
 
     ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(false, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(false, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
 
     tags = ticket_p.tag_list
@@ -807,9 +809,9 @@ Some Text"
     assert_equal('Customer', article_customer.sender.name)
     assert_equal('email', article_customer.type.name)
     article_notification = article_p.ticket.articles[1]
-    assert_match(/New Ticket add. info/, article_notification.subject)
-    assert_no_match(/me@example.com/, article_notification.to)
-    assert_match(/#{agent1.email}/, article_notification.to)
+    assert_match(%r{New Ticket add. info}, article_notification.subject)
+    assert_no_match(%r{me@example.com}, article_notification.to)
+    assert_match(%r{#{agent1.email}}, article_notification.to)
     assert_equal('System', article_notification.sender.name)
     assert_equal('email', article_notification.type.name)
 
@@ -822,7 +824,7 @@ Subject: some new subject
 Some Text"
 
     ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(true, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(true, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
 
     tags = ticket_p.tag_list
@@ -838,16 +840,16 @@ Some Text"
     assert_equal('Customer', article_customer.sender.name)
     assert_equal('email', article_customer.type.name)
     article_notification = article_p.ticket.articles[1]
-    assert_match(/New Ticket add. info/, article_notification.subject)
-    assert_no_match(/me@example.com/, article_notification.to)
-    assert_match(/#{agent1.email}/, article_notification.to)
+    assert_match(%r{New Ticket add. info}, article_notification.subject)
+    assert_no_match(%r{me@example.com}, article_notification.to)
+    assert_match(%r{#{agent1.email}}, article_notification.to)
     assert_equal('System', article_notification.sender.name)
     assert_equal('email', article_notification.type.name)
 
     Setting.set('ticket_trigger_recursive', true)
 
     ticket_p, article_p, _user_p, mail = Channel::EmailParser.new.process({}, email_raw_string)
-    assert_equal(true, mail['x-zammad-send-auto-response'.to_sym])
+    assert_equal(true, mail[:'x-zammad-send-auto-response'])
     Scheduler.worker(true)
     tags = ticket_p.tag_list
     assert_equal('open', ticket_p.state.name)
@@ -863,14 +865,14 @@ Some Text"
     assert_equal('Customer', article_customer.sender.name)
     assert_equal('email', article_customer.type.name)
     article_notification = article_p.ticket.articles[1]
-    assert_match(/New Ticket add. info/, article_notification.subject)
-    assert_no_match(/me@example.com/, article_notification.to)
-    assert_match(/#{agent1.email}/, article_notification.to)
+    assert_match(%r{New Ticket add. info}, article_notification.subject)
+    assert_no_match(%r{me@example.com}, article_notification.to)
+    assert_match(%r{#{agent1.email}}, article_notification.to)
     assert_equal('System', article_notification.sender.name)
     assert_equal('email', article_notification.type.name)
     article_auto_reply = article_p.ticket.articles[2]
-    assert_match(/Thanks for your inquiry/, article_auto_reply.subject)
-    assert_match(/me@example.com/, article_auto_reply.to)
+    assert_match(%r{Thanks for your inquiry}, article_auto_reply.subject)
+    assert_match(%r{me@example.com}, article_auto_reply.to)
     assert_equal('System', article_auto_reply.sender.name)
     assert_equal('email', article_auto_reply.type.name)
 

@@ -1,12 +1,76 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe 'Sessions endpoints', type: :request do
+
+  describe 'GET /' do
+
+    let(:headers) { {} }
+    let(:session_key) { Zammad::Application::Initializer::SessionStore::SESSION_KEY }
+
+    before do
+      Setting.set('http_type', http_type)
+
+      get '/', headers: headers
+    end
+
+    context "when Setting 'http_type' is set to 'https'" do
+
+      let(:http_type) { 'https' }
+
+      context "when it's not an HTTPS request" do
+
+        it 'sets no Cookie' do
+          expect(response.header['Set-Cookie']).to be_nil
+        end
+      end
+
+      context "when it's an HTTPS request" do
+
+        let(:headers) do
+          {
+            'X-Forwarded-Proto' => 'https'
+          }
+        end
+
+        it "sets Cookie with 'secure' flag" do
+          expect(response.header['Set-Cookie']).to include(session_key).and include('; secure;')
+        end
+      end
+    end
+
+    context "when Setting 'http_type' is set to 'http'" do
+
+      let(:http_type) { 'http' }
+
+      context "when it's not an HTTPS request" do
+
+        it 'sets Cookie' do
+          expect(response.header['Set-Cookie']).to include(session_key).and not_include('; secure;')
+        end
+      end
+
+      context "when it's an HTTPS request" do
+
+        let(:headers) do
+          {
+            'X-Forwarded-Proto' => 'https'
+          }
+        end
+
+        it "sets Cookie without 'secure' flag" do
+          expect(response.header['Set-Cookie']).to include(session_key).and not_include('; secure;')
+        end
+      end
+    end
+  end
 
   describe 'GET /signshow' do
 
     context 'user logged in' do
 
-      subject(:user) { create(:agent_user, password: password) }
+      subject(:user) { create(:agent, password: password) }
 
       let(:password) { SecureRandom.urlsafe_base64(20) }
       let(:fingerprint) { SecureRandom.urlsafe_base64(40) }
@@ -30,6 +94,27 @@ RSpec.describe 'Sessions endpoints', type: :request do
   end
 
   describe 'GET /auth/sso (single sign-on)' do
+
+    before do
+      Setting.set('auth_sso', true)
+    end
+
+    context 'when SSO is disabled' do
+
+      before do
+        Setting.set('auth_sso', false)
+      end
+
+      let(:headers) { { 'X-Forwarded-User' => login } }
+      let(:login) { User.last.login }
+
+      it 'returns a new user-session response' do
+        get '/auth/sso', as: :json, headers: headers
+
+        expect(response).to have_http_status(:forbidden)
+      end
+    end
+
     context 'with invalid user login' do
       let(:login) { User.pluck(:login).max.next }
 
@@ -65,7 +150,7 @@ RSpec.describe 'Sessions endpoints', type: :request do
     end
 
     context 'with valid user login' do
-      let(:user) { User.last }
+      let(:user) { create(:agent) }
       let(:login) { user.login }
 
       context 'in Maintenance Mode' do
@@ -74,10 +159,10 @@ RSpec.describe 'Sessions endpoints', type: :request do
         context 'in "REMOTE_USER" request env var' do
           let(:env) { { 'REMOTE_USER' => login } }
 
-          it 'returns 401 unauthorized' do
+          it 'returns 403 Forbidden' do
             get '/auth/sso', as: :json, env: env
 
-            expect(response).to have_http_status(:unauthorized)
+            expect(response).to have_http_status(:forbidden)
             expect(json_response).to include('error' => 'Maintenance mode enabled!')
           end
         end
@@ -85,10 +170,10 @@ RSpec.describe 'Sessions endpoints', type: :request do
         context 'in "HTTP_REMOTE_USER" request env var' do
           let(:env) { { 'HTTP_REMOTE_USER' => login } }
 
-          it 'returns 401 unauthorized' do
+          it 'returns 403 Forbidden' do
             get '/auth/sso', as: :json, env: env
 
-            expect(response).to have_http_status(:unauthorized)
+            expect(response).to have_http_status(:forbidden)
             expect(json_response).to include('error' => 'Maintenance mode enabled!')
           end
         end
@@ -96,10 +181,10 @@ RSpec.describe 'Sessions endpoints', type: :request do
         context 'in "X-Forwarded-User" request header' do
           let(:headers) { { 'X-Forwarded-User' => login } }
 
-          it 'returns 401 unauthorized' do
+          it 'returns 403 Forbidden' do
             get '/auth/sso', as: :json, headers: headers
 
-            expect(response).to have_http_status(:unauthorized)
+            expect(response).to have_http_status(:forbidden)
             expect(json_response).to include('error' => 'Maintenance mode enabled!')
           end
         end

@@ -1,7 +1,10 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Ticket::Priority < ApplicationModel
   include CanBeImported
+  include ChecksHtmlSanitized
   include HasCollectionUpdate
+  include HasSearchIndexBackend
 
   self.table_name = 'ticket_priorities'
   validates :name, presence: true
@@ -9,6 +12,8 @@ class Ticket::Priority < ApplicationModel
   after_create  :ensure_defaults
   after_update  :ensure_defaults
   after_destroy :ensure_defaults
+
+  sanitized_html :note
 
   attr_accessor :callback_loop
 

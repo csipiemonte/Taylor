@@ -1,3 +1,30 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'Ticket',
+  name:        'number',
+  display:     '#',
+  data_type:   'input',
+  data_option: {
+    type:      'text',
+    readonly:  1,
+    null:      true,
+    maxlength: 60,
+    width:     '68px',
+  },
+  editable:    false,
+  active:      true,
+  screens:     {
+    create_top: {},
+    edit:       {},
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    5,
+)
+
 ObjectManager::Attribute.add(
   force:       true,
   object:      'Ticket',
@@ -23,7 +50,7 @@ ObjectManager::Attribute.add(
   to_create:   false,
   to_migrate:  false,
   to_delete:   false,
-  position:    15,
+  position:    8,
 )
 
 ObjectManager::Attribute.add(
@@ -59,6 +86,38 @@ ObjectManager::Attribute.add(
   to_delete:   false,
   position:    10,
 )
+
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'Ticket',
+  name:        'organization_id',
+  display:     'Organization',
+  data_type:   'autocompletion_ajax',
+  data_option: {
+    relation:       'Organization',
+    autocapitalize: false,
+    multiple:       false,
+    null:           true,
+    translate:      false,
+    permission:     ['ticket.agent'],
+    readonly:       1,
+  },
+  editable:    false,
+  active:      true,
+  screens:     {
+    create_top: {
+      '-all-' => {
+        null: false,
+      },
+    },
+    edit:       {},
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    12,
+)
+
 ObjectManager::Attribute.add(
   force:       true,
   object:      'Ticket',
@@ -228,17 +287,12 @@ ObjectManager::Attribute.add(
   display:     'Pending till',
   data_type:   'datetime',
   data_option: {
-    future:      true,
-    past:        false,
-    diff:        24,
-    null:        true,
-    translate:   true,
-    required_if: {
-      state_id: Ticket::State.by_category(:pending).pluck(:id),
-    },
-    shown_if:    {
-      state_id: Ticket::State.by_category(:pending).pluck(:id),
-    },
+    future:     true,
+    past:       false,
+    diff:       24,
+    null:       true,
+    translate:  true,
+    permission: %w[ticket.agent],
   },
   editable:    false,
   active:      true,
@@ -539,6 +593,11 @@ ObjectManager::Attribute.add(
         null: false,
       },
     },
+    create:          {
+      '-all-' => {
+        null: false,
+      },
+    },
     view:            {
       '-all-' => {
         shown: true,
@@ -582,6 +641,11 @@ ObjectManager::Attribute.add(
       },
     },
     edit:            {
+      '-all-' => {
+        null: false,
+      },
+    },
+    create:          {
       '-all-' => {
         null: false,
       },
@@ -633,6 +697,11 @@ ObjectManager::Attribute.add(
         null: true,
       },
     },
+    create:          {
+      '-all-' => {
+        null: true,
+      },
+    },
     view:            {
       '-all-' => {
         shown: true,
@@ -664,6 +733,11 @@ ObjectManager::Attribute.add(
     invite_agent:    {},
     invite_customer: {},
     edit:            {
+      '-all-' => {
+        null: true,
+      },
+    },
+    create:          {
       '-all-' => {
         null: true,
       },
@@ -703,6 +777,11 @@ ObjectManager::Attribute.add(
         null: true,
       },
     },
+    create:          {
+      '-all-' => {
+        null: true,
+      },
+    },
     view:            {
       '-all-' => {
         shown: true,
@@ -738,6 +817,11 @@ ObjectManager::Attribute.add(
         null: true,
       },
     },
+    create:          {
+      '-all-' => {
+        null: true,
+      },
+    },
     view:            {
       '-all-' => {
         shown: true,
@@ -769,6 +853,11 @@ ObjectManager::Attribute.add(
     invite_agent:    {},
     invite_customer: {},
     edit:            {
+      '-all-' => {
+        null: true,
+      },
+    },
+    create:          {
       '-all-' => {
         null: true,
       },
@@ -813,6 +902,11 @@ ObjectManager::Attribute.add(
         null: true,
       },
     },
+    create:          {
+      '-all-' => {
+        null: true,
+      },
+    },
     view:            {
       '-all-' => {
         shown: true,
@@ -848,6 +942,11 @@ ObjectManager::Attribute.add(
         null: true,
       },
     },
+    create:          {
+      '-all-' => {
+        null: true,
+      },
+    },
     view:            {
       '-all-' => {
         shown: true,
@@ -878,6 +977,11 @@ ObjectManager::Attribute.add(
     invite_agent:    {},
     invite_customer: {},
     edit:            {
+      '-all-' => {
+        null: true,
+      },
+    },
+    create:          {
       '-all-' => {
         null: true,
       },
@@ -917,6 +1021,11 @@ ObjectManager::Attribute.add(
         null: true,
       },
     },
+    create:          {
+      '-all-' => {
+        null: true,
+      },
+    },
     view:            {
       '-all-' => {
         shown: true,
@@ -948,6 +1057,11 @@ ObjectManager::Attribute.add(
     invite_agent:    {},
     invite_customer: {},
     edit:            {
+      '-all-' => {
+        null: true,
+      },
+    },
+    create:          {
       '-all-' => {
         null: true,
       },
@@ -987,6 +1101,11 @@ ObjectManager::Attribute.add(
         null: true,
       },
     },
+    create:          {
+      '-all-' => {
+        null: true,
+      },
+    },
     view:            {
       '-all-' => {
         shown: true,
@@ -1018,6 +1137,11 @@ ObjectManager::Attribute.add(
     invite_agent:    {},
     invite_customer: {},
     edit:            {
+      '-all-' => {
+        null: true,
+      },
+    },
+    create:          {
       '-all-' => {
         null: true,
       },
@@ -1062,6 +1186,11 @@ ObjectManager::Attribute.add(
         null: true,
       },
     },
+    create:          {
+      '-all-' => {
+        null: true,
+      },
+    },
     view:            {}
   },
   to_create:   false,
@@ -1090,12 +1219,17 @@ ObjectManager::Attribute.add(
   editable:    false,
   active:      true,
   screens:     {
-    edit: {
+    edit:   {
       '-all-' => {
         null: true,
       },
     },
-    view: {
+    create: {
+      '-all-' => {
+        null: true,
+      },
+    },
+    view:   {
       '-all-' => {
         shown: false,
       },
@@ -1130,6 +1264,11 @@ ObjectManager::Attribute.add(
       },
     },
     edit:            {
+      '-all-' => {
+        null: true,
+      },
+    },
+    create:          {
       '-all-' => {
         null: true,
       },
@@ -1173,6 +1312,11 @@ ObjectManager::Attribute.add(
         null: true,
       },
     },
+    create:          {
+      '-all-' => {
+        null: true,
+      },
+    },
     view:            {
       '-all-' => {
         shown: false,
@@ -1207,6 +1351,11 @@ ObjectManager::Attribute.add(
         null: false,
       },
     },
+    create:          {
+      '-all-' => {
+        null: false,
+      },
+    },
     view:            {
       '-all-' => {
         shown: false,
@@ -1234,12 +1383,17 @@ ObjectManager::Attribute.add(
   editable:    false,
   active:      true,
   screens:     {
-    edit: {
+    edit:   {
       '-all-' => {
         null: false,
       },
     },
-    view: {
+    create: {
+      '-all-' => {
+        null: false,
+      },
+    },
+    view:   {
       '-all-' => {
         shown: true,
       },
@@ -1272,12 +1426,17 @@ ObjectManager::Attribute.add(
   editable:    false,
   active:      true,
   screens:     {
-    edit: {
+    edit:   {
       '-all-' => {
         null: false,
       },
     },
-    view: {
+    create: {
+      '-all-' => {
+        null: false,
+      },
+    },
+    view:   {
       '-all-' => {
         shown: true,
       },
@@ -1310,12 +1469,17 @@ ObjectManager::Attribute.add(
   editable:    false,
   active:      true,
   screens:     {
-    edit: {
+    edit:   {
       '-all-' => {
         null: false,
       },
     },
-    view: {
+    create: {
+      '-all-' => {
+        null: false,
+      },
+    },
+    view:   {
       '-all-' => {
         shown: true,
       },
@@ -1342,12 +1506,17 @@ ObjectManager::Attribute.add(
   editable:    false,
   active:      true,
   screens:     {
-    edit: {
+    edit:   {
       '-all-' => {
         null: true,
       },
     },
-    view: {
+    create: {
+      '-all-' => {
+        null: true,
+      },
+    },
+    view:   {
       '-all-' => {
         shown: true,
       },
@@ -1374,12 +1543,17 @@ ObjectManager::Attribute.add(
   editable:    false,
   active:      true,
   screens:     {
-    edit: {
+    edit:   {
       '-all-' => {
         null: true,
       },
     },
-    view: {
+    create: {
+      '-all-' => {
+        null: true,
+      },
+    },
+    view:   {
       '-all-' => {
         shown: true,
       },
@@ -1405,12 +1579,17 @@ ObjectManager::Attribute.add(
   editable:    false,
   active:      true,
   screens:     {
-    edit: {
+    edit:   {
       '-all-' => {
         null: false,
       },
     },
-    view: {
+    create: {
+      '-all-' => {
+        null: false,
+      },
+    },
+    view:   {
       '-all-' => {
         shown: false,
       },
@@ -1512,12 +1691,12 @@ ObjectManager::Attribute.add(
   screens:     {
     create: {
       '-all-' => {
-        null: true,
+        null: false,
       },
     },
     edit:   {
       '-all-' => {
-        null: true,
+        null: false,
       },
     },
   },
@@ -1534,7 +1713,7 @@ ObjectManager::Attribute.add(
   display:     'Assign Follow-Ups',
   data_type:   'select',
   data_option: {
-    default:   'yes',
+    default:   'true',
     options:   {
       true:  'yes',
       false: 'no',
@@ -1548,12 +1727,12 @@ ObjectManager::Attribute.add(
   screens:     {
     create: {
       '-all-' => {
-        null: true,
+        null: false,
       },
     },
     edit:   {
       '-all-' => {
-        null: true,
+        null: false,
       },
     },
   },

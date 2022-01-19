@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module HasHistory
   extend ActiveSupport::Concern
 
@@ -46,7 +47,7 @@ log object update history with all updated attributes, if configured - will be e
       end
     end
     self.history_changes_last_done = changes
-    #logger.info 'updated ' + self.changes.inspect
+    # logger.info 'updated ' + self.changes.inspect
 
     return if changes['id'] && !changes['id'][0]
 
@@ -100,7 +101,7 @@ log object update history with all updated attributes, if configured - will be e
         id_from:           value_id[0],
         id_to:             value_id[1],
       }
-      #logger.info "HIST NEW #{self.class.to_s}.find(#{self.id}) #{data.inspect}"
+      # logger.info "HIST NEW #{self.class.to_s}.find(#{self.id}) #{data.inspect}"
       history_log('updated', updated_by_id, data)
     end
   end
@@ -159,7 +160,7 @@ returns
 get history log for this object
 
   organization = Organization.find(123)
-  result = organization.history_get()
+  result = organization.history_get
 
 returns
 
@@ -204,7 +205,7 @@ returns
 =end
 
   def history_get(fulldata = false)
-    relation_object = self.class.instance_variable_get(:@history_relation_object) || nil
+    relation_object = history_relation_object
 
     if !fulldata
       return History.list(self.class.name, self['id'], relation_object)
@@ -213,12 +214,16 @@ returns
     # get related objects
     history = History.list(self.class.name, self['id'], relation_object, true)
     history[:list].each do |item|
-      record = item['object'].constantize.find(item['o_id'])
+      record = item['object'].constantize.lookup(id: item['o_id'])
 
-      history[:assets] = record.assets(history[:assets])
+      if record.present?
+        history[:assets] = record.assets(history[:assets])
+      end
 
-      if item['related_object']
-        record = item['related_object'].constantize.find(item['related_o_id'])
+      next if !item['related_object']
+
+      record = item['related_object'].constantize.lookup(id: item['related_o_id'])
+      if record.present?
         history[:assets] = record.assets(history[:assets])
       end
     end
@@ -226,6 +231,10 @@ returns
       history: history[:list],
       assets:  history[:assets],
     }
+  end
+
+  def history_relation_object
+    @history_relation_object ||= self.class.instance_variable_get(:@history_relation_object) || []
   end
 
   # methods defined here are going to extend the class, not the instance of it
@@ -256,8 +265,9 @@ end
 
 =end
 
-    def history_relation_object(attribute)
-      @history_relation_object = attribute
+    def history_relation_object(*attributes)
+      @history_relation_object ||= []
+      @history_relation_object |= attributes
     end
 
   end

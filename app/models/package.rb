@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Package < ApplicationModel
   @@root = Rails.root.to_s # rubocop:disable Style/ClassVars
@@ -64,7 +64,7 @@ install all packages located under auto_install/*.zpm
 
     data = []
     Dir.foreach(path) do |entry|
-      if entry =~ /\.zpm/ && entry !~ /^\./
+      if entry.include?('.zpm') && entry !~ %r{^\.}
         data.push entry
       end
     end
@@ -91,7 +91,7 @@ note: will not take down package migrations, use Package.unlink instead
         logger.info "unlink: #{entry}"
         File.delete(entry)
       end
-      backup_file = entry + '.link_backup'
+      backup_file = "#{entry}.link_backup"
       if File.exist?(backup_file)
         logger.info "Restore backup file of #{backup_file} -> #{entry}."
         File.rename(backup_file, entry)
@@ -102,7 +102,7 @@ note: will not take down package migrations, use Package.unlink instead
   # check if zpm is a package source repo
   def self._package_base_dir?(package_base_dir)
     package = false
-    Dir.glob(package_base_dir + '/*.szpm') do |entry|
+    Dir.glob("#{package_base_dir}/*.szpm") do |entry|
       package = entry.sub(%r{^.*/(.+?)\.szpm$}, '\1')
     end
     if package == false
@@ -130,18 +130,18 @@ execute migration down + unlink files
     Package::Migration.migrate(package, 'reverse')
 
     # link files
-    Dir.glob(package_base_dir + '/**/*') do |entry|
+    Dir.glob("#{package_base_dir}/**/*") do |entry|
       entry = entry.sub('//', '/')
       file = entry
-      file = file.sub(/#{package_base_dir}/, '')
-      dest = @@root + '/' + file
+      file = file.sub(%r{#{package_base_dir}}, '')
+      dest = "#{@@root}/#{file}"
 
       if File.symlink?(dest.to_s)
         logger.info "Unlink file: #{dest}"
         File.delete(dest.to_s)
       end
 
-      backup_file = dest.to_s + '.link_backup'
+      backup_file = "#{dest}.link_backup"
       if File.exist?(backup_file)
         logger.info "Restore backup file of #{backup_file} -> #{dest}."
         File.rename(backup_file, dest.to_s)
@@ -151,22 +151,23 @@ execute migration down + unlink files
 
 =begin
 
-link files + execute migration up
+link files
 
   Package.link('/path/to/src/extension')
+
+Migrations will not be executed because the the codebase was modified
+in the current process and is therefore inconsistent. This must be done
+subsequently in a separate step.
 
 =end
 
   def self.link(package_base_dir)
 
-    # check if zpm is a package source repo
-    package = _package_base_dir?(package_base_dir)
-
     # link files
-    Dir.glob(package_base_dir + '/**/*') do |entry|
+    Dir.glob("#{package_base_dir}/**/*") do |entry|
       entry = entry.sub('//', '/')
       file = entry
-      file = file.sub(/#{package_base_dir}/, '')
+      file = file.sub(%r{#{package_base_dir}}, '')
       file = file.sub(%r{^/}, '')
 
       # ignore files
@@ -176,17 +177,15 @@ link files + execute migration up
       end
 
       # get new file destination
-      dest = @@root + '/' + file
+      dest = "#{@@root}/#{file}"
 
-      if File.directory?(entry.to_s)
-        if !File.exist?(dest.to_s)
-          logger.info "Create dir: #{dest}"
-          FileUtils.mkdir_p(dest.to_s)
-        end
+      if File.directory?(entry.to_s) && !File.exist?(dest.to_s)
+        logger.info "Create dir: #{dest}"
+        FileUtils.mkdir_p(dest.to_s)
       end
 
       if File.file?(entry.to_s) && (File.file?(dest.to_s) && !File.symlink?(dest.to_s))
-        backup_file = dest.to_s + '.link_backup'
+        backup_file = "#{dest}.link_backup"
         if File.exist?(backup_file)
           raise "Can't link #{entry} -> #{dest}, destination and .link_backup already exists!"
         end
@@ -203,9 +202,6 @@ link files + execute migration up
         File.symlink(entry.to_s, dest.to_s)
       end
     end
-
-    # migration up
-    Package::Migration.migrate(package)
   end
 
 =begin
@@ -221,6 +217,10 @@ or
 returns
 
   package # record of newly created package
+
+Migrations will not be executed because the the codebase was modified
+in the current process and is therefore inconsistent. This must be done
+subsequently in a separate step.
 
 =end
 
@@ -263,35 +263,37 @@ returns
       )
     end
 
-    # store package
-    if !data[:reinstall]
-      package_db = Package.create(meta)
-      Store.add(
-        object:        'Package',
-        o_id:          package_db.id,
-        data:          package.to_json,
-        filename:      "#{meta[:name]}-#{meta[:version]}.zpm",
-        preferences:   {},
-        created_by_id: UserInfo.current_user_id || 1,
-      )
+    Transaction.execute do
+      # store package
+      if !data[:reinstall]
+        package_db = Package.create(meta)
+        Store.add(
+          object:        'Package',
+          o_id:          package_db.id,
+          data:          package.to_json,
+          filename:      "#{meta[:name]}-#{meta[:version]}.zpm",
+          preferences:   {},
+          created_by_id: UserInfo.current_user_id || 1,
+        )
+      end
+
+      # write files
+      package['files'].each do |file|
+        if !allowed_file_path?(file['location'])
+          raise "Can't create file, because of not allowed file location: #{file['location']}!"
+        end
+
+        permission = file['permission'] || '644'
+        content    = Base64.decode64(file['content'])
+        _write_file(file['location'], permission, content)
+      end
+
+      # update package state
+      package_db.state = 'installed'
+      package_db.save
     end
-
-    # write files
-    package['files'].each do |file|
-      permission = file['permission'] || '644'
-      content    = Base64.decode64(file['content'])
-      _write_file(file['location'], permission, content)
-    end
-
-    # update package state
-    package_db.state = 'installed'
-    package_db.save
-
-    # up migrations
-    Package::Migration.migrate(meta[:name])
 
     # prebuild assets
-
     package_db
   end
 
@@ -408,12 +410,13 @@ execute all pending package migrations at once
   end
 
   def self._read_file(file, fullpath = false)
-    location = if fullpath == false
-                 @@root + '/' + file
-               elsif fullpath == true
+    location = case fullpath
+               when false
+                 "#{@@root}/#{file}"
+               when true
                  file
                else
-                 fullpath + '/' + file
+                 "#{fullpath}/#{file}"
                end
 
     begin
@@ -435,14 +438,14 @@ execute all pending package migrations at once
         logger.debug { "NOTICE: file '#{location}' already exists, skip install" }
         return true
       end
-      backup_location = location + '.save'
+      backup_location = "#{location}.save"
       logger.info "NOTICE: backup old file '#{location}' to #{backup_location}"
       File.rename(location, backup_location)
     end
 
     # check if directories need to be created
     directories = location.split '/'
-    (0..(directories.length - 2) ).each do |position|
+    (0..(directories.length - 2)).each do |position|
       tmp_path = ''
       (1..position).each do |count|
         tmp_path = "#{tmp_path}/#{directories[count]}"
@@ -477,7 +480,7 @@ execute all pending package migrations at once
     end
 
     # rename existing file
-    backup_location = location + '.save'
+    backup_location = "#{location}.save"
     if File.exist?(backup_location)
       logger.info "NOTICE: restore old file '#{backup_location}' to #{location}"
       File.rename(backup_location, location)
@@ -485,4 +488,9 @@ execute all pending package migrations at once
 
     true
   end
+
+  def self.allowed_file_path?(file)
+    file.exclude?('..') && file.exclude?('%2e%2e')
+  end
+  private_class_method :allowed_file_path?
 end

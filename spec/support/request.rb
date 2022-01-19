@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module ZammadSpecSupportRequest
 
   # This ruby meta programming action creates the methods to perform:
@@ -68,25 +70,22 @@ module ZammadSpecSupportRequest
     password = options[:password] || user.password.to_s
     login    = options[:login] || user.login
 
-    # mock authentication otherwise login won't
-    # if user has no password (which is expensive to create)
-    if password.blank?
-      allow(User).to receive(:authenticate).with(login, '') { user.update_last_login }.and_return(user)
-    end
-
     case via
     when :api_client
+      # ensure that always the correct header value is set
+      # otherwise previous header configurations will be re-used
+      add_headers('From' => options[:from])
+
       # if we want to authenticate by token
-      if options[:token].present?
-        credentials = "Token token=#{options[:token].name}"
+      credentials = if options[:token].present?
+                      "Token token=#{options[:token].name}"
+                    else
+                      ActionController::HttpAuthentication::Basic.encode_credentials(login, password)
+                    end
 
-        return add_headers('Authorization' => credentials)
-      end
-
-      credentials = ActionController::HttpAuthentication::Basic.encode_credentials(login, password)
-      add_headers('Authorization' => credentials, 'X-On-Behalf-Of' => options[:on_behalf_of])
+      add_headers('Authorization' => credentials)
     when :browser
-      post '/api/v1/signin', params: { username: login, password: password, fingerprint: Faker::Number.number(9) }
+      post '/api/v1/signin', params: { username: login, password: password, fingerprint: Faker::Number.number(digits: 9) }
     end
   end
 
@@ -98,7 +97,7 @@ module ZammadSpecSupportRequest
   # @see FactoryBot#attributes_for
   #
   # @example
-  #  attributes_params_for(:admin_user, email: 'custom@example.com')
+  #  attributes_params_for(:admin, email: 'custom@example.com')
   #  # => {firstname: 'Nicole', email: 'custom@example.com', ...}
   #
   # @return [Hash{Symbol => <String, Array, Hash>}] request cleaned attributes
@@ -145,15 +144,11 @@ RSpec.configure do |config|
   #
   # In order for this to work, you must define the user in a `let` block first:
   #
-  #     let(:user) { create(:customer_user) }
+  #     let(:user) { create(:customer) }
   #
-  config.before(:each, :authenticated_as) do |example|
-    @current_user = if example.metadata[:authenticated_as].is_a? Proc
-                      instance_exec(&example.metadata[:authenticated_as])
-                    else
-                      create(*Array(example.metadata[:authenticated_as]))
-                    end
+  config.before(:each, :authenticated_as, type: :request) do |example|
+    user = authenticated_as_get_user example.metadata[:authenticated_as], return_type: :user
 
-    authenticated_as @current_user unless @current_user.nil?
+    authenticated_as user if user
   end
 end

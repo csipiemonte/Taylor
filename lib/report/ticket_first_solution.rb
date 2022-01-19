@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Report::TicketFirstSolution
 
 =begin
@@ -19,27 +21,27 @@ returns
     params = params_origin.dup
 
     result = []
-    if params[:interval] == 'month'
+    case params[:interval]
+    when 'month'
       stop_interval = 12
-    elsif params[:interval] == 'week'
+    when 'week'
       stop_interval = 7
-    elsif params[:interval] == 'day'
+    when 'day'
       stop_interval = 31
-    elsif params[:interval] == 'hour'
+    when 'hour'
       stop_interval = 24
-    elsif params[:interval] == 'minute'
+    when 'minute'
       stop_interval = 60
     end
     (1..stop_interval).each do |_counter|
-      if params[:interval] == 'month'
+      case params[:interval]
+      when 'month'
         params[:range_end] = params[:range_start].next_month
-      elsif params[:interval] == 'week'
+      when 'week', 'day'
         params[:range_end] = params[:range_start].next_day
-      elsif params[:interval] == 'day'
-        params[:range_end] = params[:range_start].next_day
-      elsif params[:interval] == 'hour'
+      when 'hour'
         params[:range_end] = params[:range_start] + 1.hour
-      elsif params[:interval] == 'minute'
+      when 'minute'
         params[:range_end] = params[:range_start] + 1.minute
       end
 
@@ -60,7 +62,7 @@ returns
       ticket_list.each do |ticket|
         closed_at  = ticket.close_at
         created_at = ticket.created_at
-        if (closed_at - (60 * 15) ) < created_at
+        if (closed_at - (60 * 15)) < created_at
           count += 1
         end
       end
@@ -110,7 +112,7 @@ returns
     ticket_list.each do |ticket|
       closed_at  = ticket.close_at
       created_at = ticket.created_at
-      if (closed_at - (60 * 15) ) < created_at
+      if (closed_at - (60 * 15)) < created_at
         count += 1
         ticket_ids.push ticket.id
       end

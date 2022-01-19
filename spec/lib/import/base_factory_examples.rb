@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'lib/import/import_factory_examples'
 
 RSpec.shared_examples 'Import::BaseFactory' do
@@ -22,9 +24,11 @@ end
 
 RSpec.shared_examples 'Import::BaseFactory extender' do
   it 'calls new on determined backend object' do
-    record = double()
-    expect(described_class).to receive(:backend_class).and_return(Class)
-    expect(Class).to receive(:new).with(record, any_args)
+    record = double
+    allow(described_class).to receive(:backend_class).and_return(Class)
+    allow(Class).to receive(:new)
+
     described_class.import([record])
+    expect(Class).to have_received(:new).with(record, any_args)
   end
 end

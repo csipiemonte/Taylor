@@ -1,5 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
-require_dependency 'channel/driver/twitter'
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class ChannelsTwitterController < ApplicationController
   prepend_before_action -> { authentication_check && authorize! }, except: %i[webhook_incoming webhook_verify]
@@ -48,7 +47,7 @@ class ChannelsTwitterController < ApplicationController
   end
 
   def webhook_verify
-    external_credential = Cache.get('external_credential_twitter')
+    external_credential = Cache.read('external_credential_twitter')
     if !external_credential && ExternalCredential.exists?(name: 'twitter')
       external_credential = ExternalCredential.find_by(name: 'twitter').credentials
     end

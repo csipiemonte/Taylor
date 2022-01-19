@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Stats::TicketChannelDistribution
 
@@ -40,7 +40,7 @@ class Stats::TicketChannelDistribution
       )
     end
 
-    if Channel.where(area: 'Sms::Account').exists?
+    if Channel.exists?(area: 'Sms::Account')
       channels.push(
         {
           sender: 'sms',
@@ -49,7 +49,7 @@ class Stats::TicketChannelDistribution
       )
     end
 
-    if Channel.where(area: 'Twitter::Account').exists?
+    if Channel.exists?(area: 'Twitter::Account')
       channels.push(
         {
           sender: 'twitter',
@@ -58,7 +58,7 @@ class Stats::TicketChannelDistribution
       )
     end
 
-    if Channel.where(area: 'Facebook::Account').exists?
+    if Channel.exists?(area: 'Facebook::Account')
       channels.push(
         {
           sender: 'facebook',
@@ -67,7 +67,7 @@ class Stats::TicketChannelDistribution
       )
     end
 
-    if Channel.where(area: 'Telegram::Account').exists?
+    if Channel.exists?(area: 'Telegram::Account')
       channels.push(
         {
           sender: 'telegram',
@@ -86,12 +86,12 @@ class Stats::TicketChannelDistribution
       }
       type_ids = []
       Ticket::Article::Type.all.each do |type|
-        next if !type.name.match?(/^#{channel[:sender]}/i)
+        next if !type.name.match?(%r{^#{channel[:sender]}}i)
 
         type_ids.push type.id
       end
 
-      sender = Ticket::Article::Sender.lookup( name: 'Customer' )
+      sender = Ticket::Article::Sender.lookup(name: 'Customer')
       count = Ticket.where(group_id: group_ids).joins(:articles).where(
         ticket_articles: { sender_id: sender, type_id: type_ids }
       ).where(
@@ -100,7 +100,7 @@ class Stats::TicketChannelDistribution
       result[channel[:sender].to_sym][:inbound] = count
       total_in += count
 
-      sender = Ticket::Article::Sender.lookup( name: 'Agent' )
+      sender = Ticket::Article::Sender.lookup(name: 'Agent')
       count = Ticket.where(group_id: group_ids).joins(:articles).where(
         ticket_articles: { sender_id: sender, type_id: type_ids }
       ).where(
@@ -111,9 +111,9 @@ class Stats::TicketChannelDistribution
     end
 
     # append in percent
-    channels.each do |channel|
+    channels.each do |channel| # rubocop:disable Style/CombinableLoops
       count = result[channel[:sender].to_sym][:inbound]
-      #puts "#{channel.inspect}:in/#{result.inspect}:#{count}"
+      # puts "#{channel.inspect}:in/#{result.inspect}:#{count}"
       in_process_precent = if count.zero?
                              0
                            else

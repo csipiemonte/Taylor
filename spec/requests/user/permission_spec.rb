@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe 'User endpoint', type: :request do
@@ -20,8 +22,8 @@ RSpec.describe 'User endpoint', type: :request do
 
     let(:attributes) { attributes_params_for(:user) }
 
-    it 'responds unauthorized for customer' do
-      requester = create(:customer_user)
+    it 'responds forbidden for customer' do
+      requester = create(:customer)
       authenticated_as(requester)
 
       expect do
@@ -30,7 +32,7 @@ RSpec.describe 'User endpoint', type: :request do
         User.count
       }
 
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
     end
 
     context 'privileged attributes' do
@@ -58,7 +60,7 @@ RSpec.describe 'User endpoint', type: :request do
             expect(User.last.send(map_method_id)).to eq(send(map_method_id))
           end
 
-          it 'responds unauthorized for sub admin without admin.user' do
+          it 'responds forbidden for sub admin without admin.user' do
             authenticated_as(admin_without_admin_user_permissions)
 
             expect do
@@ -67,11 +69,11 @@ RSpec.describe 'User endpoint', type: :request do
               User.count
             }
 
-            expect(response).to have_http_status(:unauthorized)
+            expect(response).to have_http_status(:forbidden)
           end
 
           it 'responds successful for agent but removes assignment' do
-            requester = create(:agent_user)
+            requester = create(:agent)
             authenticated_as(requester)
 
             expect do
@@ -131,7 +133,7 @@ RSpec.describe 'User endpoint', type: :request do
             expect(User.last.roles).to eq(privileged)
           end
 
-          it 'responds unauthorized for sub admin without admin.user' do
+          it 'responds forbidden for sub admin without admin.user' do
             authenticated_as(admin_without_admin_user_permissions)
 
             expect do
@@ -140,11 +142,11 @@ RSpec.describe 'User endpoint', type: :request do
               User.count
             }
 
-            expect(response).to have_http_status(:unauthorized)
+            expect(response).to have_http_status(:forbidden)
           end
 
           it 'responds successful for agent but removes assignment' do
-            requester = create(:agent_user)
+            requester = create(:agent)
             authenticated_as(requester)
 
             expect do
@@ -193,7 +195,7 @@ RSpec.describe 'User endpoint', type: :request do
       expect(response).to have_http_status(:success)
     end
 
-    def unauthorized_update_request(requester:, requested:)
+    def forbidden_update_request(requester:, requested:)
       authenticated_as(requester)
 
       expect do
@@ -211,7 +213,7 @@ RSpec.describe 'User endpoint', type: :request do
         end
       }
 
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
     end
 
     context 'request by admin.user' do
@@ -228,21 +230,21 @@ RSpec.describe 'User endpoint', type: :request do
       it 'is successful for other admin' do
         authorized_update_request(
           requester: requester,
-          requested: create(:admin_user),
+          requested: create(:admin),
         )
       end
 
       it 'is successful for agent' do
         authorized_update_request(
           requester: requester,
-          requested: create(:agent_user),
+          requested: create(:agent),
         )
       end
 
       it 'is successful for customer' do
         authorized_update_request(
           requester: requester,
-          requested: create(:customer_user),
+          requested: create(:customer),
         )
       end
     end
@@ -251,108 +253,108 @@ RSpec.describe 'User endpoint', type: :request do
 
       let(:requester) { admin_without_admin_user_permissions }
 
-      it 'is unauthorized for same admin' do
-        unauthorized_update_request(
+      it 'is forbidden for same admin' do
+        forbidden_update_request(
           requester: requester,
           requested: requester,
         )
       end
 
-      it 'is unauthorized for other admin' do
-        unauthorized_update_request(
+      it 'is forbidden for other admin' do
+        forbidden_update_request(
           requester: requester,
-          requested: create(:admin_user),
+          requested: create(:admin),
         )
       end
 
-      it 'is unauthorized for agent' do
-        unauthorized_update_request(
+      it 'is forbidden for agent' do
+        forbidden_update_request(
           requester: requester,
-          requested: create(:agent_user),
+          requested: create(:agent),
         )
       end
 
-      it 'is unauthorized for customer' do
-        unauthorized_update_request(
+      it 'is forbidden for customer' do
+        forbidden_update_request(
           requester: requester,
-          requested: create(:customer_user),
+          requested: create(:customer),
         )
       end
     end
 
     context 'request by agent' do
 
-      let(:requester) { create(:agent_user) }
+      let(:requester) { create(:agent) }
 
-      it 'is unauthorized for admin' do
-        unauthorized_update_request(
+      it 'is forbidden for admin' do
+        forbidden_update_request(
           requester: requester,
-          requested: create(:admin_user),
+          requested: create(:admin),
         )
       end
 
-      it 'is unauthorized same agent' do
-        unauthorized_update_request(
+      it 'is forbidden same agent' do
+        forbidden_update_request(
           requester: requester,
           requested: requester,
         )
       end
 
-      it 'is unauthorized for other agent' do
-        unauthorized_update_request(
+      it 'is forbidden for other agent' do
+        forbidden_update_request(
           requester: requester,
-          requested: create(:agent_user),
+          requested: create(:agent),
         )
       end
 
       it 'is successful for customer' do
         authorized_update_request(
           requester: requester,
-          requested: create(:customer_user),
+          requested: create(:customer),
         )
       end
     end
 
     context 'request by customer' do
 
-      let(:requester) { create(:customer_user) }
+      let(:requester) { create(:customer) }
 
-      it 'is unauthorized for admin' do
-        unauthorized_update_request(
+      it 'is forbidden for admin' do
+        forbidden_update_request(
           requester: requester,
-          requested: create(:admin_user),
+          requested: create(:admin),
         )
       end
 
-      it 'is unauthorized for agent' do
-        unauthorized_update_request(
+      it 'is forbidden for agent' do
+        forbidden_update_request(
           requester: requester,
-          requested: create(:agent_user),
+          requested: create(:agent),
         )
       end
 
-      it 'is unauthorized for same customer' do
-        unauthorized_update_request(
+      it 'is forbidden for same customer' do
+        forbidden_update_request(
           requester: requester,
           requested: requester,
         )
       end
 
-      it 'is unauthorized for other customer' do
-        unauthorized_update_request(
+      it 'is forbidden for other customer' do
+        forbidden_update_request(
           requester: requester,
-          requested: create(:customer_user),
+          requested: create(:customer),
         )
       end
 
-      it 'is unauthorized for same organization' do
+      it 'is forbidden for same organization' do
         same_organization = create(:organization)
 
         requester.update!(organization: same_organization)
 
-        unauthorized_update_request(
+        forbidden_update_request(
           requester: requester,
-          requested: create(:customer_user, organization: same_organization),
+          requested: create(:customer, organization: same_organization),
         )
       end
     end
@@ -383,7 +385,7 @@ RSpec.describe 'User endpoint', type: :request do
           expect(response).to have_http_status(:success)
         end
 
-        it 'responds unauthorized for sub admin without admin.user' do
+        it 'responds forbidden for sub admin without admin.user' do
           authenticated_as(admin_without_admin_user_permissions)
 
           expect do
@@ -392,14 +394,14 @@ RSpec.describe 'User endpoint', type: :request do
             value_of_attribute
           }
 
-          expect(response).to have_http_status(:unauthorized)
+          expect(response).to have_http_status(:forbidden)
         end
       end
 
       shared_examples 'permitted agent update' do
 
         it 'responds successful for agent but removes assignment' do
-          requester = create(:agent_user)
+          requester = create(:agent)
           authenticated_as(requester)
 
           expect do
@@ -415,7 +417,7 @@ RSpec.describe 'User endpoint', type: :request do
       shared_examples 'forbidden agent update' do
 
         it 'responds successful for agent but removes assignment' do
-          requester = create(:agent_user)
+          requester = create(:agent)
           authenticated_as(requester)
 
           expect do
@@ -522,12 +524,12 @@ RSpec.describe 'User endpoint', type: :request do
       expect(requested).not_to exist_in_database
     end
 
-    def unauthorized_destroy_request(requester:, requested:)
+    def forbidden_destroy_request(requester:, requested:)
       authenticated_as(requester)
 
       delete api_v1_delete_user_path(requested)
 
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(requested).to exist_in_database
     end
 
@@ -545,21 +547,21 @@ RSpec.describe 'User endpoint', type: :request do
       it 'is successful for other admin' do
         authorized_destroy_request(
           requester: requester,
-          requested: create(:admin_user),
+          requested: create(:admin),
         )
       end
 
       it 'is successful for agent' do
         authorized_destroy_request(
           requester: requester,
-          requested: create(:agent_user),
+          requested: create(:agent),
         )
       end
 
       it 'is successful for customer' do
         authorized_destroy_request(
           requester: requester,
-          requested: create(:customer_user),
+          requested: create(:customer),
         )
       end
     end
@@ -568,108 +570,108 @@ RSpec.describe 'User endpoint', type: :request do
 
       let(:requester) { admin_without_admin_user_permissions }
 
-      it 'is unauthorized for same admin' do
-        unauthorized_destroy_request(
+      it 'is forbidden for same admin' do
+        forbidden_destroy_request(
           requester: requester,
           requested: requester,
         )
       end
 
-      it 'is unauthorized for other admin' do
-        unauthorized_destroy_request(
+      it 'is forbidden for other admin' do
+        forbidden_destroy_request(
           requester: requester,
-          requested: create(:admin_user),
+          requested: create(:admin),
         )
       end
 
-      it 'is unauthorized for agent' do
-        unauthorized_destroy_request(
+      it 'is forbidden for agent' do
+        forbidden_destroy_request(
           requester: requester,
-          requested: create(:agent_user),
+          requested: create(:agent),
         )
       end
 
-      it 'is unauthorized for customer' do
-        unauthorized_destroy_request(
+      it 'is forbidden for customer' do
+        forbidden_destroy_request(
           requester: requester,
-          requested: create(:customer_user),
+          requested: create(:customer),
         )
       end
     end
 
     context 'request by agent' do
 
-      let(:requester) { create(:agent_user) }
+      let(:requester) { create(:agent) }
 
-      it 'is unauthorized for admin' do
-        unauthorized_destroy_request(
+      it 'is forbidden for admin' do
+        forbidden_destroy_request(
           requester: requester,
-          requested: create(:admin_user),
+          requested: create(:admin),
         )
       end
 
-      it 'is unauthorized same agent' do
-        unauthorized_destroy_request(
+      it 'is forbidden same agent' do
+        forbidden_destroy_request(
           requester: requester,
           requested: requester,
         )
       end
 
-      it 'is unauthorized for other agent' do
-        unauthorized_destroy_request(
+      it 'is forbidden for other agent' do
+        forbidden_destroy_request(
           requester: requester,
-          requested: create(:agent_user),
+          requested: create(:agent),
         )
       end
 
-      it 'is unauthorized for customer' do
-        unauthorized_destroy_request(
+      it 'is forbidden for customer' do
+        forbidden_destroy_request(
           requester: requester,
-          requested: create(:customer_user),
+          requested: create(:customer),
         )
       end
     end
 
     context 'request by customer' do
 
-      let(:requester) { create(:customer_user) }
+      let(:requester) { create(:customer) }
 
-      it 'is unauthorized for admin' do
-        unauthorized_destroy_request(
+      it 'is forbidden for admin' do
+        forbidden_destroy_request(
           requester: requester,
-          requested: create(:admin_user),
+          requested: create(:admin),
         )
       end
 
-      it 'is unauthorized for agent' do
-        unauthorized_destroy_request(
+      it 'is forbidden for agent' do
+        forbidden_destroy_request(
           requester: requester,
-          requested: create(:agent_user),
+          requested: create(:agent),
         )
       end
 
-      it 'is unauthorized for same customer' do
-        unauthorized_destroy_request(
+      it 'is forbidden for same customer' do
+        forbidden_destroy_request(
           requester: requester,
           requested: requester,
         )
       end
 
-      it 'is unauthorized for other customer' do
-        unauthorized_destroy_request(
+      it 'is forbidden for other customer' do
+        forbidden_destroy_request(
           requester: requester,
-          requested: create(:customer_user),
+          requested: create(:customer),
         )
       end
 
-      it 'is unauthorized for same organization' do
+      it 'is forbidden for same organization' do
         same_organization = create(:organization)
 
         requester.update!(organization: same_organization)
 
-        unauthorized_destroy_request(
+        forbidden_destroy_request(
           requester: requester,
-          requested: create(:customer_user, organization: same_organization),
+          requested: create(:customer, organization: same_organization),
         )
       end
     end

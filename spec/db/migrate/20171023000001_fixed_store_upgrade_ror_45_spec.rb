@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 # Rails 5.0 has changed to only store and read ActiveSupport::HashWithIndifferentAccess from stores
@@ -8,7 +10,7 @@ RSpec.describe FixedStoreUpgradeRor45, type: :db_migration do
 
   context 'when DB contains `store`d attributes saved as unpermitted ActionController::Parameters' do
     before do
-      ActiveRecord::Base.connection.execute(<<~SQL.tap { |sql| sql.delete!('`') if !mysql? })
+      ActiveRecord::Base.connection.execute(<<~SQL.tap { |sql| sql.delete!('`') if !mysql? }) # rubocop:disable Rails/SquishedSQLHeredocs
         INSERT INTO taskbars (`user_id`, `client_id`, `key`, `callback`, `state`, `params`, `prio`, `notify`, `active`, `preferences`, `last_contact`, `updated_at`, `created_at`)
         VALUES (#{user.id},
                 '123',

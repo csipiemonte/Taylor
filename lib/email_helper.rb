@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class EmailHelper
 
 =begin
@@ -60,7 +62,7 @@ returns
   def self.parse_email(email)
     user   = nil
     domain = nil
-    if email =~ /^(.+?)@(.+?)$/
+    if email =~ %r{^(.+?)@(.+?)$}
       user   = $1
       domain = $2
     end
@@ -106,7 +108,7 @@ returns
 
   def self.provider(email, password)
     # check domain based attributes
-    provider_map = {
+    {
       google_imap: {
         domain:   'gmail|googlemail|google',
         inbound:  {
@@ -177,7 +179,7 @@ returns
         },
       },
     }
-    provider_map
+
   end
 
 =begin
@@ -236,7 +238,7 @@ returns
           },
         },
       ]
-      inbounds = inbounds.concat(inbound)
+      inbounds.concat(inbound)
     end
     inbounds
   end
@@ -274,7 +276,7 @@ returns
 =end
 
   def self.provider_inbound_guess(user, email, password, domain)
-    inbound = [
+    [
       {
         adapter: 'imap',
         options: {
@@ -376,7 +378,7 @@ returns
         },
       },
     ]
-    inbound
+
   end
 
 =begin
@@ -473,7 +475,7 @@ returns
           },
         },
       ]
-      outbounds = outbounds.concat(outbound)
+      outbounds.concat(outbound)
     end
     outbounds
   end
@@ -511,7 +513,7 @@ returns
 =end
 
   def self.provider_outbound_guess(user, email, password, domain)
-    outbound = [
+    [
       {
         adapter: 'smtp',
         options: {
@@ -593,7 +595,7 @@ returns
         },
       },
     ]
-    outbound
+
   end
 
 =begin

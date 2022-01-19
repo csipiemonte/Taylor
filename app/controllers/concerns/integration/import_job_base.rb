@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module Integration::ImportJobBase
   extend ActiveSupport::Concern
 
@@ -22,7 +24,7 @@ module Integration::ImportJobBase
   def job_start_create
     if !ImportJob.exists?(name: backend, finished_at: nil)
       job = ImportJob.create(name: backend)
-      job.delay.start
+      AsyncImportJob.perform_later(job)
     end
     render json: {
       result: 'ok',

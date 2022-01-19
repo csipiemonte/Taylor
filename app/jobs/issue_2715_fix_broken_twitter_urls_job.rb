@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Issue2715FixBrokenTwitterUrlsJob < ApplicationJob
   STATUS_TEMPLATE = 'https://twitter.com/_/status/%<message_id>s'.freeze
   DM_TEMPLATE = 'https://twitter.com/messages/%<recipient_id>s-%<sender_id>s'.freeze
@@ -7,7 +9,7 @@ class Issue2715FixBrokenTwitterUrlsJob < ApplicationJob
                    .where(ticket_article_types: { name: ['twitter status', 'twitter direct-message'] })
                    .order(created_at: :desc)
                    .limit(10_000)
-                   .find_each(&method(:fix_broken_links))
+                   .find_each { |article| fix_broken_links(article) }
   end
 
   private

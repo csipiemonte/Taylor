@@ -1,9 +1,11 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe 'Report', type: :request, searchindex: true do
 
-  let!(:admin_user) do
-    create(:admin_user)
+  let!(:admin) do
+    create(:admin)
   end
   let!(:year) do
     DateTime.now.utc.year
@@ -52,7 +54,7 @@ RSpec.describe 'Report', type: :request, searchindex: true do
       create(:ticket, title: 'ticket for report #1', created_at: today.midday)
       create(:ticket, title: 'ticket for report #2', created_at: today.midday + 2.hours)
       create(:ticket, title: 'ticket for report #3', created_at: today.midday + 2.hours)
-      create(:ticket, title: 'ticket for report #4', created_at: today.midday + 10.hours, state: Ticket::State.lookup(name: 'closed') )
+      create(:ticket, title: 'ticket for report #4', created_at: today.midday + 10.hours, state: Ticket::State.lookup(name: 'closed'))
       create(:ticket, title: 'ticket for report #5', created_at: today.midday + 11.hours)
       create(:ticket, title: 'ticket for report #6', created_at: today.midday - 11.hours)
       create(:ticket, title: 'ticket for report #7', created_at: Time.zone.parse('2019-02-28T23:30:00Z'))
@@ -72,19 +74,19 @@ RSpec.describe 'Report', type: :request, searchindex: true do
   describe 'request handling' do
 
     it 'does report example - admin access' do
-      authenticated_as(admin_user)
+      authenticated_as(admin)
       get "/api/v1/reports/sets?sheet=true;metric=count;year=#{year};month=#{month};week=#{week};day=#{day};timeRange=year;profile_id=1;downloadBackendSelected=count::created", params: {}, as: :json
 
       expect(response).to have_http_status(:ok)
       assert(@response['Content-Disposition'])
-      expect(@response['Content-Disposition']).to eq('attachment; filename="tickets--all--Created.xls"')
+      expect(@response['Content-Disposition']).to eq('attachment; filename="tickets--all--Created.xls"; filename*=UTF-8\'\'tickets--all--Created.xls')
       expect(@response['Content-Type']).to eq('application/vnd.ms-excel')
     end
 
     it 'does report example - deliver result' do
       skip('No ES configured') if !SearchIndexBackend.enabled?
 
-      authenticated_as(admin_user)
+      authenticated_as(admin)
 
       # 2019-03-15 - day interval
       params = {

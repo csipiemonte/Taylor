@@ -8,7 +8,12 @@ class App.i18n
   @translateDeep: (input, args...) ->
     if _instance == undefined
       _instance ?= new _i18nSingleton()
-    _instance.translateDeep(input, args)
+    _instance.translateDeep(input, args, false)
+
+  @translateDeepPlain: (input, args...) ->
+    if _instance == undefined
+      _instance ?= new _i18nSingleton()
+    _instance.translateDeep(input, args, true)
 
   @translateContent: (string, args...) ->
     if _instance == undefined
@@ -230,17 +235,20 @@ class _i18nSingleton extends Spine.Module
     return string if !string
     @translate(string, args, true)
 
-  translateDeep: (input, args) =>
+  translateDeep: (input, args, plain) =>
     if _.isArray(input)
       _.map input, (item) =>
-        @translateDeep(item, args)
+        @translateDeep(item, args, plain)
     else if _.isObject(input)
       _.reduce _.keys(input), (memo, item) =>
-        memo[item] = @translateDeep(input[item])
+        memo[item] = @translateDeep(input[item], args, plain)
         memo
       , {}
     else
-      @translateInline(input, args)
+      if plain
+        @translatePlain(input, args)
+      else
+        @translateInline(input, args)
 
 
   translateContent: (string, args) =>
@@ -365,6 +373,11 @@ class _i18nSingleton extends Spine.Module
     return time if !time
     @convert(time, offset, @mapTime['timestamp'] || @timestampFormat)
 
+  convertUTC: (time) ->
+    timeArray = time.match(/\d+/g)
+    [y, m, d, H, M] = timeArray
+    new Date(Date.UTC(y, m - 1, d, H, M))
+
   formatNumber: (num, digits) ->
     while num.toString().length < digits
       num = '0' + num
@@ -373,6 +386,13 @@ class _i18nSingleton extends Spine.Module
   convert: (time, offset, format) ->
 
     timeObject = new Date(time)
+
+    # On firefox the Date constructor does not recongise date format that
+    # ends with UTC, instead it returns a NaN (Invalid Date Format) this
+    # block serves as polyfill to support time format that ends UTC in firefox
+    if isNaN(timeObject)
+       # works for only time string with this format: 2021-02-08 09:13:20 UTC
+      timeObject = @convertUTC(time) if time.match(/ UTC/)
 
     # add timezone diff, needed for unit tests
     if offset

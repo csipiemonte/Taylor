@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sequencer
   class Unit
     module Import
@@ -30,8 +32,8 @@ class Sequencer
                     instance.update!(active: false)
                     state.provide(:action, :deactivated)
                   else
-                    # skip instance creation if no existing
-                    # instance was found yet
+                    # skip instance creation if no existing instance was found yet
+                    logger.info { "Skipping. No Role assignment found for login '#{mapped[:login]}'" }
                     state.provide(:action, :skipped)
                   end
                 end

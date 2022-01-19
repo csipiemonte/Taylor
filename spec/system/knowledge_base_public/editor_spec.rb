@@ -1,6 +1,8 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
-RSpec.describe 'Public Knowledge Base for editor', type: :system, authenticated: true do
+RSpec.describe 'Public Knowledge Base for editor', authentication_type: :form, type: :system do
   include_context 'basic Knowledge Base'
 
   before do
@@ -14,7 +16,7 @@ RSpec.describe 'Public Knowledge Base for editor', type: :system, authenticated:
 
     it 'expect to have edit button' do
       button = find '.topbar-btn'
-      expect(button['href']).to match(/edit$/)
+      expect(button['href']).to match(%r{edit$})
     end
   end
 

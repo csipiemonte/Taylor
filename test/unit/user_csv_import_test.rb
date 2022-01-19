@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'test_helper'
 
 class UserCsvImportTest < ActiveSupport::TestCase
@@ -131,8 +133,8 @@ class UserCsvImportTest < ActiveSupport::TestCase
     assert_equal(user1.email, 'user-simple-import1@example.com')
     assert_equal(user1.active, true)
     assert_equal(user1.updated_at, user1_1.updated_at)
-    user2 = user2
-    user2_1 = User.find_by(login: 'user-simple-import2')
+    user2_1 = user2
+    user2 = User.find_by(login: 'user-simple-import2')
     assert(user2)
     assert_equal(user2.login, 'user-simple-import2')
     assert_equal(user2.firstname, 'firstname-simple-import2')
@@ -168,8 +170,8 @@ class UserCsvImportTest < ActiveSupport::TestCase
     assert_equal(user1.email, 'user-simple-import1@example.com')
     assert_equal(user1.active, true)
     assert_not_equal(user1.updated_at, user1_1.updated_at)
-    user2 = user2
-    user2_1 = User.find_by(login: 'user-simple-import2')
+    user2_1 = user2
+    user2 = User.find_by(login: 'user-simple-import2')
     assert(user2)
     assert_equal(user2.login, 'user-simple-import2')
     assert_equal(user2.firstname, 'firstname-simple-import2')

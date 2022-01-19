@@ -1,17 +1,19 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe 'Ticket Article API endpoints', type: :request do
 
-  let(:admin_user) do
-    create(:admin_user, groups: Group.all)
+  let(:admin) do
+    create(:admin, groups: Group.all)
   end
   let!(:group) { create(:group) }
 
-  let(:agent_user) do
-    create(:agent_user, groups: Group.all)
+  let(:agent) do
+    create(:agent, groups: Group.all)
   end
-  let(:customer_user) do
-    create(:customer_user)
+  let(:customer) do
+    create(:customer)
   end
 
   describe 'request handling' do
@@ -20,12 +22,12 @@ RSpec.describe 'Ticket Article API endpoints', type: :request do
       params = {
         title:       'a new ticket #1',
         group:       'Users',
-        customer_id: customer_user.id,
+        customer_id: customer.id,
         article:     {
           body: 'some body',
         }
       }
-      authenticated_as(agent_user)
+      authenticated_as(agent)
       post '/api/v1/tickets', params: params, as: :json
       expect(response).to have_http_status(:created)
 
@@ -41,8 +43,8 @@ RSpec.describe 'Ticket Article API endpoints', type: :request do
       expect(json_response['subject']).to be_nil
       expect(json_response['body']).to eq('some body')
       expect(json_response['content_type']).to eq('text/plain')
-      expect(json_response['updated_by_id']).to eq(agent_user.id)
-      expect(json_response['created_by_id']).to eq(agent_user.id)
+      expect(json_response['updated_by_id']).to eq(agent.id)
+      expect(json_response['created_by_id']).to eq(agent.id)
 
       ticket = Ticket.find(json_response['ticket_id'])
       expect(ticket.articles.count).to eq(2)
@@ -61,11 +63,11 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
       expect(response).to have_http_status(:created)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['subject']).to be_nil
-      expect(json_response['body']).not_to match(/some body <img src="cid:.+?/)
+      expect(json_response['body']).not_to match(%r{some body <img src="cid:.+?})
       expect(json_response['body']).to match(%r{some body <img src="/api/v1/ticket_attachment/.+?" alt="Red dot"})
       expect(json_response['content_type']).to eq('text/html')
-      expect(json_response['updated_by_id']).to eq(agent_user.id)
-      expect(json_response['created_by_id']).to eq(agent_user.id)
+      expect(json_response['updated_by_id']).to eq(agent.id)
+      expect(json_response['created_by_id']).to eq(agent.id)
 
       expect(ticket.articles.count).to eq(3)
       expect(ticket.articles[0].attachments.count).to eq(0)
@@ -76,7 +78,7 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
       expect(ticket.articles[2].attachments[0]['size']).to eq('21')
       expect(ticket.articles[2].attachments[0]['preferences']['Mime-Type']).to eq('image/png')
       expect(ticket.articles[2].attachments[0]['preferences']['Content-Disposition']).to eq('inline')
-      expect(ticket.articles[2].attachments[0]['preferences']['Content-ID']).to match(/@zammad.example.com/)
+      expect(ticket.articles[2].attachments[0]['preferences']['Content-ID']).to match(%r{@zammad.example.com})
 
       params = {
         ticket_id:    json_response['ticket_id'],
@@ -84,9 +86,9 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
         body:         'some body',
         type:         'note',
         attachments:  [
-          'filename'  => 'some_file.txt',
-          'data'      => 'dGVzdCAxMjM=',
-          'mime-type' => 'text/plain',
+          { 'filename'  => 'some_file.txt',
+            'data'      => 'dGVzdCAxMjM=',
+            'mime-type' => 'text/plain' },
         ],
       }
       post '/api/v1/ticket_articles', params: params, as: :json
@@ -95,8 +97,8 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
       expect(json_response['subject']).to be_nil
       expect(json_response['body']).to eq('some body')
       expect(json_response['content_type']).to eq('text/html')
-      expect(json_response['updated_by_id']).to eq(agent_user.id)
-      expect(json_response['created_by_id']).to eq(agent_user.id)
+      expect(json_response['updated_by_id']).to eq(agent.id)
+      expect(json_response['created_by_id']).to eq(agent.id)
 
       expect(ticket.articles.count).to eq(4)
       expect(ticket.articles[0].attachments.count).to eq(0)
@@ -118,8 +120,10 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
         content_type: 'text/plain',
         body:         'some body',
         type:         'note',
+        internal:     false,
         preferences:  {
           some_key1: 123,
+          highlight: '123',
         },
       }
       post '/api/v1/ticket_articles', params: params, as: :json
@@ -127,28 +131,34 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['subject']).to be_nil
       expect(json_response['body']).to eq('some body')
+      expect(json_response['internal']).to eq(false)
       expect(json_response['content_type']).to eq('text/plain')
-      expect(json_response['updated_by_id']).to eq(agent_user.id)
-      expect(json_response['created_by_id']).to eq(agent_user.id)
+      expect(json_response['updated_by_id']).to eq(agent.id)
+      expect(json_response['created_by_id']).to eq(agent.id)
       expect(json_response['preferences']['some_key1']).to eq(123)
+      expect(json_response['preferences']['highlight']).to eq('123')
       expect(ticket.articles.count).to eq(5)
 
       params = {
         body:        'some body 2',
+        internal:    true,
         preferences: {
           some_key2: 'abc',
+          highlight: '234',
         },
       }
       put "/api/v1/ticket_articles/#{json_response['id']}", params: params, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['subject']).to be_nil
-      expect(json_response['body']).to eq('some body 2')
+      expect(json_response['body']).not_to eq('some body 2')
+      expect(json_response['internal']).to eq(true)
       expect(json_response['content_type']).to eq('text/plain')
-      expect(json_response['updated_by_id']).to eq(agent_user.id)
-      expect(json_response['created_by_id']).to eq(agent_user.id)
+      expect(json_response['updated_by_id']).to eq(agent.id)
+      expect(json_response['created_by_id']).to eq(agent.id)
       expect(json_response['preferences']['some_key1']).to eq(123)
-      expect(json_response['preferences']['some_key2']).to eq('abc')
+      expect(json_response['preferences']['some_key2']).not_to eq('abc')
+      expect(json_response['preferences']['highlight']).to eq('234')
 
     end
 
@@ -160,7 +170,7 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
           body: 'some body',
         }
       }
-      authenticated_as(customer_user)
+      authenticated_as(customer)
       post '/api/v1/tickets', params: params, as: :json
       expect(response).to have_http_status(:created)
 
@@ -176,8 +186,8 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
       expect(json_response['subject']).to be_nil
       expect(json_response['body']).to eq('some body')
       expect(json_response['content_type']).to eq('text/plain')
-      expect(json_response['updated_by_id']).to eq(customer_user.id)
-      expect(json_response['created_by_id']).to eq(customer_user.id)
+      expect(json_response['updated_by_id']).to eq(customer.id)
+      expect(json_response['created_by_id']).to eq(customer.id)
 
       ticket = Ticket.find(json_response['ticket_id'])
       expect(ticket.articles.count).to eq(2)
@@ -198,8 +208,8 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
       expect(json_response['subject']).to be_nil
       expect(json_response['body']).to eq('some body')
       expect(json_response['content_type']).to eq('text/plain')
-      expect(json_response['updated_by_id']).to eq(customer_user.id)
-      expect(json_response['created_by_id']).to eq(customer_user.id)
+      expect(json_response['updated_by_id']).to eq(customer.id)
+      expect(json_response['created_by_id']).to eq(customer.id)
 
       ticket = Ticket.find(json_response['ticket_id'])
       expect(ticket.articles.count).to eq(3)
@@ -223,8 +233,8 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
       expect(json_response['subject']).to be_nil
       expect(json_response['body']).to eq('some body 2')
       expect(json_response['content_type']).to eq('text/plain')
-      expect(json_response['updated_by_id']).to eq(customer_user.id)
-      expect(json_response['created_by_id']).to eq(customer_user.id)
+      expect(json_response['updated_by_id']).to eq(customer.id)
+      expect(json_response['created_by_id']).to eq(customer.id)
 
       ticket = Ticket.find(json_response['ticket_id'])
       expect(ticket.articles.count).to eq(4)
@@ -254,12 +264,12 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
       expect(ticket.articles[4].attachments.count).to eq(0)
 
       get "/api/v1/ticket_articles/#{article.id}", params: {}, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to eq('Not authorized')
 
       put "/api/v1/ticket_articles/#{article.id}", params: { internal: false }, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to eq('Not authorized')
 
@@ -269,14 +279,14 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
       params = {
         title:       'a new ticket #1',
         group:       'Users',
-        customer_id: customer_user.id,
+        customer_id: customer.id,
         article:     {
           body:   'some body',
           sender: 'Customer',
           type:   'phone',
         }
       }
-      authenticated_as(agent_user)
+      authenticated_as(agent)
       post '/api/v1/tickets', params: params, as: :json
       expect(response).to have_http_status(:created)
       expect(json_response).to be_a_kind_of(Hash)
@@ -285,15 +295,15 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
       expect(Ticket::Article.where(ticket_id: json_response['id']).count).to eq(2) # original + auto responder
 
       article = Ticket::Article.where(ticket_id: json_response['id']).first
-      expect(article.origin_by_id).to eq(customer_user.id)
-      expect(article.from).to eq("#{customer_user.firstname} #{customer_user.lastname} <#{customer_user.email}>")
+      expect(article.origin_by_id).to eq(customer.id)
+      expect(article.from).to eq("#{customer.firstname} #{customer.lastname} <#{customer.email}>")
     end
 
     it 'does create phone ticket by customer and manipulate origin_by_id' do
       params = {
         title:       'a new ticket #1',
         group:       'Users',
-        customer_id: customer_user.id,
+        customer_id: customer.id,
         article:     {
           body:         'some body',
           sender:       'Customer',
@@ -301,7 +311,7 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
           origin_by_id: 1,
         }
       }
-      authenticated_as(customer_user)
+      authenticated_as(customer)
       post '/api/v1/tickets', params: params, as: :json
       expect(response).to have_http_status(:created)
       expect(json_response).to be_a_kind_of(Hash)
@@ -309,7 +319,7 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
       expect(Ticket::Article.where(ticket_id: json_response['id']).count).to eq(1) # ony original
 
       article = Ticket::Article.where(ticket_id: json_response['id']).first
-      expect(article.origin_by_id).to eq(customer_user.id)
+      expect(article.origin_by_id).to eq(customer.id)
     end
 
     it 'does ticket split with html - check attachments' do
@@ -390,7 +400,7 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
       params = {
         form_id: 'new_form_id123',
       }
-      authenticated_as(agent_user)
+      authenticated_as(agent)
       post "/api/v1/ticket_attachment_upload_clone_by_article/#{article.id}", params: params, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Hash)
@@ -408,8 +418,8 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
       ticket = create(
         :ticket,
         group:         group,
-        updated_by_id: agent_user.id,
-        created_by_id: agent_user.id,
+        updated_by_id: agent.id,
+        created_by_id: agent.id,
       )
       article = create(
         :ticket_article,
@@ -465,7 +475,7 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
       params = {
         form_id: 'new_form_id123',
       }
-      authenticated_as(agent_user)
+      authenticated_as(agent)
       post "/api/v1/ticket_attachment_upload_clone_by_article/#{article.id}", params: params, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Hash)
@@ -478,9 +488,41 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
       expect(json_response['attachments']).to be_truthy
       expect(json_response['attachments'].count).to eq(0)
     end
+
+    it 'does ticket create with mentions' do
+      params = {
+        title:       'a new ticket #1',
+        group:       'Users',
+        customer_id: customer.id,
+        article:     {
+          body: "some body <a data-mention-user-id=\"#{agent.id}\">agent</a>",
+        }
+      }
+      authenticated_as(agent)
+      post '/api/v1/tickets', params: params, as: :json
+      expect(response).to have_http_status(:created)
+      expect(Mention.where(mentionable: Ticket.last).count).to eq(1)
+    end
+
+    it 'does not ticket create with mentions when customer' do
+      params = {
+        title:       'a new ticket #1',
+        group:       'Users',
+        customer_id: customer.id,
+        article:     {
+          body: "some body <a data-mention-user-id=\"#{agent.id}\">agent</a>",
+        }
+      }
+      authenticated_as(customer)
+      post '/api/v1/tickets', params: params, as: :json
+      expect(response).to have_http_status(:internal_server_error)
+      expect(Mention.count).to eq(0)
+    end
   end
 
   describe 'DELETE /api/v1/ticket_articles/:id', authenticated_as: -> { user } do
+    let(:other_agent) { create(:agent, groups: [Group.first]) }
+
     let(:ticket) do
       create(:ticket, group: Group.first)
     end
@@ -488,27 +530,41 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
     let(:article_communication) do
       create(:ticket_article,
              sender_name: 'Agent', type_name: 'email', ticket: ticket,
-             updated_by_id: agent_user.id, created_by_id: agent_user.id  )
+             updated_by_id: agent.id, created_by_id: agent.id)
     end
 
-    let(:article_note) do
+    let(:article_note_self) do
       create(:ticket_article,
              sender_name: 'Agent', internal: true, type_name: 'note', ticket: ticket,
-             updated_by_id: agent_user.id, created_by_id: agent_user.id  )
+             updated_by_id: user.id, created_by_id: user.id)
+    end
+
+    let(:article_note_other) do
+      create(:ticket_article,
+             sender_name: 'Agent', internal: true, type_name: 'note', ticket: ticket,
+             updated_by_id: other_agent.id, created_by_id: other_agent.id)
     end
 
     let(:article_note_customer) do
       create(:ticket_article,
              sender_name: 'Customer', internal: false, type_name: 'note', ticket: ticket,
-             updated_by_id: customer_user.id, created_by_id: customer_user.id  )
+             updated_by_id: customer.id, created_by_id: customer.id)
     end
 
-    let(:article_note_communication) do
+    let(:article_note_communication_self) do
       create(:ticket_article_type, name: 'note_communication', communication: true)
 
       create(:ticket_article,
              sender_name: 'Agent', internal: true, type_name: 'note_communication', ticket: ticket,
-             updated_by_id: agent_user.id, created_by_id: agent_user.id  )
+             updated_by_id: user.id, created_by_id: user.id)
+    end
+
+    let(:article_note_communication_other) do
+      create(:ticket_article_type, name: 'note_communication', communication: true)
+
+      create(:ticket_article,
+             sender_name: 'Agent', internal: true, type_name: 'note_communication', ticket: ticket,
+             updated_by_id: other_agent.id, created_by_id: other_agent.id)
     end
 
     def delete_article_via_rest(article)
@@ -548,55 +604,70 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
     end
 
     context 'as admin' do
-      let(:user) { admin_user }
+      let(:user) { admin }
 
       include_examples 'deleting',
                        item: 'article_communication',
-                       now: true, later: true, much_later: true
+                       now: false, later: false, much_later: false
 
       include_examples 'deleting',
-                       item: 'article_note',
-                       now: true, later: true, much_later: true
+                       item: 'article_note_self',
+                       now: true, later: true, much_later: false
+
+      include_examples 'deleting',
+                       item: 'article_note_other',
+                       now: false, later: false, much_later: false
 
       include_examples 'deleting',
                        item: 'article_note_customer',
-                       now: true, later: true, much_later: true
+                       now: false, later: false, much_later: false
 
       include_examples 'deleting',
-                       item: 'article_note_communication',
-                       now: true, later: true, much_later: true
+                       item: 'article_note_communication_self',
+                       now: true, later: true, much_later: false
+
+      include_examples 'deleting',
+                       item: 'article_note_communication_other',
+                       now: false, later: false, much_later: false
     end
 
     context 'as agent' do
-      let(:user) { agent_user }
+      let(:user) { agent }
 
       include_examples 'deleting',
                        item: 'article_communication',
                        now: false, later: false, much_later: false
 
       include_examples 'deleting',
-                       item: 'article_note',
+                       item: 'article_note_self',
                        now: true, later: true, much_later: false
+
+      include_examples 'deleting',
+                       item: 'article_note_other',
+                       now: false, later: false, much_later: false
 
       include_examples 'deleting',
                        item: 'article_note_customer',
                        now: false, later: false, much_later: false
 
       include_examples 'deleting',
-                       item: 'article_note_communication',
+                       item: 'article_note_communication_self',
                        now: true, later: true, much_later: false
 
+      include_examples 'deleting',
+                       item: 'article_note_communication_other',
+                       now: false, later: false, much_later: false
     end
 
     context 'as customer' do
-      let(:user) { customer_user }
+      let(:user) { customer }
 
       include_examples 'deleting',
                        item: 'article_communication',
                        now: false, later: false, much_later: false
 
       include_examples 'deleting',
-                       item: 'article_note',
+                       item: 'article_note_other',
                        now: false, later: false, much_later: false
 
       include_examples 'deleting',
@@ -604,7 +675,11 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
                        now: false, later: false, much_later: false
 
       include_examples 'deleting',
-                       item: 'article_note_communication',
+                       item: 'article_note_communication_self',
+                       now: false, later: false, much_later: false
+
+      include_examples 'deleting',
+                       item: 'article_note_communication_other',
                        now: false, later: false, much_later: false
 
     end
@@ -612,20 +687,32 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
     context 'with custom timeframe' do
       before { Setting.set 'ui_ticket_zoom_article_delete_timeframe', 6000 }
 
-      let(:article) { article_note }
+      let(:article) { article_note_self }
 
       context 'as admin' do
-        let(:user) { admin_user }
+        let(:user) { admin }
+
+        context 'deleting before timeframe' do
+          before { article && travel(5000.seconds) }
+
+          include_examples 'succeeds'
+        end
+
+        context 'deleting before timeframe' do
+          before { article && travel(5000.seconds) }
+
+          include_examples 'succeeds'
+        end
 
         context 'deleting after timeframe' do
           before { article && travel(8000.seconds) }
 
-          include_examples 'succeeds'
+          include_examples 'fails'
         end
       end
 
       context 'as agent' do
-        let(:user) { agent_user }
+        let(:user) { agent }
 
         context 'deleting before timeframe' do
           before { article && travel(5000.seconds) }
@@ -644,10 +731,10 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
     context 'with timeframe as 0' do
       before { Setting.set 'ui_ticket_zoom_article_delete_timeframe', 0 }
 
-      let(:article) { article_note }
+      let(:article) { article_note_self }
 
       context 'as agent' do
-        let(:user) { agent_user }
+        let(:user) { agent }
 
         context 'deleting long after' do
           before { article && travel(99.days) }

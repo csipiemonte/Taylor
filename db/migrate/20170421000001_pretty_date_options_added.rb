@@ -1,8 +1,10 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class PrettyDateOptionsAdded < ActiveRecord::Migration[4.2]
   def up
 
     # return if it's a new setup
-    return if !Setting.find_by(name: 'system_init_done')
+    return if !Setting.exists?(name: 'system_init_done')
 
     Setting.create_or_update(
       title:       'Pretty Date',
@@ -17,8 +19,8 @@ class PrettyDateOptionsAdded < ActiveRecord::Migration[4.2]
             name:    'pretty_date_format',
             tag:     'select',
             options: {
-              'relative': 'relative - e. g. "2 hours ago" or "2 days and 15 minutes ago"',
-              'absolute': 'absolute - e. g. "Monday 09:30" or "Tuesday 23. Feb 14:20"',
+              relative: 'relative - e. g. "2 hours ago" or "2 days and 15 minutes ago"',
+              absolute: 'absolute - e. g. "Monday 09:30" or "Tuesday 23. Feb 14:20"',
             },
           },
         ],

@@ -1,7 +1,9 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
-RSpec.describe 'Profile > Devices', type: :system, authenticated: true do
-  subject!(:device) { create(:user_device, user_id: User.find_by(login: 'master@example.com').id) }
+RSpec.describe 'Profile > Devices', type: :system do
+  subject!(:device) { create(:user_device, user_id: User.find_by(login: 'admin@example.com').id) }
 
   it 'allows to remove device' do
     visit 'profile/devices'
@@ -13,6 +15,6 @@ RSpec.describe 'Profile > Devices', type: :system, authenticated: true do
         .click
     end
 
-    wait(5).until { expect(page).to have_no_css('td', text: device.name) }
+    expect(page).to have_no_css('td', text: device.name)
   end
 end

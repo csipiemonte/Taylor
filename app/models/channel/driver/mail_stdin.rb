@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Channel::Driver::MailStdin < Channel::EmailParser
 
@@ -22,7 +22,7 @@ e. g. if you want to process this mail by using a certain inbound channel
 
 =end
 
-  def initialize(params = {})
+  def initialize(params = {}) # rubocop:disable Lint/MissingSuper
     Rails.logger.info 'read main from STDIN'
 
     msg = ARGF.read

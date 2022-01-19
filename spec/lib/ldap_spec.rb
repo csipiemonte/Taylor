@@ -1,8 +1,10 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe Ldap do
 
-  context 'initialization config parameters' do
+  describe 'initialization config parameters' do
 
     # required as 'let' to perform test based
     # expectations and reuse it in mock_initialization
@@ -10,7 +12,7 @@ RSpec.describe Ldap do
     let(:mocked_ldap) { double(bind: true) }
 
     def mock_initialization(given:, expected:)
-      expect(Net::LDAP).to receive(:new).with(expected).and_return(mocked_ldap)
+      allow(Net::LDAP).to receive(:new).with(expected).and_return(mocked_ldap)
       described_class.new(given)
     end
 
@@ -27,7 +29,7 @@ RSpec.describe Ldap do
       )
     end
 
-    context 'bind credentials' do
+    describe 'bind credentials' do
 
       it 'uses given credentials' do
 
@@ -43,7 +45,7 @@ RSpec.describe Ldap do
           port: 1337,
         }
 
-        expect(mocked_ldap).to receive(:auth).with(config[:bind_user], config[:bind_pw])
+        allow(mocked_ldap).to receive(:auth).with(config[:bind_user], config[:bind_pw])
 
         mock_initialization(
           given:    config,
@@ -64,12 +66,13 @@ RSpec.describe Ldap do
           port: 1337,
         }
 
-        expect(mocked_ldap).not_to receive(:auth).with(config[:bind_user], config[:bind_pw])
+        allow(mocked_ldap).to receive(:auth)
 
         mock_initialization(
           given:    config,
           expected: params,
         )
+        expect(mocked_ldap).not_to have_received(:auth).with(config[:bind_user], config[:bind_pw])
       end
 
       it 'requires bind_pw' do
@@ -85,12 +88,13 @@ RSpec.describe Ldap do
           port: 1337,
         }
 
-        expect(mocked_ldap).not_to receive(:auth).with(config[:bind_user], config[:bind_pw])
+        allow(mocked_ldap).to receive(:auth)
 
         mock_initialization(
           given:    config,
           expected: params,
         )
+        expect(mocked_ldap).not_to have_received(:auth).with(config[:bind_user], config[:bind_pw])
       end
     end
 
@@ -111,7 +115,7 @@ RSpec.describe Ldap do
       )
     end
 
-    context 'host_url' do
+    describe 'host_url' do
       it 'parses protocol and host' do
         config = {
           host_url: 'ldaps://localhost'
@@ -191,7 +195,8 @@ RSpec.describe Ldap do
         port: 1337,
       }
 
-      expect(Setting).to receive(:get).with('ldap_config').and_return(config)
+      allow(Setting).to receive(:get)
+      allow(Setting).to receive(:get).with('ldap_config').and_return(config)
 
       mock_initialization(
         given:    nil,
@@ -200,14 +205,14 @@ RSpec.describe Ldap do
     end
   end
 
-  context 'instance methods' do
+  describe 'instance methods' do
 
     # required as 'let' to perform test based
     # expectations and reuse it in 'let' instance
     # as return param of Net::LDAP.new
     let(:mocked_ldap) { double(bind: true) }
     let(:instance) do
-      expect(Net::LDAP).to receive(:new).and_return(mocked_ldap)
+      allow(Net::LDAP).to receive(:new).and_return(mocked_ldap)
       described_class.new(
         host: 'localhost',
         port: 1337,
@@ -221,12 +226,11 @@ RSpec.describe Ldap do
       end
 
       it 'returns preferences' do
-
         attributes = {
           namingcontexts: ['ou=dep1,ou=org', 'ou=dep2,ou=org']
         }
+        allow(mocked_ldap).to receive(:search_root_dse).and_return(attributes)
 
-        expect(mocked_ldap).to receive(:search_root_dse).and_return(attributes)
         expect(instance.preferences).to eq(attributes)
       end
     end
@@ -256,10 +260,10 @@ RSpec.describe Ldap do
         }
 
         yield_entry = build(:ldap_entry)
-        expect(mocked_ldap).to receive(:search).with(include(expected)).and_yield(yield_entry).and_return(true)
+        allow(mocked_ldap).to receive(:search).with(include(expected)).and_yield(yield_entry).and_return(true)
 
         check_entry = nil
-        instance.search(filter, additional) { |entry| check_entry = entry }
+        instance.search(filter, **additional) { |entry| check_entry = entry }
         expect(check_entry).to eq(yield_entry)
       end
 
@@ -276,10 +280,10 @@ RSpec.describe Ldap do
         }
 
         yield_entry = build(:ldap_entry)
-        expect(mocked_ldap).to receive(:search).with(include(expected)).and_yield(yield_entry).and_return(true)
+        allow(mocked_ldap).to receive(:search).with(include(expected)).and_yield(yield_entry).and_return(true)
 
         check_entry = nil
-        instance.search(filter, additional) { |entry| check_entry = entry }
+        instance.search(filter, **additional) { |entry| check_entry = entry }
         expect(check_entry).to eq(yield_entry)
       end
 
@@ -291,7 +295,7 @@ RSpec.describe Ldap do
           scope:  Net::LDAP::SearchScope_WholeSubtree,
         }
 
-        expect(Net::LDAP).to receive(:new).and_return(mocked_ldap)
+        allow(Net::LDAP).to receive(:new).and_return(mocked_ldap)
         instance = described_class.new(
           host:    'localhost',
           port:    1337,
@@ -299,7 +303,7 @@ RSpec.describe Ldap do
         )
 
         yield_entry = build(:ldap_entry)
-        expect(mocked_ldap).to receive(:search).with(include(expected)).and_yield(yield_entry).and_return(true)
+        allow(mocked_ldap).to receive(:search).with(include(expected)).and_yield(yield_entry).and_return(true)
 
         check_entry = nil
         instance.search(filter) { |entry| check_entry = entry }
@@ -316,22 +320,20 @@ RSpec.describe Ldap do
       end
 
       it 'returns true if entries are present' do
-
         params = {
           filter: filter
         }
+        allow(mocked_ldap).to receive(:search).with(include(params)).and_yield(build(:ldap_entry)).and_return(nil)
 
-        expect(mocked_ldap).to receive(:search).with(include(params)).and_yield(build(:ldap_entry)).and_return(nil)
         expect(instance.entries?(filter)).to be true
       end
 
       it 'returns false if no entries are present' do
-
         params = {
           filter: filter
         }
+        allow(mocked_ldap).to receive(:search).with(include(params)).and_return(true)
 
-        expect(mocked_ldap).to receive(:search).with(include(params)).and_return(true)
         expect(instance.entries?(filter)).to be false
       end
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Overview < ApplicationModel
   include ChecksClientNotification
@@ -18,6 +18,14 @@ class Overview < ApplicationModel
 
   before_create :fill_link_on_create, :fill_prio
   before_update :fill_link_on_update, :rearrangement
+
+  def self.calculate_prio
+    existing_maximum = Overview.maximum(:prio)
+
+    return 0 if !existing_maximum
+
+    existing_maximum + 1
+  end
 
   private
 
@@ -63,7 +71,7 @@ class Overview < ApplicationModel
   def fill_prio
     return true if prio.present?
 
-    self.prio = Overview.count + 1
+    self.prio = self.class.calculate_prio
     true
   end
 
@@ -90,11 +98,11 @@ class Overview < ApplicationModel
   def link_name(name)
     local_link = name.downcase
     local_link = local_link.parameterize(separator: '_')
-    local_link.gsub!(/\s/, '_')
-    local_link.gsub!(/_+/, '_')
+    local_link.gsub!(%r{\s}, '_')
+    local_link.squeeze!('_')
     local_link = CGI.escape(local_link)
     if local_link.blank?
-      local_link = id || rand(999)
+      local_link = id || SecureRandom.uuid
     end
     check = true
     count = 0

@@ -1,9 +1,4 @@
-class SecureMailing::Backend
-  include Mixin::IsBackend
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
-  def self.inherited(subclass)
-    subclass.is_backend_of(::SecureMailing)
-  end
+class SecureMailing::Backend # rubocop:disable Lint/EmptyClass
 end
-
-Mixin::RequiredSubPaths.eager_load_recursive(__dir__)

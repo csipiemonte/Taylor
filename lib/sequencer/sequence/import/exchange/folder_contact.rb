@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sequencer
   class Sequence
     module Import
@@ -10,8 +12,8 @@ class Sequencer
               'Import::Common::RemoteId::CaseSensitive',
               'Import::Exchange::FolderContact::Mapping::FromConfig',
               'Import::Exchange::FolderContact::Mapping::Login',
-              'Import::Common::Model::Skip::Blank::Mapped',
               'Common::ModelClass::User',
+              'Import::Common::Model::Skip::Blank::Mapped',
               'Import::Exchange::FolderContact::ExternalSyncSource',
               'Import::Common::Model::Lookup::ExternalSync',
               'Import::Common::Model::Associations::Extract',

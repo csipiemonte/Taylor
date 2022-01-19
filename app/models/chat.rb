@@ -1,8 +1,12 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Chat < ApplicationModel
+  include ChecksHtmlSanitized
+
   validates :name, presence: true
   store     :preferences
+
+  sanitized_html :note
 
 =begin
 
@@ -66,7 +70,8 @@ reconnect - chat session already exists, serve agent and session chat messages (
       chat_session = Chat::Session.find_by(session_id: session_id, state: %w[waiting running])
 
       if chat_session
-        if chat_session.state == 'running'
+        case chat_session.state
+        when 'running'
           user = chat_session.agent_user
           if user
 
@@ -80,7 +85,7 @@ reconnect - chat session already exists, serve agent and session chat messages (
               }
             end
           end
-        elsif chat_session.state == 'waiting'
+        when 'waiting'
           return {
             state:    'reconnect',
             position: chat_session.position,
@@ -614,7 +619,7 @@ check if ip address is blocked for chat
     ips = block_ip.split(';')
     ips.each do |local_ip|
       return true if ip == local_ip.strip
-      return true if ip.match?(/#{local_ip.strip.gsub(/\*/, '.+?')}/)
+      return true if ip.match?(%r{#{local_ip.strip.gsub(%r{\*}, '.+?')}})
     end
     false
   end
@@ -624,15 +629,15 @@ check if ip address is blocked for chat
 check if website is allowed for chat
 
   chat = Chat.find(123)
-  chat.website_whitelisted?('zammad.org')
+  chat.website_allowed?('zammad.org')
 
 =end
 
-  def website_whitelisted?(website)
-    return true if whitelisted_websites.blank?
+  def website_allowed?(website)
+    return true if allowed_websites.blank?
 
-    whitelisted_websites.split(';').any? do |whitelisted_website|
-      website.downcase.include?(whitelisted_website.downcase.strip)
+    allowed_websites.split(';').any? do |allowed_website|
+      website.downcase.include?(allowed_website.downcase.strip)
     end
   end
 
@@ -654,9 +659,7 @@ check if country is blocked for chat
     return false if geo_ip['country_code'].blank?
 
     countries = block_country.split(';')
-    countries.any? do |local_country|
-      geo_ip['country_code'] == local_country
-    end
+    countries.any?(geo_ip['country_code'])
   end
 
 end

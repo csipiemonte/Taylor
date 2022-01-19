@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 # Rails dropped the class
 # ActiveRecord::ConnectionAdapters::AbstractMysqlAdapter::MysqlDateTime
 # via: https://github.com/rails/rails/commit/f1a0fa9e19b7e4ccaea191fc6cf0613880222ee7
@@ -19,6 +21,7 @@ module ActiveRecord
     end
   end
 end
+
 module ActiveRecord
   module ConnectionAdapters
     module PostgreSQL
@@ -35,6 +38,7 @@ class CtiLogPreferencesMigration < ActiveRecord::Migration[5.0]
   def change
 
     # correct all entries
+    directions = %w[from to]
     Cti::Log.all.pluck(:id).each do |item_id|
       item = Cti::Log.find(item_id)
       next if !item.preferences
@@ -42,7 +46,7 @@ class CtiLogPreferencesMigration < ActiveRecord::Migration[5.0]
 
       # check from and to keys which hold the instances
       preferences = {}
-      %w[from to].each do |direction|
+      directions.each do |direction|
         next if item.preferences[direction].blank?
 
         # loop over all instances and covert them

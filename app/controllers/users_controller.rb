@@ -1,11 +1,12 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class UsersController < ApplicationController
   include ChecksUserAttributesByCurrentUserPermission
+  include CanPaginate
 
-  prepend_before_action -> { authorize! }, only: %i[import_example import_start search history]
+  prepend_before_action -> { authorize! }, only: %i[import_example import_start search history unlock]
   prepend_before_action :authentication_check, except: %i[create password_reset_send password_reset_verify image email_verify email_verify_send]
-  prepend_before_action :authentication_check_only, only: [:create]
+  prepend_before_action :authentication_check_only, only: %i[create]
 
   # @path       [GET] /users
   #
@@ -15,20 +16,9 @@ class UsersController < ApplicationController
   #                   role 'Customer' only just the own User record will be returned.
   #
   # @response_message 200 [Array<User>] List of matching User records.
-  # @response_message 401               Invalid session.
+  # @response_message 403               Forbidden / Invalid session.
   def index
-    offset = 0
-    per_page = 500
-    if params[:page] && params[:per_page]
-      offset = (params[:page].to_i - 1) * params[:per_page].to_i
-      per_page = params[:per_page].to_i
-    end
-
-    if per_page > 500
-      per_page = 500
-    end
-
-    users = policy_scope(User).order(id: :asc).offset(offset).limit(per_page)
+    users = policy_scope(User).order(id: :asc).offset(pagination.offset).limit(pagination.limit)
 
     if response_expand?
       list = []
@@ -71,7 +61,7 @@ class UsersController < ApplicationController
   # @parameter        full         [Bool]    If set a Asset structure with all connected Assets gets returned.
   #
   # @response_message 200 [User] User record matching the requested identifier.
-  # @response_message 401        Invalid session.
+  # @response_message 403        Forbidden / Invalid session.
   def show
     user = User.find(params[:id])
     authorize!(user)
@@ -99,162 +89,16 @@ class UsersController < ApplicationController
 
   # @path      [POST] /users
   #
-  # @summary          Creates a User record with the provided attribute values.
-  #                   ATTENZIONE: il valore x sul quale viene fatto il confronto (if count <= x) deve essere incrementato se nei seeds sono aggiunti altri user
-  # @notes            TODO.
-  #
-  # @parameter        User(required,body) [User] The attribute value structure needed to create a User record.
-  #
-  # @response_message 200 [User] Created User record.
-  # @response_message 401        Invalid session.
+  # @summary processes requests as CRUD-like record creation, admin creation or user signup depending on circumstances
+  # @see #create_internal #create_admin #create_signup
   def create
-    clean_params = User.association_name_to_id_convert(params)
-    clean_params = User.param_cleanup(clean_params, true)
-
-    # check if it's first user, the admin user
-    # initial admin account
-    count = User.all.count
-    admin_account_exists = true
-    if count <= 4 # ATTENZIONE: questo valore deve essere incrementato se nei seeds sono aggiunti altri user
-      admin_account_exists = false
-    end
-
-    # if it's a signup, add user to customer role
-    if !current_user
-
-      # check if feature is enabled
-      if admin_account_exists && !Setting.get('user_create_account')
-        raise Exceptions::UnprocessableEntity, 'Feature not enabled!'
-      end
-
-      # check signup option only after admin account is created
-      if admin_account_exists && !params[:signup]
-        raise Exceptions::UnprocessableEntity, 'Only signup with not authenticate user possible!'
-      end
-
-      # check if user already exists
-      if clean_params[:email].blank?
-        raise Exceptions::UnprocessableEntity, 'Attribute \'email\' required!'
-      end
-
-      # check if user already exists
-      exists = User.exists?(email: clean_params[:email].downcase.strip)
-      raise Exceptions::UnprocessableEntity, "Email address '#{clean_params[:email].downcase.strip}' is already used for other user." if exists
-
-      # check password policy
-      if clean_params[:password].present?
-        result = password_policy(clean_params[:password])
-        if result != true
-          render json: { error: result }, status: :unprocessable_entity
-          return
-        end
-      end
-
-      user = User.new(clean_params)
-      user.associations_from_param(params)
-      user.updated_by_id = 1
-      user.created_by_id = 1
-
-      # add first user as admin/agent and to all groups
-      group_ids = []
-      role_ids  = []
-      if count <= 4 # ATTENZIONE: questo valore deve essere incrementato se nei seeds sono aggiunti altri user
-        Role.where(name: %w[Admin Agent]).each do |role|
-          role_ids.push role.id
-        end
-        Group.all.each do |group|
-          group_ids.push group.id
-        end
-
-        # everybody else will go as customer per default
-      else
-        role_ids = Role.signup_role_ids
-      end
-      user.role_ids  = role_ids
-      user.group_ids = group_ids
-
-      # remember source (in case show email verify banner)
-      # if not initial user creation
-      if admin_account_exists
-        user.source = 'signup'
-      end
-
-    # else do assignment as defined
+    if current_user
+      create_internal
+    elsif params[:signup]
+      create_signup
     else
-
-      # permission check
-      check_attributes_by_current_user_permission(params)
-
-      user = User.new(clean_params)
-      user.associations_from_param(params)
+      create_admin
     end
-
-    user.save!
-
-    # if first user was added, set system init done
-    if !admin_account_exists
-      Setting.set('system_init_done', true)
-
-      # fetch org logo
-      if user.email.present?
-        Service::Image.organization_suggest(user.email)
-      end
-
-      # load calendar
-      Calendar.init_setup(request.remote_ip)
-
-      # load text modules
-      begin
-        TextModule.load(request.env['HTTP_ACCEPT_LANGUAGE'] || 'en-us')
-      rescue => e
-        logger.error "Unable to load text modules #{request.env['HTTP_ACCEPT_LANGUAGE'] || 'en-us'}: #{e.message}"
-      end
-    end
-
-    # send invitation if needed / only if session exists
-    if params[:invite].present? && current_user
-      sleep 5 if ENV['REMOTE_URL'].present?
-      token = Token.create(action: 'PasswordReset', user_id: user.id)
-      NotificationFactory::Mailer.notification(
-        template: 'user_invite',
-        user:     user,
-        objects:  {
-          token:        token,
-          user:         user,
-          current_user: current_user,
-        }
-      )
-    end
-
-    # send email verify
-    if params[:signup].present? && !current_user
-      result = User.signup_new_token(user)
-      NotificationFactory::Mailer.notification(
-        template: 'signup',
-        user:     user,
-        objects:  result,
-      )
-    end
-
-    if response_expand?
-      user = user.reload.attributes_with_association_names
-      user.delete('password')
-      render json: user, status: :created
-      return
-    end
-
-    if response_full?
-      result = {
-        id:     user.id,
-        assets: user.assets({}),
-      }
-      render json: result, status: :created
-      return
-    end
-
-    user = user.reload.attributes_with_association_ids
-    user.delete('password')
-    render json: user, status: :created
   end
 
   # @path       [PUT] /users/{id}
@@ -266,7 +110,7 @@ class UsersController < ApplicationController
   # @parameter        User(required,body) [User]    The attribute value structure needed to update a User record.
   #
   # @response_message 200 [User] Updated User record.
-  # @response_message 401        Invalid session.
+  # @response_message 403        Forbidden / Invalid session.
   def update
     user = User.find(params[:id])
     authorize!(user)
@@ -276,6 +120,7 @@ class UsersController < ApplicationController
     user.with_lock do
       clean_params = User.association_name_to_id_convert(params)
       clean_params = User.param_cleanup(clean_params, true)
+      clean_params[:screen] = 'update'
       user.update!(clean_params)
 
       # presence and permissions were checked via `check_attributes_by_current_user_permission`
@@ -315,7 +160,7 @@ class UsersController < ApplicationController
   # @parameter        id(required) [User] The identifier matching the requested User record.
   #
   # @response_message 200 User successfully deleted.
-  # @response_message 401 Invalid session.
+  # @response_message 403 Forbidden / Invalid session.
   def destroy
     user = User.find(params[:id])
     authorize!(user)
@@ -332,7 +177,7 @@ class UsersController < ApplicationController
   # @parameter        full         [Bool]    If set a Asset structure with all connected Assets gets returned.
   #
   # @response_message 200 [User] User record matching the requested identifier.
-  # @response_message 401        Invalid session.
+  # @response_message 403        Forbidden / Invalid session.
   def me
 
     if response_expand?
@@ -363,25 +208,19 @@ class UsersController < ApplicationController
   #                   The requester has to be in the role 'Admin' or 'Agent' to
   #                   be able to search for User records.
   #
-  # @parameter        query           [String]        The search query.
-  # @parameter        limit           [Integer]       The limit of search results.
-  # @parameter        role_ids(multi) [Array<String>] A list of Role identifiers to which the Users have to be allocated to.
-  # @parameter        full            [Boolean]       Defines if the result should be
-  #                                                   true: { user_ids => [1,2,...], assets => {...} }
-  #                                                   or false: [{:id => user.id, :label => "firstname lastname <email>", :value => "firstname lastname <email>"},...].
+  # @parameter        query              [String]                               The search query.
+  # @parameter        limit              [Integer]                              The limit of search results.
+  # @parameter        ids(multi)         [Array<Integer>]                       A list of User IDs which should be returned
+  # @parameter        role_ids(multi)    [Array<Integer>]                       A list of Role identifiers to which the Users have to be allocated to.
+  # @parameter        group_ids(multi)   [Hash<String=>Integer,Array<Integer>>] A list of Group identifiers to which the Users have to be allocated to.
+  # @parameter        permissions(multi) [Array<String>]                        A list of Permission identifiers to which the Users have to be allocated to.
+  # @parameter        full               [Boolean]                              Defines if the result should be
+  #                                                                             true: { user_ids => [1,2,...], assets => {...} }
+  #                                                                             or false: [{:id => user.id, :label => "firstname lastname <email>", :value => "firstname lastname <email>"},...].
   #
   # @response_message 200 [Array<User>] A list of User records matching the search term.
-  # @response_message 401               Invalid session.
+  # @response_message 403               Forbidden / Invalid session.
   def search
-    per_page = params[:per_page] || params[:limit] || 100
-    per_page = per_page.to_i
-    if per_page > 500
-      per_page = 500
-    end
-    page = params[:page] || 1
-    page = page.to_i
-    offset = (page - 1) * per_page
-
     query = params[:query]
     if query.respond_to?(:permit!)
       query.permit!.to_h
@@ -394,13 +233,13 @@ class UsersController < ApplicationController
 
     query_params = {
       query:        query,
-      limit:        per_page,
-      offset:       offset,
+      limit:        pagination.limit,
+      offset:       pagination.offset,
       sort_by:      params[:sort_by],
       order_by:     params[:order_by],
       current_user: current_user,
     }
-    %i[role_ids permissions].each do |key|
+    %i[ids role_ids group_ids permissions].each do |key|
       next if params[key].blank?
 
       query_params[key] = params[key]
@@ -427,7 +266,7 @@ class UsersController < ApplicationController
           realname = "#{realname} <#{user.email}>"
         end
         a = if params[:term]
-              { id: user.id, label: realname, value: user.email }
+              { id: user.id, label: realname, value: user.email, inactive: !user.active }
             else
               { id: user.id, label: realname, value: realname }
             end
@@ -474,13 +313,31 @@ class UsersController < ApplicationController
   # @parameter        id(required) [Integer] The identifier matching the requested User record.
   #
   # @response_message 200 [History] The History records of the requested User record.
-  # @response_message 401           Invalid session.
+  # @response_message 403           Forbidden / Invalid session.
   def history
     # get user data
     user = User.find(params[:id])
 
     # get history of user
     render json: user.history_get(true)
+  end
+
+  # @path       [PUT] /users/unlock/{id}
+  #
+  # @summary          Unlocks the User record matching the identifier.
+  # @notes            The requester have 'admin.user' permissions to be able to unlock a user.
+  #
+  # @parameter        id(required) [Integer] The identifier matching the requested User record.
+  #
+  # @response_message 200 Unlocked User record.
+  # @response_message 403 Forbidden / Invalid session.
+  def unlock
+    user = User.find(params[:id])
+
+    user.with_lock do
+      user.update!(login_failed: 0)
+    end
+    render json: { message: 'ok' }, status: :ok
   end
 
 =begin
@@ -556,12 +413,6 @@ curl http://localhost/api/v1/users/email_verify_send -v -u #{login}:#{password} 
         objects:  result
       )
 
-      # only if system is in develop mode, send token back to browser for browser tests
-      if Setting.get('developer_mode') == true
-        render json: { message: 'ok', token: result[:token].name }, status: :ok
-        return
-      end
-
       # token sent to user, send ok to browser
       render json: { message: 'ok' }, status: :ok
       return
@@ -611,12 +462,6 @@ curl http://localhost/api/v1/users/password_reset -v -u #{login}:#{password} -H 
         user:     result[:user],
         objects:  result
       )
-
-      # only if system is in develop mode, send token back to browser for browser tests
-      if Setting.get('developer_mode') == true
-        render json: { message: 'ok', token: result[:token].name }, status: :ok
-        return
-      end
     end
 
     # result is always positive to avoid leaking of existing user accounts
@@ -661,10 +506,9 @@ curl http://localhost/api/v1/users/password_reset_verify -v -u #{login}:#{passwo
       return
     end
 
-    # check password policy
-    result = password_policy(params[:password])
-    if result != true
-      render json: { message: 'failed', notice: result }, status: :ok
+    result = PasswordPolicy.new(params[:password])
+    if !result.valid?
+      render json: { message: 'failed', notice: result.error }, status: :ok
       return
     end
 
@@ -717,8 +561,9 @@ curl http://localhost/api/v1/users/password_change -v -u #{login}:#{password} -H
       render json: { message: 'failed', notice: ['Current password needed!'] }, status: :ok
       return
     end
-    user = User.authenticate(current_user.login, params[:password_old])
-    if !user
+
+    current_password_verified = PasswordHash.verified?(current_user.password, params[:password_old])
+    if !current_password_verified
       render json: { message: 'failed', notice: ['Current password is wrong!'] }, status: :ok
       return
     end
@@ -729,27 +574,25 @@ curl http://localhost/api/v1/users/password_change -v -u #{login}:#{password} -H
       return
     end
 
-    # check password policy
-    result = password_policy(params[:password_new])
-    if result != true
-      render json: { message: 'failed', notice: result }, status: :ok
+    result = PasswordPolicy.new(params[:password_new])
+    if !result.valid?
+      render json: { message: 'failed', notice: result.error }, status: :ok
       return
     end
 
-    user.update!(password: params[:password_new])
+    current_user.update!(password: params[:password_new])
 
-    if user.email.present?
+    if current_user.email.present?
       NotificationFactory::Mailer.notification(
         template: 'password_change',
-        user:     user,
+        user:     current_user,
         objects:  {
-          user:         user,
-          current_user: current_user,
+          user: current_user,
         }
       )
     end
 
-    render json: { message: 'ok', user_login: user.login }, status: :ok
+    render json: { message: 'ok', user_login: current_user.login }, status: :ok
   end
 
 =begin
@@ -879,31 +722,28 @@ curl http://localhost/api/v1/users/image/8d6cca1c6bdc226cf2ba131e264ca2c7 -v -u 
 =end
 
   def image
-
     # cache image
     response.headers['Expires']       = 1.year.from_now.httpdate
     response.headers['Cache-Control'] = 'cache, store, max-age=31536000, must-revalidate'
     response.headers['Pragma']        = 'cache'
 
     file = Avatar.get_by_hash(params[:hash])
+
     if file
+      file_content_type = file.preferences['Content-Type'] || file.preferences['Mime-Type']
+
+      return serve_default_image if ActiveStorage.content_types_allowed_inline.exclude?(file_content_type)
+
       send_data(
         file.content,
         filename:    file.filename,
-        type:        file.preferences['Content-Type'] || file.preferences['Mime-Type'],
+        type:        file_content_type,
         disposition: 'inline'
       )
       return
     end
 
-    # serve default image
-    image = 'R0lGODdhMAAwAOMAAMzMzJaWlr6+vqqqqqOjo8XFxbe3t7GxsZycnAAAAAAAAAAAAAAAAAAAAAAAAAAAACwAAAAAMAAwAAAEcxDISau9OOvNu/9gKI5kaZ5oqq5s675wLM90bd94ru98TwuAA+KQAQqJK8EAgBAgMEqmkzUgBIeSwWGZtR5XhSqAULACCoGCJGwlm1MGQrq9RqgB8fm4ZTUgDBIEcRR9fz6HiImKi4yNjo+QkZKTlJWWkBEAOw=='
-    send_data(
-      Base64.decode64(image),
-      filename:    'image.gif',
-      type:        'image/gif',
-      disposition: 'inline'
-    )
+    serve_default_image
   end
 
 =begin
@@ -928,8 +768,24 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
 
   def avatar_new
     # get & validate image
-    file_full   = StaticAssets.data_url_attributes(params[:avatar_full])
-    file_resize = StaticAssets.data_url_attributes(params[:avatar_resize])
+    begin
+      file_full = StaticAssets.data_url_attributes(params[:avatar_full])
+    rescue
+      render json: { error: 'Full size image is invalid' }, status: :unprocessable_entity
+      return
+    end
+
+    if ActiveStorage::Variant::WEB_IMAGE_CONTENT_TYPES.exclude?(file_full[:mime_type])
+      render json: { error: 'Mime type is invalid' }, status: :unprocessable_entity
+      return
+    end
+
+    begin
+      file_resize = StaticAssets.data_url_attributes(params[:avatar_resize])
+    rescue
+      render json: { error: 'Resized image is invalid' }, status: :unprocessable_entity
+      return
+    end
 
     avatar = Avatar.add(
       object:    'User',
@@ -942,7 +798,7 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
         content:   file_resize[:content],
         mime_type: file_resize[:mime_type],
       },
-      source:    'upload ' + Time.zone.now.to_s,
+      source:    "upload #{Time.zone.now}",
       deletable: true,
     )
 
@@ -995,7 +851,7 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
   # @example          curl -u 'me@example.com:test' http://localhost:3000/api/v1/users/import_example
   #
   # @response_message 200 File download.
-  # @response_message 401 Invalid session.
+  # @response_message 403 Forbidden / Invalid session.
   def import_example
     send_data(
       User.csv_example,
@@ -1013,7 +869,7 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
   # @example          curl -u 'me@example.com:test' -F 'file=@/path/to/file/users.csv' 'https://your.zammad/api/v1/users/import'
   #
   # @response_message 201 Import started.
-  # @response_message 401 Invalid session.
+  # @response_message 403 Forbidden / Invalid session.
   def import_start
     string = params[:data]
     if string.blank? && params[:file].present?
@@ -1034,17 +890,188 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
 
   private
 
-  def password_policy(password)
-    if Setting.get('password_min_size').to_i > password.length
-      return ['Invalid password, it must be at least %s characters long!', Setting.get('password_min_size')]
-    end
-    if Setting.get('password_need_digit').to_i == 1 && password !~ /\d/
-      return ['Invalid password, it must contain at least 1 digit!']
-    end
-    if Setting.get('password_min_2_lower_2_upper_characters').to_i == 1 && ( password !~ /[A-Z].*[A-Z]/ || password !~ /[a-z].*[a-z]/ )
-      return ['Invalid password, it must contain at least 2 lowercase and 2 uppercase characters!']
+  def clean_user_params
+    User.param_cleanup(User.association_name_to_id_convert(params), true).merge(screen: 'create')
+  end
+
+  # @summary          Creates a User record with the provided attribute values.
+  # @notes            For creating a user via agent interface
+  #
+  # @parameter        User(required,body) [User] The attribute value structure needed to create a User record.
+  #
+  # @response_message 200 [User] Created User record.
+  # @response_message 403        Forbidden / Invalid session.
+  def create_internal
+    # permission check
+    check_attributes_by_current_user_permission(params)
+
+    user = User.new(clean_user_params)
+    user.associations_from_param(params)
+
+    user.save!
+
+    if params[:invite].present?
+      sleep 5 if ENV['REMOTE_URL'].present?
+      token = Token.create(action: 'PasswordReset', user_id: user.id)
+      NotificationFactory::Mailer.notification(
+        template: 'user_invite',
+        user:     user,
+        objects:  {
+          token:        token,
+          user:         user,
+          current_user: current_user,
+        }
+      )
     end
 
-    true
+    if response_expand?
+      user = user.reload.attributes_with_association_names
+      user.delete('password')
+      render json: user, status: :created
+      return
+    end
+
+    if response_full?
+      result = {
+        id:     user.id,
+        assets: user.assets({}),
+      }
+      render json: result, status: :created
+      return
+    end
+
+    user = user.reload.attributes_with_association_ids
+    user.delete('password')
+    render json: user, status: :created
+  end
+
+  # @summary          Creates a User record with the provided attribute values.
+  # @notes            For creating a user via public signup form
+  #
+  # @parameter        User(required,body) [User] The attribute value structure needed to create a User record.
+  #
+  # @response_message 200 [User] Created User record.
+  # @response_message 403        Forbidden / Invalid session.
+  def create_signup
+    # check if feature is enabled
+    if !Setting.get('user_create_account')
+      raise Exceptions::UnprocessableEntity, 'Feature not enabled!'
+    end
+
+    # check signup option only after admin account is created
+    if !params[:signup]
+      raise Exceptions::UnprocessableEntity, 'Only signup with not authenticate user possible!'
+    end
+
+    # check if user already exists
+    if clean_user_params[:email].blank?
+      raise Exceptions::UnprocessableEntity, 'Attribute \'email\' required!'
+    end
+
+    email_taken_by = User.find_by email: clean_user_params[:email].downcase.strip
+
+    result = PasswordPolicy.new(clean_user_params[:password])
+    if !result.valid?
+      render json: { error: result.error }, status: :unprocessable_entity
+      return
+    end
+
+    user = User.new(clean_user_params)
+    user.associations_from_param(params)
+    user.role_ids      = Role.signup_role_ids
+    user.source        = 'signup'
+
+    if email_taken_by # show fake OK response to avoid leaking that email is already in use
+      User.without_callback :validation, :before, :ensure_uniq_email do # skip unique email validation
+        user.valid? # trigger errors raised in validations
+      end
+
+      result = User.password_reset_new_token(email_taken_by.email)
+      NotificationFactory::Mailer.notification(
+        template: 'signup_taken_reset',
+        user:     email_taken_by,
+        objects:  result,
+      )
+
+      render json: { message: 'ok' }, status: :created
+      return
+    end
+
+    UserInfo.ensure_current_user_id do
+      user.save!
+    end
+
+    result = User.signup_new_token(user)
+    NotificationFactory::Mailer.notification(
+      template: 'signup',
+      user:     user,
+      objects:  result,
+    )
+
+    render json: { message: 'ok' }, status: :created
+  end
+
+  # @summary          Creates a User record with the provided attribute values.
+  # @notes            For creating an administrator account when setting up the system
+  #
+  # @parameter        User(required,body) [User] The attribute value structure needed to create a User record.
+  #
+  # @response_message 200 [User] Created User record.
+  # @response_message 403        Forbidden / Invalid session.
+  def create_admin
+    if User.count > 4 # system and example users; ATTENZIONE: 4 sono gli utenti creati con db:seed
+      raise Exceptions::UnprocessableEntity, 'Administrator account already created'
+    end
+
+    # check if user already exists
+    if clean_user_params[:email].blank?
+      raise Exceptions::UnprocessableEntity, 'Attribute \'email\' required!'
+    end
+
+    # check password policy
+    result = PasswordPolicy.new(clean_user_params[:password])
+    if !result.valid?
+      render json: { error: result.error }, status: :unprocessable_entity
+      return
+    end
+
+    user = User.new(clean_user_params)
+    user.associations_from_param(params)
+    user.role_ids  = Role.where(name: %w[Admin Agent]).pluck(:id)
+    user.group_ids = Group.all.pluck(:id)
+
+    UserInfo.ensure_current_user_id do
+      user.save!
+    end
+
+    Setting.set('system_init_done', true)
+
+    # fetch org logo
+    if user.email.present?
+      Service::Image.organization_suggest(user.email)
+    end
+
+    # load calendar
+    Calendar.init_setup(request.remote_ip)
+
+    # load text modules
+    begin
+      TextModule.load(request.env['HTTP_ACCEPT_LANGUAGE'] || 'en-us')
+    rescue => e
+      logger.error "Unable to load text modules #{request.env['HTTP_ACCEPT_LANGUAGE'] || 'en-us'}: #{e.message}"
+    end
+
+    render json: { message: 'ok' }, status: :created
+  end
+
+  def serve_default_image
+    image = 'R0lGODdhMAAwAOMAAMzMzJaWlr6+vqqqqqOjo8XFxbe3t7GxsZycnAAAAAAAAAAAAAAAAAAAAAAAAAAAACwAAAAAMAAwAAAEcxDISau9OOvNu/9gKI5kaZ5oqq5s675wLM90bd94ru98TwuAA+KQAQqJK8EAgBAgMEqmkzUgBIeSwWGZtR5XhSqAULACCoGCJGwlm1MGQrq9RqgB8fm4ZTUgDBIEcRR9fz6HiImKi4yNjo+QkZKTlJWWkBEAOw=='
+
+    send_data(
+      Base64.decode64(image),
+      filename:    'image.gif',
+      type:        'image/gif',
+      disposition: 'inline'
+    )
   end
 end

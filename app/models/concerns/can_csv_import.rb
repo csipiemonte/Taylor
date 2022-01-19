@@ -1,6 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
-
-require 'csv'
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 module CanCsvImport
   extend ActiveSupport::Concern
@@ -59,9 +57,13 @@ returns
         raise Exceptions::UnprocessableEntity, "Unable to read file '#{data[:file]}': #{e.inspect}"
       end
 
-      header, *rows = ::CSV.parse(data[:string], data[:parse_params])
-      header&.each { |column| column.try(:strip!) }
-      header&.each { |column| column.try(:downcase!) }
+      require 'csv' # Only load it when it's really needed to save memory.
+      header, *rows = ::CSV.parse(data[:string], **data[:parse_params])
+
+      header&.each do |column|
+        column.try(:strip!)
+        column.try(:downcase!)
+      end
 
       begin
         raise "Delete is not possible for #{self}." if delete && !csv_delete_possible
@@ -114,7 +116,7 @@ returns
           record = (lookup_keys & attributes.keys).lazy.map do |lookup_key|
             params = attributes.slice(lookup_key)
             params.transform_values!(&:downcase) if lookup_key.in?(%i[email login])
-            lookup(params)
+            lookup(**params)
           end.detect(&:present?)
 
           if record&.in?(records)
@@ -237,26 +239,26 @@ returns
       if records.count < 20
         record_ids = records.pluck(:id).concat(csv_object_ids_ignored)
         local_records = where.not(id: record_ids).limit(20 - records.count)
-        records = records.concat(local_records)
+        records.concat(local_records)
       end
       records_attributes_with_association_names = []
       records.each do |record|
         record_attributes_with_association_names = record.attributes_with_association_names
         records_attributes_with_association_names.push record_attributes_with_association_names
-        record_attributes_with_association_names.each do |key, value|
-          next if value.class == ActiveSupport::HashWithIndifferentAccess
-          next if value.class == Hash
-          next if csv_attributes_ignored&.include?(key.to_sym)
-          next if key.end_with?('_id')
-          next if key.end_with?('_ids')
-          next if key == 'created_by'
-          next if key == 'updated_by'
-          next if key == 'created_at'
-          next if key == 'updated_at'
-          next if header.include?(key)
+      end
+      new.attributes_with_association_names(empty_keys: true).each do |key, value|
+        next if value.instance_of?(ActiveSupport::HashWithIndifferentAccess)
+        next if value.instance_of?(Hash)
+        next if csv_attributes_ignored&.include?(key.to_sym)
+        next if key.end_with?('_id')
+        next if key.end_with?('_ids')
+        next if key == 'created_by'
+        next if key == 'updated_by'
+        next if key == 'created_at'
+        next if key == 'updated_at'
+        next if header.include?(key)
 
-          header.push key
-        end
+        header.push key
       end
 
       rows = []
@@ -266,11 +268,11 @@ returns
         position = -1
         header.each do |key|
           position += 1
-          if record[key].class == ActiveSupport::TimeWithZone
+          if record[key].instance_of?(ActiveSupport::TimeWithZone)
             row.push record[key].iso8601
             next
           end
-          if record[key].class == Array
+          if record[key].instance_of?(Array)
             entry_count = -2
             record[key].each do |entry|
               entry_count += 1
@@ -293,7 +295,9 @@ returns
         end
         rows_to_add = []
       end
-      ::CSV.generate(params) do |csv|
+
+      require 'csv' # Only load it when it's really needed to save memory.
+      ::CSV.generate(**params) do |csv|
         csv << header
         rows.each do |row|
           csv << row

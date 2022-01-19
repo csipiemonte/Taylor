@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'test_helper'
 
 class ModelTest < ActiveSupport::TestCase
@@ -10,7 +12,7 @@ class ModelTest < ActiveSupport::TestCase
       updated_by_id: 1,
       created_by_id: 1,
     )
-    assert_raises( ActiveRecord::RecordNotUnique ) do
+    assert_raises(ActiveRecord::RecordNotUnique) do
       Group.create_if_not_exists(
         name:          'model1-Create_If_Not_Exists',
         active:        true,
@@ -39,7 +41,7 @@ class ModelTest < ActiveSupport::TestCase
       updated_by_id: 1,
       created_by_id: 1,
     )
-    assert_raises( ActiveRecord::RecordNotUnique ) do
+    assert_raises(ActiveRecord::RecordNotUnique) do
       Group.create_or_update(
         name:          'model1-Create_Or_Update',
         active:        true,
@@ -355,7 +357,7 @@ class ModelTest < ActiveSupport::TestCase
 
     params = {
       firstname:   '123 ABC',
-      preferences: { 'B' => 3, 'C': 4 },
+      preferences: { 'B' => 3, C: 4 },
     }
     clean_params = User.param_cleanup(params)
     clean_user_params = user.param_preferences_merge(clean_params)

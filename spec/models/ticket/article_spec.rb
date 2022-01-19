@@ -1,18 +1,23 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 require 'models/application_model_examples'
 require 'models/concerns/can_be_imported_examples'
 require 'models/concerns/can_csv_import_examples'
 require 'models/concerns/has_history_examples'
-require 'models/concerns/has_object_manager_attributes_validation_examples'
+require 'models/concerns/has_object_manager_attributes_examples'
+require 'models/ticket/article/has_ticket_contact_attributes_impact_examples'
 
 RSpec.describe Ticket::Article, type: :model do
+  subject(:article) { create(:ticket_article) }
+
   it_behaves_like 'ApplicationModel'
   it_behaves_like 'CanBeImported'
   it_behaves_like 'CanCsvImport'
   it_behaves_like 'HasHistory'
-  it_behaves_like 'HasObjectManagerAttributesValidation'
+  it_behaves_like 'HasObjectManagerAttributes'
 
-  subject(:article) { create(:ticket_article) }
+  it_behaves_like 'Ticket::Article::HasTicketContactAttributesImpact'
 
   describe 'Callbacks, Observers, & Async Transactions -' do
     describe 'NULL byte handling (via ChecksAttributeValuesAndLength concern):' do
@@ -24,6 +29,22 @@ RSpec.describe Ticket::Article, type: :model do
       it 'removes them from #body on creation, if necessary (postgres doesn’t like them)' do
         expect(create(:ticket_article, body: "some\u0000message 123"))
           .to be_persisted
+      end
+    end
+
+    describe 'Setting of ticket_define_email_from' do
+      subject(:article) do
+        create(:ticket_article, sender_name: 'Agent', type_name: 'email')
+      end
+
+      context 'when AgentName' do
+        before do
+          Setting.set('ticket_define_email_from', 'AgentName')
+        end
+
+        it 'sets the from based on the setting' do
+          expect(article.reload.from).to eq("\"#{article.created_by.firstname} #{article.created_by.lastname}\" <#{article.ticket.group.email_address.email}>")
+        end
       end
     end
 
@@ -66,11 +87,11 @@ RSpec.describe Ticket::Article, type: :model do
 
       context 'when body contains only injected JS' do
         let(:body) { <<~RAW.chomp }
-          <script type="text/javascript">alert("XSS!");</script>
+          <script type="text/javascript">alert("XSS!");</script> some other text
         RAW
 
         it 'removes <script> tags' do
-          expect(article.body).to eq('alert("XSS!");')
+          expect(article.body).to eq(' some other text')
         end
       end
 
@@ -81,7 +102,7 @@ RSpec.describe Ticket::Article, type: :model do
 
         it 'removes <script> tags' do
           expect(article.body).to eq(<<~SANITIZED.chomp)
-            please tell me this doesn't work: alert("XSS!");
+            please tell me this doesn't work:#{' '}
           SANITIZED
         end
       end
@@ -126,6 +147,24 @@ RSpec.describe Ticket::Article, type: :model do
             <a href="https://example.com" rel="nofollow noreferrer noopener" target="_blank" title="https://example.com">foo</a>
           SANITIZED
         end
+
+        context 'when a sanitization attribute is present' do
+          # ATTENTION: We use `target` here because re-sanitization would change the order of attributes
+          let(:body) { '<a href="https://example.com" target="_blank">foo</a>' }
+
+          it 'adds sanitization attributes' do
+            expect(article.body).to eq(<<~SANITIZED.chomp)
+              <a href="https://example.com" rel="nofollow noreferrer noopener" target="_blank" title="https://example.com">foo</a>
+            SANITIZED
+          end
+
+          context 'when changing an unrelated attribute' do
+
+            it "doesn't re-sanitizes the body" do
+              expect { article.update!(message_id: 'test') }.not_to change { article.reload.body }
+            end
+          end
+        end
       end
 
       context 'for all cases above, combined' do
@@ -146,7 +185,8 @@ RSpec.describe Ticket::Article, type: :model do
             <div>
             LINK
             <a href="http://lalal.de" rel="nofollow noreferrer noopener" target="_blank" title="http://lalal.de">aa</a>
-            ABC</div>
+            ABC
+            </div>
           SANITIZED
         end
       end
@@ -256,13 +296,23 @@ RSpec.describe Ticket::Article, type: :model do
           end
         end
 
+        context 'for import' do
+          before do
+            Setting.set('import_mode', true)
+          end
+
+          it 'truncates body to 1.5 million chars' do
+            expect(article.body.length).to eq(1_500_000)
+          end
+        end
+
         context 'for "test.postmaster" thread', application_handle: 'test.postmaster' do
           it 'truncates body to 1.5 million chars' do
             expect(article.body.length).to eq(1_500_000)
           end
 
           context 'with NULL bytes' do
-            let(:body) { "\u0000" + 'a' * 2_000_000 }
+            let(:body) { "\u0000#{'a' * 2_000_000}" }
 
             it 'still removes them, if necessary (postgres doesn’t like them)' do
               expect(article).to be_persisted
@@ -290,7 +340,7 @@ RSpec.describe Ticket::Article, type: :model do
             it 'does not modify any Log records (because CallerIds from article bodies have #level "maybe")' do
               expect do
                 article.save
-                Observer::Transaction.commit
+                TransactionDispatcher.commit
                 Scheduler.worker(true)
               end.not_to change { log.reload.attributes }
             end
@@ -299,7 +349,7 @@ RSpec.describe Ticket::Article, type: :model do
       end
     end
 
-    describe 'Auto-setting of outgoing Twitter article attributes (via bg jobs):', use_vcr: :with_oauth_headers do
+    describe 'Auto-setting of outgoing Twitter article attributes (via bg jobs):', use_vcr: :with_oauth_headers, required_envs: %w[TWITTER_CONSUMER_KEY TWITTER_CONSUMER_SECRET TWITTER_OAUTH_TOKEN TWITTER_OAUTH_TOKEN_SECRET] do
       subject!(:twitter_article) { create(:twitter_article, sender_name: 'Agent') }
 
       let(:channel) { Channel.find(twitter_article.ticket.preferences[:channel_id]) }
@@ -308,7 +358,7 @@ RSpec.describe Ticket::Article, type: :model do
       it 'sets #from to sender’s Twitter handle' do
         expect(&run_bg_jobs)
           .to change { twitter_article.reload.from }
-          .to('@example')
+          .to('@ZammadTesting')
       end
 
       it 'sets #to to recipient’s Twitter handle' do
@@ -320,7 +370,7 @@ RSpec.describe Ticket::Article, type: :model do
       it 'sets #message_id to tweet ID (https://twitter.com/_/status/<id>)' do
         expect(&run_bg_jobs)
           .to change { twitter_article.reload.message_id }
-          .to('1069382411899817990')
+          .to('1410130368498372609')
       end
 
       it 'sets #preferences with tweet metadata' do
@@ -565,7 +615,7 @@ RSpec.describe Ticket::Article, type: :model do
           article_new = create(:ticket_article)
           UserInfo.current_user_id = 1
 
-          attachments = article_parent.clone_attachments(article_new.class.name, article_new.id, only_inline_attachments: true )
+          attachments = article_parent.clone_attachments(article_new.class.name, article_new.id, only_inline_attachments: true)
 
           expect(attachments.count).to eq(1)
           expect(attachments[0].filename).to eq('some_file1.jpg')

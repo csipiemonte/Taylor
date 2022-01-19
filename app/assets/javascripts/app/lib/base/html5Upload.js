@@ -57,6 +57,10 @@
                 console.log('Event: upload onCompleted, data = ' + data);
                 file = null;
                 (self.eventHandlers.onCompleted || noop)(data);
+            },
+            onError: function (message) {
+                console.log('Event: upload error, message: ' + message);
+                (self.eventHandlers.onError || noop)(message);
             }
         };
     }
@@ -76,18 +80,19 @@
                 inputField = manager.inputField,
                 cancelContainer = manager.cancelContainer,
                 inCounter = 0,
-                overEvent = function (e) {
+                onDragEnter = function (e) {
                     e.preventDefault()
                     e.stopPropagation()
                     inCounter++
                     //console.log('in', inCounter, dropContainer)
                     showDropZone(dropContainer)
                 };
-                stopEvent = function (e) {
+                onDragOver = function (e) {
+                    e.dataTransfer.dropEffect = 'copy';
                     e.preventDefault()
                     e.stopPropagation()
                 };
-                leaveEvent = function (e) {
+                onDragLeave = function (e) {
                     e.preventDefault()
                     e.stopPropagation()
                     inCounter--
@@ -95,6 +100,19 @@
                     if ( inCounter == 0 ) {
                       hideDropZone(dropContainer)
                     }
+                };
+                onDrop = function (e) {
+                    inCounter = 0
+                    e.preventDefault()
+                    e.stopPropagation()
+                    hideDropZone(dropContainer)
+                    manager.processFiles(e.dataTransfer.files)
+                };
+                onDragEnd = function (e) {
+                    inCounter = 0
+                    e.preventDefault()
+                    e.stopPropagation()
+                    hideDropZone(dropContainer)
                 };
                 showDropZone = function(dropContainer) {
                   $(dropContainer).trigger('html5Upload.dropZone.show')
@@ -112,15 +130,11 @@
                 }
 
             if (dropContainer) {
-                manager.on(dropContainer, 'dragleave', leaveEvent)
-                manager.on(dropContainer, 'dragover', stopEvent)
-                manager.on(dropContainer, 'dragenter', overEvent)
-                manager.on(dropContainer, 'drop', function (e) {
-                    inCounter = 0
-                    stopEvent(e);
-                    hideDropZone(dropContainer)
-                    manager.processFiles(e.dataTransfer.files)
-                });
+                manager.on(dropContainer, 'dragleave', onDragLeave)
+                manager.on(dropContainer, 'dragover', onDragOver)
+                manager.on(dropContainer, 'dragenter', onDragEnter)
+                manager.on(dropContainer, 'dragend', onDragEnd)
+                manager.on(dropContainer, 'drop', onDrop)
             }
 
             if (inputField) {
@@ -224,19 +238,24 @@
 
             // Triggered when upload is completed:
             xhr.onload = function (event) {
-                console.log('Upload completed: ' + fileName);
-
                 // Reduce number of active uploads:
                 manager.activeUploads -= 1;
 
-                upload.events.onCompleted(event.target.responseText);
+                // call the error callback when the status is not ok
+                if (xhr.status !== 200){
+                  console.log('Upload failed: ' + fileName);
+                  upload.events.onError(event.target.statusText);
+                } else {
+                  console.log('Upload completed: ' + fileName);
+                  upload.events.onCompleted(event.target.responseText);
+                }
 
                 // Check if there are any uploads left in a queue:
                 if (manager.uploadsQueue.length) {
                     manager.ajaxUpload(manager.uploadsQueue.shift());
                 }
             };
-            xhr.abort = function (event) {
+            xhr.onabort = function (event) {
                 console.log('Upload abort');
 
                 // Reduce number of active uploads:
@@ -250,6 +269,7 @@
             // Triggered when upload fails:
             xhr.onerror = function () {
                 console.log('Upload failed: ', upload.fileName);
+                upload.events.onError('Upload failed: ' + upload.fileName);
             };
 
             // Append additional data if provided:

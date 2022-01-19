@@ -1,10 +1,12 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sessions::Backend::TicketOverviewList < Sessions::Backend::Base
 
   def self.reset(user_id)
     Cache.write("TicketOverviewPull::#{user_id}", { needed: true })
   end
 
-  def initialize(user, asset_lookup, client = nil, client_id = nil, ttl = 7)
+  def initialize(user, asset_lookup, client = nil, client_id = nil, ttl = 7) # rubocop:disable Lint/MissingSuper
     @user                 = user
     @client               = client
     @client_id            = client_id
@@ -19,7 +21,7 @@ class Sessions::Backend::TicketOverviewList < Sessions::Backend::Base
 
   def self.overview_history_append(overview, user_id)
     key = "TicketOverviewHistory::#{user_id}"
-    history = Cache.get(key) || []
+    history = Cache.read(key) || []
 
     history.prepend overview
     history.uniq!
@@ -31,7 +33,7 @@ class Sessions::Backend::TicketOverviewList < Sessions::Backend::Base
   end
 
   def self.overview_history_get(user_id)
-    Cache.get("TicketOverviewHistory::#{user_id}")
+    Cache.read("TicketOverviewHistory::#{user_id}")
   end
 
   def load
@@ -93,7 +95,7 @@ class Sessions::Backend::TicketOverviewList < Sessions::Backend::Base
   end
 
   def pull_overview?
-    result = Cache.get("TicketOverviewPull::#{@user.id}")
+    result = Cache.read("TicketOverviewPull::#{@user.id}")
     Cache.delete("TicketOverviewPull::#{@user.id}") if result
     return true if result
 
@@ -160,13 +162,7 @@ class Sessions::Backend::TicketOverviewList < Sessions::Backend::Base
 
       data[:assets] = assets.to_h
 
-      if !@client
-        result = {
-          event: 'ticket_overview_list',
-          data:  data,
-        }
-        results.push result
-      else
+      if @client
         @client.log "push overview_list #{overview.link} for user #{@user.id}"
 
         # send update to browser
@@ -174,6 +170,12 @@ class Sessions::Backend::TicketOverviewList < Sessions::Backend::Base
           event: 'ticket_overview_list',
           data:  data,
         )
+      else
+        result = {
+          event: 'ticket_overview_list',
+          data:  data,
+        }
+        results.push result
       end
 
       assets.flush

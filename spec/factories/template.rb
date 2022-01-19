@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 FactoryBot.define do
   factory :template do
     name          { Faker::Name.unique.name }
@@ -9,9 +11,9 @@ FactoryBot.define do
       title { 'Title dummy.' }
       body { 'Content dummy.' }
       sender_type { 'email-out' }
-      customer { create(:customer_user) }
+      customer { create(:customer) }
       group { Group.first }
-      owner { create(:agent_user) }
+      owner { create(:agent) }
     end
 
     trait :dummy_data do

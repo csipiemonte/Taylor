@@ -1,17 +1,20 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
-RSpec.describe 'Admin Knowledge Base Public Menu', type: :request, authenticated_as: :admin_user do
+RSpec.describe 'Admin Knowledge Base Public Menu', type: :request, authenticated_as: :current_user do
   let(:url)    { "/api/v1/knowledge_bases/manage/#{knowledge_base.id}/update_menu_items" }
   let(:params) do
     {
       menu_items_sets: [{
-        "kb_locale_id": kb_locale.id,
-        "location":     location,
-        "menu_items":   menu_items
+        kb_locale_id: kb_locale.id,
+        location:     location,
+        menu_items:   menu_items
       }]
     }
   end
 
+  let(:current_user)   { create(:admin) }
   let(:menu_item)      { create(:knowledge_base_menu_item) }
   let(:kb_locale)      { menu_item.kb_locale }
   let(:knowledge_base) { kb_locale.knowledge_base }
@@ -58,9 +61,9 @@ RSpec.describe 'Admin Knowledge Base Public Menu', type: :request, authenticated
   def build_params(menu_items)
     {
       menu_items_sets: [{
-        "kb_locale_id": kb_locale.id,
-        "location":     location,
-        "menu_items":   menu_items
+        kb_locale_id: kb_locale.id,
+        location:     location,
+        menu_items:   menu_items
       }]
     }
   end

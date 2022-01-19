@@ -1,7 +1,11 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Scheduler < ApplicationModel
+  include ChecksHtmlSanitized
+
   extend ::Mixin::StartFinishLogger
+
+  sanitized_html :note
 
   # rubocop:disable Style/ClassVars
   @@jobs_started = {}
@@ -37,7 +41,7 @@ class Scheduler < ApplicationModel
       end
 
       # read/load jobs and check if each has already been started
-      jobs = Scheduler.where('active = ?', true).order(prio: :asc)
+      jobs = Scheduler.where(active: true).order(prio: :asc)
       jobs.each do |job|
 
         # ignore job is still running
@@ -284,7 +288,7 @@ class Scheduler < ApplicationModel
     )
 
     logger.info "execute #{job.method} (try_count #{try_count})..."
-    eval job.method() # rubocop:disable Security/Eval
+    eval job.method # rubocop:disable Security/Eval
     took = Time.zone.now - started_at
     logger.info "ended #{job.method} took: #{took} seconds."
   rescue => e
@@ -332,6 +336,8 @@ class Scheduler < ApplicationModel
     took = Time.zone.now - started_at
     logger.error "execute #{job.method} (try_count #{try_count}) exited with a non standard-error #{e.inspect} in: #{took} seconds."
     raise
+  ensure
+    ActiveSupport::CurrentAttributes.clear_all
   end
 
   def self.worker(foreground = false)
@@ -347,7 +353,7 @@ class Scheduler < ApplicationModel
       loop do
         success, failure = Delayed::Worker.new.work_off
         if failure.nonzero?
-          raise "#{failure} failed background jobs: #{Delayed::Job.where('last_error IS NOT NULL').inspect}"
+          raise "#{failure} failed background jobs: #{Delayed::Job.where.not(last_error: nil).inspect}"
         end
         break if success.zero?
       end

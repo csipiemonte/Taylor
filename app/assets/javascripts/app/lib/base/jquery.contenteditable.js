@@ -114,11 +114,22 @@
       sel = window.getSelection()
       if (sel) {
         node = $(sel.anchorNode)
-        if (node && node.parent() && node.parent().is('blockquote')) {
-          e.preventDefault()
-          document.execCommand('Insertparagraph')
-          document.execCommand('Outdent')
-          return
+
+        if (node.closest('blockquote').length > 0) {
+
+          // Special handling when the line is not wrapped inside of a html element.
+          if (!node.is('div') && node.parent().is('blockquote') && node.text()) {
+            e.preventDefault()
+            document.execCommand('formatBlock', false, 'div')
+            document.execCommand('insertParagraph')
+            return
+          }
+          if (!e.shiftKey && node && (node.is('blockquote') || (node.parent() && node.parent().is('blockquote')) || !node.text())) {
+            e.preventDefault()
+            document.execCommand('insertParagraph')
+            document.execCommand('outdent')
+            return
+          }
         }
       }
 
@@ -199,7 +210,7 @@
       || e.keyCode == 75
       || e.keyCode == 76
       || e.keyCode == 85
-      || e.keyCode == 86
+      || e.keyCode == 83
       || e.keyCode == 88
       || e.keyCode == 90
       || e.keyCode == 89)) {
@@ -237,7 +248,7 @@
       if (e.keyCode == 85) {
         document.execCommand('underline')
       }
-      if (e.keyCode == 86) {
+      if (e.keyCode == 83) {
         document.execCommand('strikeThrough')
       }
       if (e.keyCode == 88) {
@@ -431,6 +442,8 @@
     x = e.clientX
     y = e.clientY
     var file = dataTransfer.files[0]
+
+    if(!file) return;
 
     // look for images
     if (file.type.match('image.*')) {

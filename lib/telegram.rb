@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2015 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Telegram
 
@@ -15,7 +15,7 @@ check token and return bot attributes of token
   def self.check_token(token)
     api = TelegramAPI.new(token)
     begin
-      bot = api.getMe()
+      bot = api.getMe
     rescue
       raise Exceptions::UnprocessableEntity, 'invalid api token'
     end
@@ -65,10 +65,8 @@ returns
     # verify token
     bot = Telegram.check_token(token)
 
-    if !channel
-      if Telegram.bot_duplicate?(bot['id'])
-        raise Exceptions::UnprocessableEntity, 'Bot already exists!'
-      end
+    if !channel && Telegram.bot_duplicate?(bot['id'])
+      raise Exceptions::UnprocessableEntity, 'Bot already exists!'
     end
 
     if params[:group_id].blank?
@@ -324,7 +322,7 @@ returns
     # find ticket or create one
     state_ids        = Ticket::State.where(name: %w[closed merged removed]).pluck(:id)
     possible_tickets = Ticket.where(customer_id: user.id).where.not(state_id: state_ids).order(:updated_at)
-    ticket           = possible_tickets.find_each.find { |possible_ticket| possible_ticket.preferences[:channel_id] == channel.id  }
+    ticket           = possible_tickets.find_each.find { |possible_ticket| possible_ticket.preferences[:channel_id] == channel.id }
 
     if ticket
       # check if title need to be updated
@@ -607,7 +605,7 @@ returns
     if params[:channel_post]
       return if params[:channel_post][:new_chat_title] # happens when channel title is renamed, we use [:chat][:title] already, safely ignore this.
 
-      # note: used .blank? which is a rails method. empty? does not work on integers (values like date, width, height)  to check.
+      # NOTE: used .blank? which is a rails method. empty? does not work on integers (values like date, width, height)  to check.
       # need delete_if to remove any empty hashes, .compact only removes keys with nil values.
       params[:message] = {
         document:   {
@@ -704,9 +702,7 @@ returns
     end
 
     # prevent multiple update
-    if !params[:edited_message]
-      return if Ticket::Article.find_by(message_id: Telegram.message_id(params))
-    end
+    return if !params[:edited_message] && Ticket::Article.exists?(message_id: Telegram.message_id(params))
 
     # update article
     if params[:edited_message]
@@ -732,7 +728,7 @@ returns
       # get the last ticket of customer which is not closed yet, and close it
       state_ids        = Ticket::State.where(name: %w[closed merged removed]).pluck(:id)
       possible_tickets = Ticket.where(customer_id: user.id).where.not(state_id: state_ids).order(:updated_at)
-      ticket           = possible_tickets.find_each.find { |possible_ticket| possible_ticket.preferences[:channel_id] == channel.id  }
+      ticket           = possible_tickets.find_each.find { |possible_ticket| possible_ticket.preferences[:channel_id] == channel.id }
 
       return if !ticket
 
@@ -748,7 +744,7 @@ returns
     ticket = nil
 
     # use transaction
-    Transaction.execute(reset_user_id: true) do
+    Transaction.execute(reset_user_id: true, context: 'telegram') do
       user   = to_user(params)
       ticket = to_ticket(params, user, group_id, channel)
       to_article(params, user, ticket, channel)
@@ -799,6 +795,7 @@ returns
       {
         open_timeout: 20,
         read_timeout: 40,
+        verify_ssl:   true,
       },
     )
   end

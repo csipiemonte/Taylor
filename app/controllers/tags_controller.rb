@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class TagsController < ApplicationController
   prepend_before_action -> { authorize! }, only: %i[admin_list admin_create admin_rename admin_delete]
@@ -31,7 +31,7 @@ class TagsController < ApplicationController
     }
   end
 
-  # POST /api/v1/tag/add
+  # POST /api/v1/tags/add
   def add
     success = Tag.tag_add(
       object: params[:object],
@@ -45,7 +45,7 @@ class TagsController < ApplicationController
     end
   end
 
-  # DELETE /api/v1/tag/remove
+  # DELETE /api/v1/tags/remove
   def remove
     success = Tag.tag_remove(
       object: params[:object],

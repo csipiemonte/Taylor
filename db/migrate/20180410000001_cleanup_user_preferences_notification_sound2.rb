@@ -1,10 +1,12 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class CleanupUserPreferencesNotificationSound2 < ActiveRecord::Migration[5.1]
 
   def local_to_h!(value)
-    if value.class == ActionController::Parameters
+    if value.instance_of?(ActionController::Parameters)
       value = value.permit!.to_h
     end
-    if value.class == Hash || value.class == ActiveSupport::HashWithIndifferentAccess
+    if value.instance_of?(Hash) || value.instance_of?(ActiveSupport::HashWithIndifferentAccess)
       value.each_key do |local_key|
         value[local_key] = local_to_h!(value[local_key])
       end

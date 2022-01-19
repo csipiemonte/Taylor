@@ -1,12 +1,16 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class UserDevice < ApplicationModel
   store     :device_details
   store     :location_details
   validates :name, presence: true
 
+  belongs_to :user
+
   before_create  :fingerprint_validation
   before_update  :fingerprint_validation
+
+  association_attributes_ignored :user
 
 =begin
 
@@ -77,11 +81,11 @@ store new device for user if device not already known
     end
 
     # generate device name
-    if browser[:name] == 'Generic Browser'
+    if browser[:name] == 'Unknown Browser'
       browser[:name] = user_agent
     end
     name = ''
-    if browser[:plattform].present? && browser[:plattform] != 'Other'
+    if browser[:plattform].present? && browser[:plattform] != 'UnknownPlatform'
       name = browser[:plattform]
     end
     if browser[:name].present? && browser[:name] != 'Other'
@@ -106,9 +110,7 @@ store new device for user if device not already known
       fingerprint: fingerprint,
     )
 
-    if user_device
-      return action(user_device.id, user_agent, ip, user_id, type) if user_device
-    end
+    return action(user_device.id, user_agent, ip, user_id, type) if user_device
 
     # create new device
     user_device = create!(

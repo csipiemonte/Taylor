@@ -1,10 +1,12 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'browser_test_helper'
 
 class AdminChannelEmailTest < TestCase
   def test_account_add
 
     if !ENV['MAILBOX_INIT']
-      #raise "Need MAILBOX_INIT as ENV variable like export MAILBOX_INIT='unittest01@znuny.com:somepass'"
+      # raise "Need MAILBOX_INIT as ENV variable like export MAILBOX_INIT='unittest01@znuny.com:somepass'"
       puts "NOTICE: Need MAILBOX_INIT as ENV variable like export MAILBOX_INIT='unittest01@znuny.com:somepass'"
       return
     end
@@ -13,11 +15,11 @@ class AdminChannelEmailTest < TestCase
 
     @browser = browser_instance
     login(
-      username: 'master@example.com',
+      username: 'admin@example.com',
       password: 'test',
       url:      browser_url,
     )
-    tasks_close_all()
+    tasks_close_all
 
     click(css: 'a[href="#manage"]')
     click(css: '.content.active a[href="#channels/email"]')
@@ -39,7 +41,7 @@ class AdminChannelEmailTest < TestCase
     click(css: '.content.active a[href="#c-account"]')
     click(css: '.content.active .js-channelNew')
 
-    modal_ready()
+    modal_ready
     set(
       css:   '.modal input[name="realname"]',
       value: 'My System',
@@ -80,7 +82,7 @@ class AdminChannelEmailTest < TestCase
     # re-create
     click(css: '.content.active .js-channelNew')
 
-    modal_ready()
+    modal_ready
 
     set(
       css:   '.modal input[name="realname"]',
@@ -109,7 +111,7 @@ class AdminChannelEmailTest < TestCase
     # set invalid folder
     click(css: '.content.active .js-editInbound')
 
-    modal_ready()
+    modal_ready
 
     set(
       css:   '.modal input[name="options::folder"]',
@@ -126,15 +128,15 @@ class AdminChannelEmailTest < TestCase
   # test the creation and cloning of Postmaster filters
   # confirm fix for issue #2170 - Cannot clone PostmasterFilter
   def test_filter_clone
-    filter_name = "Test Filter #{rand(999_999)}"
+    filter_name = "Test Filter #{SecureRandom.uuid}"
 
     @browser = browser_instance
     login(
-      username: 'master@example.com',
+      username: 'admin@example.com',
       password: 'test',
       url:      browser_url,
     )
-    tasks_close_all()
+    tasks_close_all
 
     click(css: 'a[href="#manage"]')
     click(css: '.content.active a[href="#channels/email"]')
@@ -144,7 +146,7 @@ class AdminChannelEmailTest < TestCase
     # create a new email filter
     click(css: '.content.active a[data-type="new"]')
 
-    modal_ready()
+    modal_ready
     set(
       css:   '.modal input[name="name"]',
       value: filter_name,
@@ -154,7 +156,7 @@ class AdminChannelEmailTest < TestCase
       value: 'target',
     )
     click(css: '.modal .js-submit')
-    modal_disappear()
+    modal_disappear
 
     watch_for(
       css:   '.content.active .table',
@@ -165,9 +167,9 @@ class AdminChannelEmailTest < TestCase
     click(css: '.content.active .table .dropdown .btn--table')
     click(css: '.content.active .table .dropdown .js-clone')
 
-    modal_ready()
+    modal_ready
     click(css: '.modal .js-submit')
-    modal_disappear()
+    modal_disappear
 
     # confirm the clone exists in the table
     watch_for(

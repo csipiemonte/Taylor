@@ -1,10 +1,32 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class SMIMECertificate < ApplicationModel
-  validates :fingerprint, uniqueness: true
+  validates :fingerprint, uniqueness: { case_sensitive: true }
+
+  def self.parts(raw)
+    raw.scan(%r{-----BEGIN[^-]+-----.+?-----END[^-]+-----}m)
+  end
+
+  def self.create_private_keys(raw, secret)
+    parts(raw).select { |part| part.include?('PRIVATE KEY') }.each do |part|
+      private_key = OpenSSL::PKey.read(part, secret)
+      modulus     = private_key.public_key.n.to_s(16)
+      certificate = find_by(modulus: modulus)
+
+      raise Exceptions::UnprocessableEntity, 'Unable for find certificate for this private key.' if !certificate
+
+      certificate.update!(private_key: part, private_key_secret: secret)
+    end
+  end
+
+  def self.create_certificates(raw)
+    parts(raw).select { |part| part.include?('CERTIFICATE') }.each_with_object([]) do |part, result|
+      result << create!(public_key: part)
+    end
+  end
 
   def self.parse(raw)
-    OpenSSL::X509::Certificate.new(raw.gsub!(/(?:TRUSTED\s)?(CERTIFICATE---)/, '\1'))
+    OpenSSL::X509::Certificate.new(raw.gsub(%r{(?:TRUSTED\s)?(CERTIFICATE---)}, '\1'))
   end
 
   # Search for the certificate of the given sender email address
@@ -73,27 +95,48 @@ class SMIMECertificate < ApplicationModel
     @email_addresses ||= begin
       subject_alt_name = parsed.extensions.detect { |extension| extension.oid == 'subjectAltName' }
       if subject_alt_name.blank?
-        warning = <<~TEXT.squish
+        Rails.logger.warn <<~TEXT.squish
           SMIMECertificate with ID #{id} has no subjectAltName
           extension and therefore no email addresses assigned.
           This makes it useless in terms of S/MIME. Please check.
         TEXT
-        Rails.logger.warn warning
-        return []
-      end
 
-      # ["IP Address:192.168.7.23", "IP Address:192.168.7.42", "email:jd@example.com", "email:John.Doe@example.com", "dirName:dir_sect"]
-      entries = subject_alt_name.value.split(/,\s?/)
-      # ["email:jd@example.com", "email:John.Doe@example.com"]
-      email_address_entries = entries.select { |entry| entry.start_with?('email') }
-      # ["jd@example.com", "John.Doe@example.com"]
-      email_address_entries.map! { |entry| entry.split(':')[1] }
-      # ["jd@example.com", "john.doe@example.com"]
-      email_address_entries.map!(&:downcase)
+        []
+      else
+        email_addresses_from_subject_alt_name(subject_alt_name)
+      end
     end
   end
 
   def expired?
     !Time.zone.now.between?(not_before_at, not_after_at)
+  end
+
+  private
+
+  def email_addresses_from_subject_alt_name(subject_alt_name)
+    # ["IP Address:192.168.7.23", "IP Address:192.168.7.42", "email:jd@example.com", "email:John.Doe@example.com", "dirName:dir_sect"]
+    entries = subject_alt_name.value.split(%r{,\s?})
+
+    entries.each_with_object([]) do |entry, result|
+      # ["email:jd@example.com", "email:John.Doe@example.com"]
+      identifier, email_address = entry.split(':').map(&:downcase)
+
+      # See: https://stackoverflow.com/a/20671427
+      # ["email:jd@example.com", "emailAddress:jd@example.com", "rfc822:jd@example.com", "rfc822Name:jd@example.com"]
+      next if identifier.exclude?('email') && identifier.exclude?('rfc822')
+
+      if !EmailAddressValidation.new(email_address).valid_format?
+        Rails.logger.warn <<~TEXT.squish
+          SMIMECertificate with ID #{id} has the malformed email address "#{email_address}"
+          stored as "#{identifier}" in the subjectAltName extension.
+          This makes it useless in terms of S/MIME. Please check.
+        TEXT
+
+        next
+      end
+
+      result.push(email_address)
+    end
   end
 end

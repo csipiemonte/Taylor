@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module Import
   module OTRS
     module HistoryFactory
@@ -25,7 +27,7 @@ module Import
       end
 
       def check_supported(history)
-        return if !supported_types.include?(history['HistoryType'])
+        return if supported_types.exclude?(history['HistoryType'])
 
         history['HistoryType']
       end

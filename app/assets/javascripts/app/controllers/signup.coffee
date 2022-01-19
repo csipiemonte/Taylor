@@ -1,9 +1,10 @@
-class Index extends App.ControllerContent
+class Signup extends App.ControllerFullPage
   events:
     'submit form': 'submit'
     'click .submit': 'submit'
     'click .js-submitResend': 'resend'
     'click .cancel': 'cancel'
+  className: 'signup'
 
   constructor: ->
     super
@@ -13,8 +14,6 @@ class Index extends App.ControllerContent
       @navigate '#'
       return
 
-    @navHide()
-
     # set title
     @title 'Sign up'
     @navupdate '#signup'
@@ -23,7 +22,7 @@ class Index extends App.ControllerContent
 
   render: ->
 
-    @html App.view('signup')()
+    @replaceWith(App.view('signup')())
 
     @form = new App.ControllerForm(
       el:        @el.find('form')
@@ -51,26 +50,31 @@ class Index extends App.ControllerContent
     user.load(@params)
 
     errors = user.validate(
-      screen: 'signup'
+      controllerForm: @form
     )
+
     if errors
       @log 'error new', errors
+
+      # Only highlight, but don't add message. Error text breaks layout.
+      Object.keys(errors).forEach (key) ->
+        errors[key] = null
+
       @formValidate(form: e.target, errors: errors)
       @formEnable(e)
       return false
+    else
+      @formValidate(form: e.target, errors: errors)
 
     # save user
     user.save(
       done: (r) =>
-        @html App.view('signup/verify')(
+        @replaceWith(App.view('signup/verify')(
           email: @params.email
-        )
+        ))
       fail: (settings, details) =>
         @formEnable(e)
-        if _.isArray(details.error)
-          @form.showAlert( App.i18n.translateInline( details.error[0], details.error[1] ) )
-        else
-          @form.showAlert(details.error_human || details.error || 'Unable to update object!')
+        @form.showAlert(details.error_human || details.error || 'Unable to create user!')
     )
 
   resend: (e) =>
@@ -88,13 +92,12 @@ class Index extends App.ControllerContent
         @formEnable(e)
 
         # add notify
-        @notify
+        @notify(
           type:      'success'
           msg:       App.i18n.translateContent('Email sent to "%s". Please verify your email address.', @params.email)
           removeAll: true
+        )
 
-        if data.token && @Config.get('developer_mode') is true
-          @navigate "#email_verify/#{data.token}"
       error: @error
     )
 
@@ -104,9 +107,9 @@ class Index extends App.ControllerContent
     if !_.isEmpty(detailsRaw)
       details = JSON.parse(detailsRaw)
 
-    @notify
+    @notify(
       type:      'error'
-      msg:       App.i18n.translateContent(details.error || 'Wrong Username or Password combination.')
+      msg:       App.i18n.translateContent(details.error || 'Could not process your request')
       removeAll: true
-
-App.Config.set('signup', Index, 'Routes')
+    )
+App.Config.set('signup', Signup, 'Routes')

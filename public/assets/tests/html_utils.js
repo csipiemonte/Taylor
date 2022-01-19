@@ -649,7 +649,7 @@ test("htmlCleanup", function() {
 
   source = "<div><font size=\"3\" color=\"red\">This is some text!</font><svg><use xlink:href=\"assets/images/icons.svg#icon-status\"></svg></div>"
   //should = "<div>This is some text!</div>"
-  should = "This is some text!"
+  should = "<font color=\"red\">This is some text!</font>"
   result = App.Utils.htmlCleanup($(source))
   equal(result.html(), should, source)
 
@@ -671,7 +671,7 @@ test("htmlCleanup", function() {
   equal(result.html().trim(), should, source)
 
   source = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\n<html>\n<head>\n  <meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\"/>\n  <title></title>\n  <meta name=\"generator\" content=\"LibreOffice 4.4.7.2 (MacOSX)\"/>\n  <style type=\"text/css\">\n    @page { margin: 0.79in }\n    p { margin-bottom: 0.1in; line-height: 120% }\n    a:link { so-language: zxx }\n  </style>\n</head>\n<body lang=\"en-US\" dir=\"ltr\">\n<p align=\"center\" style=\"margin-bottom: 0in; line-height: 100%\">1.\nGehe a<b>uf </b><b>https://www.pfe</b>rdiathek.ge</p>\n<p align=\"center\" style=\"margin-bottom: 0in; line-height: 100%\"><br/>\n\n</p>\n<p align=\"center\" style=\"margin-bottom: 0in; line-height: 100%\">2.\nMel<font color=\"#800000\">de Dich mit folgende</font> Zugangsdaten an:</p>\n<p align=\"center\" style=\"margin-bottom: 0in; line-height: 100%\">Benutzer:\nme@xxx.net</p>\n<p align=\"center\" style=\"margin-bottom: 0in; line-height: 100%\">Passwort:\nxxx.</p>\n</body>\n</html>"
-  should = "\n\n\n  \n  \n  \n  \n\n\n<p>1.\nGehe a<b>uf </b><b>https://www.pfe</b>rdiathek.ge</p>\n<p><br>\n\n</p>\n<p>2.\nMelde Dich mit folgende Zugangsdaten an:</p>\n<p>Benutzer:\nme@xxx.net</p>\n<p>Passwort:\nxxx.</p>\n\n"
+  should = "\n\n\n  \n  \n  \n  \n\n\n<p>1.\nGehe a<b>uf </b><b>https://www.pfe</b>rdiathek.ge</p>\n<p><br>\n\n</p>\n<p>2.\nMel<font color=\"#800000\">de Dich mit folgende</font> Zugangsdaten an:</p>\n<p>Benutzer:\nme@xxx.net</p>\n<p>Passwort:\nxxx.</p>\n\n"
   result = App.Utils.htmlCleanup(source)
   equal(result.html(), should, source)
 
@@ -1051,6 +1051,14 @@ test("identify signature by HTML", function() {
   var result  = App.Utils.signatureIdentifyByHtml(message)
   equal(result, should)
 
+
+  // test if, according to jQuery, invalid HTML does not cause a a crash
+  // https://github.com/zammad/zammad/issues/3393
+  message = "<td></td><table></table><div>test 123 </div>"
+  should  = message
+  result  = App.Utils.signatureIdentifyByHtml(message)
+  equal(result, should)
+
   // simple case 1
   message = '<div>actual content</div><blockquote>quoted content</blockquote>'
   should  = '<div>actual content</div><span class="js-signatureMarker"></span><blockquote>quoted content</blockquote>'
@@ -1072,6 +1080,18 @@ test("identify signature by HTML", function() {
   // simple case 4
   message = '  content 0  <div>content 1</div> content 2  <blockquote>quoted content</blockquote><br><div><br></div><div><br>   </div>'
   should  = '  content 0  <div>content 1</div> content 2  <span class="js-signatureMarker"></span><blockquote>quoted content</blockquote><br><div><br></div><div><br>   </div>'
+  result  = App.Utils.signatureIdentifyByHtml(message)
+  equal(result, should)
+
+  // Invalid html signature detection for exchange warning boxes #3571
+  message = '<div><span style="color:#9c6500;">CAUTION:</span> This email originated from outside of the organization. Do not click links or open attachments unless you recognize the sender and know the content is safe.</div><br><div><p>actual content</p><div><p>actual content 2</p></div><p>&nbsp;</p><div><p>actual quote</p></div><div><blockquote><p>actual quote</p></blockquote></div><div><p>&nbsp;</p></div><p>&nbsp;</p></div></div>'
+  should  = '<div><span style="color:#9c6500;">CAUTION:</span> This email originated from outside of the organization. Do not click links or open attachments unless you recognize the sender and know the content is safe.</div><br><div><p>actual content</p><div><p>actual content 2</p></div><p>&nbsp;</p><div><p>actual quote</p></div><div><blockquote><p>actual quote</p></blockquote></div><div><p>&nbsp;</p></div><p>&nbsp;</p></div></div>'
+  result  = App.Utils.signatureIdentifyByHtml(message)
+  equal(result, should)
+
+  // Invalid html signature detection for exchange warning boxes #3571
+  message = '<div>CAUTION: This email originated from outside of the organization. Do not click links or open attachments unless you recognize the sender and know the content is safe.</div><br><div><p>actual content</p><div><p>actual content 2</p></div><p>&nbsp;</p><div><p>actual quote</p></div><div><blockquote><p>actual quote</p></blockquote></div><div><p>&nbsp;</p></div><p>&nbsp;</p></div></div>'
+  should  = '<div>CAUTION: This email originated from outside of the organization. Do not click links or open attachments unless you recognize the sender and know the content is safe.</div><br><div><p>actual content</p><div><p>actual content 2</p></div><p>&nbsp;</p><div><p>actual quote</p></div><div><blockquote><p>actual quote</p></blockquote></div><div><p>&nbsp;</p></div><p>&nbsp;</p></div></div>'
   result  = App.Utils.signatureIdentifyByHtml(message)
   equal(result, should)
 
@@ -1858,7 +1878,7 @@ test("check form diff", function() {
 
 
   dataNow = {}
-  dataLast = {"number":"10012","title":"some subject 123äöü","group_id":1,"owner_id":1,"customer_id":2,"state_id":3,"priority_id":2,"article":{"from":"Test Master Agent","to":"","cc":"","body":"dasdad","content_type":"text/html","ticket_id":12,"type_id":9,"sender_id":1,"internal":false,"form_id":"523405147"},"updated_at":"2015-01-29T09:22:23.000Z","pending_time":"2015-01-28T22:22:00.000Z","id":12}
+  dataLast = {"number":"10012","title":"some subject 123äöü","group_id":1,"owner_id":1,"customer_id":2,"state_id":3,"priority_id":2,"article":{"from":"Test Admin Agent","to":"","cc":"","body":"dasdad","content_type":"text/html","ticket_id":12,"type_id":9,"sender_id":1,"internal":false,"form_id":"523405147"},"updated_at":"2015-01-29T09:22:23.000Z","pending_time":"2015-01-28T22:22:00.000Z","id":12}
   diff = {}
   result = App.Utils.formDiff(dataNow, dataLast)
   deepEqual(result, diff, 'check form diff')
@@ -3128,6 +3148,52 @@ test('check getRecipientArticle format', function() {
   verify = App.Utils.getRecipientArticle(ticket, article, article.created_by, article.type)
   deepEqual(verify, result)
 
+  // https://github.com/zammad/zammad/issues/2551
+  // If "From:" is local address and "Reply-To:" is available, use it
+
+  var article_customer = {
+    login: 'login',
+    firstname: 'article',
+    lastname: 'lastname',
+    email: 'article_customer@example.com',
+  }
+  var ticket_customer = {
+    login: 'login2',
+    firstname: 'ticket',
+    lastname: 'lastname',
+    email: 'ticket_customer@example.com',
+  }
+  ticket = {
+    customer: ticket_customer,
+  }
+  article = {
+    type: {
+      name: 'email',
+    },
+    sender: {
+      name: 'Customer',
+    },
+    from: 'article lastname <article_customer@example.com>',
+    to: 'some group',
+    reply_to: 'asd@example.com',
+    message_id: 'message_id22',
+    created_by: {
+      login: 'login',
+      firstname: 'firstname',
+      lastname: 'lastname',
+      email: 'article_created_by@example.com',
+    },
+  }
+  email_addresses = [{ email: 'article_customer@example.com'}]
+  result = {
+    to:          'asd@example.com',
+    cc:          '',
+    body:        '',
+    in_reply_to: 'message_id22',
+  }
+  verify = App.Utils.getRecipientArticle(ticket, article, article.created_by, article.type, email_addresses)
+  deepEqual(verify, result)
+
 });
 
 test("contentTypeCleanup", function() {
@@ -3290,11 +3356,51 @@ var htmlImage2DataUrlTest2Fail = function() {
     ok(false, 'fail callback is exectuted!')
   });
 }
+
+// Gitlab Issue #3538
+// Jpeg images should convert to jpegs
+// This functionality uses alt attribute present in img tag to get file type
+// if alt attribute is missing then it will default to image/png
+var jpegImageSource = '<img src="/assets/images/8000x300.jpg" alt="test.jpeg">jpeg image'
+$('#jpegImage').html(jpegImageSource)
+var htmlImage2DataUrlTest3 = function() {
+  test("htmlImage2DataUrl3 async", function() {
+    var result = App.Utils.htmlImage2DataUrl(jpegImageSource)
+    ok(result.match(/jpeg image/), jpegImageSource)
+    ok(result.match(/^\<img src=\"data:image\/jpeg;base64,/), jpegImageSource)
+  });
+}
+$('#jpegImage img').one('load', htmlImage2DataUrlTest3)
+
+var pngImageSource = '<img src="/assets/images/1000x1000.png" alt="test.png">png image'
+$('#pngImage').html(pngImageSource)
+var htmlImage2DataUrlTest4 = function() {
+  test("htmlImage2DataUrl4 async", function() {
+    var result = App.Utils.htmlImage2DataUrl(pngImageSource)
+    ok(result.match(/png image/), pngImageSource)
+    ok(result.match(/^\<img src=\"data:image\/png;base64,/), pngImageSource)
+  });
+}
+$('#pngImage img').one('load', htmlImage2DataUrlTest4)
+
+var jpegImageSourceWithoutAlt = '<img src="/assets/images/8000x300.jpg">jpeg image'
+$('#jpegImage2').html(jpegImageSourceWithoutAlt)
+var htmlImage2DataUrlTest5 = function() {
+  test("htmlImage2DataUrl5 async", function() {
+    var result = App.Utils.htmlImage2DataUrl(jpegImageSourceWithoutAlt)
+    ok(result.match(/jpeg image/), jpegImageSourceWithoutAlt)
+    ok(result.match(/^\<img src=\"data:image\/png;base64,/), jpegImageSourceWithoutAlt)
+  });
+}
+$('#jpegImage2 img').one('load', htmlImage2DataUrlTest5)
+
 App.Utils.htmlImage2DataUrlAsyncInline($('#image2data2'), {success: htmlImage2DataUrlTest2Success, fail: htmlImage2DataUrlTest2Fail})
 
 }
 
 test('App.Utils.baseUrl()', function() {
+  configGetBackup = App.Config.get
+
   // When FQDN is undefined or null,
   //   expect @baseUrl() to return window.location.origin
   App.Config.get = function(key) { return undefined }
@@ -3330,6 +3436,8 @@ test('App.Utils.baseUrl()', function() {
     }
   }
   equal(App.Utils.baseUrl(), 'http://bar.zammad.com', 'with any other FQDN (and http scheme)')
+
+  App.Config.get = configGetBackup
 });
 
 test('App.Utils.joinUrlComponents()', function() {
@@ -3386,3 +3494,20 @@ test('App.Utils.signatureIdentifyByHtmlHelper()', function() {
 
   equal(result, "&lt;script&gt;alert('fish2');&lt;/script&gt;<span class=\"js-signatureMarker\"></span><blockquote></blockquote>", 'signatureIdentifyByHtmlHelper does not reactivate alert')
 });
+
+test("#safeParseHtml", function() {
+  var unwrap = input => $('<div>').html(input)[0].innerHTML
+
+  var html = "<div>test 123 </div>"
+  var result  = App.Utils.safeParseHtml(html)
+  var should = html
+  equal(unwrap(result), html)
+
+
+  // test if, according to jQuery, invalid HTML does not cause a a crash
+  // https://github.com/zammad/zammad/issues/3393
+  html   = "<td></td><table></table><div>test 123 </div>"
+  should = "<table></table><div>test 123 </div>"
+  result = App.Utils.safeParseHtml(html)
+  equal(unwrap(result), should)
+})

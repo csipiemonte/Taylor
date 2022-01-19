@@ -1,5 +1,9 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 FactoryBot.define do
   factory 'knowledge_base/answer/translation', aliases: %i[knowledge_base_answer_translation] do
+    created_by_id    { 1 }
+    updated_by_id    { 1 }
     answer           { nil }
     kb_locale        { nil }
     sequence(:title) { |n| "#{Faker::Appliance.equipment} ##{n}" }

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class SettingsController < ApplicationController
   prepend_before_action { authentication_check && authorize! }
@@ -21,7 +21,7 @@ class SettingsController < ApplicationController
 
   # POST /settings
   def create
-    raise Exceptions::NotAuthorized, 'Not authorized (feature not possible)'
+    raise Exceptions::Forbidden, 'Not authorized (feature not possible)'
   end
 
   # PUT /settings/1
@@ -43,7 +43,7 @@ class SettingsController < ApplicationController
     end
 
     # validate image
-    if !clean_params[:logo].match?(/^data:image/i)
+    if !clean_params[:logo].match?(%r{^data:image}i)
       render json: {
         result:  'invalid',
         message: 'Invalid payload, need data:image in logo param',
@@ -66,7 +66,7 @@ class SettingsController < ApplicationController
 
     # store resized image 1:1
     setting = Setting.lookup(name: 'product_logo')
-    if params[:logo_resize] && params[:logo_resize] =~ /^data:image/i
+    if params[:logo_resize] && params[:logo_resize] =~ %r{^data:image}i
 
       # data:image/png;base64
       file = StaticAssets.data_url_attributes(params[:logo_resize])
@@ -84,7 +84,7 @@ class SettingsController < ApplicationController
 
   # DELETE /settings/1
   def destroy
-    raise Exceptions::NotAuthorized, 'Not authorized (feature not possible)'
+    raise Exceptions::Forbidden, 'Not authorized (feature not possible)'
   end
 
   private

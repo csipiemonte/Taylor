@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe Cti::Log do
@@ -9,6 +11,18 @@ RSpec.describe Cti::Log do
   describe '.log' do
     it 'returns a hash with :list and :assets keys' do
       expect(described_class.log(user)).to match(hash_including(:list, :assets))
+    end
+
+    context 'when pretty is not generated' do
+      let(:log) { create(:'cti/log') }
+
+      before do
+        log.update_column(:preferences, nil)
+      end
+
+      it 'does fallback generate the pretty value' do
+        expect(log.reload.attributes['from_pretty']).to eq('+49 30 609854180')
+      end
     end
 
     context 'when over 60 Log records exist' do
@@ -109,12 +123,12 @@ RSpec.describe Cti::Log do
               'queue'        => '49123457',
               'from'         => '49123456',
               'from_comment' => nil,
-              'from_pretty'  => '49123456',
+              'from_pretty'  => '+49 491 23456',
               'start_at'     => nil,
               'end_at'       => nil,
               'to'           => '49123457',
               'to_comment'   => 'user 1',
-              'to_pretty'    => '49123457'
+              'to_pretty'    => '+49 491 23457'
             )
         end
 
@@ -149,7 +163,7 @@ RSpec.describe Cti::Log do
         before { create(:'cti/log', call_id: '1') }
 
         it 'raises an error' do
-          expect { described_class.process(attributes) }.to raise_error(/call_id \S+ already exists!/)
+          expect { described_class.process(attributes) }.to raise_error(%r{call_id \S+ already exists!})
         end
       end
     end
@@ -159,7 +173,7 @@ RSpec.describe Cti::Log do
 
       context 'with unrecognized "call_id"' do
         it 'raises an error' do
-          expect { described_class.process(attributes) }.to raise_error(/No such call_id/)
+          expect { described_class.process(attributes) }.to raise_error(%r{No such call_id})
         end
       end
 
@@ -190,7 +204,7 @@ RSpec.describe Cti::Log do
 
       context 'with unrecognized "call_id"' do
         it 'raises an error' do
-          expect { described_class.process(attributes) }.to raise_error(/No such call_id/)
+          expect { described_class.process(attributes) }.to raise_error(%r{No such call_id})
         end
       end
 
@@ -242,10 +256,10 @@ RSpec.describe Cti::Log do
         described_class.process(attributes)
       end
 
-      let(:customer_user_of_ticket) { create(:customer_user) }
+      let(:customer_of_ticket) { create(:customer) }
       let(:ticket_sample) do
-        create(:ticket_article, created_by_id: customer_user_of_ticket.id, body: 'some text 0123457')
-        Observer::Transaction.commit
+        create(:ticket_article, created_by_id: customer_of_ticket.id, body: 'some text 0123457')
+        TransactionDispatcher.commit
         Scheduler.worker(true)
       end
       let(:caller_id) { '0123456' }
@@ -268,28 +282,28 @@ RSpec.describe Cti::Log do
       end
 
       context 'with related known customer' do
-        let!(:customer_user) { create(:customer_user, phone: '0123456') }
+        let!(:customer) { create(:customer, phone: '0123456') }
 
         it 'gives caller information' do
           expect(log.preferences[:from].count).to eq(1)
           expect(log.preferences[:from].first)
             .to include(
               'level'   => 'known',
-              'user_id' => customer_user.id,
+              'user_id' => customer.id,
             )
         end
       end
 
       context 'with related known customers' do
-        let!(:customer_user1) { create(:customer_user, phone: '0123456') }
-        let!(:customer_user2) { create(:customer_user, phone: '0123456') }
+        let!(:customer1) { create(:customer, phone: '0123456') }
+        let!(:customer2) { create(:customer, phone: '0123456') }
 
         it 'gives caller information' do
           expect(log.preferences[:from].count).to eq(2)
           expect(log.preferences[:from].first)
             .to include(
               'level'   => 'known',
-              'user_id' => customer_user2.id,
+              'user_id' => customer2.id,
             )
         end
       end
@@ -303,14 +317,14 @@ RSpec.describe Cti::Log do
           expect(log.preferences[:from].first)
             .to include(
               'level'   => 'maybe',
-              'user_id' => customer_user_of_ticket.id,
+              'user_id' => customer_of_ticket.id,
             )
         end
       end
 
       context 'with related maybe and known customer' do
         let(:caller_id) { '0123457' }
-        let!(:customer) { create(:customer_user, phone: '0123457') }
+        let!(:customer) { create(:customer, phone: '0123457') }
         let!(:ticket) { ticket_sample }
 
         it 'gives caller information' do
@@ -471,12 +485,12 @@ RSpec.describe Cti::Log do
       )
     end
 
-    let!(:agent1) { create(:agent_user, phone: '01234599') }
-    let!(:customer2) { create(:customer_user, phone: '') }
+    let!(:agent1) { create(:agent, phone: '01234599') }
+    let!(:customer2) { create(:customer, phone: '') }
     let!(:ticket_article1) { create(:ticket_article, created_by_id: customer2.id, body: 'some text 01234599') }
 
     context 'with agent1 (known), customer1 (known) and customer2 (maybe)' do
-      let!(:customer1) { create(:customer_user, phone: '01234599') }
+      let!(:customer1) { create(:customer, phone: '01234599') }
 
       it 'gives customer1' do
         expect(log1.best_customer_id_of_log_entry).to eq(customer1.id)

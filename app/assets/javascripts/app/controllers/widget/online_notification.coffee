@@ -20,7 +20,7 @@ class App.OnlineNotificationWidget extends App.Controller
     super
 
     # at runtime if an online notification has changed
-    @bind('OnlineNotification::changed', =>
+    @controllerBind('OnlineNotification::changed', =>
       @delay(
         => @fetch()
         2200
@@ -30,7 +30,7 @@ class App.OnlineNotificationWidget extends App.Controller
 
     # after new websocket connection has been established
     @ignoreInitLogin = false
-    @bind('ws:login', =>
+    @controllerBind('ws:login', =>
       if @ignoreInitLogin
         @delay(
           => @fetch()
@@ -41,7 +41,7 @@ class App.OnlineNotificationWidget extends App.Controller
     )
 
     # rebuild widget on auth
-    @bind('auth', (user) =>
+    @controllerBind('auth', (user) =>
       if !user
         @counterUpdate(0)
         return
@@ -55,7 +55,7 @@ class App.OnlineNotificationWidget extends App.Controller
     @createContainer()
 
     # rerender view, e.g. on language change
-    @bind('ui:rerender', =>
+    @controllerBind('ui:rerender', =>
       @createContainer()
       'online_notification'
     )
@@ -63,7 +63,6 @@ class App.OnlineNotificationWidget extends App.Controller
   release: ->
     $(window).off 'click.notifications'
     $(window).off 'keydown.notifications'
-    super
 
   access: ->
     return false if !@Session.get()
@@ -153,8 +152,12 @@ class App.OnlineNotificationWidget extends App.Controller
     )
 
   fetch: =>
-    load = =>
+    load = (objects) =>
+      for elem in objects
+        App.TaskManager.touch "#{elem.object}-#{elem.o_id}"
+
       @fetchedData = true
+
     App.OnlineNotification.fetchFull(load, clear: true, force: true)
 
   toggle: =>

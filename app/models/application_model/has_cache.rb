@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module ApplicationModel::HasCache
   extend ActiveSupport::Concern
 
@@ -10,6 +11,7 @@ module ApplicationModel::HasCache
   def cache_update(other)
     cache_delete if respond_to?('cache_delete')
     other.cache_delete if other.respond_to?('cache_delete')
+    ActiveSupport::CurrentAttributes.clear_all
     true
   end
 
@@ -41,12 +43,13 @@ module ApplicationModel::HasCache
 
     def cache_set(data_id, data)
       key = "#{self}::#{data_id}"
-      Cache.write(key, data)
+      # cache for 4 hours max to lower impact of race conditions
+      Cache.write(key, data, expires_in: 4.hours)
     end
 
     def cache_get(data_id)
       key = "#{self}::#{data_id}"
-      Cache.get(key)
+      Cache.read(key)
     end
   end
 end

@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module ApplicationModel::CanCleanupParam
   extend ActiveSupport::Concern
 
@@ -21,7 +22,7 @@ returns
 
 =end
 
-    def param_cleanup(params, new_object = false, inside_nested = false)
+    def param_cleanup(params, new_object = false, inside_nested = false, exceptions = true)
 
       if params.respond_to?(:permit!)
         params = params.permit!.to_h
@@ -46,23 +47,27 @@ returns
         data.delete('id')
       end
 
+      # get associations by id
+      attribute_associations = {}
+      reflect_on_all_associations.map do |assoc|
+        class_name = assoc.options[:class_name]
+        next if !class_name
+
+        attribute_associations["#{assoc.name}_id"] = assoc
+      end
+
       # only use object attributes
       clean_params = ActiveSupport::HashWithIndifferentAccess.new
       new.attributes.each_key do |attribute|
         next if !data.key?(attribute)
 
         # check reference records, referenced by _id attributes
-        reflect_on_all_associations.map do |assoc|
-          class_name = assoc.options[:class_name]
-          next if !class_name
+        if attribute_associations[attribute].present? && data[attribute].present? && !attribute_associations[attribute].klass.lookup(id: data[attribute])
+          raise Exceptions::UnprocessableEntity, "Invalid value for param '#{attribute}': #{data[attribute].inspect}" if exceptions
 
-          name = "#{assoc.name}_id"
-          next if !data.key?(name)
-          next if data[name].blank?
-          next if assoc.klass.lookup(id: data[name])
-
-          raise Exceptions::UnprocessableEntity, "Invalid value for param '#{name}': #{data[name].inspect}"
+          next
         end
+
         clean_params[attribute] = data[attribute]
       end
 

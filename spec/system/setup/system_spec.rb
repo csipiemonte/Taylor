@@ -1,6 +1,8 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
-RSpec.describe 'System setup process', type: :system, set_up: false do
+RSpec.describe 'System setup process', type: :system, set_up: false, authenticated_as: false, required_envs: %w[MAILBOX_INIT] do
 
   def fqdn
     match_data = %r{://(.+?)(:.+?|/.+?|)$}.match(app_host)
@@ -9,11 +11,8 @@ RSpec.describe 'System setup process', type: :system, set_up: false do
     raise "Unable to get fqdn based on #{app_host}"
   end
 
-  it 'Setting up a new system', authenticated: false do
+  it 'Setting up a new system' do
 
-    if !ENV['MAILBOX_INIT']
-      skip("NOTICE: Need MAILBOX_INIT as ENV variable like export MAILBOX_INIT='unittest01@znuny.com:somepass'")
-    end
     mailbox_user     = ENV['MAILBOX_INIT'].split(':')[0]
     mailbox_password = ENV['MAILBOX_INIT'].split(':')[1]
 
@@ -28,11 +27,11 @@ RSpec.describe 'System setup process', type: :system, set_up: false do
     expect(page).to have_css('.js-admin h2', text: 'Administrator Account')
 
     within('.js-admin') do
-      fill_in 'firstname',        with: 'Test Master'
+      fill_in 'firstname',        with: 'Test Admin'
       fill_in 'lastname',         with: 'Agent'
-      fill_in 'email',            with: 'master@example.com'
-      fill_in 'password',         with: 'test1234äöüß'
-      fill_in 'password_confirm', with: 'test1234äöüß'
+      fill_in 'email',            with: 'admin@example.com'
+      fill_in 'password',         with: 'TEst1234äöüß'
+      fill_in 'password_confirm', with: 'TEst1234äöüß'
 
       click_on('Create')
     end
@@ -45,7 +44,7 @@ RSpec.describe 'System setup process', type: :system, set_up: false do
       # fill in wrong URL
       fill_in 'url', with: 'some host'
       click_on('Next')
-      expect(page).to have_css('.alert', text: 'A URL looks like')
+      expect(page).to have_css('.alert', text: 'An URL looks like')
 
       # fill in valild/current URL
       fill_in 'url', with: app_host
@@ -96,7 +95,7 @@ RSpec.describe 'System setup process', type: :system, set_up: false do
     # expect Dashboard of a fresh system
     expect(page).to have_css('body', text: 'My Stats')
     expect_current_route 'clues'
-    find(:clues_close, wait: 4).in_fixed_postion.click
+    find(:clues_close, wait: 4).in_fixed_position.click
 
     # verify organization and fqdn
     click(:manage)
@@ -108,6 +107,25 @@ RSpec.describe 'System setup process', type: :system, set_up: false do
 
       click(:href, '#settings/system')
       expect(page).to have_field('fqdn', with: fqdn)
+    end
+  end
+
+  # https://github.com/zammad/zammad/issues/3106
+  it 'Shows an error message if too weak password is filled in' do
+    visit '/'
+
+    click_on('Setup new System')
+
+    within('.js-admin') do
+      fill_in 'firstname',        with: 'Test Admin'
+      fill_in 'lastname',         with: 'Agent'
+      fill_in 'email',            with: 'admin@example.com'
+      fill_in 'password',         with: 'asd'
+      fill_in 'password_confirm', with: 'asd'
+
+      click_on('Create')
+
+      expect(page).to have_text 'Invalid password'
     end
   end
 end

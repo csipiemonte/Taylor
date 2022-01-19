@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Cti::Driver::Placetel < Cti::Driver::Base
 
   def config
@@ -7,15 +9,16 @@ class Cti::Driver::Placetel < Cti::Driver::Base
   def mapping(params)
 
     # do event mapping
-    if params['event'] == 'IncomingCall'
+    case params['event']
+    when 'IncomingCall'
       params['direction'] = 'in'
       params['event'] = 'newCall'
-    elsif params['event'] == 'HungUp'
+    when 'HungUp'
       params['event'] = 'hangup'
-    elsif params['event'] == 'OutgoingCall'
+    when 'OutgoingCall'
       params['direction'] = 'out'
       params['event'] = 'newCall'
-    elsif params['event'] == 'CallAccepted'
+    when 'CallAccepted'
       params['event'] = 'answer'
     end
 
@@ -41,13 +44,14 @@ class Cti::Driver::Placetel < Cti::Driver::Base
     end
 
     # do case mapping
-    if params['type'] == 'missed'
+    case params['type']
+    when 'missed'
       params['cause'] = 'cancel'
-    elsif params['type'] == 'voicemail'
+    when 'voicemail'
       params['cause'] = 'voicemail'
-    elsif params['type'] == 'blocked'
+    when 'blocked'
       params['cause'] = 'blocked'
-    elsif params['type'] == 'accepted'
+    when 'accepted'
       params['cause'] = 'normalClearing'
     end
 
@@ -81,7 +85,7 @@ class Cti::Driver::Placetel < Cti::Driver::Base
   def load_voip_users
     return {} if @config.blank? || @config[:api_token].blank?
 
-    list = Cache.get('placetelGetVoipUsers')
+    list = Cache.read('placetelGetVoipUsers')
     return list if list
 
     response = UserAgent.post(
@@ -97,6 +101,7 @@ class Cti::Driver::Placetel < Cti::Driver::Base
         open_timeout:  4,
         read_timeout:  6,
         total_timeout: 6,
+        verify_ssl:    true,
       },
     )
 

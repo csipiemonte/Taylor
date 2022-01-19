@@ -1,10 +1,13 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
-RSpec.describe SearchIndexBackend, searchindex: true do
+RSpec.describe SearchIndexBackend do
 
-  before do
-    configure_elasticsearch
-    rebuild_searchindex
+  before do |example|
+    next if !example.metadata[:searchindex]
+
+    configure_elasticsearch(required: true, rebuild: true)
   end
 
   describe '.build_query' do
@@ -17,7 +20,7 @@ RSpec.describe SearchIndexBackend, searchindex: true do
     end
   end
 
-  describe '.search' do
+  describe '.search', searchindex: true do
 
     context 'query finds results' do
 
@@ -25,12 +28,27 @@ RSpec.describe SearchIndexBackend, searchindex: true do
       let(:record) { create :ticket }
 
       before do
-        described_class.add(record_type, record)
+        record.search_index_update_backend
         described_class.refresh
       end
 
       it 'finds added records' do
         result = described_class.search(record.number, record_type, sort_by: ['updated_at'], order_by: ['desc'])
+        expect(result).to eq([{ id: record.id.to_s, type: record_type }])
+      end
+    end
+
+    context 'when search for user firstname + double lastname' do
+      let(:record_type) { 'User'.freeze }
+      let(:record) { create :user, login: 'a', email: 'a@a.de', firstname: 'AnFirst', lastname: 'ASplit Lastname' }
+
+      before do
+        record.search_index_update_backend
+        described_class.refresh
+      end
+
+      it 'finds user record' do
+        result = described_class.search('AnFirst ASplit Lastname', record_type, sort_by: ['updated_at'], order_by: ['desc'])
         expect(result).to eq([{ id: record.id.to_s, type: record_type }])
       end
     end
@@ -50,6 +68,66 @@ RSpec.describe SearchIndexBackend, searchindex: true do
         let(:index) { %w[User Organization] }
 
         it { is_expected.to be_an(Array).and not_include(nil).and be_empty }
+      end
+    end
+
+    context 'search with date that requires time zone conversion', time_zone: 'Europe/Vilnius' do
+      let(:record_type) { 'Ticket'.freeze }
+      let(:record) { create :ticket }
+
+      before do
+        travel_to(Time.zone.parse('2019-01-02 00:33'))
+        described_class.add(record_type, record)
+        described_class.refresh
+      end
+
+      it 'finds record in a given timezone with a range' do
+        Setting.set('timezone_default', 'UTC')
+        result = described_class.search('created_at: [2019-01-01 TO 2019-01-01]', record_type)
+        expect(result).to eq([{ id: record.id.to_s, type: record_type }])
+      end
+
+      it 'finds record in a far away timezone with a date' do
+        Setting.set('timezone_default', 'Europe/Vilnius')
+        result = described_class.search('created_at: 2019-01-02', record_type)
+        expect(result).to eq([{ id: record.id.to_s, type: record_type }])
+      end
+
+      it 'finds record in UTC with date' do
+        Setting.set('timezone_default', 'UTC')
+        result = described_class.search('created_at: 2019-01-01', record_type)
+        expect(result).to eq([{ id: record.id.to_s, type: record_type }])
+      end
+    end
+
+    context 'does find integer values for ticket data', db_strategy: :reset do
+      let(:record_type) { 'Ticket'.freeze }
+      let(:record) { create :ticket, inttest: '1021052349' }
+
+      before do
+        create(:object_manager_attribute_integer, name: 'inttest', data_option: {
+                 'default' => 0,
+                 'min'     => 0,
+                 'max'     => 99_999_999,
+               })
+        ObjectManager::Attribute.migration_execute
+        record.search_index_update_backend
+        described_class.refresh
+      end
+
+      it 'finds added records by integer part' do
+        result = described_class.search('102105', record_type, sort_by: ['updated_at'], order_by: ['desc'])
+        expect(result).to eq([{ id: record.id.to_s, type: record_type }])
+      end
+
+      it 'finds added records by integer' do
+        result = described_class.search('1021052349', record_type, sort_by: ['updated_at'], order_by: ['desc'])
+        expect(result).to eq([{ id: record.id.to_s, type: record_type }])
+      end
+
+      it 'finds added records by quoted integer' do
+        result = described_class.search('"1021052349"', record_type, sort_by: ['updated_at'], order_by: ['desc'])
+        expect(result).to eq([{ id: record.id.to_s, type: record_type }])
       end
     end
   end
@@ -75,7 +153,7 @@ RSpec.describe SearchIndexBackend, searchindex: true do
       QUERIES
 
       it 'appends a * to the original query' do
-        expect(queries.map(&described_class.method(:append_wildcard_to_simple_query)))
+        expect(queries.map { |query| described_class.append_wildcard_to_simple_query(query) })
           .to eq(queries.map { |q| "#{q}*" })
       end
     end
@@ -117,13 +195,14 @@ RSpec.describe SearchIndexBackend, searchindex: true do
       QUERIES
 
       it 'returns the original query verbatim' do
-        expect(queries.map(&described_class.method(:append_wildcard_to_simple_query)))
+        expect(queries.map { |query| described_class.append_wildcard_to_simple_query(query) })
           .to eq(queries)
       end
     end
   end
 
-  describe '.remove' do
+  describe '.remove', searchindex: true do
+
     context 'record gets deleted' do
 
       let(:record_type) { 'Ticket'.freeze }
@@ -162,38 +241,228 @@ RSpec.describe SearchIndexBackend, searchindex: true do
     end
   end
 
-  describe '.selectors' do
+  describe '.selectors', searchindex: true do
 
-    let(:ticket1) { create :ticket, title: 'some-title1', state_id: 1 }
-    let(:ticket2) { create :ticket, title: 'some_title2', state_id: 4 }
-    let(:ticket3) { create :ticket, title: 'some::title3', state_id: 1 }
+    let(:group1) { create :group }
+    let(:organization1) { create :organization, note: 'hihi' }
+    let(:agent1) { create :agent, organization: organization1, groups: [group1] }
+    let(:customer1) { create :customer, organization: organization1, firstname: 'special-first-name' }
+    let(:ticket1) do
+      ticket = create :ticket, title: 'some-title1', state_id: 1, created_by: agent1
+      ticket.tag_add('t1', 1)
+      ticket
+    end
+    let(:ticket2) do
+      ticket = create :ticket, title: 'some_title2', state_id: 4
+      ticket.tag_add('t2', 1)
+      ticket
+    end
+    let(:ticket3) do
+      ticket = create :ticket, title: 'some::title3', state_id: 1
+      ticket.tag_add('t1', 1)
+      ticket.tag_add('t2', 1)
+      ticket
+    end
     let(:ticket4) { create :ticket, title: 'phrase some-title4', state_id: 1 }
     let(:ticket5) { create :ticket, title: 'phrase some_title5', state_id: 1 }
     let(:ticket6) { create :ticket, title: 'phrase some::title6', state_id: 1 }
     let(:ticket7) { create :ticket, title: 'some title7', state_id: 1 }
-    let(:ticket8) { create :ticket, title: 'sometitle', state_id: 1 }
+    let(:ticket8) { create :ticket, title: 'sometitle', group: group1, state_id: 1, owner: agent1, customer: customer1, organization: organization1 }
+    let(:article8) { create :ticket_article, ticket: ticket8, subject: 'lorem ipsum' }
 
     before do
       Ticket.destroy_all # needed to remove not created tickets
-      described_class.add('Ticket', ticket1)
+      travel(-1.hour)
+      create(:mention, mentionable: ticket1, user: agent1)
+      ticket1.search_index_update_backend
+      travel 1.hour
+      ticket2.search_index_update_backend
       travel 1.second
-      described_class.add('Ticket', ticket2)
+      ticket3.search_index_update_backend
       travel 1.second
-      described_class.add('Ticket', ticket3)
+      ticket4.search_index_update_backend
       travel 1.second
-      described_class.add('Ticket', ticket4)
+      ticket5.search_index_update_backend
       travel 1.second
-      described_class.add('Ticket', ticket5)
+      ticket6.search_index_update_backend
       travel 1.second
-      described_class.add('Ticket', ticket6)
-      travel 1.second
-      described_class.add('Ticket', ticket7)
-      travel 1.second
-      described_class.add('Ticket', ticket8)
+      ticket7.search_index_update_backend
+      travel 1.hour
+      article8.ticket.search_index_update_backend
       described_class.refresh
     end
 
     context 'query with contains' do
+      it 'finds records with till (relative)' do
+        result = described_class.selectors('Ticket',
+                                           { 'ticket.created_at'=>{ 'operator' => 'till (relative)', 'value' => '30', 'range' => 'minute' } },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 7, ticket_ids: [ticket7.id.to_s, ticket6.id.to_s, ticket5.id.to_s, ticket4.id.to_s, ticket3.id.to_s, ticket2.id.to_s, ticket1.id.to_s] })
+      end
+
+      it 'finds records with from (relative)' do
+        result = described_class.selectors('Ticket',
+                                           { 'ticket.created_at'=>{ 'operator' => 'from (relative)', 'value' => '30', 'range' => 'minute' } },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 7, ticket_ids: [ticket8.id.to_s, ticket7.id.to_s, ticket6.id.to_s, ticket5.id.to_s, ticket4.id.to_s, ticket3.id.to_s, ticket2.id.to_s] })
+      end
+
+      it 'finds records with till (relative) including +1 hour ticket' do
+        result = described_class.selectors('Ticket',
+                                           { 'ticket.created_at'=>{ 'operator' => 'till (relative)', 'value' => '120', 'range' => 'minute' } },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 8, ticket_ids: [ticket8.id.to_s, ticket7.id.to_s, ticket6.id.to_s, ticket5.id.to_s, ticket4.id.to_s, ticket3.id.to_s, ticket2.id.to_s, ticket1.id.to_s] })
+      end
+
+      it 'finds records with from (relative) including -1 hour ticket' do
+        result = described_class.selectors('Ticket',
+                                           { 'ticket.created_at'=>{ 'operator' => 'from (relative)', 'value' => '120', 'range' => 'minute' } },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 8, ticket_ids: [ticket8.id.to_s, ticket7.id.to_s, ticket6.id.to_s, ticket5.id.to_s, ticket4.id.to_s, ticket3.id.to_s, ticket2.id.to_s, ticket1.id.to_s] })
+      end
+
+      it 'finds records with tags which contains all' do
+        result = described_class.selectors('Ticket',
+                                           { 'ticket.tags'=>{ 'operator' => 'contains all', 'value' => 't1, t2' } },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 1, ticket_ids: [ticket3.id.to_s] })
+      end
+
+      it 'finds records with tags which contains one' do
+        result = described_class.selectors('Ticket',
+                                           { 'ticket.tags'=>{ 'operator' => 'contains one', 'value' => 't1, t2' } },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 3, ticket_ids: [ticket3.id.to_s, ticket2.id.to_s, ticket1.id.to_s] })
+      end
+
+      it 'finds records with tags which contains all not' do
+        result = described_class.selectors('Ticket',
+                                           { 'ticket.tags'=>{ 'operator' => 'contains all not', 'value' => 't2' } },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 6, ticket_ids: [ticket8.id.to_s, ticket7.id.to_s, ticket6.id.to_s, ticket5.id.to_s, ticket4.id.to_s, ticket1.id.to_s] })
+      end
+
+      it 'finds records with tags which contains one not' do
+        result = described_class.selectors('Ticket',
+                                           { 'ticket.tags'=>{ 'operator' => 'contains one not', 'value' => 't1' } },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 6, ticket_ids: [ticket8.id.to_s, ticket7.id.to_s, ticket6.id.to_s, ticket5.id.to_s, ticket4.id.to_s, ticket2.id.to_s] })
+      end
+
+      it 'finds records with organization note' do
+        result = described_class.selectors('Ticket',
+                                           {
+                                             'organization.note' => {
+                                               'operator' => 'contains',
+                                               'value'    => 'hihi',
+                                             },
+                                           },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 1, ticket_ids: [ticket8.id.to_s] })
+      end
+
+      it 'finds records with customer firstname' do
+        result = described_class.selectors('Ticket',
+                                           {
+                                             'customer.firstname' => {
+                                               'operator' => 'contains',
+                                               'value'    => 'special',
+                                             },
+                                           },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 1, ticket_ids: [ticket8.id.to_s] })
+      end
+
+      it 'finds records with article subject' do
+        result = described_class.selectors('Ticket',
+                                           {
+                                             'article.subject' => {
+                                               'operator' => 'contains',
+                                               'value'    => 'ipsum',
+                                             },
+                                           },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 1, ticket_ids: [ticket8.id.to_s] })
+      end
+
+      it 'finds records with pre_condition not_set' do
+        result = described_class.selectors('Ticket',
+                                           {
+                                             'created_by_id' => {
+                                               'pre_condition' => 'not_set',
+                                               'operator'      => 'is',
+                                             },
+                                           },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 7, ticket_ids: [ticket8.id.to_s, ticket7.id.to_s, ticket6.id.to_s, ticket5.id.to_s, ticket4.id.to_s, ticket3.id.to_s, ticket2.id.to_s] })
+      end
+
+      it 'finds records with pre_condition current_user.id' do
+        result = described_class.selectors('Ticket',
+                                           {
+                                             'owner_id' => {
+                                               'pre_condition' => 'current_user.id',
+                                               'operator'      => 'is',
+                                             },
+                                           },
+                                           { current_user: agent1 },
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 1, ticket_ids: [ticket8.id.to_s] })
+      end
+
+      it 'finds records with pre_condition current_user.organization_id' do
+        result = described_class.selectors('Ticket',
+                                           {
+                                             'organization_id' => {
+                                               'pre_condition' => 'current_user.organization_id',
+                                               'operator'      => 'is',
+                                             },
+                                           },
+                                           { current_user: agent1 },
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 1, ticket_ids: [ticket8.id.to_s] })
+      end
+
       it 'finds records with containing phrase' do
         result = described_class.selectors('Ticket',
                                            {
@@ -482,6 +751,241 @@ RSpec.describe SearchIndexBackend, searchindex: true do
         expect(result).to eq({ count: 1, ticket_ids: [ticket8.id.to_s] })
       end
 
+    end
+
+    context 'mentions' do
+      it 'finds records with pre_condition is not_set' do
+        result = described_class.selectors('Ticket',
+                                           {
+                                             'ticket.mention_user_ids' => {
+                                               'pre_condition' => 'not_set',
+                                               'operator'      => 'is',
+                                             },
+                                           },
+                                           { current_user: agent1 },
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 7, ticket_ids: [ticket8.id.to_s, ticket7.id.to_s, ticket6.id.to_s, ticket5.id.to_s, ticket4.id.to_s, ticket3.id.to_s, ticket2.id.to_s] })
+      end
+
+      it 'finds records with pre_condition is not not_set' do
+        result = described_class.selectors('Ticket',
+                                           {
+                                             'ticket.mention_user_ids' => {
+                                               'pre_condition' => 'not_set',
+                                               'operator'      => 'is not',
+                                             },
+                                           },
+                                           { current_user: agent1 },
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 1, ticket_ids: [ticket1.id.to_s] })
+      end
+
+      it 'finds records with pre_condition is current_user.id' do
+        result = described_class.selectors('Ticket',
+                                           {
+                                             'ticket.mention_user_ids' => {
+                                               'pre_condition' => 'current_user.id',
+                                               'operator'      => 'is',
+                                             },
+                                           },
+                                           { current_user: agent1 },
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 1, ticket_ids: [ticket1.id.to_s] })
+      end
+
+      it 'finds records with pre_condition is not current_user.id' do
+        result = described_class.selectors('Ticket',
+                                           {
+                                             'ticket.mention_user_ids' => {
+                                               'pre_condition' => 'current_user.id',
+                                               'operator'      => 'is not',
+                                             },
+                                           },
+                                           { current_user: agent1 },
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 7, ticket_ids: [ticket8.id.to_s, ticket7.id.to_s, ticket6.id.to_s, ticket5.id.to_s, ticket4.id.to_s, ticket3.id.to_s, ticket2.id.to_s] })
+      end
+
+      it 'finds records with pre_condition is specific' do
+        result = described_class.selectors('Ticket',
+                                           {
+                                             'ticket.mention_user_ids' => {
+                                               'pre_condition' => 'specific',
+                                               'operator'      => 'is',
+                                               'value'         => agent1.id,
+                                             },
+                                           },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 1, ticket_ids: [ticket1.id.to_s] })
+      end
+
+      it 'finds records with pre_condition is not specific' do
+        result = described_class.selectors('Ticket',
+                                           {
+                                             'ticket.mention_user_ids' => {
+                                               'pre_condition' => 'specific',
+                                               'operator'      => 'is not',
+                                               'value'         => agent1.id,
+                                             },
+                                           },
+                                           {},
+                                           {
+                                             field: 'created_at', # sort to verify result
+                                           })
+        expect(result).to eq({ count: 7, ticket_ids: [ticket8.id.to_s, ticket7.id.to_s, ticket6.id.to_s, ticket5.id.to_s, ticket4.id.to_s, ticket3.id.to_s, ticket2.id.to_s] })
+      end
+    end
+  end
+
+  describe '.verify_date_range' do
+    let(:range_1) { { range: { created_at: { from: '2020-01-01T00:00:00.000Z', to: '2021-12-31T23:59:59Z' } } } }
+    let(:range_2) { { range: { created_at: { from: '2020-03-01T00:00:00.000Z', to: '2020-03-31T23:59:59Z' } } } }
+    let(:range_3) { { range: { created_at: { from: '2018-03-01T00:00:00.000Z', to: '2018-03-31T23:59:59Z' } } } }
+    let(:range_4) { { range: { updated_at: { from: '2018-03-01T00:00:00.000Z', to: '2018-03-31T23:59:59Z' } } } }
+
+    def build_payload(*ranges)
+      {
+        query: {
+          bool: {
+            must: ranges
+          }
+        }
+      }
+    end
+
+    it 'verifies single range' do
+      result = described_class.verify_date_range 'url', build_payload(range_1)
+
+      expect(result).to be_truthy
+    end
+
+    it 'verifies multiple intersecting ranges' do
+      result = described_class.verify_date_range 'url', build_payload(range_1, range_2)
+
+      expect(result).to be_truthy
+    end
+
+    it 'verifies non-intersecting ranges on different keys' do
+      result = described_class.verify_date_range 'url', build_payload(range_1, range_4)
+
+      expect(result).to be_truthy
+    end
+
+    it 'verifies payload without any ranges' do
+      result = described_class.verify_date_range 'url', build_payload
+
+      expect(result).to be_truthy
+    end
+
+    it 'verifies payload without payload' do
+      result = described_class.verify_date_range 'url', {}
+
+      expect(result).to be_truthy
+    end
+
+    it 'raises an error with multiple non-intersecting range' do
+      expect { described_class.verify_date_range 'url', build_payload(range_1, range_3) }
+        .to raise_error(%r{Conflicting date ranges})
+    end
+
+    context 'with a stubbed range' do
+      before do
+        allow(described_class).to receive(:convert_es_date_range).and_return(mock_range)
+      end
+
+      let(:mock_range) { instance_double('Range', overlaps?: true) }
+
+      it 'checks overlap once for 2 ranges' do
+        described_class.verify_date_range 'url', build_payload(range_1, range_2)
+        expect(mock_range).to have_received(:overlaps?).exactly(1).times
+      end
+
+      it 'checks overlap 3 times for 3 ranges' do
+        described_class.verify_date_range 'url', build_payload(range_1, range_2, range_3)
+        expect(mock_range).to have_received(:overlaps?).exactly(3).times
+      end
+    end
+  end
+
+  describe '.verify_single_key_range' do
+    let(:range_1) { DateTime.new(2020, 1, 1)..DateTime.new(2021, 12, 31) }
+    let(:range_2) { DateTime.new(2020, 3, 1)..DateTime.new(2020, 3, 31) }
+    let(:range_3) { DateTime.new(2018, 3, 1)..DateTime.new(2018, 3, 31) }
+
+    it 'returns true with a single range' do
+      result = described_class.verify_single_key_range [range_1]
+      expect(result).to be_truthy
+    end
+
+    it 'returns true with overlapping ranges' do
+      result = described_class.verify_single_key_range [range_1, range_2]
+      expect(result).to be_truthy
+    end
+
+    it 'returns false with non-overlapping ranges' do
+      result = described_class.verify_single_key_range [range_1, range_3]
+      expect(result).to be_falsey
+    end
+  end
+
+  describe '.convert_es_date_range' do
+    let(:from)             { DateTime.new 2018, 1, 1, 17 }
+    let(:from_placeholder) { DateTime.new(-9999, 1, 1) }
+    let(:to)               { DateTime.new 2020, 10, 1, 23 }
+    let(:to_placeholder)   { DateTime.new 9999, 1, 1 }
+
+    it 'converts range' do
+      result = described_class.convert_es_date_range(
+        {
+          range: {
+            created_at: {
+              from: '2018-01-01T17:00:00.000Z',
+              to:   '2020-10-01T23:00:00Z'
+            }
+          }
+        }
+      )
+
+      expect(result).to eq from..to
+    end
+
+    it 'converts less than' do
+      result = described_class.convert_es_date_range(
+        {
+          range: {
+            created_at: {
+              lt: '2020-10-01T23:00:00Z'
+            }
+          }
+        }
+      )
+
+      expect(result).to eq from_placeholder..to
+    end
+
+    it 'converts greater than' do
+      result = described_class.convert_es_date_range(
+        {
+          range: {
+            created_at: {
+              gt: '2018-01-01T17:00:00.000Z',
+            }
+          }
+        }
+      )
+
+      expect(result).to eq from..to_placeholder
     end
   end
 end

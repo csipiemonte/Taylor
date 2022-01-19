@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'browser_test_helper'
 
 class PreferencesLanguageTest < TestCase
@@ -5,11 +7,11 @@ class PreferencesLanguageTest < TestCase
   def test_lang_change
     @browser = browser_instance
     login(
-      username: 'master@example.com',
+      username: 'admin@example.com',
       password: 'test',
       url:      browser_url,
     )
-    tasks_close_all()
+    tasks_close_all
 
     # start ticket create
     ticket_create(
@@ -46,7 +48,7 @@ class PreferencesLanguageTest < TestCase
     click(css: 'a[href="#profile"]')
     click(css: 'a[href="#profile/language"]')
     select(
-      css:   '.language_item [name="locale"]',
+      css:   '.js-language [name="locale"]',
       value: 'Deutsch',
     )
     click(css: '.content.active button[type="submit"]')
@@ -159,7 +161,7 @@ class PreferencesLanguageTest < TestCase
     click(css: 'a[href="#profile"]')
     click(css: 'a[href="#profile/language"]')
     select(
-      css:   '.language_item [name="locale"]',
+      css:   '.js-language [name="locale"]',
       value: 'English (United States)',
     )
     click(css: '.content.active button[type="submit"]')
@@ -275,7 +277,7 @@ class PreferencesLanguageTest < TestCase
     click(css: 'a[href="#profile/language"]')
     sleep 4
     select(
-      css:   '.language_item [name="locale"]',
+      css:   '.js-language [name="locale"]',
       value: 'Deutsch',
     )
     click(css: '.content.active button[type="submit"]')
@@ -287,7 +289,7 @@ class PreferencesLanguageTest < TestCase
     sleep 6
 
     # check if language is still used after reload
-    reload()
+    reload
     sleep 2
 
     watch_for(
@@ -320,7 +322,7 @@ class PreferencesLanguageTest < TestCase
     click(css: 'a[href="#profile"]')
     click(css: 'a[href="#profile/language"]')
     select(
-      css:   '.language_item [name="locale"]',
+      css:   '.js-language [name="locale"]',
       value: 'English (United States)',
     )
     click(css: '.content.active button[type="submit"]')

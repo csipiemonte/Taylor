@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sequencer
   class Unit
     module Import
@@ -14,7 +16,11 @@ class Sequencer
               private
 
               def existing_mapped
-                @existing_mapped ||= mapped || ActiveSupport::HashWithIndifferentAccess.new
+                @existing_mapped ||= begin
+                  # we need to use `state.optional` instead of just `mapped` here
+                  # to prevent naming conflicts with other Unit methods named `mapped`
+                  state.optional(:mapped) || ActiveSupport::HashWithIndifferentAccess.new
+                end
               end
 
               def provide_mapped

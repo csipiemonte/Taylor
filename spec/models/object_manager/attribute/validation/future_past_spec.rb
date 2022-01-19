@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 require 'models/object_manager/attribute/validation/backend_examples'
 
@@ -13,9 +15,7 @@ RSpec.describe ::ObjectManager::Attribute::Validation::FuturePast do
   let(:record) { build(:user) }
   let(:attribute) { build(:object_manager_attribute_datetime) }
 
-  before do
-    allow(subject).to receive(:value).and_return(value)
-  end
+  it_behaves_like 'validate backend'
 
   shared_examples 'data_option validator' do |data_option:, value:|
     context "for data_option '#{data_option}'" do

@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'browser_test_helper'
 
 # Regression test for UI bugfix
@@ -13,7 +15,7 @@ class AgentTicketCreateTemplateTest < TestCase
       password: 'test',
       url:      browser_url,
     )
-    tasks_close_all()
+    tasks_close_all
 
     click(
       css: 'a[href="#ticket/create"]'
@@ -72,7 +74,7 @@ class AgentTicketCreateTemplateTest < TestCase
     )
 
     # apply new tempalte
-    tasks_close_all()
+    tasks_close_all
     click(
       css: 'a[href="#ticket/create"]'
     )

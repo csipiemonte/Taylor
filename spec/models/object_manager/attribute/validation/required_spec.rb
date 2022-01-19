@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 require 'models/object_manager/attribute/validation/backend_examples'
 
@@ -10,12 +12,10 @@ RSpec.describe ::ObjectManager::Attribute::Validation::Required do
     )
   end
 
-  let(:record) { build(:user) }
+  let(:record) { build(:ticket_article) }
   let(:attribute) { build(:object_manager_attribute_date) }
 
-  before do
-    allow(subject).to receive(:value).and_return(value)
-  end
+  it_behaves_like 'validate backend'
 
   context 'when validation should be performed' do
 
@@ -23,7 +23,7 @@ RSpec.describe ::ObjectManager::Attribute::Validation::Required do
 
     shared_examples 'a permission based validator' do |permission:|
 
-      let(:performing_user) { create(:agent_user) }
+      let(:performing_user) { create(:agent) }
 
       before { UserInfo.current_user_id = performing_user.id }
 
@@ -41,10 +41,18 @@ RSpec.describe ::ObjectManager::Attribute::Validation::Required do
           }
         end
 
+        context 'when boolean field with false values' do
+          let(:value) { false }
+          let(:attribute) { build(:object_manager_attribute_boolean) }
+          let(:action) { 'create_middle' }
+
+          it_behaves_like 'a validation without errors'
+        end
+
         context 'when action is edit' do
 
           let(:action) { 'edit' }
-          let(:record) { create(:user) }
+          let(:record) { create(:ticket_article) }
 
           it_behaves_like 'a validation with errors'
         end
@@ -87,7 +95,7 @@ RSpec.describe ::ObjectManager::Attribute::Validation::Required do
 
       context 'for required => false' do
 
-        let(:performing_user) { create(:agent_user) }
+        let(:performing_user) { create(:agent) }
 
         before { UserInfo.current_user_id = performing_user.id }
 
@@ -108,7 +116,7 @@ RSpec.describe ::ObjectManager::Attribute::Validation::Required do
           context 'when action is edit' do
 
             let(:action) { 'edit' }
-            let(:record) { create(:user) }
+            let(:record) { create(:ticket_article) }
 
             it_behaves_like 'a validation without errors'
           end
@@ -139,7 +147,7 @@ RSpec.describe ::ObjectManager::Attribute::Validation::Required do
         context 'when action is edit' do
 
           let(:action) { 'edit' }
-          let(:record) { create(:user) }
+          let(:record) { create(:ticket_article) }
 
           it_behaves_like 'a validation without errors'
         end

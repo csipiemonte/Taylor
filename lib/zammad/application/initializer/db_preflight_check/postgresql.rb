@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 # NOTE: Why use PG::Connection over ActiveRecord::Base.connection?
 #
 # As of Rails 5.2, db:create now runs initializers prior to creating the DB.
@@ -10,8 +12,8 @@
 
 module Zammad
   class Application
-    class Initializer
-      module DBPreflightCheck
+    module Initializer
+      module DbPreflightCheck
         module Postgresql
           extend Base
 
@@ -22,7 +24,7 @@ module Zammad
           end
 
           def self.check_version_compatibility
-            return if connection.nil?  # Edge case: if Postgres can't find a DB to connect to
+            return if connection.nil? # Edge case: if Postgres can't find a DB to connect to
 
             super
           end
@@ -31,11 +33,11 @@ module Zammad
             alternate_dbs = %w[template0 template1 postgres]
 
             @connection ||= begin
-                              PG.connect(db_config)
-                            rescue PG::ConnectionBad
-                              db_config[:dbname] = alternate_dbs.pop
-                              retry if db_config[:dbname].present?
-                            end
+              PG.connect(db_config)
+            rescue PG::ConnectionBad
+              db_config[:dbname] = alternate_dbs.pop
+              retry if db_config[:dbname].present?
+            end
           end
 
           # Adapted from ActiveRecord::ConnectionHandling#postgresql_connection
@@ -56,7 +58,7 @@ module Zammad
           end
 
           def self.min_version
-            @min_version ||= '9.1'
+            @min_version ||= '9.3'
           end
 
           def self.vendor

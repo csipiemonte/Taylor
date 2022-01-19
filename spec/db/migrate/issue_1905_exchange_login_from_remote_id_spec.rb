@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe Issue1905ExchangeLoginFromRemoteId, type: :db_migration do
@@ -19,7 +21,7 @@ RSpec.describe Issue1905ExchangeLoginFromRemoteId, type: :db_migration do
       }
     )
 
-    expect(backend).to receive(:config).and_return(invalid_config)
+    expect(backend).to receive(:config).and_return(invalid_config) # rubocop:disable RSpec/StubbedMock
     allow(backend).to receive(:config).and_call_original
 
     migrate
@@ -36,7 +38,7 @@ RSpec.describe Issue1905ExchangeLoginFromRemoteId, type: :db_migration do
 
     shared_examples 'irrelevant config' do
       it 'does not change the config' do
-        expect(backend).to receive(:config).and_return(config)
+        allow(backend).to receive(:config).and_return(config)
         expect(backend).not_to receive(:config=)
         migrate
       end

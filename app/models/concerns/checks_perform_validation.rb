@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module ChecksPerformValidation
   extend ActiveSupport::Concern
 
@@ -12,9 +13,10 @@ module ChecksPerformValidation
     validate_perform = Marshal.load(Marshal.dump(perform))
 
     check_present = {
-      'article.note'       => %w[body subject internal],
-      'notification.email' => %w[body recipient subject],
-      'notification.sms'   => %w[body recipient],
+      'article.note'         => %w[body subject internal],
+      'notification.email'   => %w[body recipient subject],
+      'notification.sms'     => %w[body recipient],
+      'notification.webhook' => %w[webhook_id],
     }
 
     check_present.each do |key, values|

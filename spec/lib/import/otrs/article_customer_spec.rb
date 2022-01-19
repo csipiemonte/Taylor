@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe Import::OTRS::ArticleCustomer do
@@ -13,21 +15,24 @@ RSpec.describe Import::OTRS::ArticleCustomer do
   let(:start_import_test) { described_class.new(object_structure) }
 
   it 'finds customers by email' do
-    expect(import_object).to receive(:find_by).with(email: 'kunde2@kunde.de').and_return(existing_object)
+    allow(import_object).to receive(:find_by).with(email: 'kunde2@kunde.de').and_return(existing_object)
+
     expect(import_object).not_to receive(:create)
     start_import_test
   end
 
   it 'finds customers by login' do
-    expect(import_object).to receive(:find_by).with(email: 'kunde2@kunde.de')
-    expect(import_object).to receive(:find_by).with(login: 'kunde2@kunde.de').and_return(existing_object)
+    allow(import_object).to receive(:find_by)
+    allow(import_object).to receive(:find_by).with(login: 'kunde2@kunde.de').and_return(existing_object)
+
     expect(import_object).not_to receive(:create)
     start_import_test
   end
 
   it 'creates customers' do
+    allow(import_object).to receive(:create).and_return(existing_object)
+
     expect(import_object).to receive(:find_by).at_least(:once)
-    expect(import_object).to receive(:create).and_return(existing_object)
     start_import_test
   end
 

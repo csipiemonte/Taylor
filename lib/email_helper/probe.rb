@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class EmailHelper
   class Probe
 
@@ -67,11 +69,11 @@ returns on fail
 
       # get mx records, try to find provider based on mx records
       mx_records = EmailHelper.mx_records(domain)
-      domains = domains.concat(mx_records)
+      domains.concat(mx_records)
       provider_map.each_value do |settings|
         domains.each do |domain_to_check|
 
-          next if !domain_to_check.match?(/#{settings[:domain]}/i)
+          next if !domain_to_check.match?(%r{#{settings[:domain]}}i)
 
           # add folder to config if needed
           if params[:folder].present? && settings[:inbound] && settings[:inbound][:options]
@@ -91,9 +93,11 @@ returns on fail
           next if result_outbound[:result] != 'ok'
 
           return {
-            result:           'ok',
-            content_messages: result_inbound[:content_messages],
-            setting:          settings,
+            result:             'ok',
+            content_messages:   result_inbound[:content_messages],
+            archive_possible:   result_inbound[:archive_possible],
+            archive_week_range: result_inbound[:archive_week_range],
+            setting:            settings,
           }
         end
       end
@@ -122,9 +126,11 @@ returns on fail
 
         next if result_inbound[:result] != 'ok'
 
-        success                    = true
-        result[:setting][:inbound] = config
-        result[:content_messages]  = result_inbound[:content_messages]
+        success                     = true
+        result[:setting][:inbound]  = config
+        result[:content_messages]   = result_inbound[:content_messages]
+        result[:archive_possible]   = result_inbound[:archive_possible]
+        result[:archive_week_range] = result_inbound[:archive_week_range]
 
         break
       end
@@ -162,7 +168,7 @@ returns on fail
           reason: 'outbound failed',
         }
       end
-      Rails.logger.info "PROBE FULL SUCCESS: #{result.inspect}"
+      Rails.logger.debug { "PROBE FULL SUCCESS: #{result.inspect}" }
       result
     end
 
@@ -221,12 +227,12 @@ returns on fail
       # connection test
       result_inbound = {}
       begin
-        require_dependency "channel/driver/#{adapter.to_filename}"
-
         driver_class    = "Channel::Driver::#{adapter.to_classname}".constantize
         driver_instance = driver_class.new
         result_inbound  = driver_instance.fetch(params[:options], nil, 'check')
       rescue => e
+        Rails.logger.debug { e }
+
         return {
           result:        'invalid',
           settings:      params,
@@ -322,8 +328,6 @@ returns on fail
 
       # test connection
       begin
-        require_dependency "channel/driver/#{adapter.to_filename}"
-
         driver_class    = "Channel::Driver::#{adapter.to_classname}".constantize
         driver_instance = driver_class.new
         driver_instance.send(
@@ -331,6 +335,8 @@ returns on fail
           mail,
         )
       rescue => e
+        Rails.logger.debug { e }
+
         # check if sending email was ok, but mailserver rejected
         if !subject
           white_map = {
@@ -339,7 +345,7 @@ returns on fail
           }
           white_map.each_key do |key|
 
-            next if !e.message.match?(/#{Regexp.escape(key)}/i)
+            next if !e.message.match?(%r{#{Regexp.escape(key)}}i)
 
             return {
               result:   'ok',
@@ -348,6 +354,7 @@ returns on fail
             }
           end
         end
+
         return {
           result:        'invalid',
           settings:      params,
@@ -363,7 +370,7 @@ returns on fail
 
     def self.invalid_field(message_backend)
       invalid_fields.each do |key, fields|
-        return fields if message_backend.match?(/#{Regexp.escape(key)}/i)
+        return fields if message_backend.match?(%r{#{Regexp.escape(key)}}i)
       end
       {}
     end
@@ -388,7 +395,7 @@ returns on fail
 
     def self.translation(message_backend)
       translations.each do |key, message_human|
-        return message_human if message_backend.match?(/#{Regexp.escape(key)}/i)
+        return message_human if message_backend.match?(%r{#{Regexp.escape(key)}}i)
       end
       nil
     end

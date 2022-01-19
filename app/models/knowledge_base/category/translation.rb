@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class KnowledgeBase::Category::Translation < ApplicationModel
   include HasAgentAllowedParams
   include HasSearchIndexBackend
@@ -7,14 +8,14 @@ class KnowledgeBase::Category::Translation < ApplicationModel
 
   AGENT_ALLOWED_ATTRIBUTES = %i[title kb_locale_id].freeze
 
-  belongs_to :kb_locale, class_name: 'KnowledgeBase::Locale',   inverse_of: :category_translations
+  belongs_to :kb_locale, class_name: 'KnowledgeBase::Locale', inverse_of: :category_translations
   validates  :kb_locale, presence: true
 
   belongs_to :category,  class_name: 'KnowledgeBase::Category', inverse_of: :translations, touch: true
   validates  :category,  presence: true
 
   validates :title,        presence: true
-  validates :kb_locale_id, uniqueness: { scope: :category_id }
+  validates :kb_locale_id, uniqueness: { case_sensitive: true, scope: :category_id }
 
   scope :neighbours_of, ->(translation) { joins(:category).where(knowledge_base_categories: { parent_id: translation.category&.parent_id }) }
 
@@ -29,7 +30,7 @@ class KnowledgeBase::Category::Translation < ApplicationModel
     category.assets(data)
   end
 
-  def search_index_attribute_lookup
+  def search_index_attribute_lookup(include_references: true)
     attrs = super
 
     attrs['title']    = ActionController::Base.helpers.strip_tags attrs['title']
@@ -39,7 +40,7 @@ class KnowledgeBase::Category::Translation < ApplicationModel
   end
 
   class << self
-    def search_fallback(query, scope = nil)
+    def search_fallback(query, scope = nil, options: {})
       fields = %w[title]
 
       output = where_or_cis(fields, query)

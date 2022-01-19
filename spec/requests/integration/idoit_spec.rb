@@ -1,15 +1,17 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe 'Idoit', type: :request do
 
-  let!(:admin_user) do
-    create(:admin_user, groups: Group.all)
+  let!(:admin) do
+    create(:admin, groups: Group.all)
   end
-  let!(:agent_user) do
-    create(:agent_user, groups: Group.all)
+  let!(:agent) do
+    create(:agent, groups: Group.all)
   end
-  let!(:customer_user) do
-    create(:customer_user)
+  let!(:customer) do
+    create(:customer)
   end
   let!(:token) do
     'some_token'
@@ -36,9 +38,9 @@ RSpec.describe 'Idoit', type: :request do
         endpoint:  endpoint,
         client_id: '',
       }
-      authenticated_as(agent_user)
+      authenticated_as(agent)
       post '/api/v1/integration/idoit/verify', params: params, as: :json
-      expect(response).to have_http_status(:unauthorized)
+      expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response).not_to be_blank
       expect(json_response['error']).to eq('Not authorized (user)!')
@@ -52,7 +54,7 @@ RSpec.describe 'Idoit', type: :request do
         endpoint:  endpoint,
         client_id: '',
       }
-      authenticated_as(admin_user)
+      authenticated_as(admin)
       post '/api/v1/integration/idoit/verify', params: params, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Hash)
@@ -87,7 +89,7 @@ RSpec.describe 'Idoit', type: :request do
       params = {
         method: 'cmdb.object_types',
       }
-      authenticated_as(agent_user)
+      authenticated_as(agent)
       post '/api/v1/integration/idoit', params: params, as: :json
       expect(response).to have_http_status(:ok)
 
@@ -103,7 +105,7 @@ RSpec.describe 'Idoit', type: :request do
       params = {
         method: 'cmdb.object_types',
       }
-      authenticated_as(admin_user)
+      authenticated_as(admin)
       post '/api/v1/integration/idoit', params: params, as: :json
       expect(response).to have_http_status(:ok)
 
@@ -130,7 +132,7 @@ RSpec.describe 'Idoit', type: :request do
           ids: ['33']
         },
       }
-      authenticated_as(agent_user)
+      authenticated_as(agent)
       post '/api/v1/integration/idoit', params: params, as: :json
       expect(response).to have_http_status(:ok)
 

@@ -1,9 +1,11 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 describe Controllers::KnowledgeBase::CategoriesControllerPolicy do
-  include_context 'basic Knowledge Base'
-
   subject { described_class.new(user, record) }
+
+  include_context 'basic Knowledge Base'
 
   let(:record_class) { KnowledgeBase::CategoriesController }
 
@@ -17,7 +19,7 @@ describe Controllers::KnowledgeBase::CategoriesControllerPolicy do
 
   describe '#show?' do
     let(:action_name) { :show }
-    let(:params)      { { id: internal_answer.category.id  } }
+    let(:params)      { { id: internal_answer.category.id } }
 
     context 'with knowledge_base.reader permissions' do
       let(:user) { create(:agent) }

@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe ImportJob do
@@ -78,7 +80,7 @@ RSpec.describe ImportJob do
 
     it 'queues registered import jobs' do
       allow(Setting).to receive(:get)
-      expect(Setting).to receive(:get).with('import_backends').and_return([test_backend_name])
+      allow(Setting).to receive(:get).with('import_backends').and_return([test_backend_name])
 
       expect do
         described_class.queue_registered
@@ -89,8 +91,8 @@ RSpec.describe ImportJob do
 
     it "doesn't queue if backend isn't #queueable?" do
       allow(Setting).to receive(:get)
-      expect(Setting).to receive(:get).with('import_backends').and_return([test_backend_name])
-      expect(test_backend_class).to receive(:queueable?).and_return(false)
+      allow(Setting).to receive(:get).with('import_backends').and_return([test_backend_name])
+      allow(test_backend_class).to receive(:queueable?).and_return(false)
 
       expect do
         described_class.queue_registered
@@ -100,11 +102,10 @@ RSpec.describe ImportJob do
     end
 
     it "doesn't queue if unfinished job entries exist" do
-
       create(:import_job)
 
       allow(Setting).to receive(:get)
-      expect(Setting).to receive(:get).with('import_backends').and_return([test_backend_name])
+      allow(Setting).to receive(:get).with('import_backends').and_return([test_backend_name])
 
       expect do
         described_class.queue_registered
@@ -115,9 +116,11 @@ RSpec.describe ImportJob do
 
     it 'logs errors for invalid registered backends' do
       allow(Setting).to receive(:get)
-      expect(Setting).to receive(:get).with('import_backends').and_return(['InvalidBackend'])
-      expect(described_class.logger).to receive(:error)
+      allow(Setting).to receive(:get).with('import_backends').and_return(['InvalidBackend'])
+
+      allow(described_class.logger).to receive(:error)
       described_class.queue_registered
+      expect(described_class.logger).to have_received(:error)
     end
 
   end
@@ -149,12 +152,12 @@ RSpec.describe ImportJob do
   describe '#start_registered' do
     it 'queues and starts registered import backends' do
       allow(Setting).to receive(:get)
-      expect(Setting).to receive(:get).with('import_backends').and_return([test_backend_name])
+      allow(Setting).to receive(:get).with('import_backends').and_return([test_backend_name])
 
       expect do
         described_class.start_registered
       end.to change {
-        described_class.where.not(started_at: nil, finished_at: nil).count
+        described_class.where.not(started_at: nil).where.not(finished_at: nil).count
       }.by(1)
     end
   end
@@ -173,8 +176,8 @@ RSpec.describe ImportJob do
   describe '#backends' do
 
     it 'returns list of backend namespaces' do
-      expect(Setting).to receive(:get).with('import_backends').and_return(['Import::Ldap'])
-      expect(Import::Ldap).to receive(:active?).and_return(true)
+      allow(Setting).to receive(:get).with('import_backends').and_return(['Import::Ldap'])
+      allow(Import::Ldap).to receive(:active?).and_return(true)
 
       backends = described_class.backends
 
@@ -183,18 +186,21 @@ RSpec.describe ImportJob do
     end
 
     it 'returns blank array if none are found' do
-      expect(Setting).to receive(:get).with('import_backends')
+      allow(Setting).to receive(:get).with('import_backends')
+
       expect(described_class.backends).to eq([])
     end
 
     it "doesn't return invalid backends" do
-      expect(Setting).to receive(:get).with('import_backends').and_return(['Import::InvalidBackend'])
+      allow(Setting).to receive(:get).with('import_backends').and_return(['Import::InvalidBackend'])
+
       expect(described_class.backends).to eq([])
     end
 
     it "doesn't return inactive backends" do
-      expect(Setting).to receive(:get).with('import_backends').and_return(['Import::Ldap'])
-      expect(Import::Ldap).to receive(:active?).and_return(false)
+      allow(Setting).to receive(:get).with('import_backends').and_return(['Import::Ldap'])
+      allow(Import::Ldap).to receive(:active?).and_return(false)
+
       expect(described_class.backends).to eq([])
     end
   end
@@ -221,7 +227,7 @@ RSpec.describe ImportJob do
       instance = create(:import_job)
 
       error_message = 'Some horrible error'
-      expect_any_instance_of(test_backend_class).to receive(:start).and_raise(error_message)
+      allow_any_instance_of(test_backend_class).to receive(:start).and_raise(error_message)
 
       expect do
         instance.start
@@ -242,7 +248,7 @@ RSpec.describe ImportJob do
 
     it 'returns false for already finished jobs' do
       instance    = create(:import_job)
-      delayed_job = double()
+      delayed_job = double
 
       instance.update!(finished_at: Time.zone.now)
 
@@ -251,14 +257,14 @@ RSpec.describe ImportJob do
 
     it 'returns false for backends not responding to reschedule?' do
       instance    = create(:import_job)
-      delayed_job = double()
+      delayed_job = double
 
       expect(instance.reschedule?(delayed_job)).to be false
     end
 
     it 'returns the backend reschedule? value' do
       instance    = create(:import_job, name: 'Import::NoRescheduleMethod')
-      delayed_job = double()
+      delayed_job = double
 
       expect(instance.reschedule?(delayed_job)).to eq 'invalid_but_checkable_result'
     end

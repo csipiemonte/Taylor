@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2015 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Facebook
 
@@ -107,7 +107,7 @@ result
     return if !item['from']['id']
 
     cache_key = "FB:User:Lookup:#{item['from']['id']}"
-    cache = Cache.get(cache_key)
+    cache = Cache.read(cache_key)
     return cache if cache
 
     begin
@@ -137,19 +137,6 @@ result
     }
     if auth
       user = User.find(auth.user_id)
-      map = {
-        #note: 'description',
-      }
-
-      # ignore if value is already set
-      map.each do |target, source|
-        next if user[target].present?
-
-        new_value = tweet_user.send(source).to_s
-        next if new_value.blank?
-
-        user_data[target] = new_value
-      end
       user.update!(user_data)
     else
       user_data[:login] = item_user['id']
@@ -241,10 +228,10 @@ result
     to = nil
     if post['to'] && post['to']['data']
       post['to']['data'].each do |to_entry|
-        if !to
-          to = ''
-        else
+        if to
           to += ', '
+        else
+          to = ''
         end
         to += to_entry['name']
       end
@@ -271,7 +258,7 @@ result
     end
 
     articles.each do |article|
-      next if Ticket::Article.find_by(message_id: article[:message_id])
+      next if Ticket::Article.exists?(message_id: article[:message_id])
 
       # set ticket state to open if not new
       ticket_state = get_state(page, post, ticket)
@@ -297,7 +284,7 @@ result
       end
 
       article = {
-        #to:        @account['name'],
+        # to:        @account['name'],
         ticket_id:     ticket.id,
         internal:      false,
         sender_id:     Ticket::Article::Sender.lookup(name: 'Customer').id,
@@ -318,7 +305,7 @@ result
     ticket = nil
 
     # use transaction
-    Transaction.execute(reset_user_id: true) do
+    Transaction.execute(reset_user_id: true, context: 'facebook') do
       existing_article = Ticket::Article.find_by(message_id: post['id'])
       ticket = if existing_article
                  existing_article.ticket
@@ -350,8 +337,9 @@ result
     # no changes in post is from page user it self
     if post['from'] && post['from']['id'].to_s == page['id'].to_s
       if !ticket
-        return Ticket::State.find_by(name: 'closed') if !ticket
+        return Ticket::State.find_by(name: 'closed')
       end
+
       return ticket.state
     end
 

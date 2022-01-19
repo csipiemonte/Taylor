@@ -1,7 +1,9 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe Sessions::Event::ChatTransfer do
-  let(:client_id) { rand(123_456_789) }
+  let(:client_id) { SecureRandom.uuid }
   let(:chat) { Chat.first }
   let(:chat_transfer_into) { Chat.create!(name: 'chat 2', updated_by_id: 1, created_by_id: 1) }
   let(:chat_session) do
@@ -15,9 +17,9 @@ RSpec.describe Sessions::Event::ChatTransfer do
     )
   end
   let!(:agent) do
-    create(:agent_user, preferences: { chat: { active: { chat.id.to_s => 'on' } } })
+    create(:agent, preferences: { chat: { active: { chat.id.to_s => 'on' } } })
   end
-  let!(:customer) { create(:customer_user) }
+  let!(:customer) { create(:customer) }
   let(:subject_as_agent) do
     Sessions.create(client_id, { 'id' => agent.id }, {})
     Sessions.queue(client_id)
@@ -53,10 +55,10 @@ RSpec.describe Sessions::Event::ChatTransfer do
         messages = Sessions.queue(client_id)
         expect(messages.count).to eq(1)
         expect(messages).to eq([
-                                 'event' => 'chat_error',
-                                 'data'  => {
-                                   'state' => 'no_permission'
-                                 }
+                                 { 'event' => 'chat_error',
+                                   'data'  => {
+                                     'state' => 'no_permission'
+                                   } }
                                ])
       end
     end

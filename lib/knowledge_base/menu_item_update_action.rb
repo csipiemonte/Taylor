@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class KnowledgeBase
   class MenuItemUpdateAction
     def initialize(kb_locale, location, menu_items_data)
@@ -11,7 +13,7 @@ class KnowledgeBase
     end
 
     def perform!
-      raise_unprocessable unless all_ids_present?
+      raise_unprocessable if !all_ids_present?
 
       KnowledgeBase::MenuItem.transaction do
         KnowledgeBase::MenuItem.acts_as_list_no_update do
@@ -31,9 +33,7 @@ class KnowledgeBase
       return if params.blank?
 
       params
-        .map { |location_params| update_location_using_params! knowledge_base, location_params }
-        .map(&:reload)
-        .reduce(:+)
+        .map { |location_params| update_location_using_params! knowledge_base, location_params }.sum(&:reload)
     end
 
     # Mass-update KB menu items in a given location
@@ -77,13 +77,13 @@ class KnowledgeBase
     def remove_deleted
       @menu_items_data
         .select { |elem| elem[:_destroy] }
-        .map    { |elem| elem[:id] }
-        .tap    { |array| @kb_locale.menu_items.where(id: array).destroy_all }
+        .pluck(:id)
+        .tap { |array| @kb_locale.menu_items.where(id: array).destroy_all }
     end
 
     def all_ids_present?
       old_ids = scope.pluck(:id)
-      new_ids = @menu_items_data.map { |elem| elem[:id]&.to_i }.compact
+      new_ids = @menu_items_data.filter_map { |elem| elem[:id]&.to_i }
 
       old_ids.sort == new_ids.sort
     end

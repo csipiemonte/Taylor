@@ -224,8 +224,13 @@
         "url": "",
         "license": ""
     },
+    "github-logo.svg": {
+        "author": "Github",
+        "url": "",
+        "license": ""
+    },
     "gitlab-button.svg": {
-        "author": "Gitlab",
+        "author": "GitLab",
         "url": "",
         "license": ""
     },
@@ -235,6 +240,11 @@
         "license": ""
     },
     "group.svg": {
+        "author": "Felix Niklas",
+        "url": "",
+        "license": "MIT"
+    },
+    "hashtag.svg": {
         "author": "Felix Niklas",
         "url": "",
         "license": "MIT"
@@ -578,6 +588,11 @@
         "author": "Felix Niklas",
         "url": "",
         "license": "MIT"
+    },
+    "sso-button.svg": {
+        "author": "Tanu Doank",
+        "url": "https:\/\/thenounproject.com\/term\/key\/1247931\/",
+        "license": "CC 3.0 Attribution"
     },
     "status-modified-outer-circle.svg": {
         "author": "Zammad",

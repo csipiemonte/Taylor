@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module Import
   module OTRS
     module SysConfigFactory
@@ -24,7 +26,7 @@ module Import
 
       def direct_copy?(setting)
         cleaned_name = cleanup_name(setting['Key'])
-        return false if !direct_settings.include?(cleaned_name)
+        return false if direct_settings.exclude?(cleaned_name)
 
         internal_name = cleaned_name.underscore
         Setting.set(internal_name, setting['Value'])
@@ -54,7 +56,7 @@ module Import
       def postmaster_default?(setting)
 
         relevant_configs = %w[PostmasterDefaultPriority PostmasterDefaultState PostmasterFollowUpState]
-        return false if !relevant_configs.include?(setting['Key'])
+        return false if relevant_configs.exclude?(setting['Key'])
 
         map = {
           'PostmasterDefaultPriority' => :priority_default_create,

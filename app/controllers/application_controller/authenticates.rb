@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module ApplicationController::Authenticates
   extend ActiveSupport::Concern
 
@@ -14,12 +16,12 @@ module ApplicationController::Authenticates
       )
       return false if user
 
-      raise Exceptions::NotAuthorized, 'Not authorized (token)!'
+      raise Exceptions::Forbidden, 'Not authorized (token)!'
     end
 
     return false if current_user&.permissions?(key)
 
-    raise Exceptions::NotAuthorized, 'Not authorized (user)!'
+    raise Exceptions::Forbidden, 'Not authorized (user)!'
   end
 
   def authentication_check(auth_param = {})
@@ -33,7 +35,7 @@ module ApplicationController::Authenticates
 
     # return auth not ok
     if !user
-      raise Exceptions::NotAuthorized, 'authentication failed'
+      raise Exceptions::Forbidden, 'Authentication required'
     end
 
     # return auth ok
@@ -41,16 +43,23 @@ module ApplicationController::Authenticates
   end
 
   def authentication_check_only(auth_param = {})
-    #logger.debug 'authentication_check'
-    #logger.debug params.inspect
-    #logger.debug session.inspect
-    #logger.debug cookies.inspect
+    if Rails.env.test? && ENV['FAKE_SELENIUM_LOGIN_USER_ID'].present? && session[:user_id].blank?
+      session[:user_id] = ENV['FAKE_SELENIUM_LOGIN_USER_ID'].to_i
+    end
+
+    # logger.debug 'authentication_check'
+    # logger.debug params.inspect
+    # logger.debug session.inspect
+    # logger.debug cookies.inspect
+    authentication_errors = []
 
     # already logged in, early exit
     if session.id && session[:user_id]
       logger.debug { 'session based auth check' }
       user = User.lookup(id: session[:user_id])
       return authentication_check_prerequesits(user, 'session', auth_param) if user
+
+      authentication_errors.push("Can't find User with ID #{session[:user_id]} from Session")
     end
 
     # check http basic based authentication
@@ -58,11 +67,13 @@ module ApplicationController::Authenticates
       request.session_options[:skip] = true # do not send a session cookie
       logger.debug { "http basic auth check '#{username}'" }
       if Setting.get('api_password_access') == false
-        raise Exceptions::NotAuthorized, 'API password access disabled!'
+        raise Exceptions::Forbidden, 'API password access disabled!'
       end
 
-      user = User.authenticate(username, password)
-      return authentication_check_prerequesits(user, 'basic_auth', auth_param) if user
+      auth = Auth.new(username, password)
+      return authentication_check_prerequesits(auth.user, 'basic_auth', auth_param) if auth.valid?
+
+      authentication_errors.push('Invalid BasicAuth credentials')
     end
 
     # check http token based authentication
@@ -70,7 +81,7 @@ module ApplicationController::Authenticates
       logger.debug { "http token auth check '#{token_string}'" }
       request.session_options[:skip] = true # do not send a session cookie
       if Setting.get('api_token_access') == false
-        raise Exceptions::NotAuthorized, 'API token access disabled!'
+        raise Exceptions::Forbidden, 'API token access disabled!'
       end
 
       user = Token.check(
@@ -106,13 +117,15 @@ module ApplicationController::Authenticates
 
       @_token_auth = token_string # remember for permission_check
       return authentication_check_prerequesits(user, 'token_auth', auth_param) if user
+
+      authentication_errors.push("Can't find User for Token")
     end
 
     # check oauth2 token based authentication
     token = Doorkeeper::OAuth::Token.from_bearer_authorization(request)
     if token
       request.session_options[:skip] = true # do not send a session cookie
-      logger.debug { "oauth2 token auth check '#{token}'" }
+      logger.debug { "OAuth2 token auth check '#{token}'" }
       access_token = Doorkeeper::AccessToken.by_token(token)
 
       raise Exceptions::NotAuthorized, 'Invalid token!' if !access_token
@@ -128,43 +141,25 @@ module ApplicationController::Authenticates
 
       user = User.find(access_token.resource_owner_id)
       return authentication_check_prerequesits(user, 'token_auth', auth_param) if user
+
+      authentication_errors.push("Can't find User with ID #{access_token.resource_owner_id} for OAuth2 token")
     end
 
-    false
-  end
+    return false if authentication_errors.blank?
 
-  def authenticate_with_password
-    user = User.authenticate(params[:username], params[:password])
-    raise Exceptions::NotAuthorized, 'Wrong Username or Password combination.' if !user
-
-    session.delete(:switched_from_user_id)
-    authentication_check_prerequesits(user, 'session', {})
-  end
-
-  def authenticate_with_sso
-    user = begin
-              login = request.env['REMOTE_USER'] ||
-                      request.env['HTTP_REMOTE_USER'] ||
-                      request.headers['X-Forwarded-User']
-
-              User.lookup(login: login&.downcase)
-            end
-
-    raise Exceptions::NotAuthorized, 'Missing SSO ENV REMOTE_USER' if !user
-
-    session.delete(:switched_from_user_id)
-    authentication_check_prerequesits(user, 'SSO', {})
+    raise Exceptions::NotAuthorized, authentication_errors.join(', ')
   end
 
   def authentication_check_prerequesits(user, auth_type, auth_param)
-    raise Exceptions::NotAuthorized, 'Maintenance mode enabled!' if in_maintenance_mode?(user)
-    raise Exceptions::NotAuthorized, 'User is inactive!' if !user.active
+    raise Exceptions::Forbidden, 'Maintenance mode enabled!' if in_maintenance_mode?(user)
+
+    raise_unified_login_error if !user.active
 
     if auth_param[:permission]
       ActiveSupport::Deprecation.warn("Parameter ':permission' is deprecated. Use Pundit policy and `authorize!` instead.")
 
       if !user.permissions?(auth_param[:permission])
-        raise Exceptions::NotAuthorized, 'Not authorized (user)!'
+        raise Exceptions::Forbidden, 'Not authorized (user)!'
       end
     end
 
@@ -172,5 +167,9 @@ module ApplicationController::Authenticates
     user_device_log(user, auth_type)
     logger.debug { "#{auth_type} for '#{user.login}'" }
     user
+  end
+
+  def raise_unified_login_error
+    raise Exceptions::NotAuthorized, 'Login failed. Have you double-checked your credentials and completed the email verification step?'
   end
 end

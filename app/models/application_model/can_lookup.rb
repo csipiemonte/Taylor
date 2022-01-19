@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module ApplicationModel::CanLookup
   extend ActiveSupport::Concern
 
@@ -48,8 +49,8 @@ returns
 
     def find_and_save_to_cache_by(attr)
       record = find_by(attr)
-      return nil if string_key?(attr.keys.first) && (record&.send(attr.keys.first) != attr.values.first)  # enforce case-sensitivity on MySQL
-      return record if ActiveRecord::Base.connection.transaction_open?  # rollbacks can invalidate cache entries
+      return nil if string_key?(attr.keys.first) && (record&.send(attr.keys.first) != attr.values.first.to_s) # enforce case-sensitivity on MySQL
+      return record if ActiveRecord::Base.connection.transaction_open? # rollbacks can invalidate cache entries
 
       cache_set(attr.values.first, record)
       record
@@ -58,5 +59,6 @@ returns
     def string_key?(key)
       type_for_attribute(key.to_s).type == :string
     end
+
   end
 end

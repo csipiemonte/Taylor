@@ -1,4 +1,4 @@
-class App.ChannelEmail extends App.ControllerTabs
+class ChannelEmail extends App.ControllerTabs
   requiredPermission: 'admin.channel_email'
   header: 'Email'
   constructor: ->
@@ -10,7 +10,7 @@ class App.ChannelEmail extends App.ControllerTabs
       {
         name:       'Accounts',
         target:     'c-account',
-        controller: App.ChannelEmailAccountOverview,
+        controller: ChannelEmailAccountOverview,
       },
       {
         name:       'Filter',
@@ -32,149 +32,7 @@ class App.ChannelEmail extends App.ControllerTabs
 
     @render()
 
-class App.ChannelEmailFilter extends App.Controller
-  events:
-    'click [data-type=new]': 'new'
-
-  constructor: ->
-    super
-    App.PostmasterFilter.subscribe(@render, initFetch: true)
-
-  render: =>
-    data = App.PostmasterFilter.search(sortBy: 'name')
-
-    template = $( '<div><div class="overview"></div><a data-type="new" class="btn btn--success">' + App.i18n.translateContent('New') + '</a></div>' )
-
-    description = 'With filters you can e. g. dispatch new tickets into certain groups or set a certain priority for tickets of a VIP customer.'
-
-    new App.ControllerTable(
-      el:       template.find('.overview')
-      model:    App.PostmasterFilter
-      objects:  data
-      bindRow:
-        events:
-          'click': @edit
-      explanation: description
-    )
-    @html template
-
-  new: (e) =>
-    e.preventDefault()
-    new App.ControllerGenericNew(
-      pageData:
-        object: 'Postmaster Filter'
-      genericObject: 'PostmasterFilter'
-      container: @el.closest('.content')
-      callback: @load
-    )
-
-  edit: (id, e) =>
-    e.preventDefault()
-    new App.ControllerGenericEdit(
-      id: id,
-      pageData:
-        object: 'Postmaster Filter'
-      genericObject: 'PostmasterFilter'
-      container: @el.closest('.content')
-      callback: @load
-    )
-
-class App.ChannelEmailSignature extends App.Controller
-  events:
-    'click [data-type=new]':  'new'
-
-  constructor: ->
-    super
-    App.Signature.subscribe(@render, initFetch: true)
-
-  render: =>
-    data = App.Signature.search(sortBy: 'name')
-
-    template = $( '<div><div class="overview"></div><a data-type="new" class="btn btn--success">' + App.i18n.translateContent('New') + '</a></div>' )
-
-    description = '''
-You can define different signatures for each group. So you can have different email signatures for different departments.
-
-Once you have created a signature here, you need also to edit the groups where you want to use it.
-'''
-
-    new App.ControllerTable(
-      el:       template.find('.overview')
-      model:    App.Signature
-      objects:  data
-      bindRow:
-        events:
-          'click': @edit
-      explanation: description
-    )
-    @html template
-
-  new: (e) =>
-    e.preventDefault()
-    new App.ChannelEmailSignatureEdit(
-      container: @el.closest('.content')
-    )
-
-  edit: (id, e) =>
-    e.preventDefault()
-    item = App.Signature.find(id)
-    new App.ChannelEmailSignatureEdit(
-      object:    item
-      container: @el.closest('.content')
-    )
-
-class App.ChannelEmailSignatureEdit extends App.ControllerModal
-  buttonClose: true
-  buttonCancel: true
-  buttonSubmit: true
-  head: 'Signature'
-
-  content: =>
-    if @object
-      @form = new App.ControllerForm(
-        model:     App.Signature
-        params:    @object
-        autofocus: true
-      )
-    else
-      @form = new App.ControllerForm(
-        model:     App.Signature
-        autofocus: true
-      )
-
-    @form.form
-
-  onSubmit: (e) =>
-
-    # get params
-    params = @formParam(e.target)
-
-    object = @object || new App.Signature
-    object.load(params)
-
-    # validate form
-    errors = @form.validate(params)
-
-    # show errors in form
-    if errors
-      @log 'error', errors
-      @formValidate(form: e.target, errors: errors)
-      return false
-
-    # disable form
-    @formDisable(e)
-
-    # save object
-    object.save(
-      done: =>
-        @close()
-      fail: (settings, details) =>
-        @log 'errors', details
-        @formEnable(e)
-        @form.showAlert(details.error_human || details.error || 'Unable to create object!')
-    )
-
-class App.ChannelEmailAccountOverview extends App.Controller
+class ChannelEmailAccountOverview extends App.Controller
   events:
     'click .js-channelNew': 'wizard'
     'click .js-channelDelete': 'delete'
@@ -188,6 +46,7 @@ class App.ChannelEmailAccountOverview extends App.Controller
     'click .js-emailAddressDelete': 'emailAddressDelete',
     'click .js-editNotificationOutbound': 'editNotificationOutbound'
     'click .js-migrateGoogleMail': 'migrateGoogleMail'
+    'click .js-migrateMicrosoft365Mail': 'migrateMicrosoft365Mail'
 
   constructor: ->
     super
@@ -247,7 +106,7 @@ class App.ChannelEmailAccountOverview extends App.Controller
 
   wizard: (e) =>
     e.preventDefault()
-    new App.ChannelEmailAccountWizard(
+    new ChannelEmailAccountWizard(
       container:     @el.closest('.content')
       callback:      @load
       channelDriver: @channelDriver
@@ -258,7 +117,7 @@ class App.ChannelEmailAccountOverview extends App.Controller
     id      = $(e.target).closest('.action').data('id')
     channel = App.Channel.find(id)
     slide   = 'js-inbound'
-    new App.ChannelEmailAccountWizard(
+    new ChannelEmailAccountWizard(
       container:     @el.closest('.content')
       slide:         slide
       channel:       channel
@@ -271,7 +130,7 @@ class App.ChannelEmailAccountOverview extends App.Controller
     id      = $(e.target).closest('.action').data('id')
     channel = App.Channel.find(id)
     slide   = 'js-outbound'
-    new App.ChannelEmailAccountWizard(
+    new ChannelEmailAccountWizard(
       container:     @el.closest('.content')
       slide:         slide
       channel:       channel
@@ -327,7 +186,7 @@ class App.ChannelEmailAccountOverview extends App.Controller
     e.preventDefault()
     id   = $(e.target).closest('.action').data('id')
     item = App.Channel.find(id)
-    new App.ChannelEmailEdit(
+    new ChannelEmailEdit(
       container: @el.closest('.content')
       item: item
       callback: @load
@@ -373,7 +232,7 @@ class App.ChannelEmailAccountOverview extends App.Controller
     id      = $(e.target).closest('.action').data('id')
     channel = App.Channel.find(id)
     slide   = 'js-outbound'
-    new App.ChannelEmailNotificationWizard(
+    new ChannelEmailNotificationWizard(
       container:     @el.closest('.content')
       channel:       channel
       callback:      @load
@@ -385,8 +244,13 @@ class App.ChannelEmailAccountOverview extends App.Controller
     id = $(e.target).closest('.action').data('id')
     @navigate "#channels/google/#{id}"
 
+  migrateMicrosoft365Mail: (e) =>
+    e.preventDefault()
+    id = $(e.target).closest('.action').data('id')
+    @navigate "#channels/microsoft365/#{id}"
 
-class App.ChannelEmailEdit extends App.ControllerModal
+
+class ChannelEmailEdit extends App.ControllerModal
   buttonClose: true
   buttonCancel: true
   buttonSubmit: true
@@ -437,7 +301,7 @@ class App.ChannelEmailEdit extends App.ControllerModal
         @el.find('.alert').removeClass('hidden').text(data.error || 'Unable to save changes.')
     )
 
-class App.ChannelEmailAccountWizard extends App.WizardModal
+class ChannelEmailAccountWizard extends App.ControllerWizardModal
   elements:
     '.modal-body': 'body'
   events:
@@ -546,6 +410,15 @@ class App.ChannelEmailAccountWizard extends App.WizardModal
       { name: 'options::keep_on_server',  display: 'Keep messages on server', tag: 'boolean', null: true, options: { true: 'yes', false: 'no' }, translate: true, default: false, item_class: 'formGroup--halfSize' },
     ]
 
+    if !@channel
+      #Email Inbound form opened from new email wizard, show full settings
+      configureAttributesInbound = [
+        { name: 'options::realname', display: 'Organization & Department Name', tag: 'input',  type: 'text', limit: 160, null: false, placeholder: 'Organization Support', autocomplete: 'off' },
+        { name: 'options::email',    display: 'Email',    tag: 'input',  type: 'email', limit: 120, null: false, placeholder: 'support@example.com', autocapitalize: false, autocomplete: 'off' },
+        { name: 'options::group_id', display: 'Destination Group', tag: 'select', null: false, relation: 'Group', nulloption: true },
+      ].concat(configureAttributesInbound)
+
+
     showHideFolder = (params, attribute, attributes, classname, form, ui) ->
       return if !params
       if params.adapter is 'imap'
@@ -560,7 +433,7 @@ class App.ChannelEmailAccountWizard extends App.WizardModal
       return if !params.options
       currentPort = @$('[name="options::port"]').val()
       if params.options.ssl is true
-        if !currentPort
+        if !currentPort || currentPort is '143'
           @$('[name="options::port"]').val('993')
         return
       if params.options.ssl is false
@@ -620,18 +493,12 @@ class App.ChannelEmailAccountWizard extends App.WizardModal
       params.channel_id = @channel.id
 
     if $(e.currentTarget).hasClass('js-expert')
-
-      # validate form
-      errors = @formMeta.validate(params)
-      if errors
-        delete errors.password
-      if !_.isEmpty(errors)
-        @formValidate(form: e.target, errors: errors)
-        return
-
       @showSlide('js-inbound')
       @$('.js-inbound [name="options::user"]').val(params.email)
       @$('.js-inbound [name="options::password"]').val(params.password)
+      @$('.js-inbound [name="options::email"]').val(params.email)
+      @$('.js-inbound [name="options::realname"]').val(params.realname)
+      @$('.js-inbound [name="options::group_id"]').val(params.group_id)
       return
 
     @disable(e)
@@ -651,15 +518,8 @@ class App.ChannelEmailAccountWizard extends App.WizardModal
               @account[key] = value
 
           if data.content_messages && data.content_messages > 0 && (!@account['inbound']['options'] || @account['inbound']['options']['keep_on_server'] isnt true)
-            message = App.i18n.translateContent('We have already found %s email(s) in your mailbox. Zammad will move it all from your mailbox into Zammad.', data.content_messages)
-            @$('.js-inbound-acknowledge .js-message').html(message)
-            @$('.js-inbound-acknowledge .js-back').attr('data-slide', 'js-intro')
-            @$('.js-inbound-acknowledge .js-next').attr('data-slide', '')
-            @$('.js-inbound-acknowledge .js-next').unbind('click.verify').bind('click.verify', (e) =>
-              e.preventDefault()
-              @verify(@account)
-            )
-            @showSlide('js-inbound-acknowledge')
+            @probeInboundMessagesFound(data, true)
+            @probeInboundArchive(data)
           else
             @verify(@account)
 
@@ -671,6 +531,9 @@ class App.ChannelEmailAccountWizard extends App.WizardModal
           @showAlert('js-inbound', 'Unable to detect your server settings. Manual configuration needed.')
           @$('.js-inbound [name="options::user"]').val(@account['meta']['email'])
           @$('.js-inbound [name="options::password"]').val(@account['meta']['password'])
+          @$('.js-inbound [name="options::email"]').val(@account['meta']['email'])
+          @$('.js-inbound [name="options::realname"]').val(@account['meta']['realname'])
+          @$('.js-inbound [name="options::group_id"]').val(@account['meta']['group_id'])
 
         @enable(e)
       error: =>
@@ -686,6 +549,11 @@ class App.ChannelEmailAccountWizard extends App.WizardModal
 
     if params.options && params.options.password is @passwordPlaceholder
       params.options.password = @inboundPassword
+
+    # Update meta as the one from AttributesBase could be outdated
+    @account.meta.realname = params.options.realname
+    @account.meta.email = params.options.email
+    @account.meta.group_id = params.options.group_id
 
     # let backend know about the channel
     if @channel
@@ -708,11 +576,8 @@ class App.ChannelEmailAccountWizard extends App.WizardModal
           @account.inbound = params
 
           if data.content_messages && data.content_messages > 0 && (!@account['inbound']['options'] || @account['inbound']['options']['keep_on_server'] isnt true)
-            message = App.i18n.translateContent('We have already found %s email(s) in your mailbox. Zammad will move it all from your mailbox into Zammad.', data.content_messages)
-            @$('.js-inbound-acknowledge .js-message').html(message)
-            @$('.js-inbound-acknowledge .js-back').attr('data-slide', 'js-inbound')
-            @$('.js-inbound-acknowledge .js-next').unbind('click.verify')
-            @showSlide('js-inbound-acknowledge')
+            @probeInboundMessagesFound(data)
+            @probeInboundArchive(data)
           else
             @showSlide('js-outbound')
 
@@ -738,6 +603,65 @@ class App.ChannelEmailAccountWizard extends App.WizardModal
         @showInvalidField('js-inbound', data.invalid_field)
         @enable(e)
     )
+
+  probeInboundMessagesFound: (data, verify) =>
+    message = App.i18n.translateContent('We have already found %s email(s) in your mailbox. Zammad will move it all from your mailbox into Zammad.', data.content_messages)
+    @$('.js-inbound-acknowledge .js-messageFound').html(message)
+
+    if !verify
+      @$('.js-inbound-acknowledge .js-back').attr('data-slide', 'js-inbound')
+      @$('.js-inbound-acknowledge .js-next').unbind('click.verify')
+    else
+      @$('.js-inbound-acknowledge .js-back').attr('data-slide', 'js-intro')
+      @$('.js-inbound-acknowledge .js-next').attr('data-slide', '')
+      @$('.js-inbound-acknowledge .js-next').unbind('click.verify').bind('click.verify', (e) =>
+        e.preventDefault()
+        @verify(@account)
+      )
+    @showSlide('js-inbound-acknowledge')
+
+  probeInboundArchive: (data) =>
+    if data.archive_possible isnt true
+      @$('.js-archiveMessage').addClass('hide')
+      return
+
+    @$('.js-archiveMessage').removeClass('hide')
+    message = App.i18n.translateContent('In addition, we have found emails in your mailbox that are older than %s weeks. You can import such emails as an "archive", which means that no notifications are sent and the tickets have the status "closed". However, you can find them in Zammad anytime using the search function.', data.archive_week_range)
+    @$('.js-inbound-acknowledge .js-archiveMessageCount').html(message)
+
+    configureAttributesAcknowledge = [
+      {
+        name: 'archive'
+        tag: 'boolean'
+        null: true
+        default: no
+        options: {
+          true: 'archive'
+          false: 'regular'
+        }
+        translate: true
+      },
+    ]
+
+    new App.ControllerForm(
+      elReplace: @$('.js-importTypeSelect'),
+      model:
+        configure_attributes: configureAttributesAcknowledge
+        className: ''
+      noFieldset: true
+    )
+    @$('.js-importTypeSelect select[name=archive]').on('change', (e) =>
+      value                      = $(e.target).val()
+      @account.inbound         ||= {}
+      @account.inbound.options ||= {}
+      if value is 'true'
+        @account.inbound.options.archive        = true
+        @account.inbound.options.archive_before = (new Date()).toISOString()
+      else
+        delete @account.inbound.options.archive
+        delete @account.inbound.options.archive_before
+    )
+    @$('.js-importTypeSelect select[name=archive]').trigger('change')
 
   probleOutbound: (e) =>
     e.preventDefault()
@@ -842,7 +766,7 @@ class App.ChannelEmailAccountWizard extends App.WizardModal
     e.preventDefault()
     @el.modal('hide')
 
-class App.ChannelEmailNotificationWizard extends App.WizardModal
+class ChannelEmailNotificationWizard extends App.ControllerWizardModal
   elements:
     '.modal-body': 'body'
   events:
@@ -976,4 +900,4 @@ class App.ChannelEmailNotificationWizard extends App.WizardModal
         @enable(e)
     )
 
-App.Config.set('Email', { prio: 3000, name: 'Email', parent: '#channels', target: '#channels/email', controller: App.ChannelEmail, permission: ['admin.channel_email'] }, 'NavBarAdmin')
+App.Config.set('Email', { prio: 3000, name: 'Email', parent: '#channels', target: '#channels/email', controller: ChannelEmail, permission: ['admin.channel_email'] }, 'NavBarAdmin')

@@ -1,4 +1,36 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module BrowserTestHelper
+
+  # Sometimes tests refer to elements that get removed/re-added to the DOM when
+  # updating the UI. This causes Selenium to throw a StaleElementReferenceError exception.
+  # This method catches this error and retries the given amount of times re-raising
+  # the exception if the element is still stale.
+  # @see https://developer.mozilla.org/en-US/docs/Web/WebDriver/Errors/StaleElementReference WebDriver definition
+  #
+  # @example
+  #  retry_on_stale do
+  #    find('.now-here-soon-gone').click
+  #  end
+  #
+  #  retry_on_stale(retries: 10) do
+  #    find('.now-here-soon-gone').click
+  #  end
+  #
+  # @raise [Selenium::WebDriver::Error::StaleElementReferenceError] If element is still stale after given number of retries
+  def retry_on_stale(retries: 3)
+    tries ||= 0
+
+    yield
+  rescue Selenium::WebDriver::Error::StaleElementReferenceError
+    raise if tries == retries
+
+    wait_time = tries
+    tries += 1
+
+    Rails.logger.info "Stale element found. Retry #{tries}/retries (sleeping: #{wait_time})"
+    sleep wait_time
+  end
 
   # Finds an element and clicks it - wrapped in one method.
   #
@@ -36,9 +68,17 @@ module BrowserTestHelper
   #  await_empty_ajax_queue
   #
   def await_empty_ajax_queue
-    wait(5, interval: 0.5).until_constant do
-      page.evaluate_script('App.Ajax.queue().length').zero?
+    # page.evaluate_script silently discards any present alerts, which is not desired.
+    begin
+      return if page.driver.browser.switch_to.alert
+    rescue Selenium::WebDriver::Error::NoSuchAlertError # rubocop:disable Lint/SuppressedException
     end
+
+    wait(5, interval: 0.1).until_constant do
+      page.evaluate_script('App.Ajax.queue().length').zero? && page.evaluate_script('Object.keys(App.FormHandlerCoreWorkflow.getRequests()).length').zero?
+    end
+  rescue
+    nil
   end
 
   # Moves the mouse from its current position by the given offset.
@@ -53,6 +93,16 @@ module BrowserTestHelper
     page.driver.browser.action.move_by(x_axis, y_axis).perform
   end
 
+  # Moves the mouse to element.
+  #
+  # @example
+  # move_mouse_to(page.find('button.hover_me'))
+  #
+  def move_mouse_to(element)
+    element.in_fixed_position
+    page.driver.browser.action.move_to_location(element.native.location.x, element.native.location.y).perform
+  end
+
   # Clicks and hold (without releasing) in the middle of the given element.
   #
   # @example
@@ -63,6 +113,22 @@ module BrowserTestHelper
     page.driver.browser.action.click_and_hold(element).perform
   end
 
+  # Clicks and hold (without releasing) in the middle of the given element
+  # and moves it to the top left of the page to show marcos batches in
+  # overview section.
+  #
+  # @example
+  # display_macro_batches(ticket)
+  # display_macro_batches(tr[data-id='1'])
+  #
+  def display_macro_batches(element)
+    click_and_hold(element)
+    # move element to y -ticket.location.y
+    move_mouse_by(0, -element.location.y + 5)
+    # move a bit to the left to display macro batches
+    move_mouse_by(-250, 0)
+  end
+
   # Releases the depressed left mouse button at the current mouse location.
   #
   # @example
@@ -70,6 +136,7 @@ module BrowserTestHelper
   #
   def release_mouse
     page.driver.browser.action.release.perform
+    await_empty_ajax_queue
   end
 
   class Waiter < SimpleDelegator
@@ -122,9 +189,16 @@ module BrowserTestHelper
     #
     def until_constant
       previous = nil
-      loop do
-        sleep __getobj__.instance_variable_get(:@interval)
+      timeout  = __getobj__.instance_variable_get(:@timeout)
+      interval = __getobj__.instance_variable_get(:@interval)
+      rounds   = (timeout / interval).to_i
+
+      rounds.times do
+        sleep interval
+
         latest = yield
+
+        next if latest.nil?
         break if latest == previous
 
         previous = latest

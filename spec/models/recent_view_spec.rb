@@ -1,9 +1,11 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe RecentView, type: :model do
-  let(:admin)    { create(:admin_user) }
-  let(:agent)    { create(:agent_user) }
-  let(:customer) { create(:customer_user) }
+  let(:admin)    { create(:admin) }
+  let(:agent)    { create(:agent) }
+  let(:customer) { create(:customer) }
   let(:ticket)   { create(:ticket, owner: owner, customer: customer) }
   let(:tickets)  { create_list(:ticket, 15, owner: owner, customer: customer) }
   let(:owner)    { admin }
@@ -145,7 +147,7 @@ RSpec.describe RecentView, type: :model do
       let(:owner) { agent }
 
       it 'does not create RecentView for records the given user cannot read' do
-        ticket.update(owner:        User.first,    # read access may come from ticket ownership,
+        ticket.update(owner:        User.first, # read access may come from ticket ownership,
                       customer:     User.first, # customer status,
                       organization: nil)    # organization's 'shared' status,
         agent.update(groups: [])            # and membership in the Ticket's group

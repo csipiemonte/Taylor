@@ -70,6 +70,24 @@ test('i18n .detectBrowserLocale', function() {
     translated = App.i18n.translateInline('yes')
     equal(translated, 'ja', 'de-de - yes / ja translated correctly')
 
+    translated = App.i18n.translateDeep({
+      days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+      today: 'today',
+    })
+    deepEqual(translated, {
+      days: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'],
+      today: 'Heute',
+    }, 'de-de - deep object/array translated correctly')
+
+    translated = App.i18n.translateDeepPlain({
+      days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+      today: 'today',
+    })
+    deepEqual(translated, {
+      days: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'],
+      today: 'Heute',
+    }, 'de-de - deep object/array translated correctly')
+
     translated = App.i18n.translateContent('%s ago', 123);
     equal(translated, 'vor 123', 'de-de - %s')
 
@@ -113,6 +131,9 @@ test('i18n .detectBrowserLocale', function() {
     var offset = time_local.getTimezoneOffset();
     var timestamp = App.i18n.translateTimestamp('2012-11-06T21:07:24Z', offset);
     equal(timestamp, '06.11.2012 21:07', 'de-de - timestamp translated correctly')
+
+    var timestamp = App.i18n.translateTimestamp('2021-02-08 09:13:20 UTC', offset);
+    equal(timestamp, '08.02.2021 09:13', 'de-de - timestamp translated correctly with UTC format')
 
     timestamp = App.i18n.translateTimestamp('', offset);
     equal(timestamp, '', 'de-de - timestamp translated correctly')

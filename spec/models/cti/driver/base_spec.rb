@@ -1,7 +1,9 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe Cti::Driver::Base do
-  subject!(:driver) { described_class.new(mapping: {}, params: params, config: config ) }
+  subject!(:driver) { described_class.new(mapping: {}, params: params, config: config) }
 
   let(:direction) { 'in' }
   let(:event) { 'newCall' }
@@ -86,7 +88,7 @@ RSpec.describe Cti::Driver::Base do
   describe '.push_open_ticket_screen_recipient' do
     context 'with direct number in answeringNumber params' do
       let(:params) { { 'direction' => direction, 'event' => event, answeringNumber: user.phone } }
-      let!(:user) { create(:agent_user, phone: '1234567') }
+      let!(:user) { create(:agent, phone: '1234567') }
 
       it 'returns related user' do
         expect(driver.push_open_ticket_screen_recipient).to eq(user)
@@ -95,7 +97,7 @@ RSpec.describe Cti::Driver::Base do
 
     context 'with not existing direct number in answeringNumber params' do
       let(:params) { { 'direction' => direction, 'event' => event, answeringNumber: '98765421' } }
-      let!(:user) { create(:agent_user, phone: '1234567') }
+      let!(:user) { create(:agent, phone: '1234567') }
 
       it 'returns nil' do
         expect(driver.push_open_ticket_screen_recipient).to be(nil)
@@ -104,7 +106,7 @@ RSpec.describe Cti::Driver::Base do
 
     context 'with real phone number in answeringNumber params' do
       let(:params) { { 'direction' => direction, 'event' => event, answeringNumber: '491711000001' } }
-      let!(:user) { create(:agent_user, phone: '0171 1000001') }
+      let!(:user) { create(:agent, phone: '0171 1000001') }
 
       it 'returns related user' do
         expect(driver.push_open_ticket_screen_recipient).to eq(user)
@@ -113,7 +115,7 @@ RSpec.describe Cti::Driver::Base do
 
     context 'with user in upcase in params' do
       let(:params) { { 'direction' => direction, 'event' => event, user: user.login.upcase } }
-      let!(:user) { create(:agent_user) }
+      let!(:user) { create(:agent) }
 
       it 'returns related user' do
         expect(driver.push_open_ticket_screen_recipient).to eq(user)
@@ -122,7 +124,7 @@ RSpec.describe Cti::Driver::Base do
 
     context 'with user_id in params' do
       let(:params) { { 'direction' => direction, 'event' => event, user_id: user.id } }
-      let!(:user) { create(:agent_user) }
+      let!(:user) { create(:agent) }
 
       it 'returns related user' do
         expect(driver.push_open_ticket_screen_recipient).to eq(user)

@@ -1,10 +1,12 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class LdapSamaccountnameToUid < ActiveRecord::Migration[5.1]
 
   def up
     # return if it's a new setup to avoid running the migration
-    return if !Setting.find_by(name: 'system_init_done')
+    return if !Setting.exists?(name: 'system_init_done')
 
-    Delayed::Job.enqueue MigrationJob::LdapSamaccountnameToUid.new
+    MigrateLdapSamaccountnameToUidJob.perform_later
   end
 
 end

@@ -1,9 +1,11 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe 'Overviews', type: :request do
 
-  let(:admin_user) do
-    create(:admin_user)
+  let(:admin) do
+    create(:admin)
   end
 
   describe 'request handling' do
@@ -31,13 +33,13 @@ RSpec.describe 'Overviews', type: :request do
         },
       }
 
-      agent_user = create(:agent_user, password: 'we need a password here')
+      agent = create(:agent, password: 'we need a password here')
 
-      authenticated_as(agent_user)
+      authenticated_as(agent)
       post '/api/v1/overviews', params: params, as: :json
       expect(response).to have_http_status(:unauthorized)
       expect(json_response).to be_a_kind_of(Hash)
-      expect(json_response['error']).to eq('authentication failed')
+      expect(json_response['error']).to eq('Invalid BasicAuth credentials')
     end
 
     it 'does create overviews' do
@@ -63,7 +65,7 @@ RSpec.describe 'Overviews', type: :request do
         },
       }
 
-      authenticated_as(admin_user)
+      authenticated_as(admin)
       post '/api/v1/overviews', params: params, as: :json
       expect(response).to have_http_status(:created)
       expect(json_response).to be_a_kind_of(Hash)
@@ -134,7 +136,7 @@ RSpec.describe 'Overviews', type: :request do
           [overview1.id, 2],
         ]
       }
-      authenticated_as(admin_user)
+      authenticated_as(admin)
       post '/api/v1/overviews_prio', params: params, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Hash)
@@ -173,7 +175,7 @@ RSpec.describe 'Overviews', type: :request do
         },
       }
 
-      authenticated_as(admin_user)
+      authenticated_as(admin)
       post '/api/v1/overviews', params: params, as: :json
       expect(response).to have_http_status(:created)
       expect(json_response).to be_a_kind_of(Hash)

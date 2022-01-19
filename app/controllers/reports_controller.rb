@@ -1,4 +1,5 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class ReportsController < ApplicationController
   prepend_before_action { authentication_check && authorize! }
 
@@ -21,25 +22,34 @@ class ReportsController < ApplicationController
     get_params = params_all
     return if !get_params
 
-    result = {}
-    get_params[:metric][:backend].each do |backend|
-      condition = get_params[:profile].condition
-      if backend[:condition]
-        backend[:condition].merge(condition)
-      else
-        backend[:condition] = condition
-      end
-      next if !backend[:adapter]
+    begin
+      result = {}
+      get_params[:metric][:backend].each do |backend|
+        condition = get_params[:profile].condition
+        if backend[:condition]
+          backend[:condition].merge(condition)
+        else
+          backend[:condition] = condition
+        end
+        next if !backend[:adapter]
 
-      result[backend[:name]] = backend[:adapter].aggs(
-        range_start:     get_params[:start],
-        range_end:       get_params[:stop],
-        interval:        get_params[:range],
-        selector:        backend[:condition],
-        params:          backend[:params],
-        timezone:        get_params[:timezone],
-        timezone_offset: get_params[:timezone_offset],
-      )
+        result[backend[:name]] = backend[:adapter].aggs(
+          range_start:     get_params[:start],
+          range_end:       get_params[:stop],
+          interval:        get_params[:range],
+          selector:        backend[:condition],
+          params:          backend[:params],
+          timezone:        get_params[:timezone],
+          timezone_offset: get_params[:timezone_offset],
+          current_user:    current_user
+        )
+      end
+    rescue => e
+      if e.message.include? 'Conflicting date range'
+        raise Exceptions::UnprocessableEntity, 'Conflicting date ranges. Please check your selected report profile.'
+      end
+
+      raise e
     end
 
     render json: {
@@ -83,6 +93,7 @@ class ReportsController < ApplicationController
         sheet:           params[:sheet],
         timezone:        get_params[:timezone],
         timezone_offset: get_params[:timezone_offset],
+        current_user:    current_user
       )
 
       result = { count: 0, ticket_ids: [] } if result.nil?
@@ -138,22 +149,23 @@ class ReportsController < ApplicationController
 
     metric = local_config[:metric][params[:metric].to_sym]
 
-    if params[:timeRange] == 'realtime'
+    case params[:timeRange]
+    when 'realtime'
       start_at = (Time.zone.now - 60.minutes)
       stop_at = Time.zone.now
       range = 'minute'
-    elsif params[:timeRange] == 'day'
+    when 'day'
       date = Date.parse("#{params[:year]}-#{params[:month]}-#{params[:day]}").to_s
       start_at = Time.zone.parse("#{date}T00:00:00Z")
       stop_at = Time.zone.parse("#{date}T23:59:59Z")
       range = 'hour'
-    elsif params[:timeRange] == 'week'
+    when 'week'
       start_week_at = Date.commercial(params[:year].to_i, params[:week].to_i)
       stop_week_at = start_week_at.end_of_week
       start_at = Time.zone.parse("#{start_week_at.year}-#{start_week_at.month}-#{start_week_at.day}T00:00:00Z")
       stop_at = Time.zone.parse("#{stop_week_at.year}-#{stop_week_at.month}-#{stop_week_at.day}T23:59:59Z")
       range = 'week'
-    elsif params[:timeRange] == 'month'
+    when 'month'
       start_at = Time.zone.parse("#{params[:year]}-#{params[:month]}-01T00:00:00Z")
       stop_at = Time.zone.parse("#{params[:year]}-#{params[:month]}-#{start_at.end_of_month.day}T23:59:59Z")
       range = 'day'

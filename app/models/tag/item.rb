@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Tag::Item < ApplicationModel
   validates   :name, presence: true
@@ -49,7 +49,7 @@ Tag::Item.rename(
       Tag.where(tag_item_id: old_tag_item.id).each do |tag|
 
         # check if tag already exists on object
-        if Tag.find_by(tag_object_id: tag.tag_object_id, o_id: tag.o_id, tag_item_id: already_existing_tag.id)
+        if Tag.exists?(tag_object_id: tag.tag_object_id, o_id: tag.o_id, tag_item_id: already_existing_tag.id)
           Tag.tag_remove(
             tag_object_id: tag.tag_object_id,
             o_id:          tag.o_id,

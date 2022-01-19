@@ -1,8 +1,10 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class AddStatsBackends < ActiveRecord::Migration[5.1]
 
   def up
 
-    return if !Setting.find_by(name: 'system_init_done')
+    return if !Setting.exists?(name: 'system_init_done')
 
     # add the dashboard stats backend for 'Stats::TicketWaitingTime'
     Setting.create_if_not_exists(

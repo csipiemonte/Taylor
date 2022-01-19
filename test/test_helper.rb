@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 ENV['RAILS_ENV'] = 'test'
 require File.expand_path('../config/environment', __dir__)
 require 'rails/test_help'
@@ -65,9 +67,9 @@ class ActiveSupport::TestCase
     end
     count = 0
     lines.reverse_each do |line|
-      break if line.match?(/\+\+\+\+NEW\+\+\+\+TEST\+\+\+\+/)
-      next if !line.match?(/Send notification \(#{type}\)/)
-      next if !line.match?(/to:\s#{recipient}/)
+      break if line.include?('++++NEW++++TEST++++')
+      next if !line.match?(%r{Send notification \(#{type}\)})
+      next if !line.match?(%r{to:\s#{recipient}})
 
       count += 1
     end

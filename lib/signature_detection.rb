@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module SignatureDetection
 
 =begin
@@ -20,7 +22,7 @@ returns
 =end
 
   def self.find_signature(messages)
-    signature_candidates = Hash.new(0)  # <potential_signature>: <score>
+    signature_candidates = Hash.new(0) # <potential_signature>: <score>
     messages             = messages.map { |m| m[:content_type].match?(%r{text/html}i) ? m[:content].html2text(true) : m[:content] }
     message_pairs        = messages.each_cons(2).to_a
     diffs                = message_pairs.map { |msg_pair| Diffy::Diff.new(*msg_pair).to_s }
@@ -42,8 +44,11 @@ returns
 
       # Take up to 10 lines from this "gap" (i.e., the common substring)
       match_content = diff_lines[sig_range.first..sig_range.last]
-                        .map { |l| l.sub(/^./, '') }
+                        .map { |l| l.sub(%r{^.}, '') }
                         .first(10).join("\n")
+
+      # Invalid html signature detection for exchange warning boxes #3571
+      next if match_content.include?('CAUTION:')
 
       # Add this substring to the signature_candidates hash and increment its match score
       signature_candidates[match_content] += 1

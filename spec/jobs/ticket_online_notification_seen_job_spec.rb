@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe TicketOnlineNotificationSeenJob, type: :job do
@@ -12,7 +14,7 @@ RSpec.describe TicketOnlineNotificationSeenJob, type: :job do
     expect(online_notification.reload.seen).to be false
   end
 
-  it 'checks if online notification has been seen' do
+  it 'checks if online notification has been seen', current_user_id: -> { user.id } do
     ticket.state_id = Ticket::State.lookup(name: 'closed').id
     ticket.save!
 

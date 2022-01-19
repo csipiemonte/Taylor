@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 RSpec.shared_examples 'ApplicationModel::CanLookup' do
   describe '.lookup_keys' do
     it 'returns a subset of: id, name, login, email, number' do
@@ -38,7 +40,7 @@ RSpec.shared_examples 'ApplicationModel::CanLookup' do
       end
 
       describe "cache storage by #{attribute}" do
-        context 'inside a DB transaction' do  # provided by default RSpec config
+        context 'inside a DB transaction' do # provided by default RSpec config
           it 'leaves the cache untouched' do
             expect { described_class.lookup(attribute => instance.send(attribute)) }
               .not_to change { described_class.cache_get(instance.send(attribute)) }
@@ -55,12 +57,19 @@ RSpec.shared_examples 'ApplicationModel::CanLookup' do
             it 'saves the value to the cache' do
               expect(Rails.cache)
                 .to receive(:write)
-                .with("#{described_class}::#{instance.send(attribute)}", instance, { expires_in: 7.days })
+                .with("#{described_class}::#{instance.send(attribute)}", instance, { expires_in: 4.hours })
                 .and_call_original
 
               expect { described_class.lookup(attribute => instance.send(attribute)) }
                 .to change { described_class.cache_get(instance.send(attribute)) }
                 .to(instance)
+            end
+          end
+
+          if described_class.type_for_attribute(attribute).type == :string
+            # https://github.com/zammad/zammad/issues/3121
+            it 'retrieves results from cache with value as symbol' do
+              expect(described_class.lookup(attribute => instance.send(attribute).to_sym)).to be_present
             end
           end
 
@@ -84,7 +93,7 @@ RSpec.shared_examples 'ApplicationModel::CanLookup' do
                   expect { instance.update(attribute => new_attribute_val) }
                     .to change { described_class.cache_get(old_attribute_val) }.to(nil)
 
-                  expect { described_class.lookup({ attribute => instance.send(attribute) }) }
+                  expect { described_class.lookup(attribute => instance.send(attribute)) }
                     .to change { described_class.cache_get(new_attribute_val) }.to(instance)
                 end
               end

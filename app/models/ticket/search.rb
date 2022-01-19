@@ -1,10 +1,7 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module Ticket::Search
   extend ActiveSupport::Concern
-
-  included do
-    include HasSearchSortable
-  end
 
   # methods defined here are going to extend the class, not the instance of it
   class_methods do
@@ -119,25 +116,29 @@ returns
         full = true
       end
 
+      sql_helper = ::SqlHelper.new(object: self)
+
       # check sort
-      sort_by = search_get_sort_by(params, 'updated_at')
+      sort_by = sql_helper.get_sort_by(params, 'updated_at')
 
       # check order
-      order_by = search_get_order_by(params, 'desc')
+      order_by = sql_helper.get_order_by(params, 'desc')
 
       # try search index backend
       if condition.blank? && SearchIndexBackend.enabled?
-        query_extension = {}
-        query_extension['bool'] = {}
-        query_extension['bool']['must'] = []
 
+        query_or = []
         if current_user.permissions?('ticket.agent')
           group_ids = current_user.group_ids_access('read')
-          access_condition = {
-            'query_string' => { 'default_field' => 'group_id', 'query' => "\"#{group_ids.join('" OR "')}\"" }
-          }
-        else
-          access_condition = if !current_user.organization || ( !current_user.organization.shared || current_user.organization.shared == false )
+          if group_ids.present?
+            access_condition = {
+              'query_string' => { 'default_field' => 'group_id', 'query' => "\"#{group_ids.join('" OR "')}\"" }
+            }
+            query_or.push(access_condition)
+          end
+        end
+        if current_user.permissions?('ticket.customer')
+          access_condition = if !current_user.organization || (!current_user.organization.shared || current_user.organization.shared == false)
                                {
                                  'query_string' => { 'default_field' => 'customer_id', 'query' => current_user.id }
                                }
@@ -150,9 +151,22 @@ returns
                                # customer_id: XXX OR organization_id: XXX
                                #          conditions = [ '( customer_id = ? OR organization_id = ? )', current_user.id, current_user.organization.id ]
                              end
+          query_or.push(access_condition)
         end
 
-        query_extension['bool']['must'].push access_condition
+        return [] if query_or.blank?
+
+        query_extension = {
+          bool: {
+            must: [
+              {
+                bool: {
+                  should: query_or,
+                },
+              },
+            ],
+          }
+        }
 
         items = SearchIndexBackend.search(query, 'Ticket', limit:           limit,
                                                            query_extension: query_extension,
@@ -176,48 +190,34 @@ returns
         return tickets
       end
 
-      # fallback do sql query
-      access_condition = Ticket.access_condition(current_user, 'read')
+      order_sql   = sql_helper.get_order(sort_by, order_by, 'tickets.updated_at DESC')
+      tickets_all = TicketPolicy::ReadScope.new(current_user).resolve
+                                           .order(Arel.sql(order_sql))
+                                           .offset(offset)
+                                           .limit(limit)
 
-      # do query
-      # - stip out * we already search for *query* -
+      ticket_ids = if query
+                     tickets_all.joins(:articles)
+                                .where(<<~SQL.squish, query: "%#{query.delete('*')}%")
+                                  tickets.title              LIKE :query
+                                  OR tickets.number          LIKE :query
+                                  OR ticket_articles.body    LIKE :query
+                                  OR ticket_articles.from    LIKE :query
+                                  OR ticket_articles.to      LIKE :query
+                                  OR ticket_articles.subject LIKE :query
+                                SQL
+                   else
+                     query_condition, bind_condition, tables = selector2sql(condition)
 
-      order_select_sql = search_get_order_select_sql(sort_by, order_by, 'tickets.updated_at')
-      order_sql        = search_get_order_sql(sort_by, order_by, 'tickets.updated_at DESC')
-      if query
-        query.delete! '*'
-        tickets_all = Ticket.select("DISTINCT(tickets.id), #{order_select_sql}")
-                            .where(access_condition)
-                            .where('(tickets.title LIKE ? OR tickets.number LIKE ? OR ticket_articles.body LIKE ? OR ticket_articles.from LIKE ? OR ticket_articles.to LIKE ? OR ticket_articles.subject LIKE ?)', "%#{query}%", "%#{query}%", "%#{query}%", "%#{query}%", "%#{query}%", "%#{query}%" )
-                            .joins(:articles)
-                            .order(Arel.sql(order_sql))
-                            .offset(offset)
-                            .limit(limit)
+                     tickets_all.joins(tables)
+                                .where(query_condition, *bind_condition)
+                   end.pluck(:id)
+
+      if full
+        ticket_ids.map { |id| Ticket.lookup(id: id) }
       else
-        query_condition, bind_condition, tables = selector2sql(condition)
-        tickets_all = Ticket.select("DISTINCT(tickets.id), #{order_select_sql}")
-                            .joins(tables)
-                            .where(access_condition)
-                            .where(query_condition, *bind_condition)
-                            .order(Arel.sql(order_sql))
-                            .offset(offset)
-                            .limit(limit)
+        ticket_ids
       end
-
-      # build result list
-      if !full
-        ids = []
-        tickets_all.each do |ticket|
-          ids.push ticket.id
-        end
-        return ids
-      end
-
-      tickets = []
-      tickets_all.each do |ticket|
-        tickets.push Ticket.lookup(id: ticket.id)
-      end
-      tickets
     end
   end
 

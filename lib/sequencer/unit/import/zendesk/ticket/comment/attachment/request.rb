@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Sequencer
   class Unit
     module Import
@@ -14,21 +16,15 @@ class Sequencer
                 provides :response, :action
 
                 def process
-                  if failed?
-                    state.provide(:action, :skipped)
-                  else
+                  if response.success?
                     state.provide(:response, response)
+                  else
+                    logger.error "Skipping. Error while downloading Attachment from '#{resource.content_url}': #{response.error}"
+                    state.provide(:action, :skipped)
                   end
                 end
 
                 private
-
-                def failed?
-                  return false if response.success?
-
-                  logger.error response.error
-                  true
-                end
 
                 def response
                   @response ||= begin
@@ -38,6 +34,7 @@ class Sequencer
                       {
                         open_timeout: 20,
                         read_timeout: 240,
+                        verify_ssl:   true,
                       },
                     )
                   end

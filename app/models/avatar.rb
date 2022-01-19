@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
 
 class Avatar < ApplicationModel
   belongs_to :object_lookup, optional: true
@@ -72,7 +72,6 @@ add avatar by url
 =end
 
   def self.add(data)
-
     # lookups
     if data[:object]
       object_id = ObjectLookup.by_name(data[:object])
@@ -105,15 +104,15 @@ add avatar by url
 
     # fetch image based on http url
     if data[:url].present?
-      if data[:url].class == Tempfile
+      if data[:url].instance_of?(Tempfile)
         logger.info "Reading image from tempfile '#{data[:url].inspect}'"
         content = data[:url].read
         filename = data[:url].path
         mime_type = 'image'
-        if filename.match?(/\.png/i)
+        if filename.match?(%r{\.png}i)
           mime_type = 'image/png'
         end
-        if filename.match?(/\.(jpg|jpeg)/i)
+        if filename.match?(%r{\.(jpg|jpeg)}i)
           mime_type = 'image/jpeg'
         end
         data[:resize] ||= {}
@@ -127,14 +126,12 @@ add avatar by url
         url = data[:url].to_s
 
         # check if source was updated within last 2 minutes
-        if avatar_already_exists&.source_url == url
-          return if avatar_already_exists.updated_at > 2.minutes.ago
-        end
+        return if avatar_already_exists&.source_url == url && avatar_already_exists.updated_at > 2.minutes.ago
 
         # twitter workaround to get bigger avatar images
         # see also https://dev.twitter.com/overview/general/user-profile-images-and-banners
         if url.match?(%r{//pbs.twimg.com/}i)
-          url.sub!(/normal\.(png|jpg|gif)$/, 'bigger.\1')
+          url.sub!(%r{normal\.(png|jpg|gif)$}, 'bigger.\1')
         end
 
         # fetch image
@@ -153,10 +150,10 @@ add avatar by url
         end
         logger.info "Fetchd image '#{url}', http code: #{response.code}"
         mime_type = 'image'
-        if url.match?(/\.png/i)
+        if url.match?(%r{\.png}i)
           mime_type = 'image/png'
         end
-        if url.match?(/\.(jpg|jpeg)/i)
+        if url.match?(%r{\.(jpg|jpeg)}i)
           mime_type = 'image/jpeg'
         end
 
@@ -172,9 +169,7 @@ add avatar by url
         url = data[:url].to_s
 
         # check if source ist already updated within last 3 minutes
-        if avatar_already_exists&.source_url == url
-          return if avatar_already_exists.updated_at > 2.minutes.ago
-        end
+        return if avatar_already_exists&.source_url == url && avatar_already_exists.updated_at > 2.minutes.ago
 
         # fetch image
         image = Service::Image.user(url)

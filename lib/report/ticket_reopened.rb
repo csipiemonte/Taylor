@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class Report::TicketReopened < Report::Base
 
 =begin
@@ -21,27 +23,27 @@ returns
     ticket_state_ids = ticket_ids
 
     result = []
-    if params[:interval] == 'month'
+    case params[:interval]
+    when 'month'
       stop_interval = 12
-    elsif params[:interval] == 'week'
+    when 'week'
       stop_interval = 7
-    elsif params[:interval] == 'day'
+    when 'day'
       stop_interval = 31
-    elsif params[:interval] == 'hour'
+    when 'hour'
       stop_interval = 24
-    elsif params[:interval] == 'minute'
+    when 'minute'
       stop_interval = 60
     end
     (1..stop_interval).each do |_counter|
-      if params[:interval] == 'month'
+      case params[:interval]
+      when 'month'
         params[:range_end] = params[:range_start].next_month
-      elsif params[:interval] == 'week'
+      when 'week', 'day'
         params[:range_end] = params[:range_start].next_day
-      elsif params[:interval] == 'day'
-        params[:range_end] = params[:range_start].next_day
-      elsif params[:interval] == 'hour'
+      when 'hour'
         params[:range_end] = params[:range_start] + 1.hour
-      elsif params[:interval] == 'minute'
+      when 'minute'
         params[:range_end] = params[:range_start] + 1.minute
       end
 
@@ -112,7 +114,7 @@ returns
 
   def self.ticket_ids
     key = 'Report::TicketReopened::StateList'
-    ticket_state_ids = Cache.get(key)
+    ticket_state_ids = Cache.read(key)
     return ticket_state_ids if ticket_state_ids
 
     ticket_state_types = Ticket::StateType.where(name: %w[closed merged removed])

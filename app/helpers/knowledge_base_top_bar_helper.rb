@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 module KnowledgeBaseTopBarHelper
   def kb_top_bar_color(object)
     case object
@@ -12,16 +14,13 @@ module KnowledgeBaseTopBarHelper
   end
 
   def kb_answer_top_bar_color(answer)
-    case answer.can_be_published_aasm.current_state
-    when :draft
-      'yellow'
-    when :internal
-      'blue'
-    when :published
-      'green'
-    when :archived
-      'grey'
-    end
+    state_color_map = {
+      draft:     'yellow',
+      internal:  'blue',
+      published: 'green',
+      archived:  'grey',
+    }
+    state_color_map[answer.can_be_published_aasm.current_state]
   end
 
   def kb_top_bar_tag(object)
@@ -34,5 +33,15 @@ module KnowledgeBaseTopBarHelper
     when KnowledgeBase
       'Published'
     end
+  end
+
+  def render_top_bar_if_needed(object, knowledge_base)
+    return if !policy(:knowledge_base).edit?
+
+    editable = object || knowledge_base
+
+    return if !editable.is_a? HasTranslations
+
+    render 'knowledge_base/public/top_banner', object: editable
   end
 end

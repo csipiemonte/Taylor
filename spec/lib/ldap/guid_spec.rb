@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 
 RSpec.describe Ldap::Guid do
@@ -28,12 +30,13 @@ RSpec.describe Ldap::Guid do
     end
 
     it 'tunnels to instance method' do
-
-      instance = double()
-      expect(instance).to receive(:hex)
-      expect(described_class).to receive(:new).with(string).and_return(instance)
+      instance = double
+      allow(instance).to receive(:hex)
+      allow(described_class).to receive(:new).with(string).and_return(instance)
 
       described_class.hex(string)
+
+      expect(instance).to have_received(:hex)
     end
   end
 
@@ -45,11 +48,12 @@ RSpec.describe Ldap::Guid do
 
     it 'tunnels to instance method' do
 
-      instance = double()
-      expect(instance).to receive(:string)
-      expect(described_class).to receive(:new).with(hex).and_return(instance)
+      instance = double
+      allow(instance).to receive(:string)
+      allow(described_class).to receive(:new).with(hex).and_return(instance)
 
       described_class.string(hex)
+      expect(instance).to have_received(:string)
     end
   end
 

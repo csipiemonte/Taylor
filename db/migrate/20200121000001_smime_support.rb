@@ -1,8 +1,10 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 class SMIMESupport < ActiveRecord::Migration[5.2]
   def up
 
     # return if it's a new setup
-    return if !Setting.find_by(name: 'system_init_done')
+    return if !Setting.exists?(name: 'system_init_done')
 
     Setting.create_if_not_exists(
       title:       'S/MIME integration',
@@ -59,11 +61,11 @@ class SMIMESupport < ActiveRecord::Migration[5.2]
       t.string :doc_hash,           limit: 250,  null: false
       t.string :fingerprint,        limit: 250,  null: false
       t.string :modulus,            limit: 1024, null: false
-      t.datetime :not_before_at,                 null: true
-      t.datetime :not_after_at,                  null: true
+      t.datetime :not_before_at,                 null: true # rubocop:disable Zammad/ExistsDateTimePrecision
+      t.datetime :not_after_at,                  null: true # rubocop:disable Zammad/ExistsDateTimePrecision
       t.binary :raw,                limit: 10.megabytes,  null: false
       t.binary :private_key,        limit: 10.megabytes,  null: true
-      t.string :private_key_secret, limit: 500,  null: true
+      t.string :private_key_secret, limit: 500, null: true
       t.timestamps limit: 3, null: false
     end
     add_index :smime_certificates, [:fingerprint], unique: true

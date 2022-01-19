@@ -1,3 +1,5 @@
+# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+
 require 'rails_helper'
 # rails autoloading issue
 require 'ldap'
@@ -8,7 +10,7 @@ RSpec.describe Ldap::Group do
   # required as 'let' to perform test based
   # expectations and reuse it in 'let' instance
   # as additional parameter
-  let(:mocked_ldap) { double() }
+  let(:mocked_ldap) { double }
 
   describe '.uid_attribute' do
 
@@ -21,7 +23,7 @@ RSpec.describe Ldap::Group do
     end
   end
 
-  context 'initialization config parameters' do
+  describe 'initialization config parameters' do
 
     it 'reuses given Ldap instance if given' do
       config = {}
@@ -60,7 +62,7 @@ RSpec.describe Ldap::Group do
     end
   end
 
-  context 'instance methods' do
+  describe 'instance methods' do
 
     let(:initialization_config) do
       {
@@ -81,7 +83,7 @@ RSpec.describe Ldap::Group do
 
       it 'returns a Hash of groups' do
         ldap_entry = build(:ldap_entry)
-        expect(mocked_ldap).to receive(:search).and_return(ldap_entry)
+        allow(mocked_ldap).to receive(:search).and_return(ldap_entry)
         expect(instance.list).to be_a(Hash)
       end
     end
@@ -99,7 +101,7 @@ RSpec.describe Ldap::Group do
       end
 
       it 'tries filters and returns first one with entries' do
-        expect(mocked_ldap).to receive(:entries?).and_return(true)
+        allow(mocked_ldap).to receive(:entries?).and_return(true)
         expect(instance.filter).to be_a(String)
       end
 
