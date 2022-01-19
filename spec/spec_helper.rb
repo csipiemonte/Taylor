@@ -19,8 +19,8 @@
 #
 # See http://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
 
-require 'simplecov'
-Simplecov.start
+require 'simplecov' #CSI Piemonte Custom
+SimpleCov.start
 
 require 'webmock/rspec'
 
