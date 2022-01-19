@@ -49,6 +49,7 @@ virtual_agent_api_user = Role.create_if_not_exists(
   created_by_id:     1
 ) || Role.find_by(name: 'Virtual Agent (Api User)')
 
+virtual_agent_api_user.permission_grant('ticket.agent')
 virtual_agent_api_user.permission_grant('virtual_agent.api_user')
 
 virtual_agent_rpa = Role.create_if_not_exists(
