@@ -1,3 +1,3 @@
 class Controllers::CategoriesControllerPolicy < Controllers::ApplicationControllerPolicy
-  default_permit!('admin')
+  default_permit!(['ticket.agent', 'admin'])
 end
