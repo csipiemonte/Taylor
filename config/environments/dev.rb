@@ -86,6 +86,17 @@ Rails.application.configure do
   # require 'syslog/logger'
   # config.logger = ActiveSupport::TaggedLogging.new(Syslog::Logger.new 'app-name')
 
+  # CSI Piemonte custom - start
+  # Conservati gli ultimi 30 file, rotation al aggiungimento dei 100 MB
+  logger = ActiveSupport::Logger.new("#{Rails.root}/log/#{Rails.env}.log", 5, 100*1048576)
+
+  # Use default logging formatter so that PID and timestamp are not suppressed.
+  config.log_formatter = ::Logger::Formatter.new
+
+  logger.formatter = config.log_formatter
+  config.logger = ActiveSupport::TaggedLogging.new(logger)
+  # CSI Piemonte custom - end
+
   if ENV['RAILS_LOG_TO_STDOUT'].present?
     logger           = ActiveSupport::Logger.new(STDOUT)
     logger.formatter = config.log_formatter
