@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, http://zammad-foundation.org/
 
 class SessionsController < ApplicationController
   prepend_before_action -> { authentication_check && authorize! }, only: %i[switch_to_user list delete]
@@ -44,35 +44,38 @@ class SessionsController < ApplicationController
     key = "User::authorizations:pwa::#{user.id}"
     linked_accounts = Cache.get(key)
     if !linked_accounts
-      linked_accounts = user.authorizations().map{|auth| {uid: auth[:uid], provider: auth[:provider],username: auth[:username]}}
+      linked_accounts = user.authorizations().map { |auth| { uid: auth[:uid], provider: auth[:provider], username: auth[:username] } }
       Cache.write(key, linked_accounts)
     end
 
     # return current session
     render json: SessionHelper.json_hash(user).merge(config: config_frontend, linked_accounts: linked_accounts, categories: categories)
   rescue Exceptions::NotAuthorized => e
-
     # CSI pwa automatic account linking info
     auth = session["first_step_login.auth"]
     error = session["first_step_login.error"]
     if auth
-      auth_creation_info = { provider: auth[:provider], uid: auth[:uid], info: {email: auth[:info][:email]} }
+      auth_creation_info = { provider: auth[:provider], uid: auth[:uid], info: { email: auth[:info][:email] } }
     else
       auth_creation_info = nil
     end
 
     render json: {
-      first_step_login: {auth: auth_creation_info, error: error},
-      error:       e.message,
-      config:      config_frontend,
-      models:      SessionHelper.models,
-      collections: { Locale.to_app_model => Locale.where(active: true) },
-      categories: categories
+      first_step_login: { auth: auth_creation_info, error: error },
+      error:            e.message,
+      config:           config_frontend,
+      models:           SessionHelper.models,
+      collections:      { Locale.to_app_model => Locale.where(active: true) },
+      categories:       categories
     }
   end
 
   # "Delete" a login, aka "log the user out"
   def destroy
+
+    # CSI Piemonte custom
+    cu_session = SessionHelper.json_hash(@_current_user)
+    csimodshib = cu_session[:session]["source"] && cu_session[:session]["source"] == 'csimodshib'
 
     reset_session
 
@@ -82,7 +85,16 @@ class SessionsController < ApplicationController
     # reset session
     request.env['rack.session.options'][:expire_after] = nil
 
-    render json: {}
+    # CSI Piemonte custom
+    if csimodshib
+      render(
+        json: {
+          location: Rails.application.config.spid_logout_url
+        }
+      )
+    else
+      render json: {}
+    end
   end
 
   def create_omniauth
@@ -100,7 +112,7 @@ class SessionsController < ApplicationController
     # whether there is already a user signed in.
     authorization = Authorization.find_from_hash(auth)
 
-    if isRequestFromCSIpwaLoginPage?
+    if request_from_csipwa_loginpage?
       # if session["first_step_login.auth"] is present, this is the second step
       # of new account creation in CSI custom pwa
       first_step_auth = session["first_step_login.auth"]
@@ -110,7 +122,7 @@ class SessionsController < ApplicationController
           # create authorization of first step provider, and associate with existing user of second step provider
           second_step_auth = Authorization.find_by(uid: auth.uid)
           unless second_step_auth
-            session["first_step_login.error"] = {code:"non_existing_account"}
+            session["first_step_login.error"] = { code: 'non_existing_account' }
             redirect_to second_step_url
             return
           end
@@ -133,7 +145,7 @@ class SessionsController < ApplicationController
             # normal user create
             authorization = Authorization.create_from_hash(auth, current_user)
           else
-            session["first_step_login.error"] = {code:"non_existing_account"}
+            session["first_step_login.error"] = { code: 'non_existing_account' }
             redirect_to second_step_url
             return
           end
@@ -161,7 +173,7 @@ class SessionsController < ApplicationController
     authorization.user.update_last_login
 
     # redirect to app
-    if request.env['omniauth.auth']['provider'] == "csimodshib" && request.env["action_dispatch.request.query_parameters"]["origin"]
+    if request.env['omniauth.auth']['provider'] == 'csimodshib' && request.env["action_dispatch.request.query_parameters"]["origin"]
       redirect_to "#{request.env["action_dispatch.request.query_parameters"]["origin"]}"
     elsif request.env['omniauth.origin']
       redirect_to "#{request.env['omniauth.origin']}"
@@ -322,13 +334,13 @@ class SessionsController < ApplicationController
 
   def categories
     {
-      service_catalog_items: ServiceCatalogItem.all,
+      service_catalog_items:     ServiceCatalogItem.all,
       service_catalog_sub_items: ServiceCatalogSubItem.all,
-      assets:     Asset.all
+      assets:                    Asset.all
     }
   end
 
-  def isRequestFromCSIpwaLoginPage?
+  def request_from_csipwa_loginpage?
     request.env['omniauth.params'] && request.env['omniauth.params']['app'] == 'pwa' && !request.env['omniauth.params']['second_step_url'].to_s.strip.empty?
   end
 end

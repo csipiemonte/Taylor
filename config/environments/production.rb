@@ -113,4 +113,7 @@ Rails.application.configure do
   # ignored for Session logging and fall back to localhost
   # see https://github.com/zammad/zammad/issues/742
   config.action_dispatch.trusted_proxies = ['127.0.0.1', '::1']
+
+  # SPID logout url
+  config.spid_logout_url = '/nextcrm-cspsliv1spid_gasprp_salute/logout.do'
 end
