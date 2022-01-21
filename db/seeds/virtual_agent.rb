@@ -23,6 +23,11 @@ Permission.create_if_not_exists(
   note:        'Simulate agents behaviour',
   preferences: {},
 )
+Permission.create_if_not_exists(
+  name:        'virtual_agent.aligner',
+  note:        'Use API as aligner',
+  preferences: {},
+)
 
 # Creazione roles di tipo 'virtual_agent*'
 virtual_agent_chatbot = Role.create_if_not_exists(
@@ -79,6 +84,9 @@ virtual_agent_aligner = Role.create_if_not_exists(
 ) || Role.find_by(name: 'Virtual Agent (Aligner)')
 
 virtual_agent_aligner.permission_grant('ticket.agent')
+# Al momento la permission virtual_agent.aligner non è usata per l'autorizzazione, 
+# ma per filtrare gli utenti virtual_agent nell'elenco degli operatori (issue 458)
+virtual_agent_aligner.permission_grant('virtual_agent.aligner')
 
 Translation.create_if_not_exists(
   locale:         'it-it',

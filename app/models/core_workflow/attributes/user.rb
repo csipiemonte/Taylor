@@ -27,7 +27,9 @@ class CoreWorkflow::Attributes::User < CoreWorkflow::Attributes::Base
   end
 
   def agent_role_ids
-    @agent_role_ids ||= Role.with_permissions('ticket.agent').pluck(:id)
+    # CSI custom: exclude virtual agents from agents
+    v_agent_role_ids = Role.with_permissions(%w[virtual_agent.api_user virtual_agent.rca virtual_agent.chatbot virtual_agent.aligner]).pluck(:id)
+    @agent_role_ids ||= Role.with_permissions('ticket.agent').where.not(id: v_agent_role_ids).pluck(:id)
   end
 
   def group_agent_role_user_ids(group_id)
