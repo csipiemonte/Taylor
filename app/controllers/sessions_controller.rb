@@ -87,14 +87,9 @@ class SessionsController < ApplicationController
 
     # CSI Piemonte custom
     if csimodshib
-      render(
-        json: {
-          location: Rails.application.config.spid_logout_url
-        }
-      )
-    else
-      render json: {}
+      response.headers['X-SPID-Logout'] = Rails.application.config.spid_logout_url
     end
+    render json: {}
   end
 
   def create_omniauth
