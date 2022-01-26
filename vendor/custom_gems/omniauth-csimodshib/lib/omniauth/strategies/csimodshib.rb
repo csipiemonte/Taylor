@@ -1,3 +1,5 @@
+# Copyright (C) 2020-2022 CSI Piemonte, https://www.csipiemonte.it/
+
 module OmniAuth
   module Strategies
     # The Developer strategy is a very simple strategy that can be used as a
@@ -32,26 +34,27 @@ module OmniAuth
       include OmniAuth::Strategy
 
       option :fields, %i[
-        Shib-Identita-Nome 
-        Shib-Identita-Cognome 
+        Shib-Identita-Nome
+        Shib-Identita-Cognome
         Shib-Identita-CodiceFiscale
-        Shib-community 
-        Shib-Identita-TimeStamp 
-        Shib-Identita-LivAuth 
+        Shib-Email
+        Shib-community
+        Shib-Identita-TimeStamp
+        Shib-Identita-LivAuth
         Codice-identificativo-SPID
       ]
 
       option :info_headers, {
-        uid: 'Codice-identificativo-SPID',
-        name: 'Shib-Identita-Nome', 
-        first_name: 'Shib-Identita-Nome', 
-        last_name: 'Shib-Identita-Cognome', 
-        # Shib-Identita-CodiceFiscale,
-        # Shib-community, 
-        # Shib-Identita-TimeStamp ,
-        # Shib-Identita-LivAuth ,
+        uid:            'Codice-identificativo-SPID',
+        name:           'Shib-Identita-Nome',
+        first_name:     'Shib-Identita-Nome',
+        last_name:      'Shib-Identita-Cognome',
+        codice_fiscale: 'Shib-Identita-CodiceFiscale',
+        email:          'Shib-Email'
+        # Shib-community,
+        # Shib-Identita-TimeStamp,
+        # Shib-Identita-LivAuth,
       }
-
 
       option :uid_field, 'Codice-identificativo-SPID'
 
@@ -62,16 +65,15 @@ module OmniAuth
         # end
         # form.button 'Sign In'
         # form.to_response
-        
-        #raise ::OmniAuth::Error, 'request phase deve essere inoltrata da mod_shib apache'
+        # raise ::OmniAuth::Error, 'request phase deve essere inoltrata da mod_shib apache'
 
-        [ 
+        [
           302,
           {
-            'Location' => script_name + callback_path + query_string,
+            'Location'     => script_name + callback_path + query_string,
             'Content-Type' => 'text/plain'
           },
-          ["You are being redirected to Shibboleth SP/IdP for sign-in."]
+          [ 'You are being redirected to Shibboleth SP/IdP for sign-in.' ]
         ]
       end
 

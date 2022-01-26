@@ -390,6 +390,9 @@ returns
         data[:firstname] = hash['info']['first_name']
         data[:lastname] = hash['info']['last_name']
       end
+      if hash['info']['codice_fiscale'].present?
+        data[:codice_fiscale] = hash['info']['codice_fiscale']
+      end
       create!(data)
     rescue => e
       logger.error e
