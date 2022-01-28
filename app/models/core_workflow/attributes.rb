@@ -239,9 +239,10 @@ class CoreWorkflow::Attributes
 
   def saved_attribute_value(attribute)
 
-    # special case for owner_id
+    # special case for owner_id & service_catalog_sub_item_id
     return if saved_only&.class == Ticket && attribute[:name] == 'owner_id'
-
+    return if saved_only&.class == Ticket && attribute[:name] == 'service_catalog_sub_item_id'
+    
     saved_only&.try(attribute[:name])
   end
 end

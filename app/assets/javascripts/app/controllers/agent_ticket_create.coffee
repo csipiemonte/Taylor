@@ -331,11 +331,6 @@ class App.TicketCreate extends App.Controller
 
     handlers = @Config.get('TicketCreateFormHandler')
 
-    # CSI Piemonte custom: get subitems to perform prefiltering
-    item_id = Number(params.service_catalog_item_id)
-    subItems = App.ServiceCatalogSubItem.select (item) -> item.parent_service == item_id
-    @formMeta.filter['service_catalog_sub_item_id'] = (item.id for item in subItems)
-
     @controllerFormCreateMiddle = new App.ControllerForm(
       el:                       @$('.ticket-form-middle')
       form_id:                  @formId
@@ -347,8 +342,6 @@ class App.TicketCreate extends App.Controller
       noFieldset:               true
       taskKey:                  @taskKey
       rejectNonExistentValues:  true
-      events:
-        "change [name='service_catalog_item_id']": (e) => @filter_service_catalog_sub_items(e)
     )
 
     # tunnel events to make sure core workflow does know
@@ -646,27 +639,6 @@ class App.TicketCreate extends App.Controller
       @formEnable(e)
       return
     @formEnable(@$('.js-submit'), 'button')
-
-  # CSI custom: filter service_catalog_sub_items based on service_catalog_item
-  filter_service_catalog_sub_items: (e) ->
-    catalog_item = $(e.target)
-    catalog_sub_item = catalog_item.parents('form').find("[name='service_catalog_sub_item_id']")
-    
-    selected_item = catalog_item.val()
-    if !selected_item
-      subItems = App.ServiceCatalogSubItem.all()
-    else
-      selected_item = Number(selected_item)
-      subItems =  (item for item in  App.ServiceCatalogSubItem.all() when item.parent_service == selected_item)
-    
-    empty_option = new Option('-', '')
-    catalog_sub_item.empty()
-    catalog_sub_item.append(empty_option)
-
-    subItems.forEach (option) ->
-      o = new Option(option['name'], option['id'])
-      $(o).html(option['name'])
-      catalog_sub_item.append(o)
 
 class Router extends App.ControllerPermanent
   requiredPermission: 'ticket.agent'
