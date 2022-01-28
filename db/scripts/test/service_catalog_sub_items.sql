@@ -47,4 +47,5 @@ VALUES
 (40, 8, 'Manutenzione correttiva', NOW(), NOW()),
 (41, 9, 'Correzione Dati Massiva', NOW(), NOW()),
 (42, 9, 'Correzione Dati Puntuale', NOW(), NOW()),
-(43, 9, 'Elaborazioni Dati', NOW(), NOW())
+(43, 9, 'Elaborazioni Dati', NOW(), NOW()),
+(44, 10, 'Generico', NOW(), NOW())
