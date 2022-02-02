@@ -214,7 +214,12 @@ class ExternalActivity extends App.Controller
         if field['select']['parent'] != undefined
           parent = $('#External_Activity_'+externalActivityId+'_'+field['select']['parent'])
           parent.change ->
-            instance.fetchOptionValues(field,selectField,@.value)
+            if field['select']['string_id']
+              parentValue = $(@).find(':selected').data('option-id')
+            else
+              parentValue = @.value
+
+            instance.fetchOptionValues(field, selectField, parentValue)
 
   buildCommentFields: (externalActivityId,activity=null) =>
     instance = @
@@ -351,7 +356,12 @@ class ExternalActivity extends App.Controller
       o = new Option(option['name'], option['id'])
     else
       o = new Option(option['name'], option['name'])
+
+    id = if string_id then option['id'] else option['name']
+
     $(o).html(option['name'])
+    $(o).attr('data-option-id', id)
+
     selectField.append(o)
     if option['disabled']
       $(o).addClass('text-muted').attr('disabled',true)

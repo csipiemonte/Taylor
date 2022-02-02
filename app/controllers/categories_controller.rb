@@ -4,7 +4,7 @@ class CategoriesController < ApplicationController
 
 
   def index_service_catalog
-    render json: ServiceCatalogItem.all
+    render json: ServiceCatalogItem.order(:name).all
   end
 
   def show_service_catalog
