@@ -1585,7 +1585,7 @@ RSpec.describe 'Ticket zoom', type: :system do
     end
   end
 
-  describe 'GitLab Integration', :integration, authenticated_as: :authenticate, required_envs: %w[GITLAB_ENDPOINT GITLAB_APITOKEN] do
+  describe 'GitLab Integration', :integration, authenticated_as: :authenticate, external_env: true, required_envs: %w[GITLAB_ENDPOINT GITLAB_APITOKEN] do
     let!(:ticket) { create(:ticket, group: Group.find_by(name: 'Users')) }
 
     def authenticate
@@ -1636,7 +1636,7 @@ RSpec.describe 'Ticket zoom', type: :system do
     end
   end
 
-  describe 'GitHub Integration', :integration, authenticated_as: :authenticate, required_envs: %w[GITHUB_ENDPOINT GITHUB_APITOKEN] do
+  describe 'GitHub Integration', :integration, authenticated_as: :authenticate, external_env: true, required_envs: %w[GITHUB_ENDPOINT GITHUB_APITOKEN] do
     let!(:ticket) { create(:ticket, group: Group.find_by(name: 'Users')) }
 
     def authenticate

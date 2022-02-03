@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'External Credentials', type: :request do
+RSpec.describe 'External Credentials', type: :request, external_env: true, do
   let(:admin) { create(:admin) }
 
   context 'without authentication' do

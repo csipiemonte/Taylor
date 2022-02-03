@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Channel::Driver::Twitter, required_envs: %w[TWITTER_CONSUMER_KEY TWITTER_CONSUMER_SECRET TWITTER_OAUTH_TOKEN TWITTER_OAUTH_TOKEN_SECRET TWITTER_DM_RECIPIENT TWITTER_USER_ID] do
+RSpec.describe Channel::Driver::Twitter, external_env: true, required_envs: %w[TWITTER_CONSUMER_KEY TWITTER_CONSUMER_SECRET TWITTER_OAUTH_TOKEN TWITTER_OAUTH_TOKEN_SECRET TWITTER_DM_RECIPIENT TWITTER_USER_ID] do
   subject(:channel) { create(:twitter_channel) }
 
   let(:external_credential) { ExternalCredential.find(channel.options[:auth][:external_credential_id]) }

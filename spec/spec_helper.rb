@@ -21,6 +21,8 @@
 
 require 'simplecov' #CSI Piemonte Custom
 SimpleCov.start
+ENV['ES_URL']='http://127.0.0.1:9200'
+ENV['ES_INDEX']='estest.local_zammad'
 
 require 'webmock/rspec'
 

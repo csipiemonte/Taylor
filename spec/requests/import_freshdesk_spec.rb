@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'ImportFreshdesk', type: :request, set_up: false, authenticated_as: false, required_envs: %w[IMPORT_FRESHDESK_ENDPOINT_SUBDOMAIN] do
+RSpec.describe 'ImportFreshdesk', type: :request, set_up: false, external_env: true, authenticated_as: false, required_envs: %w[IMPORT_FRESHDESK_ENDPOINT_SUBDOMAIN] do
   let(:action) { nil }
   let(:endpoint) { "/api/v1/import/freshdesk/#{action}" }
 

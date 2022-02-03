@@ -1,12 +1,11 @@
 # Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
-=begin
-  
+
 rescue => exception
   
 end
 require 'rails_helper'
 
-RSpec.describe 'Import Zendesk', type: :system, set_up: false, authenticated_as: false, required_envs: %w[IMPORT_ZENDESK_ENDPOINT IMPORT_ZENDESK_ENDPOINT_KEY IMPORT_ZENDESK_ENDPOINT_USERNAME] do
+RSpec.describe 'Import Zendesk', type: :system, external_env: true, set_up: false, authenticated_as: false, required_envs: %w[IMPORT_ZENDESK_ENDPOINT IMPORT_ZENDESK_ENDPOINT_KEY IMPORT_ZENDESK_ENDPOINT_USERNAME] do
 
   import_zendesk_url = ENV['IMPORT_ZENDESK_ENDPOINT'].remove(%r{/api/v2/?})
 
@@ -129,4 +128,3 @@ RSpec.describe 'Import Zendesk', type: :system, set_up: false, authenticated_as:
     end
   end
 end
-=end

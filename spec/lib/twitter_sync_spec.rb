@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe TwitterSync do
+RSpec.describe TwitterSync, external_env: true do
   subject(:twitter_sync) { described_class.new(channel.options[:auth]) }
 
   let(:channel) { create(:twitter_channel) }
