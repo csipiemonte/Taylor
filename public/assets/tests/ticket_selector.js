@@ -48,7 +48,7 @@ window.onload = function() {
       },
       "owner": {
         "login": "-",
-        "firstname": "-",
+        "firstname": "NextCRM", //CSI Piemonte custom
         "lastname": "",
         "email": "",
         "web": "",

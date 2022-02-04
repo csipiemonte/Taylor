@@ -150,7 +150,7 @@ class ElasticsearchTest < ActiveSupport::TestCase
     assert_nil(attributes['customer']['organization'])
 
     assert_equal('-', attributes['owner']['login'])
-    assert_equal('-', attributes['owner']['firstname'])
+    assert_equal('NextCRM', attributes['owner']['firstname']) #CSI Piemonte custom
     assert_not(attributes['owner']['password'])
     assert_not(attributes['owner']['organization'])
 

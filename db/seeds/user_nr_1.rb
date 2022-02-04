@@ -2,7 +2,7 @@
 
 User.create_if_not_exists(
   login:         '-',
-  firstname:     '-',
+  firstname:     'NextCRM', #CSI Piemonte custom
   lastname:      '',
   email:         '',
   active:        false,
