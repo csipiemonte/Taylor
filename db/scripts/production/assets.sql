@@ -1,4 +1,4 @@
--- Popolamento della tabella "assets" per gli ambienti di DEV e di TEST
+-- Popolamento della tabella "assets" per gli ambienti di Prod
 -- cfr. Triplette_REMEDY-asset_id_CRM_v02.xlsx
 
 INSERT INTO "zammad"."assets"
@@ -51,4 +51,10 @@ VALUES
 (46, 'sw', 'FINDOM - GESTIONALE DOMANDA FINPIEMONTE - RISTORO NEVE 12-21', NOW(), NOW()),
 (47, 'sw', 'FINDOM - Gestionale Domanda FESR', NOW(), NOW()),
 (48, 'sw', 'FINDOM- GESTIONALE DOMANDA A21 SPORT', NOW(), NOW()),
-(49, 'sw', 'Gestione e monitoraggio finanziamenti - Gestionale Finanziamenti Regione - FESR', NOW(), NOW())
+(49, 'sw', 'Gestione e monitoraggio finanziamenti - Gestionale Finanziamenti Regione - FESR', NOW(), NOW()),
+(50, 'sw', 'Sanità', NOW(), NOW()),
+(51, 'sw', 'Tributi', NOW(), NOW()),
+(52, 'sw', 'Mobilità e trasporti', NOW(), NOW()),
+(53, 'sw', 'Istruzione formazione e lavoro', NOW(), NOW()),
+(54, 'sw', 'Agricoltura', NOW(), NOW()),
+(55, 'sw', 'Adozioni', NOW(), NOW())

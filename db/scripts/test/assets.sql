@@ -57,3 +57,9 @@ VALUES
 (70, 'sw', 'FINDOM - Gestionale Domanda FESR', NOW(), NOW()),
 (71, 'sw', 'FINDOM- GESTIONALE DOMANDA A21 SPORT', NOW(), NOW()),
 (72, 'sw', 'Gestione e monitoraggio finanziamenti - Gestionale Finanziamenti Regione - FESR', NOW(), NOW())
+(73, 'sw', 'Sanità', NOW(), NOW()),
+(74, 'sw', 'Tributi', NOW(), NOW()),
+(75, 'sw', 'Mobilità e trasporti', NOW(), NOW()),
+(76, 'sw', 'Istruzione formazione e lavoro', NOW(), NOW()),
+(77, 'sw', 'Agricoltura', NOW(), NOW()),
+(78, 'sw', 'Adozioni', NOW(), NOW())
