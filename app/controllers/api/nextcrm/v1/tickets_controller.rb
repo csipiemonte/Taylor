@@ -122,6 +122,9 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
     end
     handle_user_on_create()
 
+    # issue 488, rinomina type_id (input) -> ticket_type_id (output)
+    params["ticket_type_id"] = params.delete("type_id")
+
     apilogger.info {"business logic end"}
     apilogger.info {"modified input params, before invoking zammad core controller : #{params.filtered}"}
     super
@@ -169,6 +172,10 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
       # autocreate user if not exists with "guess" keywork
       params[:ticket][:customer_id] = "guess:#{value}"
     end
+
+    # issue 488, rinomina type_id (input) -> ticket_type_id (output)
+    params["ticket_type_id"] = params.delete("type_id")
+
     apilogger.info {"modified input params, before invoking zammad core controller : #{params.filtered}"}
     super
     apilogger.info {"zammad core create end. processing output response"}
@@ -223,7 +230,8 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
       note 
       article_count  
       type 
-      type_id
+      ticket_type
+      ticket_type_id
       utente_riconosciuto 
       asset_id 
       asset
@@ -254,6 +262,10 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
 
     # TODO rimuovere quando implementata tabella lookup
     ticket["utente_riconosciuto"] = ticket["utente_riconosciuto"].to_i
+
+    # issue 488, rinomina ticket_type_id -> type_id e ticket_type -> type
+    ticket["type_id"] = ticket.delete("ticket_type_id")
+    ticket["type"] = ticket.delete("ticket_type")
 
     if ticket["asset_id"] 
       ticket["asset"] = all_assets[ticket["asset_id"]]

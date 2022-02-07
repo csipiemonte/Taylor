@@ -91,7 +91,7 @@ class Ticket < ApplicationModel
   belongs_to    :create_article_type,    class_name: 'Ticket::Article::Type', optional: true
   belongs_to    :create_article_sender,  class_name: 'Ticket::Article::Sender', optional: true
 
-  belongs_to    :type,                  class_name: 'Ticket::Type', optional: true
+  belongs_to :ticket_type, class_name: 'Ticket::Type', optional: true
 
   association_attributes_ignored :flags, :mentions
 

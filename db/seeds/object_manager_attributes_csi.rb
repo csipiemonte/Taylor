@@ -313,7 +313,7 @@ ObjectManager::Attribute.add(
 ObjectManager::Attribute.add(
   force:       true,
   object:      'Ticket',
-  name:        'type_id',
+  name:        'ticket_type_id',
   display:     'Type',
   data_type:   'select',
   data_option: {
