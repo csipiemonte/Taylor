@@ -49,4 +49,6 @@ VALUES
 (42, 9, 'Correzione Dati Puntuale', NOW(), NOW()),
 (43, 9, 'Elaborazioni Dati', NOW(), NOW()),
 (44, 10, 'Generico', NOW(), NOW()),
-(45, 11, 'Numero Verde Reg. Piemonte', NOW(), NOW())
+(45, 11, 'Numero Verde Reg. Piemonte', NOW(), NOW()),
+(46, 12, 'Gestione contatti', NOW(), NOW()),
+(47, 13, 'Informazioni sul servizio', NOW(), NOW())

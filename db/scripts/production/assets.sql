@@ -57,4 +57,7 @@ VALUES
 (52, 'sw', 'Mobilità e trasporti', NOW(), NOW()),
 (53, 'sw', 'Istruzione formazione e lavoro', NOW(), NOW()),
 (54, 'sw', 'Agricoltura', NOW(), NOW()),
-(55, 'sw', 'Adozioni', NOW(), NOW())
+(55, 'sw', 'Adozioni', NOW(), NOW()),
+(56, 'sw', 'Altri argomenti', NOW(), NOW()),
+(57, 'sw', 'Linea interrotta/Errore coda telefonica', NOW(), NOW()),
+(58, 'sw', 'Sis. Gest. Tassa Auto – Serv. online contrib. (Vis., Rich.)', NOW(), NOW())

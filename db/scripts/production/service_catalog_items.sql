@@ -15,4 +15,6 @@ VALUES
 (8,  '2L - Manutenzione correttiva', NOW(), NOW()),
 (9,  '2L - Trattamento dati', NOW(), NOW()),
 (10, '1L - Dispatching applicativo', NOW(), NOW()),
-(11, '1L - Gestione CUC', NOW(), NOW())
+(11, '1L - Gestione CUC', NOW(), NOW()),
+(12, '1L – Informazioni Front Line', NOW(), NOW()),
+(13, '1L – Assistenza Applicativa', NOW(), NOW())
