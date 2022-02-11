@@ -149,15 +149,15 @@ ObjectManager::Attribute.add(
   data_option: {
     default:    0,
     options:    {
-      0           => UtenteRiconosciutoLookup.find_by(value: 0).name,
-      1            => UtenteRiconosciutoLookup.find_by(value: 1).name,
+      0 => UtenteRiconosciutoLookup.find_by(value: 0).name,
+      1 => UtenteRiconosciutoLookup.find_by(value: 1).name,
     },
     nulloption: false,
     multiple:   false,
     null:       false,
     # translate:  true,
   },
-  editable:    false,
+  editable:    true,
   active:      true,
   screens: {
     'create_middle' => {
