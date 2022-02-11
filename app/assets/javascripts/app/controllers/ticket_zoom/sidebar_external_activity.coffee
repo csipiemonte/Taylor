@@ -418,11 +418,19 @@ class ExternalActivity extends App.Controller
   showObjects: (el) =>
     @el = el
     @showObjectsContent()
+      
 
   showObjectsContent: (objectIds) =>
     return if !@permissionCheck('ticket.agent') # Sidebar external activity accessibile solo agli operatori del ticket
     if @systems.length > 0
-      @loadSystem(@systems[0])
+      @isRemedy = null
+      for item in @systems
+        if item.name == 'Remedy' # se nel codice è presente Remedy diventa default
+          @isRemedy = item
+      if @isRemedy
+        @loadSystem(@isRemedy)
+      else
+        @loadSystem(@systems[0])
     else
       @showNoSystemsMessage()
     return
