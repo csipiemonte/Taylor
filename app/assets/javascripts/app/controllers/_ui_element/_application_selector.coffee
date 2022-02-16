@@ -118,7 +118,14 @@ class App.UiElement.ApplicationSelector
                 translate: false
                 operator: ['is']
           )
-
+        elements['external_activity.archived'] =
+          name: 'external_activity_archived'
+          display: 'Archived'
+          tag: 'select'
+          options: {true: 'vero', false: 'falso'}
+          null: false
+          translate: false
+          operator: ['is']
       else
         for row in App[groupMeta.model].configure_attributes
 
