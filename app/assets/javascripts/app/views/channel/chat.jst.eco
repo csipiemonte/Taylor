@@ -10,12 +10,16 @@
 <div class="page-content">
   <p><%- @T('You can create chat widgets for your web pages to allow visitors to chat with you.') %></p>
 
-  <h2>Chat-Bot</h2>
-  <p>Activate Chat-Bot for automatic chat handling</p>
-  <div class="zammad-switch zammad-switch--small js-chatBotSetting">
-     <input name="chatbot_status" type="checkbox" id="setting-chatbot" <% if @chatBotSetting: %>checked<% end %>>
-     <label for="setting-chatbot"></label>
-  </div>
+  <% # solo se feature toggle chat_bot e' enabled %>
+  <% if !App.Feature.isDisabled("external_activity"):  %>
+    <h2>Chat-Bot</h2>
+    <p>Activate Chat-Bot for automatic chat handling</p>
+    <div class="zammad-switch zammad-switch--small js-chatBotSetting">
+      <input name="chatbot_status" type="checkbox" id="setting-chatbot" <% if @chatBotSetting: %>checked<% end %>>
+      <label for="setting-chatbot"></label>
+    </div>
+
+  <% end %>
 
   <h2><%- @T('Topics') %></h2>
   <p><%- @T('You can create multiple chat topics.') %></p>

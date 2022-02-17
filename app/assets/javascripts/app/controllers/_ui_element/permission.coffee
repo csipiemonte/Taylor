@@ -3,6 +3,16 @@ class App.UiElement.permission extends App.UiElement.ApplicationUiElement
   @render: (attribute, params = {}) ->
 
     permissions = App.Permission.search(sortBy: 'name')
+  
+    # feature toggle permissions
+    disabled_feature_permissions = []
+    disabled_feature_permissions.push('admin.channel_telegram') if App.Feature.isDisabled('telegram')
+    if App.Feature.isDisabled('api_crm')
+      disabled_feature_permissions.push('api_manager')
+      disabled_feature_permissions.push('virtual_agent.api_user')
+      console.debug("[feature toggle] api_crm permissions removed ")
+      
+    permissions = permissions.filter((p)-> return !disabled_feature_permissions.includes(p.name))
 
     # get selectable groups and selected groups
     groups = []

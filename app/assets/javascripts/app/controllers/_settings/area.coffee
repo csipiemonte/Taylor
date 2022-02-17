@@ -17,6 +17,16 @@ class App.SettingsArea extends App.Controller
       filter:
         area: @area
     )
+  
+    # feature toggle elimino i setting non abilitati dalle voci di menu
+    if App.Feature.isDisabled("external_activity")
+      settings = settings.filter((s) -> s.name != "auth_advanced_saml")
+      console.debug("[feature toggle] auth_advanced_saml setting disabled ")
+    if App.Feature.isDisabled("chat_bot")
+      settings = settings.filter((s) -> s.name != "chat_bot_api_settings")
+      console.debug("[feature toggle] chat_bot setting disabled ")
+      
+      
 
     # filter online service settings
     if App.Config.get('system_online_service')
