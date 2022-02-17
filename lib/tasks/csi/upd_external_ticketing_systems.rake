@@ -85,6 +85,7 @@ namespace :csi do
         'select' => {
           'options' => {
             '1' => { 'id': 'Ripristino di servizio utente', 'name': 'Ripristino di servizio utente' },
+            '2' => { 'id': 'Ripristino di servizio infrastrutturale', 'name': 'Ripristino di servizio infrastrutturale' }
           }
         }
       },
