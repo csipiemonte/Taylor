@@ -207,6 +207,30 @@ Overview.create_if_not_exists(
     view_mode_default: 's',
   },
 )
+# CSI custom: overview per ticket con ext. act. non ancora archiviate
+Overview.create_if_not_exists(
+  name:                'Ext. Act. in corso',
+  link:                'pending_ext_act',
+  prio:                1250,
+  role_ids:            [overview_role.id],
+  organization_shared: false,
+  condition:           {
+    'external_activity.archived' => {
+      operator: 'is',
+      value: false,
+    }
+  },
+  order:               {
+    by:        'created_at',
+    direction: 'DESC',
+  },
+  view:                {
+    d:                 %w[title customer state group created_at],
+    s:                 %w[number title customer state group created_at],
+    m:                 %w[number title customer state group created_at],
+    view_mode_default: 's',
+  },
+)
 
 overview_role = Role.find_by(name: 'Customer')
 Overview.create_if_not_exists(

@@ -603,6 +603,10 @@ condition example
           tables += ', mentions'
           query += "tickets.id = mentions.mentionable_id AND mentions.mentionable_type = 'Ticket'"
         end
+      # CSI CUSTOM: conditions on eternal activities
+      when 'external_activity'
+        tables += ', external_activities'
+        query += 'tickets.id = external_activities.ticket_id'
       else
         raise "invalid selector #{attribute.inspect}->#{attributes.inspect}"
       end
@@ -684,6 +688,17 @@ condition example
           else
             bind_params.push selector['value']
           end
+        end
+        next
+      end
+
+      # CSI CUSTOM - condizioni su external activity
+      if attributes[0] == 'external_activity'
+        if  attributes[1] == 'archived' && selector['operator'] == 'is'
+          query += "external_activities.archived = ?"
+          bind_params.push selector['value']
+        else
+          raise "Invalid external_activity operator '#{selector['operator']}' for '#{selector['value'].inspect}'"
         end
         next
       end
