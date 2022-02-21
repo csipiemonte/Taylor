@@ -66,3 +66,5 @@ VALUES
 (79, 'sw', 'Altri argomenti', NOW(), NOW()),
 (80, 'sw', 'Linea interrotta/Errore coda telefonica', NOW(), NOW()),
 (81, 'sw', 'Sis. Gest. Tassa Auto – Serv. online contrib. (Vis., Rich.)', NOW(), NOW())
+(82, 'sw', 'CNU-PF - CEDOLINO MENSILE - CALCOLO E PRODUZIONE', NOW(), NOW()),
+(83, 'sw', 'SPI - CEDOLINO MENSILE CALCOLO E PRODUZIONE', NOW(), NOW())

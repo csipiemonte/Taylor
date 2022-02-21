@@ -48,5 +48,7 @@ VALUES
 (44, 'CFI', 69, 'CCFI3665', NOW(), NOW()),
 (45, 'CFI', 70, 'CCFI795', NOW(), NOW()),
 (46, 'CFI', 71, 'CCFI3652', NOW(), NOW()),
-(47, 'CFI', 72, 'CCFI3354', NOW(), NOW())
+(47, 'CFI', 72, 'CCFI3354', NOW(), NOW()),
+(48, 'CFI', 82, 'CCFI2791', NOW(), NOW()),
+(49, 'CFI', 83, 'CCFI2800', NOW(), NOW())
 
