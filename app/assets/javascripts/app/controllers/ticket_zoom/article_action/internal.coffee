@@ -30,8 +30,10 @@ class Internal
     # runtime update
     if internal
       articleContainer.addClass('is-internal')
+      articleContainer.find('.is-internal-el').show()
     else
       articleContainer.removeClass('is-internal')
+      articleContainer.find('.is-internal-el').hide()
 
     ui.render()
 

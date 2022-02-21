@@ -73,6 +73,13 @@
   <% if @article.preferences.security?.sign?.success is true: %>
     <span title="<%- @T('Signed') %>"><%- @Icon('signed') %></span>
   <% end %>
+  <% if @article.internal is true: %>
+    <span class="is-internal-el" title="<%- @T('nota privata') %>"><%- @Icon('danger') %><span> nota privata</span></span>
+  <% end %>
+  </div>
+<% else: %>
+  <div class="alert alert--blank horizontal is-internal-el">
+    <span title="<%- @T('nota privata') %>"><%- @Icon('danger') %><span> nota privata</span></span>
   </div>
 <% end %>
 </div>

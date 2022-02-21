@@ -211,6 +211,10 @@ class ArticleViewItem extends App.ControllerObserver
       links:       links
     )
 
+    # CSI custom - aggiunto warning nota interna
+    if !article.internal
+      @el.find('.is-internal-el').hide()
+
     new App.WidgetAvatar(
       el:        @$('.js-avatar')
       object_id: article.origin_by_id || article.created_by_id
