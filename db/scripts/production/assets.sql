@@ -62,4 +62,9 @@ VALUES
 (57, 'sw', 'Linea interrotta/Errore coda telefonica', NOW(), NOW()),
 (58, 'sw', 'Sis. Gest. Tassa Auto – Serv. online contrib. (Vis., Rich.)', NOW(), NOW()),
 (59, 'sw', 'CNU-PF - CEDOLINO MENSILE - CALCOLO E PRODUZIONE', NOW(), NOW()),
-(60, 'sw', 'SPI - CEDOLINO MENSILE CALCOLO E PRODUZIONE', NOW(), NOW())
+(60, 'sw', 'SPI - CEDOLINO MENSILE CALCOLO E PRODUZIONE', NOW(), NOW()),
+(61, 'sw', 'LOCCSI LOCALIZATION CENTRALIZED SEARCH INTERFACE', NOW(), NOW()),
+(62, 'sw', 'PROTES -Componente che eroga il servizio WEB dell''applic', NOW(), NOW()),
+(63, 'sw', 'Gestione appuntamenti screening tumori femminili (cittadini)', NOW(), NOW()),
+(64, 'sw', 'MDPCORESERVICES - Servizi core di MDPNEW', NOW(), NOW()),
+(65, 'sw', 'ROL per cittadino non autenticato', NOW(), NOW())

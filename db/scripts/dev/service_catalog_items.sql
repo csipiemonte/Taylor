@@ -17,4 +17,6 @@ VALUES
 (10, '1L - Dispatching applicativo', NOW(), NOW()),
 (11, '1L - Gestione CUC', NOW(), NOW()),
 (12, '1L – Informazioni Front Line', NOW(), NOW()),
-(13, '1L – Assistenza Applicativa', NOW(), NOW())
+(13, '1L – Assistenza Applicativa', NOW(), NOW()),
+(14, '1L - Gestione credenziali di accesso applicative', NOW(), NOW())
+
