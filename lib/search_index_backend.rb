@@ -149,6 +149,45 @@ add new object to search index
 
 =begin
 
+  CSI Custom: add batch of object to search index
+
+  SearchIndexBackend.bulk_add('Ticket', some_data_objects)
+
+=end
+
+  def self.bulk_add(type, data)
+
+    url = build_url(type: type, bulk: true)
+    return if url.blank?
+
+    puts "\t\t - performing bulk add to " + url
+
+    # custom request, see UserAgent
+    uri  = URI.parse(url)
+    http = UserAgent.get_http(uri, {})
+    http.read_timeout = 120
+
+    request = Net::HTTP::Post.new(uri)
+    request['Content-Type'] = 'application/json'
+    request['User-Agent'] = 'Zammad User Agent'
+    request = UserAgent.set_basic_auth(request, {})
+    request.body = data
+
+    Rails.logger.info { "# curl -X POST \"#{uri}\" " }
+    response = http.request(request)
+    response = UserAgent.process(request, response, uri, 1, {}, {})
+    return true if response.success?
+
+    raise humanized_error(
+      verb:     'POST',
+      url:      url,
+      payload:  data,
+      response: response
+    )
+  end
+
+=begin
+
 This function updates specifc attributes of an index based on a query.
 
   data = {
@@ -775,7 +814,7 @@ generate url for index or document access (only for internal use)
 =end
 
   # rubocop:disable Metrics/ParameterLists
-  def self.build_url(type: nil, action: nil, object_id: nil, with_pipeline: true, with_document_type: true, url_params: {})
+  def self.build_url(type: nil, action: nil, object_id: nil, with_pipeline: true, with_document_type: true, url_params: {}, bulk: false)
     # rubocop:enable  Metrics/ParameterLists
     return if !SearchIndexBackend.enabled?
 
@@ -802,8 +841,11 @@ generate url for index or document access (only for internal use)
     # add type information
     url = "#{url}/#{index}"
 
+    # csi custom - aggiunta parametro per bulk requests
+    if bulk
+      url = "#{url}/_bulk"
     # add document type
-    if with_document_type
+    elsif with_document_type
       url = "#{url}/_doc"
     end
 

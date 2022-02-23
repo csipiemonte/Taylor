@@ -235,5 +235,73 @@ reload search index with full data
         puts "\t#{[(batch + 1) * batch_size, total].min}/#{total}" # rubocop:disable Rails/Output
       end
     end
+=begin
+
+  CSI Custom: reload search index with full data in bulk
+
+  Model.search_index_bulk_reload
+
+=end
+
+    def search_index_bulk_reload(pg_batch_size, es_batch_size)
+      tolerance       = 10
+      tolerance_count = 0
+      batch_size      = pg_batch_size.to_i
+      es_batch_size   = es_batch_size.to_i
+      query           = all.order(created_at: :desc)
+      total           = query.count
+
+      # timings
+      t = Time.now
+      t_attr = t_json = t_send = 0
+
+      # data deve essere un ndjson
+      data = []
+      es_batch_number = 0
+      es_batch_counter = 0
+      query.find_in_batches(batch_size: batch_size).with_index do |group, batch|
+        group.each do |item|
+          next if item.ignore_search_indexing?(:destroy)
+          
+          t = Time.now
+          # fill up with search data
+          item_attributes = item.search_index_attribute_lookup
+          next if !item_attributes
+          t_attr += Time.now - t
+
+          t = Time.now
+          # action attributes
+          action_attributes = {index: {_id: item_attributes['id']}}
+          
+          data.push action_attributes.to_json
+          data.push item_attributes.to_json
+          t_json += Time.now - t
+          
+          es_batch_counter += 1
+          if es_batch_counter == es_batch_size
+            t = Time.now
+            puts " - Sending DB batch #{batch} | ES batch #{es_batch_number} [#{es_batch_counter} elements] (#{(es_batch_number+1) * es_batch_size}/#{total})" # rubocop:disable Rails/Output
+            bulk_data = data.join("\n") + "\n"
+            SearchIndexBackend.bulk_add(group[0].class.to_s, bulk_data)
+            
+            es_batch_counter = 0
+            es_batch_number += 1
+            data = []
+            t_send += Time.now - t
+            puts "\t\t   bulk add finished in #{Time.now - t}"
+          end
+        end
+      end
+      if es_batch_counter != 0
+        t = Time.now
+        puts " - Sending last DB batch | ES batch #{es_batch_number} [#{es_batch_counter} elements]"
+        bulk_data = data.join("\n") + "\n"
+        SearchIndexBackend.bulk_add(self.name, bulk_data)
+        t_send += Time.now - t
+        puts "\t\t   bulk add finished in #{Time.now - t}"
+      end
+      
+      puts "Timings: \n\t - total attributes lookup time: #{t_attr.round(1)} seconds\n\t - total serialization time: #{t_json.round(1)} seconds\n\t - total ES request time: #{t_send.round(1)} seconds"
+    end
   end
 end
