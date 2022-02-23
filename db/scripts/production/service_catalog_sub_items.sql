@@ -51,6 +51,5 @@ VALUES
 (45, 10, 'Generico', NOW(), NOW()),
 (46, 11, 'Numero Verde Reg. Piemonte', NOW(), NOW()),
 (47, 12, 'Gestione contatti', NOW(), NOW()),
-(48, 13, 'Informazioni sul servizio', NOW(), NOW()),
+(48, 1, 'Informazioni sul servizio', NOW(), NOW()),
 (49, 14, 'Manutenzione credenziali', NOW(), NOW())
-
