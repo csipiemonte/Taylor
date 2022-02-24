@@ -23,13 +23,13 @@ $mobileNavigationWidthOpen: 220px;
 $highlight-color: hsl(205,90%,60%);
 
 @mixin desktop {
-  @media screen and (min-width: 1260px) {
+  @media screen and (min-width: 1366px) {
     @content;
   }
 }
 
 @mixin small-desktop {
-  @media screen and (max-width: 1260px) {
+  @media screen and (max-width: 1366px) {
     @content;
   }
 }
