@@ -263,35 +263,43 @@ reload search index with full data
         group.each do |item|
           next if item.ignore_search_indexing?(:destroy)
           
-          t = Time.now
-          # fill up with search data
-          item_attributes = item.search_index_attribute_lookup
-          next if !item_attributes
-          t_attr += Time.now - t
-
-          t = Time.now
-          # action attributes
-          action_attributes = {index: {_id: item_attributes['id']}}
-          
-          data.push action_attributes.to_json
-          data.push item_attributes.to_json
-          t_json += Time.now - t
-          
-          es_batch_counter += 1
-          if es_batch_counter == es_batch_size
+          begin
             t = Time.now
-            puts " - Sending DB batch #{batch} | ES batch #{es_batch_number} [#{es_batch_counter} elements] (#{(es_batch_number+1) * es_batch_size}/#{total})" # rubocop:disable Rails/Output
-            bulk_data = data.join("\n") + "\n"
-            SearchIndexBackend.bulk_add(group[0].class.to_s, bulk_data)
+            # fill up with search data
+            item_attributes = item.search_index_attribute_lookup
+            next if !item_attributes
+            t_attr += Time.now - t
+
+            t = Time.now
+            # action attributes
+            action_attributes = {index: {_id: item_attributes['id']}}
             
-            es_batch_counter = 0
-            es_batch_number += 1
-            data = []
-            t_send += Time.now - t
-            puts "\t\t   bulk add finished in #{Time.now - t}"
+            data.push action_attributes.to_json
+            data.push item_attributes.to_json
+            t_json += Time.now - t
+            
+            es_batch_counter += 1
+            if es_batch_counter == es_batch_size
+              t = Time.now
+              puts " - Sending DB batch #{batch} | ES batch #{es_batch_number} [#{es_batch_counter} elements] (#{(es_batch_number+1) * es_batch_size}/#{total})" # rubocop:disable Rails/Output
+              bulk_data = data.join("\n") + "\n"
+              SearchIndexBackend.bulk_add(group[0].class.to_s, bulk_data)
+              
+              es_batch_counter = 0
+              es_batch_number += 1
+              data = []
+              t_send += Time.now - t
+              puts "\t\t   bulk add finished in #{Time.now - t}"
+            end
+          rescue  => e
+            tolerance_count += 1
+            puts "Unable to send #{item.class}.find(#{item.id}) backend [failed: #{tolerance_count}/#{tolerance}]: #{e.inspect}"
+            sleep 15
+            raise "Unable to send #{item.class}.find(#{item.id}) backend: #{e.inspect}" if tolerance_count >= tolerance
           end
         end
       end
+      # send remaining items
       if es_batch_counter != 0
         t = Time.now
         puts " - Sending last DB batch | ES batch #{es_batch_number} [#{es_batch_counter} elements]"
