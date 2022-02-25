@@ -72,4 +72,5 @@ VALUES
 (85, 'sw', 'PROTES -Componente che eroga il servizio WEB dell''applic', NOW(), NOW()),
 (86, 'sw', 'Gestione appuntamenti screening tumori femminili (cittadini)', NOW(), NOW()),
 (87, 'sw', 'MDPCORESERVICES - Servizi core di MDPNEW', NOW(), NOW()),
-(88, 'sw', 'ROL per cittadino non autenticato', NOW(), NOW())
+(88, 'sw', 'ROL per cittadino non autenticato', NOW(), NOW()),
+(89, 'sw', 'COVID SOL CITTADINO NON AUTENTICATO', NOW(), NOW())
