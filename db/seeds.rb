@@ -14,8 +14,13 @@ Cache.clear
 # this is the __ordered__ list of seed files
 # extend only if needed - try to add your changes
 # to the matching one of the existing files
-seeds = %w[settings user_nr_1 signatures roles permissions groups links ticket_state_types ticket_states ticket_priorities ticket_article_types ticket_article_senders macros community_user_resources overviews channels report_profiles chats object_manager_attributes schedulers triggers karma_activities core_workflow chatbot advanced_saml remedy classificator object_manager_attributes_csi custom_trigger states external_activity virtual_agent ticket_types zammad_light ]
-values = "values_#{Rails.env.downcase}"
+seeds = %w[settings user_nr_1 signatures roles permissions groups links ticket_state_types ticket_states ticket_priorities ticket_article_types ticket_article_senders macros community_user_resources overviews channels report_profiles chats object_manager_attributes schedulers triggers karma_activities core_workflow chatbot advanced_saml remedy classificator object_manager_attributes_csi custom_trigger states external_activity virtual_agent ticket_types zammad_light feature_toggle]
+nextcrm_linea_cliente = ENV['NEXTCRM_CLIENTE']
+unless nextcrm_linea_cliente
+  Rails.logger.warn "environment variable NEXTCRM_CLIENTE not found, using default value: 'csi' "
+  nextcrm_linea_cliente = 'csi'
+end
+values = "values_#{nextcrm_linea_cliente}_#{Rails.env.downcase}"
 seeds.concat [values]
 
 # loop over and load all seedfiles

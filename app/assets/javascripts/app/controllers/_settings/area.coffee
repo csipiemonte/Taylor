@@ -17,14 +17,20 @@ class App.SettingsArea extends App.Controller
       filter:
         area: @area
     )
-  
+
     # feature toggle elimino i setting non abilitati dalle voci di menu
-    if App.Feature.isDisabled("external_activity")
-      settings = settings.filter((s) -> s.name != "auth_advanced_saml")
-      console.debug("[feature toggle] auth_advanced_saml setting disabled ")
+    console.debug("[feature toggle] original settings: ",settings)
+    settings_to_remove = []
+    if App.Feature.isDisabled("advanced_saml")
+      settings_to_remove.push "auth_advanced_saml"
     if App.Feature.isDisabled("chat_bot")
-      settings = settings.filter((s) -> s.name != "chat_bot_api_settings")
-      console.debug("[feature toggle] chat_bot setting disabled ")
+      settings_to_remove.push "chat_bot_api_settings"
+    if App.Feature.isDisabled("classification_engine")
+      settings_to_remove.push "classification_engine_enabled"
+      settings_to_remove.push "classification_engine_api_settings"
+    if settings_to_remove.length > 0
+      settings = settings.filter((s) -> !settings_to_remove.includes(s.name))
+      console.debug("[feature toggle] removed settings: ",settings_to_remove)
       
       
 

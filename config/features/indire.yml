@@ -1,0 +1,34 @@
+default_env: &default_env
+  features:
+    external_activity: 
+      name: external_activity
+      enabled: true
+    telegram:
+      name: telegram
+      enabled: true
+    api_crm:
+      name: api_crm
+      enabled: true
+    chat_bot:
+      name: chat_bot
+      enabled: true
+    chat:
+      name: chat
+      enabled: true
+    advanced_saml:
+      name: advanced_saml
+      enabled: true
+    classification_engine:
+      name: classification_engine
+      enabled: true
+
+
+production:
+  <<: *default_env
+  features:
+    telegram:
+      enabled: false
+
+tu:
+  <<: *default_env
+

@@ -1,0 +1,1 @@
+Feature.update_from_configuration
