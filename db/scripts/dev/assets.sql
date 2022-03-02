@@ -56,7 +56,7 @@ VALUES
 (69, 'sw', 'FINDOM - GESTIONALE DOMANDA FINPIEMONTE - RISTORO NEVE 12-21', NOW(), NOW()),
 (70, 'sw', 'FINDOM - Gestionale Domanda FESR', NOW(), NOW()),
 (71, 'sw', 'FINDOM- GESTIONALE DOMANDA A21 SPORT', NOW(), NOW()),
-(72, 'sw', 'Gestione e monitoraggio finanziamenti - Gestionale Finanziamenti Regione - FESR', NOW(), NOW())
+(72, 'sw', 'Gestione e monitoraggio finanziamenti - Gestionale Finanziamenti Regione - FESR', NOW(), NOW()),
 (73, 'sw', 'Sanità', NOW(), NOW()),
 (74, 'sw', 'Tributi', NOW(), NOW()),
 (75, 'sw', 'Mobilità e trasporti', NOW(), NOW()),
