@@ -68,8 +68,8 @@ return is sent as message back to peer
     }
 
     if !(whispering || sneak_peek)
-      # Transazione di background invocata solo se il chatbot e' attivo
-      Transaction::BackgroundJob.run(
+      # Transazione invocata solo se il chatbot e' attivo
+      TransactionJob.perform_now(
         object:       'Chat Message',
         type:         'chat_message',
         user_id:      user_id,
