@@ -60,7 +60,7 @@ class VirtualAgentTicketsController < TicketsController
         system.model.each_value do |field|
           Rails.logger.info "field #{field}"
           if field['external_visibility'] == true
-            nested_activity[field['name']] = activity.data[field['name']]
+            nested_activity[field['name']] = activity.json_data[field['name']]
           end
         end
         activities.append nested_activity

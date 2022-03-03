@@ -106,7 +106,7 @@ class ExternalActivity extends App.Controller
       dispatched: true
       closed : closed
       needs_attention: activity.needs_attention
-      values: activity.data
+      values: activity.json_data
       activity: @humanizeDate(activity)
     )
     instance = @
@@ -122,7 +122,7 @@ class ExternalActivity extends App.Controller
     closed = false
     $.each @system.model, (key,field) ->
       if field['closes_activity']
-        if field['closes_activity'].includes(activity.data[field['name']])
+        if field['closes_activity'].includes(activity.json_data[field['name']])
           closed = true
           return
     return closed
@@ -209,8 +209,8 @@ class ExternalActivity extends App.Controller
           instance.fetchOptionValues(field,selectField,null,activity)
         if field['default'] != undefined
           instance.setOptionValue(selectField,field['default'])
-        if activity != null && activity.data[field['name']]
-          instance.setOptionValue(selectField,activity.data[field['name']])
+        if activity != null && activity.json_data[field['name']]
+          instance.setOptionValue(selectField,activity.json_data[field['name']])
         if field['select']['parent'] != undefined
           parent = $('#External_Activity_'+externalActivityId+'_'+field['select']['parent'])
           parent.change ->
@@ -227,7 +227,7 @@ class ExternalActivity extends App.Controller
       if field['type'] == 'comment'
         if activity!=null
           commentField = instance.$('#External_Activity_'+externalActivityId+'_'+field['name'])
-          commentList = activity['data'][field['name']]
+          commentList = activity['json_data'][field['name']]
           if !commentList
             commentList = {}
           selector = 'div[data-attribute-name="External_Activity_' + externalActivityId+'_' + field['name'] + '"]'
@@ -280,7 +280,7 @@ class ExternalActivity extends App.Controller
       if !validated
         instance.$('#External_Activity_'+externalActivityId+'_hidden_submit').click()
         return
-      activity['data'] = data
+      activity['json_data'] = data
       @updateExternalActivity activity
     )
 
@@ -289,7 +289,7 @@ class ExternalActivity extends App.Controller
       id:    'update_external_activity'
       type:  'PUT'
       url:   "#{@apiPath}/external_activity/" + activity['id']
-      data: JSON.stringify({data:activity['data']})
+      data: JSON.stringify({json_data:activity['json_data']})
       success: (data, status, xhr) =>
         @loadSystem(@system)
     )
@@ -347,8 +347,8 @@ class ExternalActivity extends App.Controller
           cb(selectField,option,field['select']['string_id'])
         if field['default'] != undefined
           @.setOptionValue(selectField,field['default'])
-        if activity != null && activity.data[field['name']]
-          @.setOptionValue(selectField,activity.data[field['name']])
+        if activity != null && activity.json_data[field['name']]
+          @.setOptionValue(selectField,activity.json_data[field['name']])
     )
 
   addOption: (selectField, option, string_id=undefined) ->
@@ -375,7 +375,7 @@ class ExternalActivity extends App.Controller
     data = JSON.stringify(
       'ticketing_system_id':@system.id,
       'ticket_id':@ticket.id,
-      'data': new_activity_fields,
+      'json_data': new_activity_fields,
       'bidirectional_alignment':bidirectional_alignment
     )
     @$('#External_Activity_' + externalActivityId + '_submit').prop('disabled', true)
@@ -390,7 +390,7 @@ class ExternalActivity extends App.Controller
 
   readActivityValues: (externalActivityId, activity=null) =>
     instance = @
-    new_activity_fields = if activity then activity.data else {}
+    new_activity_fields = if activity then activity.json_data else {}
     validated = true
     $.each @system.model, (key,field) ->
       dom_field = instance.$('#External_Activity_'+externalActivityId+'_'+field.name)
@@ -401,8 +401,8 @@ class ExternalActivity extends App.Controller
       if field.type!='comment'
         new_activity_fields[field.name] = value
       else
-        index = if activity && activity['data'][field.name] then new_activity_fields[field.name].length else 0
-        new_activity_fields[field.name] = if activity && activity['data'][field.name] then new_activity_fields[field.name] else []
+        index = if activity && activity['json_data'][field.name] then new_activity_fields[field.name].length else 0
+        new_activity_fields[field.name] = if activity && activity['json_data'][field.name] then new_activity_fields[field.name] else []
         has_attachments = Object.keys(instance.attachments[field['name']]).length>0
         if value && value != '' || has_attachments
           new_activity_fields[field.name][index] = {
