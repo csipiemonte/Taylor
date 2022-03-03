@@ -198,7 +198,7 @@ ObjectManager::Attribute.add(
   data_type:   'select',
   data_option: {
     default:    nil,
-    options: ServiceCatalogItem.all.map { |sc| [sc.id, sc.name] }.to_h,
+    options: ServiceCatalogItem.where(crm: 1).map { |sc| [sc.id, sc.name] }.to_h, # crm: 1 per filtrare i services fuori dal dominio crm 
     autocapitalize: false,
     multiple:       false,
     guess:          true,
@@ -239,6 +239,7 @@ ObjectManager::Attribute.add(
   data_option: {
     relation:       'ServiceCatalogSubItem',
     default:        nil,
+    options: ServiceCatalogSubItem.where(crm: 1).map { |sc| [sc.id, sc.name] }.to_h, # crm: 1 per filtrare i services fuori dal dominio crm
     autocapitalize: false,
     multiple:       false,
     guess:          true,
