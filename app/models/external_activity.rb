@@ -29,7 +29,7 @@ class ExternalActivity < ApplicationModel
 
     # motodi di log / debug
     def getFilteredData
-      return_hash =  Marshal.load(Marshal.dump(self.data))
+      return_hash =  Marshal.load(Marshal.dump(self.json_data))
   
   
       return_hash["commento"].each do |c|
