@@ -8,7 +8,7 @@ VALUES
 (1,  '1L - Assistenza applicativa', 1, 1, NOW(), NOW()),
 (2,  '1L - Gestione utenze applicative', 0, 1, NOW(), NOW()),
 (3,  '1L - Malfunzionamento applicativo', 0, 1, NOW(), NOW()),
-(4,  '1L - Problema Centralizzato Applicativo', NOW(), NOW()),
+(4,  '1L - Problema Centralizzato Applicativo', 1, 0, NOW(), NOW()),
 (5,  '1L - Trattamento dati', 1, 1, NOW(), NOW()),
 (6,  '2L - Assistenza applicativa', 1, 1, NOW(), NOW()),
 (7,  '2L - Malfunzionamento applicativo', 1, 1, NOW(), NOW()),
