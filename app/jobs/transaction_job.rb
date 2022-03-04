@@ -17,7 +17,7 @@ class TransactionJob < ApplicationJob
   },
 =end
 
-  self.log_arguments = false # CSI Piemonte custom: disable logging of arguments in Active Job
+  # self.log_arguments = false # CSI Piemonte custom: disable logging of arguments in Active Job
 
   def perform(item, params = {})
     Setting.where(area: 'Transaction::Backend::Async').order(:name).each do |setting|
