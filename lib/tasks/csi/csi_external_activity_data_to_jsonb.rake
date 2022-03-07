@@ -14,18 +14,18 @@ namespace :csi do
     end
 
     to_process = ExternalActivity.where(where_condition).count
-    puts "Begin processing [#{args[:scope]}] external activities, will process #{} external activities"
+    puts "Begin processing [#{args[:scope]}] external activities, will process #{to_process} external activities"
 
     start_time = batch_time = Time.now
     ExternalActivity.where(where_condition).find_each(:batch_size => batch_size).with_index do |activity, batch|
       activity.json_data = activity.data
       activity.save!
 
-      if batch % batch_size == 0
-        puts "batch done in #{batch_time - Time.now} |  [#{batch}/#{to_process}]"
+      if batch != 0 && batch % batch_size == 0
+        puts "batch done in #{Time.now - batch_time} [#{batch}/#{to_process}]"
         batch_time = Time.now
       end
     end
-    puts "Elapsed time: #{(start_time - Time.now).to_i} seconds"
+    puts "Elapsed time: #{(Time.now - start_time).to_i} seconds"
   end
 end
