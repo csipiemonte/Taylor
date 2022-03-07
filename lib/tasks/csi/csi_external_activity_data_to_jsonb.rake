@@ -18,8 +18,13 @@ namespace :csi do
 
     start_time = batch_time = Time.now
     ExternalActivity.where(where_condition).find_each(:batch_size => batch_size).with_index do |activity, batch|
-      activity.json_data = activity.data
-      activity.save!
+      begin
+        activity.json_data = activity.data
+        activity.save!
+      rescue => e
+        puts "Failed to update external activity #{activity.id} (ticket: #{activity.ticket_id})"
+        raise
+      end
 
       if batch != 0 && batch % batch_size == 0
         puts "batch done in #{Time.now - batch_time} [#{batch}/#{to_process}]"
