@@ -64,10 +64,18 @@
             <% for auth_provider in @auth_providers: %>
               <form method="post" action="<%= auth_provider.url %>">
                 <input type="hidden" name="authenticity_token" value="<%= Spine.Ajax.defaults.headers['X-CSRF-Token'] %>">
-                <button type="submit" class="auth-provider auth-provider--generic">
-                  <svg class="icon icon-lock article-action-icon" style="margin: 5px;"><use xlink:href="assets/images/icons.svg#icon-lock"></use></svg>
-                  <span class="provider-name" style="text-align: center;">DOMINIO</span>
-                </button>
+                <!-- CSI Piemonte Custom -->
+                <% if (@T(auth_provider.name) == 'CSI'): %>
+                  <button type="submit" class="auth-provider auth-provider--generic">
+                    <svg class="icon icon-lock article-action-icon" style="margin: 5px;"><use xlink:href="assets/images/icons.svg#icon-lock"></use></svg>
+                    <span class="provider-name" style="text-align: center;">Dominio</span>
+                  </button>
+                <% else: %>
+                  <button type="submit" class="auth-provider auth-provider--<%= auth_provider.class %>">
+                    <%- @Icon("#{auth_provider.class}-button", 'provider-icon') %>
+                    <span class="provider-name"><%- @T(auth_provider.name) %></span>
+                  </button>
+                <% end %>
               </form>
             <% end %>
           </div>
