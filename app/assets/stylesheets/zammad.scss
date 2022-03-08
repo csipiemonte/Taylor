@@ -3414,11 +3414,21 @@ ol.tabs li {
     background: #13387e;
   }
 
+  &.auth-provider--generic {
+    background: #38af6e;
+  }
+
   .provider-icon.icon-csi-button {
       background-color:white;
       width: 29px;
       height: 28px;
   }
+
+  .provider-icon.icon-generic-button {
+    background-color:white;
+    width: 29px;
+    height: 28px;
+}
 
   &.auth-provider--sso {
     background: #454545;
