@@ -1377,8 +1377,8 @@ perform active triggers on ticket
             if object_name == 'ticket'
               next if !item[:changes].key?(attribute)
             elsif object_name == 'external_activity'
-              # per external_activity si prendono in considerazione solo le variazioni su colonna 'data' che contiene tutti i dati dell'external activity
-              next if !item[:changes].key?('data')
+              # per external_activity si prendono in considerazione solo le variazioni su colonna 'json_data' che contiene tutti i dati dell'external activity
+              next if !item[:changes].key?('json_data')
             end
             one_has_changed_done = true
             break
@@ -1420,7 +1420,7 @@ perform active triggers on ticket
 
           next if ext_act_system_id != external_activity.external_ticketing_system_id
 
-          ext_act_data = external_activity.data
+          ext_act_data  = external_activity.json_data
 
           # prelievo dei campi dalla condition
           model_param_name = ext_act_system['model_param_name'] # nome del parametro del model inserito nella condition
@@ -1452,9 +1452,9 @@ perform active triggers on ticket
             # cioe' la chiave 'data' corrisponde ad un array nella cui posizione 0 ci sono gli elementi prima della modifica
             # mentre nella posizione 1 c'e' un hash dopo la modifica
             next if item[:object] != 'ExternalActivity' # la condition sull'aggiornamento del commento vale solo se e' stata aggiornata la tabella external_activities
-            next if !item[:changes].key?('data')
+            next if !item[:changes].key?('json_data')
 
-            item_changes_data = item[:changes]['data']
+            item_changes_data = item[:changes]['json_data']
             comment_value_pre = item_changes_data[0][model_param_name]
             comment_value_post = item_changes_data[1][model_param_name]
 
@@ -2145,7 +2145,7 @@ result
     ExternalActivity.create(
       external_ticketing_system_id: ext_act_system,
       ticket_id:                    id,
-      data:                         ext_act_perform,
+      json_data:                    ext_act_perform,
       bidirectional_alignment:      true,
       updated_by_id:                1,
       created_by_id:                1,
@@ -2182,7 +2182,7 @@ result
                    end
     comment_to_add = { 'external': false, 'text': comment_text, 'created_at': Time.zone.now.to_s() }
 
-    ext_activity_data = ext_activity.data
+    ext_activity_data = ext_activity.json_data
     comments = []
     if ext_activity_data.key?(comment_field['name'])
       comments = ext_activity_data[comment_field['name']]
@@ -2211,7 +2211,7 @@ result
 
     comments.push(comment_to_add)
     ext_activity_data[comment_field['name']] = comments
-    ext_activity.data = ext_activity_data
+    ext_activity.json_data = ext_activity_data
     ext_activity.save!
   end
 

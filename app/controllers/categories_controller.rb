@@ -4,7 +4,7 @@ class CategoriesController < ApplicationController
 
 
   def index_service_catalog
-    render json: ServiceCatalogItem.order(:name).all
+    render json: ServiceCatalogItem.order(:name).where(itsm: 1)  # itsm: 1 per filtrare i services non appartenenti al dominio itsm 
   end
 
   def show_service_catalog
@@ -15,7 +15,7 @@ class CategoriesController < ApplicationController
     if params[:parent_id]
       render json: ServiceCatalogSubItem.where(parent_service: params[:parent_id])
     else
-      render json: ServiceCatalogSubItem.all
+      render json: ServiceCatalogSubItem.where(itsm: 1) # itsm: 1 per filtrare i sub_services non appartenenti al dominio itsm 
     end
   end
 
