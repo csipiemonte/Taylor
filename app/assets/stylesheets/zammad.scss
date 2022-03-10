@@ -15,6 +15,7 @@ $high-priority-color: hsl(360,71%,60%);
 $low-priority-color: hsl(200,68%,73%);
 
 $minWidth: 1024px;
+$sidebarWidthLarge: 350px;
 $sidebarWidth: 280px;
 $navigationWidth: 260px;
 $mobileNavigationWidth: 50px;
@@ -7324,7 +7325,7 @@ footer {
 }
 
 .tabsSidebar .sidebar {
-  width: $sidebarWidth;
+  width: $sidebarWidthLarge;
   border-left: 1px solid #e6e6e6;
   padding: 0;
 }
@@ -7409,8 +7410,8 @@ footer {
   }
 
   .tabsSidebar.is-closed {
-    transform: translateX($sidebarWidth);
-    @include rtl(transform, translateX(-$sidebarWidth));
+    transform: translateX($sidebarWidthLarge);
+    @include rtl(transform, translateX(-$sidebarWidthLarge));
   }
 
   .tabsSidebar-tabs {
