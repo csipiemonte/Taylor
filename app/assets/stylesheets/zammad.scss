@@ -7306,7 +7306,7 @@ footer {
 }
 
 .tabsSidebar-sidebarSpacer {
-  @include bidi-style(margin-right, $sidebarWidth, margin-left, 0);
+  @include bidi-style(margin-right, $sidebarWidthLarge, margin-left, 0);
   transition: margin-right 500ms;
   @include rtl(transition, margin-left 500ms);
 }
