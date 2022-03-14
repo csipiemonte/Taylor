@@ -53,5 +53,5 @@ VALUES
 (47, 12, 'Gestione contatti', 1, 1, NOW(), NOW()),
 (48, 1, 'Informazioni sul servizio', 1, 1, NOW(), NOW()),
 (49, 14, 'Manutenzione credenziali', 1, 1, NOW(), NOW()),
-(50, 15, 'Manutenzione credenziali', 1, 1, NOW(), NOW())
+(50, 15, 'Manutenzione credenziali', 0, 1, NOW(), NOW())
 

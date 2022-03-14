@@ -18,4 +18,4 @@ VALUES
 (11, '1L - Gestione CUC', 1, 1, NOW(), NOW()),
 (12, '1L - Informazioni Front Line', 1, 1, NOW(), NOW()),
 (14, '1L - Gestione credenziali di accesso applicative', 1, 1, NOW(), NOW()),
-(15, '2L - Gestione credenziali di accesso applicative', 1, 1, NOW(), NOW())
+(15, '2L - Gestione credenziali di accesso applicative', 0, 1, NOW(), NOW())
