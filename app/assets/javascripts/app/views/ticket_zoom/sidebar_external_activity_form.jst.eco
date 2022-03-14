@@ -19,6 +19,7 @@
   <% else: %>
     <button id="External_Activity_<%= @externalActivityId %>_submit" class="btn btn--primary"><%- @T('Create') %></button>
     <button id="External_Activity_<%= @externalActivityId %>_hidden_submit" class="btn btn--primary" style="display: none;"><%- @T('Create') %></button>
+    <p>Attenzione: clicca sul bottone CREA per creare l'attività esterna, una volta inserite le informazioni.</p>
     <p id="External_Activity_<%= @externalActivityId %>_import-from-ticket" style="color: #429ed7;cursor: pointer;"><%- @T('✎ Import data from user\'s ticket') %></p>
   <% end %>
   <form>
