@@ -58,6 +58,24 @@ class KnowledgeBase::Answer::Translation::Content < ApplicationModel
 
   def sanitize_body
     self.body = HtmlSanitizer.dynamic_image_size(body)
+    self.body = text_sanitizer(body)
+  end
+
+  #custom csi
+  def text_sanitizer(text)
+    # check unicode characters like bold or italic letters and normalize the string
+    unless text.unicode_normalized?(:nfkc)
+      text = text.unicode_normalize(:nfkc)
+    end
+    # since new emoji are created every year, it is impossible to create a regex that matches each new one,
+    # this will remove any emoji or non basic unicode characters.
+    # Other Unicode characters, such as Asian characters, are preserved.
+    regex = /[^[:alnum:][:blank:][:punct:]\n¥£€°]/
+    if (text =~ regex).nil? # checks if the string match the regex
+      text # returns the original string with no changes
+    else
+      text.gsub(regex, '').squeeze(' ').strip
+    end
   end
 
 end
