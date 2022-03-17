@@ -18,12 +18,32 @@ class KnowledgeBase::Answer::Translation < ApplicationModel
   belongs_to                    :content, class_name: 'KnowledgeBase::Answer::Translation::Content', inverse_of: :translation, dependent: :destroy
   accepts_nested_attributes_for :content, update_only: true
 
+  before_validation :text_sanitizer
+
   validates :title,        presence: true, length: { maximum: 250 }
   validates :kb_locale_id, uniqueness: { case_sensitive: true, scope: :answer_id }
 
   scope :neighbours_of, ->(translation) { joins(:answer).where(knowledge_base_answers: { category_id: translation.answer&.category_id }) }
 
   alias assets_essential assets
+
+  #custom csi
+  def text_sanitizer
+    text = self.title
+    # check unicode characters like bold or italic letters and normalize the string
+    unless text.unicode_normalized?(:nfkc)
+      text = text.unicode_normalize(:nfkc)
+    end
+    # since new emoji are created every year, it is impossible to create a regex that matches each new one,
+    # this will remove any emoji or non basic unicode characters.
+    # Other Unicode characters, such as Asian characters, are preserved.
+    regex = /[^[:alnum:][:blank:][:punct:]\n¥£€°]/
+    if (text =~ regex).nil? # checks if the string match the regex
+      self.title = text # returns the original string with no changes
+    else
+      self.title = text.gsub(regex, '').squeeze(' ').strip
+    end
+  end
 
   def attributes_with_association_ids
     key = "#{self.class}::aws::#{id}"
