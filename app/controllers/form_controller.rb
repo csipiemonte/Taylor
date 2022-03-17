@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class FormController < ApplicationController
   prepend_before_action -> { authorize! }, only: %i[configuration submit]
@@ -224,7 +224,7 @@ class FormController < ApplicationController
   def fingerprint_exists?
     return true if params[:fingerprint].present? && params[:fingerprint].length > 30
 
-    Rails.logger.info 'No fingerprint given!'
+    Rails.logger.info "The required parameter 'fingerprint' is missing or invalid."
     raise Exceptions::Forbidden
   end
 end

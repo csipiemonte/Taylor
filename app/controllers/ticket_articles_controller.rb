@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class TicketArticlesController < ApplicationController
   include CreatesTicketArticles
@@ -159,7 +159,7 @@ class TicketArticlesController < ApplicationController
 
       # check if requested ticket got merged
       if ticket.state.state_type.name != 'merged'
-        raise Exceptions::Forbidden, 'No access, article_id/ticket_id is not matching.'
+        raise Exceptions::Forbidden, __('The article does not belong to the specified ticket.')
       end
 
       ticket = article.ticket
@@ -173,7 +173,7 @@ class TicketArticlesController < ApplicationController
         access = true
       end
     end
-    raise Exceptions::Forbidden, 'Requested file id is not linked with article_id.' if !access
+    raise Exceptions::Forbidden, __('The file does not belong to the specified article.') if !access
 
     send_data(
       download_file.content(params[:view]),
@@ -233,14 +233,14 @@ class TicketArticlesController < ApplicationController
   # @response_message 403 Forbidden / Invalid session.
   def import_start
     if Setting.get('import_mode') != true
-      raise 'Only can import tickets if system is in import mode.'
+      raise __('Tickets can only be imported if system is in import mode.')
     end
 
     string = params[:data]
     if string.blank? && params[:file].present?
       string = params[:file].read.force_encoding('utf-8')
     end
-    raise Exceptions::UnprocessableEntity, 'No source data submitted!' if string.blank?
+    raise Exceptions::UnprocessableEntity, __('No source data submitted!') if string.blank?
 
     result = Ticket::Article.csv_import(
       string:       string,

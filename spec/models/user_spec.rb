@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'models/application_model_examples'
@@ -43,7 +43,7 @@ RSpec.describe User, type: :model do
       end
 
       it 'returns nil for empty username' do
-        expect(described_class.identify('')).to eq(nil)
+        expect(described_class.identify('')).to be_nil
       end
     end
   end
@@ -176,7 +176,7 @@ RSpec.describe User, type: :model do
 
       context 'when user has no designated substitute' do
         it 'returns nil' do
-          expect(user.out_of_office_agent).to be(nil)
+          expect(user.out_of_office_agent).to be_nil
         end
       end
 
@@ -195,7 +195,7 @@ RSpec.describe User, type: :model do
           let(:out_of_office) { false }
 
           it 'returns nil' do
-            expect(user.out_of_office_agent).to be(nil)
+            expect(user.out_of_office_agent).to be_nil
           end
         end
 
@@ -410,7 +410,7 @@ RSpec.describe User, type: :model do
 
       context 'with an invalid token' do
         it 'returns nil' do
-          expect(described_class.by_reset_token('not-existing')).to be(nil)
+          expect(described_class.by_reset_token('not-existing')).to be_nil
         end
       end
     end
@@ -659,6 +659,14 @@ RSpec.describe User, type: :model do
         expect(new_agent.login.sub!(agent.login, '')).to be_a_uuid
       end
     end
+
+    describe '#check_name' do
+      it 'guesses user first/last name with non-ASCII characters' do
+        user = create(:user, firstname: 'perkūnas ąžuolas', lastname: '')
+
+        expect(user).to have_attributes(firstname: 'Perkūnas', lastname: 'Ąžuolas')
+      end
+    end
   end
 
   describe 'Attributes:' do
@@ -768,7 +776,7 @@ RSpec.describe User, type: :model do
           let(:another_user) { create(:user, password: '') }
 
           it 'sets password to nil' do
-            expect(another_user.password).to eq(nil)
+            expect(another_user.password).to be_nil
           end
         end
 
@@ -776,7 +784,7 @@ RSpec.describe User, type: :model do
           let(:another_user) { create(:user, password: nil) }
 
           it 'sets password to nil' do
-            expect(another_user.password).to eq(nil)
+            expect(another_user.password).to be_nil
           end
         end
       end
@@ -922,17 +930,17 @@ RSpec.describe User, type: :model do
         let(:escaped) { Regexp.escape(value) }
 
         it 'valid create' do
-          expect(create(:user, image_source: 'https://zammad.org/avatar.png').image_source).not_to eq(nil)
+          expect(create(:user, image_source: 'https://zammad.org/avatar.png').image_source).not_to be_nil
         end
 
         it 'removes invalid image source of create' do
-          expect(create(:user, image_source: value).image_source).to eq(nil)
+          expect(create(:user, image_source: value).image_source).to be_nil
         end
 
         it 'removes invalid image source of update' do
           user = create(:user)
           user.update!(image_source: value)
-          expect(user.image_source).to eq(nil)
+          expect(user.image_source).to be_nil
         end
       end
     end
@@ -953,6 +961,8 @@ RSpec.describe User, type: :model do
                      'Ticket::Article::Type'              => { 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'Ticket::Article::Flag'              => { 'created_by_id' => 0 },
                      'Ticket::Priority'                   => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+                     'Ticket::SharedDraftStart'           => { 'created_by_id' => 1, 'updated_by_id' => 0 },
+                     'Ticket::SharedDraftZoom'            => { 'created_by_id' => 1, 'updated_by_id' => 0 },
                      'Ticket::TimeAccounting'             => { 'created_by_id' => 0 },
                      'Ticket::State'                      => { 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'Ticket::Flag'                       => { 'created_by_id' => 0 },
@@ -996,7 +1006,7 @@ RSpec.describe User, type: :model do
                      'Mention'                            => { 'created_by_id' => 1, 'updated_by_id' => 0, 'user_id' => 1 },
                      'Channel'                            => { 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'Role'                               => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'History'                            => { 'created_by_id' => 4 },
+                     'History'                            => { 'created_by_id' => 5 },
                      'Webhook'                            => { 'created_by_id' => 0, 'updated_by_id' => 0 },
                      'Overview'                           => { 'created_by_id' => 1, 'updated_by_id' => 0 },
                      'ActivityStream'                     => { 'created_by_id' => 0 },
@@ -1024,6 +1034,8 @@ RSpec.describe User, type: :model do
       chat_session        = create(:'chat/session', user: user)
       chat_message        = create(:'chat/message', chat_session: chat_session)
       chat_message2       = create(:'chat/message', chat_session: chat_session, created_by: user)
+      draft_start         = create(:ticket_shared_draft_start, created_by: user)
+      draft_zoom          = create(:ticket_shared_draft_zoom, created_by: user)
       expect(overview.reload.user_ids).to eq([user.id])
 
       # create a chat agent for admin user (id=1) before agent user
@@ -1084,6 +1096,8 @@ RSpec.describe User, type: :model do
         .to change(user_created_by, :created_by_id).to(1)
         .and change(user_created_by, :updated_by_id).to(1)
         .and change(user_created_by, :out_of_office_replacement_id).to(1)
+      expect { draft_start.reload }.to change(draft_start, :created_by_id).to(1)
+      expect { draft_zoom.reload }.to change(draft_zoom, :created_by_id).to(1)
     end
 
     it 'does delete cache after user deletion' do

@@ -54,7 +54,10 @@ class App.KnowledgeBaseReaderController extends App.Controller
     @listenTo App.KnowledgeBase, 'kb_data_change_loaded', =>
       @renderAnswer(@object, kb_locale)
 
-  renderAnswer: (answer, kb_locale) ->
+    @listenTo App.KnowledgeBase, 'kb_visibility_change_loaded', =>
+      @renderAnswer(@object, kb_locale, true)
+
+  renderAnswer: (answer, kb_locale, onlyVisibility) ->
     if !answer
       @parentController.renderNotFound()
       return
@@ -63,12 +66,15 @@ class App.KnowledgeBaseReaderController extends App.Controller
       @parentController.renderNotAvailableAnymore()
       return
 
+    paginator = new App.KnowledgeBaseReaderPagination(object: @object, kb_locale: kb_locale)
+    @answerPagination.html paginator.el
+
+    if onlyVisibility
+      return
+
     @renderAttachments(answer.attachments)
     @renderTags(answer.tags)
     @renderLinkedTickets(answer.translation(kb_locale.id)?.linked_tickets())
-
-    paginator = new App.KnowledgeBaseReaderPagination(object: @object, kb_locale: kb_locale)
-    @answerPagination.html paginator.el
 
     answer_translation = answer.translation(kb_locale.id)
 
@@ -96,7 +102,7 @@ class App.KnowledgeBaseReaderController extends App.Controller
   prepareLinks: (input) ->
     input = $($.parseHTML(input))
 
-    for linkDom in input.find('a').andSelf('a').toArray()
+    for linkDom in input.find('a').addBack('a').toArray()
       switch $(linkDom).attr('data-target-type')
         when 'knowledge-base-answer'
           if object = App.KnowledgeBaseAnswerTranslation.find $(linkDom).attr('data-target-id')
@@ -151,9 +157,9 @@ class App.KnowledgeBaseReaderController extends App.Controller
 
     @renderScreenPlaceholder(
       icon:   App.Utils.icon('mood-ok')
-      detail: 'Not available in selected language'
+      detail: __('Not available in selected language')
       el:     @answerBody
-      action: 'Create a translation'
+      action: __('Create a translation')
       actionCallback: =>
         url = answer.uiUrl(@parentController.kb_locale(), 'edit')
         @navigate url

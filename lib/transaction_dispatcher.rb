@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class TransactionDispatcher
 
@@ -215,7 +215,7 @@ class TransactionDispatcher
     # do not send anything if nothing has changed
     return true if real_changes.blank?
 
-    changed_by_id = if record.respond_to?('updated_by_id')
+    changed_by_id = if record.respond_to?(:updated_by_id)
                       record.updated_by_id
                     else
                       record.created_by_id

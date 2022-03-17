@@ -1,4 +1,6 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
+
+require 'uri'
 
 require 'uri'
 
@@ -47,7 +49,7 @@ class GitLab
 
       if !response.success?
         Rails.logger.error response.error
-        raise 'GitLab request failed! Please have a look at the log file for details'
+        raise __('GitLab request failed! Please have a look at the log file for details')
       end
 
       response.data

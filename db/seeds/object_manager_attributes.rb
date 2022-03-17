@@ -1,4 +1,29 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
+
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'Ticket',
+  name:        'number',
+  display:     '#',
+  data_type:   'input',
+  data_option: {
+    type:      'text',
+    readonly:  1,
+    null:      true,
+    maxlength: 60,
+    width:     '68px',
+  },
+  editable:    false,
+  active:      true,
+  screens:     {
+    create_top: {},
+    edit:       {},
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    5,
+)
 
 ObjectManager::Attribute.add(
   force:       true,
@@ -29,7 +54,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Ticket',
   name:        'title',
-  display:     'Title',
+  display:     __('Title'),
   data_type:   'input',
   data_option: {
     type:      'text',
@@ -57,7 +82,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Ticket',
   name:        'customer_id',
-  display:     'Customer',
+  display:     __('Customer'),
   data_type:   'user_autocompletion',
   data_option: {
     relation:       'User',
@@ -66,7 +91,7 @@ ObjectManager::Attribute.add(
     guess:          true,
     null:           false,
     limit:          200,
-    placeholder:    'Enter Person or Organization/Company',
+    placeholder:    __('Enter Person or Organization/Company'),
     minLengt:       2,
     translate:      false,
     permission:     ['ticket.agent'],
@@ -122,14 +147,14 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Ticket',
   name:        'type',
-  display:     'Type',
+  display:     __('Type'),
   data_type:   'select',
   data_option: {
     default:    '',
     options:    {
-      'Incident'           => 'Incident',
-      'Problem'            => 'Problem',
-      'Request for Change' => 'Request for Change',
+      'Incident'           => __('Incident'),
+      'Problem'            => __('Problem'),
+      'Request for Change' => __('Request for Change'),
     },
     nulloption: true,
     multiple:   false,
@@ -160,7 +185,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Ticket',
   name:        'group_id',
-  display:     'Group',
+  display:     __('Group'),
   data_type:   'select',
   data_option: {
     default:                  '',
@@ -197,7 +222,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Ticket',
   name:        'owner_id',
-  display:     'Owner',
+  display:     __('Owner'),
   data_type:   'select',
   data_option: {
     default:            '',
@@ -233,7 +258,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Ticket',
   name:        'state_id',
-  display:     'State',
+  display:     __('State'),
   data_type:   'select',
   data_option: {
     relation:   'TicketState',
@@ -284,7 +309,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Ticket',
   name:        'pending_time',
-  display:     'Pending till',
+  display:     __('Pending till'),
   data_type:   'datetime',
   data_option: {
     future:     true,
@@ -318,7 +343,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Ticket',
   name:        'priority_id',
-  display:     'Priority',
+  display:     __('Priority'),
   data_type:   'select',
   data_option: {
     relation:   'TicketPriority',
@@ -353,7 +378,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Ticket',
   name:        'tags',
-  display:     'Tags',
+  display:     __('Tags'),
   data_type:   'tag',
   data_option: {
     type:      'text',
@@ -380,7 +405,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'TicketArticle',
   name:        'type_id',
-  display:     'Type',
+  display:     __('Type'),
   data_type:   'select',
   data_option: {
     relation:   'TicketArticleType',
@@ -410,7 +435,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'TicketArticle',
   name:        'internal',
-  display:     'Visibility',
+  display:     __('Visibility'),
   data_type:   'select',
   data_option: {
     options:    {
@@ -443,7 +468,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'TicketArticle',
   name:        'to',
-  display:     'To',
+  display:     __('To'),
   data_type:   'input',
   data_option: {
     type:      'text',
@@ -469,7 +494,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'TicketArticle',
   name:        'cc',
-  display:     'Cc',
+  display:     __('CC'),
   data_type:   'input',
   data_option: {
     type:      'text',
@@ -497,7 +522,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'TicketArticle',
   name:        'body',
-  display:     'Text',
+  display:     __('Text'),
   data_type:   'richtext',
   data_option: {
     type:      'richtext',
@@ -530,7 +555,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
   name:        'login',
-  display:     'Login',
+  display:     __('Login'),
   data_type:   'input',
   data_option: {
     type:           'text',
@@ -562,12 +587,12 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
   name:        'firstname',
-  display:     'Firstname',
+  display:     __('First name'),
   data_type:   'input',
   data_option: {
     type:       'text',
     maxlength:  150,
-    null:       false,
+    null:       true,
     item_class: 'formGroup--halfSize',
   },
   editable:    false,
@@ -575,27 +600,27 @@ ObjectManager::Attribute.add(
   screens:     {
     signup:          {
       '-all-' => {
-        null: false,
+        null: true,
       },
     },
     invite_agent:    {
       '-all-' => {
-        null: false,
+        null: true,
       },
     },
     invite_customer: {
       '-all-' => {
-        null: false,
+        null: true,
       },
     },
     edit:            {
       '-all-' => {
-        null: false,
+        null: true,
       },
     },
     create:          {
       '-all-' => {
-        null: false,
+        null: true,
       },
     },
     view:            {
@@ -614,12 +639,12 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
   name:        'lastname',
-  display:     'Lastname',
+  display:     __('Last name'),
   data_type:   'input',
   data_option: {
     type:       'text',
     maxlength:  150,
-    null:       false,
+    null:       true,
     item_class: 'formGroup--halfSize',
   },
   editable:    false,
@@ -627,27 +652,27 @@ ObjectManager::Attribute.add(
   screens:     {
     signup:          {
       '-all-' => {
-        null: false,
+        null: true,
       },
     },
     invite_agent:    {
       '-all-' => {
-        null: false,
+        null: true,
       },
     },
     invite_customer: {
       '-all-' => {
-        null: false,
+        null: true,
       },
     },
     edit:            {
       '-all-' => {
-        null: false,
+        null: true,
       },
     },
     create:          {
       '-all-' => {
-        null: false,
+        null: true,
       },
     },
     view:            {
@@ -666,7 +691,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
   name:        'email',
-  display:     'Email',
+  display:     __('Email'),
   data_type:   'input',
   data_option: {
     type:       'email',
@@ -679,17 +704,17 @@ ObjectManager::Attribute.add(
   screens:     {
     signup:          {
       '-all-' => {
-        null: false,
+        null: true,
       },
     },
     invite_agent:    {
       '-all-' => {
-        null: false,
+        null: true,
       },
     },
     invite_customer: {
       '-all-' => {
-        null: false,
+        null: true,
       },
     },
     edit:            {
@@ -718,7 +743,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
   name:        'web',
-  display:     'Web',
+  display:     __('Web'),
   data_type:   'input',
   data_option: {
     type:       'url',
@@ -758,7 +783,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
   name:        'phone',
-  display:     'Phone',
+  display:     __('Phone'),
   data_type:   'input',
   data_option: {
     type:       'tel',
@@ -798,7 +823,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
   name:        'mobile',
-  display:     'Mobile',
+  display:     __('Mobile'),
   data_type:   'input',
   data_option: {
     type:       'tel',
@@ -838,7 +863,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
   name:        'fax',
-  display:     'Fax',
+  display:     __('Fax'),
   data_type:   'input',
   data_option: {
     type:       'tel',
@@ -878,7 +903,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
   name:        'organization_id',
-  display:     'Organization',
+  display:     __('Organization'),
   data_type:   'autocompletion_ajax',
   data_option: {
     multiple:   false,
@@ -923,7 +948,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
   name:        'department',
-  display:     'Department',
+  display:     __('Department'),
   data_type:   'input',
   data_option: {
     type:       'text',
@@ -963,7 +988,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
   name:        'street',
-  display:     'Street',
+  display:     __('Street'),
   data_type:   'input',
   data_option: {
     type:      'text',
@@ -1002,7 +1027,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
   name:        'zip',
-  display:     'Zip',
+  display:     __('Zip'),
   data_type:   'input',
   data_option: {
     type:       'text',
@@ -1042,7 +1067,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
   name:        'city',
-  display:     'City',
+  display:     __('City'),
   data_type:   'input',
   data_option: {
     type:       'text',
@@ -1082,7 +1107,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
   name:        'country',
-  display:     'Country',
+  display:     __('Country'),
   data_type:   'input',
   data_option: {
     type:       'text',
@@ -1122,7 +1147,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
   name:        'address',
-  display:     'Address',
+  display:     __('Address'),
   data_type:   'textarea',
   data_option: {
     type:       'text',
@@ -1162,7 +1187,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
   name:        'password',
-  display:     'Password',
+  display:     __('Password'),
   data_type:   'input',
   data_option: {
     type:         'password',
@@ -1203,7 +1228,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
   name:        'vip',
-  display:     'VIP',
+  display:     __('VIP'),
   data_type:   'boolean',
   data_option: {
     null:       true,
@@ -1245,13 +1270,13 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
   name:        'note',
-  display:     'Note',
+  display:     __('Note'),
   data_type:   'richtext',
   data_option: {
     type:      'text',
     maxlength: 5000,
     null:      true,
-    note:      'Notes are visible to agents only, never to customers.',
+    note:      __('Notes are visible to agents only, never to customers.'),
   },
   editable:    false,
   active:      true,
@@ -1289,7 +1314,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
   name:        'role_ids',
-  display:     'Permissions',
+  display:     __('Permissions'),
   data_type:   'user_permission',
   data_option: {
     null:       false,
@@ -1333,7 +1358,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'User',
   name:        'active',
-  display:     'Active',
+  display:     __('Active'),
   data_type:   'active',
   data_option: {
     null:       true,
@@ -1372,7 +1397,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Organization',
   name:        'name',
-  display:     'Name',
+  display:     __('Name'),
   data_type:   'input',
   data_option: {
     type:       'text',
@@ -1409,12 +1434,12 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Organization',
   name:        'shared',
-  display:     'Shared organization',
+  display:     __('Shared organization'),
   data_type:   'boolean',
   data_option: {
     null:       true,
     default:    true,
-    note:       'Customers in the organization can view each other items.',
+    note:       __("Customers in the organization can view each other's items."),
     item_class: 'formGroup--halfSize',
     options:    {
       true:  'yes',
@@ -1452,12 +1477,12 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Organization',
   name:        'domain_assignment',
-  display:     'Domain based assignment',
+  display:     __('Domain based assignment'),
   data_type:   'boolean',
   data_option: {
     null:       true,
     default:    false,
-    note:       'Assign Users based on users domain.',
+    note:       __('Assign users based on user domain.'),
     item_class: 'formGroup--halfSize',
     options:    {
       true:  'yes',
@@ -1495,7 +1520,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Organization',
   name:        'domain',
-  display:     'Domain',
+  display:     __('Domain'),
   data_type:   'input',
   data_option: {
     type:       'text',
@@ -1532,13 +1557,13 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Organization',
   name:        'note',
-  display:     'Note',
+  display:     __('Note'),
   data_type:   'richtext',
   data_option: {
     type:      'text',
     maxlength: 5000,
     null:      true,
-    note:      'Notes are visible to agents only, never to customers.',
+    note:      __('Notes are visible to agents only, never to customers.'),
   },
   editable:    false,
   active:      true,
@@ -1569,7 +1594,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Organization',
   name:        'active',
-  display:     'Active',
+  display:     __('Active'),
   data_type:   'active',
   data_option: {
     null:       true,
@@ -1605,7 +1630,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Group',
   name:        'name',
-  display:     'Name',
+  display:     __('Name'),
   data_type:   'input',
   data_option: {
     type:      'text',
@@ -1641,12 +1666,12 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Group',
   name:        'assignment_timeout',
-  display:     'Assignment Timeout',
+  display:     __('Assignment Timeout'),
   data_type:   'integer',
   data_option: {
     maxlength: 150,
     null:      true,
-    note:      'Assignment timeout in minutes if assigned agent is not working on it. Ticket will be shown as unassigend.',
+    note:      __('Assignment timeout in minutes if assigned agent is not working on it. Ticket will be shown as unassigend.'),
     min:       0,
     max:       999_999,
   },
@@ -1674,7 +1699,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Group',
   name:        'follow_up_possible',
-  display:     'Follow-up possible',
+  display:     __('Follow-up possible'),
   data_type:   'select',
   data_option: {
     default:   'yes',
@@ -1683,7 +1708,7 @@ ObjectManager::Attribute.add(
       new_ticket: 'do not reopen Ticket but create new Ticket'
     },
     null:      false,
-    note:      'Follow-up for closed ticket possible or not.',
+    note:      __('Follow-up for closed ticket possible or not.'),
     translate: true
   },
   editable:    false,
@@ -1710,7 +1735,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Group',
   name:        'follow_up_assignment',
-  display:     'Assign Follow-Ups',
+  display:     __('Assign Follow-Ups'),
   data_type:   'select',
   data_option: {
     default:   'true',
@@ -1719,7 +1744,7 @@ ObjectManager::Attribute.add(
       false: 'no',
     },
     null:      false,
-    note:      'Assign follow-up to latest agent again.',
+    note:      __('Assign follow-up to latest agent again.'),
     translate: true
   },
   editable:    false,
@@ -1746,7 +1771,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Group',
   name:        'email_address_id',
-  display:     'Email',
+  display:     __('Email'),
   data_type:   'select',
   data_option: {
     default:    '',
@@ -1780,7 +1805,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Group',
   name:        'signature_id',
-  display:     'Signature',
+  display:     __('Signature'),
   data_type:   'select',
   data_option: {
     default:    '',
@@ -1813,14 +1838,50 @@ ObjectManager::Attribute.add(
 ObjectManager::Attribute.add(
   force:       true,
   object:      'Group',
+  name:        'shared_drafts',
+  display:     __('Shared Drafts'),
+  data_type:   'active',
+  data_option: {
+    null:       false,
+    default:    true,
+    permission: ['admin.group'],
+  },
+  editable:    true,
+  active:      true,
+  screens:     {
+    create: {
+      '-all-' => {
+        null: true,
+      },
+    },
+    edit:   {
+      '-all-': {
+        null: false,
+      },
+    },
+    view:   {
+      '-all-' => {
+        shown: false,
+      },
+    },
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    1400,
+)
+
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'Group',
   name:        'note',
-  display:     'Note',
+  display:     __('Note'),
   data_type:   'richtext',
   data_option: {
     type:      'text',
     maxlength: 250,
     null:      true,
-    note:      'Notes are visible to agents only, never to customers.',
+    note:      __('Notes are visible to agents only, never to customers.'),
   },
   editable:    false,
   active:      true,
@@ -1851,7 +1912,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Group',
   name:        'active',
-  display:     'Active',
+  display:     __('Active'),
   data_type:   'active',
   data_option: {
     null:       true,

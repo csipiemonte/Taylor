@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 module KnowledgeBasePublicPageTitleHelper
   def kb_public_page_title(leading, trailing, exception)
@@ -22,9 +22,9 @@ module KnowledgeBasePublicPageTitleHelper
   def kb_public_page_title_suffix_exception(exception)
     case exception
     when :not_found
-      'Not Found'
+      __('Not Found')
     when :alternatives
-      'Alternative Translations'
+      __('Alternative Translations')
     end
   end
 end

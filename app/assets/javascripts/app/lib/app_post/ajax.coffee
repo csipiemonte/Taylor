@@ -67,9 +67,9 @@ class _ajaxSingleton
     @runNextInQueue()
 
     # bindings
-    $(document).bind('ajaxSend', =>
+    $(document).on('ajaxSend', =>
       @_show_spinner()
-    ).bind('ajaxComplete', (request, xhr, settings) =>
+    ).on('ajaxComplete', (request, xhr, settings) =>
       @_hide_spinner()
 
       # remeber XSRF-TOKEN for later
@@ -81,11 +81,14 @@ class _ajaxSingleton
     )
 
     # show error messages
-    $(document).bind('ajaxError', (e, jqxhr, settings, exception) ->
+    $(document).on('ajaxError', (e, jqxhr, settings, exception) ->
+      if settings.failResponseNoTrigger
+        return
+
       status = jqxhr.status
       detail = jqxhr.responseText
       if !status && !detail
-        detail = 'General communication error, maybe internet is not available!'
+        detail = __('General communication error, maybe internet is not available!')
 
       # do not show aborded requests
       return if status is 0

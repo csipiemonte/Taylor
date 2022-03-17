@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'lib/import/transaction_factory_examples'
@@ -120,7 +120,7 @@ RSpec.describe Import::OTRS::StateFactory do
     end
 
     it 'updates Overviews' do
-      name     = 'My pending reached Tickets'
+      name     = 'My Pending Reached Tickets'
       overview = Overview.find_by(name: name)
       expect do
         described_class.import(state_backend_param)

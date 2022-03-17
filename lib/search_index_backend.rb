@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class SearchIndexBackend
 
@@ -873,12 +873,12 @@ generate url for index or document access (only for internal use)
       suffix += "Payload:\n#{payload.inspect}"
     end
 
-    message = if response&.error&.match?('Connection refused')
-                "Elasticsearch is not reachable, probably because it's not running or even installed."
+    message = if response&.error&.match?(__('Connection refused'))
+                __("Elasticsearch is not reachable. It's possible that it's not running. Please check whether it is installed.")
               elsif url.end_with?('pipeline/zammad-attachment', 'pipeline=zammad-attachment') && response.code == 400
-                'The installed attachment plugin could not handle the request payload. Ensure that the correct attachment plugin is installed (ingest-attachment).'
+                __('The installed attachment plugin could not handle the request payload. Ensure that the correct attachment plugin is installed (ingest-attachment).')
               else
-                'Check the response and payload for detailed information: '
+                __('Check the response and payload for detailed information:')
               end
 
     result = "#{prefix} #{message}#{suffix}"
@@ -1205,7 +1205,7 @@ helper method for making HTTP calls and raising error if response was not succes
         },
         {
           action:      'create',
-          description: 'Extract zammad-attachment information from arrays',
+          description: __('Extract zammad-attachment information from arrays'),
           processors:  [
             {
               foreach: {
@@ -1272,7 +1272,7 @@ helper method for making HTTP calls and raising error if response was not succes
 
     error_prefix  = "Unable to process request to elasticsearch URL '#{url}'."
     error_suffix  = "Payload:\n#{payload.to_json}"
-    error_message = 'Conflicting date ranges'
+    error_message = __('Conflicting date ranges')
 
     result = "#{error_prefix} #{error_message} #{error_suffix}"
     Rails.logger.error result.first(40_000)

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 # rails autoloading issue
@@ -28,7 +28,7 @@ RSpec.describe Ldap::User do
       attributes = {
         custom: 'value',
       }
-      expect(described_class.uid_attribute(attributes)).to be nil
+      expect(described_class.uid_attribute(attributes)).to be_nil
     end
 
   end
@@ -90,32 +90,48 @@ RSpec.describe Ldap::User do
 
     describe '#valid?' do
 
+      shared_examples 'validates credentials' do
+        it 'validates username and password' do
+          connection = double
+          allow(mocked_ldap).to receive(:connection).and_return(connection)
+
+          build(:ldap_entry)
+
+          allow(mocked_ldap).to receive(:base_dn)
+          allow(connection).to receive(:bind_as).and_return(true)
+
+          expect(instance.valid?('example_username', 'password')).to be true
+        end
+
+        it 'fails for invalid credentials' do
+          connection = double
+          allow(mocked_ldap).to receive(:connection).and_return(connection)
+
+          build(:ldap_entry)
+
+          allow(mocked_ldap).to receive(:base_dn)
+          allow(connection).to receive(:bind_as).and_return(false)
+
+          expect(instance.valid?('example_username', 'wrong_password')).to be false
+        end
+      end
+
       it 'responds to #valid?' do
         expect(instance).to respond_to(:valid?)
       end
 
-      it 'validates username and password' do
-        connection = double
-        allow(mocked_ldap).to receive(:connection).and_return(connection)
+      it_behaves_like 'validates credentials'
 
-        build(:ldap_entry)
+      context 'with a user_filter inside of the config' do
+        let(:initialization_config) do
+          {
+            uid_attribute: 'objectguid',
+            filter:        '(objectClass=user)',
+            user_filter:   '(cn=example)'
+          }
+        end
 
-        allow(mocked_ldap).to receive(:base_dn)
-        allow(connection).to receive(:bind_as).and_return(true)
-
-        expect(instance.valid?('example_username', 'password')).to be true
-      end
-
-      it 'fails for invalid credentials' do
-        connection = double
-        allow(mocked_ldap).to receive(:connection).and_return(connection)
-
-        build(:ldap_entry)
-
-        allow(mocked_ldap).to receive(:base_dn)
-        allow(connection).to receive(:bind_as).and_return(false)
-
-        expect(instance.valid?('example_username', 'wrong_password')).to be false
+        it_behaves_like 'validates credentials'
       end
     end
 
@@ -167,7 +183,7 @@ RSpec.describe Ldap::User do
 
       it 'fails if no filter found entries' do
         allow(mocked_ldap).to receive(:entries?).and_return(false)
-        expect(instance.filter).to be nil
+        expect(instance.filter).to be_nil
       end
     end
 
@@ -196,7 +212,7 @@ RSpec.describe Ldap::User do
 
       it 'fails if no uid attribute could be found' do
         expect(mocked_ldap).to receive(:search)
-        expect(instance.uid_attribute).to be nil
+        expect(instance.uid_attribute).to be_nil
       end
     end
   end

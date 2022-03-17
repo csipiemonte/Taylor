@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class Setting < ApplicationModel
   store         :options
@@ -183,7 +183,7 @@ reload config settings
     true
   end
 
-  # notify clients about public config changes
+  # Notify clients about config changes.
   def check_broadcast
     return true if frontend != true
 
@@ -196,7 +196,7 @@ reload config settings
         event: 'config_update',
         data:  { name: name, value: value }
       },
-      'public'
+      preferences[:authentication] ? 'authenticated' : 'public'
     )
     true
   end

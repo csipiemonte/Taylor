@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -132,8 +132,8 @@ RSpec.describe 'Manage > Settings > Security', type: :system do
       include_examples 'Display callback urls for third-party applications #3622'
     end
 
-    describe 'Authentication via Office 365' do
-      let(:app_name) { 'Office 365' }
+    describe 'Authentication via Microsoft' do
+      let(:app_name) { 'Microsoft' }
       let(:app_setting) { 'auth_microsoft_office365' }
 
       include_examples 'for third-party applications button in login page'

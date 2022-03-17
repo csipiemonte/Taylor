@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class User < ApplicationModel
   include CanBeAuthorized
@@ -44,7 +44,7 @@ class User < ApplicationModel
   has_many                :data_privacy_tasks,     as: :deletable
   belongs_to              :organization,           inverse_of: :members, optional: true
 
-  before_validation :check_name, :check_email, :check_login, :ensure_uniq_email, :ensure_password, :ensure_roles, :ensure_identifier
+  before_validation :check_name, :check_email, :check_login, :ensure_password, :ensure_roles
   before_validation :check_mail_delivery_failed, on: :update
   before_create     :check_preferences_default, :validate_preferences, :validate_ooo, :domain_based_assignment, :set_locale
   before_update     :check_preferences_default, :validate_preferences, :validate_ooo, :reset_login_failed_after_password_change, :validate_agent_limit_by_attributes, :last_admin_check_by_attribute
@@ -54,6 +54,9 @@ class User < ApplicationModel
 
   # CSI validations
   before_validation -> { ensure_uniq_attribute('codice_fiscale', 'Codice Fiscale') }
+
+  validate :ensure_identifier, :ensure_email
+  validate :ensure_uniq_email, unless: :skip_ensure_uniq_email
 
   # workflow checks should run after before_create and before_update callbacks
   include ChecksCoreWorkflow
@@ -500,15 +503,13 @@ returns
     # try second lookup with email
     user ||= User.find_by(email: username.downcase.strip, active: true)
 
-    # check if email address exists
-    return if !user
-    return if !user.email
+    return if !user || !user.email
 
-    # generate token
-    token = Token.create(action: 'PasswordReset', user_id: user.id)
+    # Discard any possible previous tokens for safety reasons.
+    Token.where(action: 'PasswordReset', user_id: user.id).destroy_all
 
     {
-      token: token,
+      token: Token.create(action: 'PasswordReset', user_id: user.id, persistent: false),
       user:  user,
     }
   end
@@ -881,51 +882,49 @@ try to find correct name
     preferences.fetch(:locale) { Locale.default }
   end
 
+  attr_accessor :skip_ensure_uniq_email
+
   private
 
   def check_name
-    if firstname.present?
-      firstname.strip!
-    end
-    if lastname.present?
-      lastname.strip!
-    end
+    firstname&.strip!
+    lastname&.strip!
 
-    return true if firstname.present? && lastname.present?
+    return if firstname.present? && lastname.present?
 
     if (firstname.blank? && lastname.present?) || (firstname.present? && lastname.blank?)
       used_name = firstname.presence || lastname
       (local_firstname, local_lastname) = User.name_guess(used_name, email)
-
     elsif firstname.blank? && lastname.blank? && email.present?
       (local_firstname, local_lastname) = User.name_guess('', email)
     end
 
-    self.firstname = local_firstname if local_firstname.present?
-    self.lastname = local_lastname if local_lastname.present?
+    check_name_apply(:firstname, local_firstname)
+    check_name_apply(:lastname, local_lastname)
+  end
 
-    if firstname.present? && firstname.match(%r{^[A-z]+$}) && (firstname.downcase == firstname || firstname.upcase == firstname)
-      firstname.capitalize!
-    end
-    if lastname.present? && lastname.match(%r{^[A-z]+$}) && (lastname.downcase == lastname || lastname.upcase == lastname)
-      lastname.capitalize!
-    end
-    true
+  def check_name_apply(identifier, input)
+    self[identifier] = input if input.present?
+
+    self[identifier].capitalize! if self[identifier]&.match? %r{^([[:upper:]]+|[[:lower:]]+)$}
   end
 
   def check_email
-    return true if Setting.get('import_mode')
-    return true if email.blank?
+    return if Setting.get('import_mode')
+    return if email.blank?
 
     self.email = email.downcase.strip
-    return true if id == 1
+  end
+
+  def ensure_email
+    return if email.blank?
+    return if id == 1
 
     email_address_validation = EmailAddressValidation.new(email)
-    if !email_address_validation.valid_format?
-      raise Exceptions::UnprocessableEntity, "Invalid email '#{email}'"
-    end
 
-    true
+    return if email_address_validation.valid_format?
+
+    errors.add :base, "Invalid email '#{email}'"
   end
 
   def check_login
@@ -936,7 +935,7 @@ try to find correct name
     end
 
     # if email has changed, login is old email, change also login
-    if changes && changes['email'] && changes['email'][0] == login
+    if email_changed? && email_was == login
       self.login = email
     end
 
@@ -965,27 +964,26 @@ try to find correct name
   end
 
   def ensure_roles
-    return true if role_ids.present?
+    return if role_ids.present?
 
     self.role_ids = Role.signup_role_ids
   end
 
   def ensure_identifier
-    return true if email.present? || firstname.present? || lastname.present? || phone.present?
-    return true if login.present? && !login.start_with?('auto-')
+    return if login.present? && !login.start_with?('auto-')
+    return if [email, firstname, lastname, phone].any?(&:present?)
 
-    raise Exceptions::UnprocessableEntity, 'Minimum one identifier (login, firstname, lastname, phone or email) for user is required.'
+    errors.add :base, __('At least one identifier (firstname, lastname, phone or email) for user is required.')
   end
 
   def ensure_uniq_email
-    return true if Setting.get('user_email_multiple_use')
-    return true if Setting.get('import_mode')
-    return true if email.blank?
-    return true if !changes
-    return true if !changes['email']
-    return true if !User.exists?(email: email.downcase.strip)
+    return if Setting.get('user_email_multiple_use')
+    return if Setting.get('import_mode')
+    return if email.blank?
+    return if !email_changed?
+    return if !User.exists?(email: email.downcase.strip)
 
-    raise Exceptions::UnprocessableEntity, "Email address '#{email.downcase.strip}' is already used for other user."
+    errors.add :base, "Email address '#{email.downcase.strip}' is already used for other user."
   end
 
   def validate_roles(role)
@@ -1027,7 +1025,7 @@ try to find correct name
       preferences[:notification_sound][:enabled] = false
     end
     class_name = preferences[:notification_sound][:enabled].class.to_s
-    raise Exceptions::UnprocessableEntity, "preferences.notification_sound.enabled need to be an boolean, but it was a #{class_name}" if class_name != 'TrueClass' && class_name != 'FalseClass'
+    raise Exceptions::UnprocessableEntity, "preferences.notification_sound.enabled needs to be an boolean, but it was a #{class_name}" if class_name != 'TrueClass' && class_name != 'FalseClass'
 
     true
   end
@@ -1038,7 +1036,7 @@ checks if the current user is the last one with admin permissions.
 
 Raises
 
-raise 'Minimum one user need to have admin permissions'
+raise 'At least one user need to have admin permissions'
 
 =end
 
@@ -1046,7 +1044,7 @@ raise 'Minimum one user need to have admin permissions'
     return true if !will_save_change_to_attribute?('active')
     return true if active != false
     return true if !permissions?(['admin', 'admin.user'])
-    raise Exceptions::UnprocessableEntity, 'Minimum one user needs to have admin permissions.' if last_admin_check_admin_count < 1
+    raise Exceptions::UnprocessableEntity, __('At least one user needs to have admin permissions.') if last_admin_check_admin_count < 1
 
     true
   end
@@ -1054,7 +1052,7 @@ raise 'Minimum one user need to have admin permissions'
   def last_admin_check_by_role(role)
     return true if Setting.get('import_mode')
     return true if !role.with_permission?(['admin', 'admin.user'])
-    raise Exceptions::UnprocessableEntity, 'Minimum one user needs to have admin permissions.' if last_admin_check_admin_count < 1
+    raise Exceptions::UnprocessableEntity, __('At least one user needs to have admin permissions.') if last_admin_check_admin_count < 1
 
     true
   end
@@ -1072,7 +1070,7 @@ raise 'Minimum one user need to have admin permissions'
 
     ticket_agent_role_ids = Role.joins(:permissions).where(permissions: { name: 'ticket.agent', active: true }, roles: { active: true }).pluck(:id)
     count                 = User.joins(:roles).where(roles: { id: ticket_agent_role_ids }, users: { active: true }).distinct.count + 1
-    raise Exceptions::UnprocessableEntity, 'Agent limit exceeded, please check your account settings.' if count > Setting.get('system_agent_limit').to_i
+    raise Exceptions::UnprocessableEntity, __('Agent limit exceeded, please check your account settings.') if count > Setting.get('system_agent_limit').to_i
 
     true
   end
@@ -1103,7 +1101,7 @@ raise 'Minimum one user need to have admin permissions'
         count += 1
       end
     end
-    raise Exceptions::UnprocessableEntity, 'Agent limit exceeded, please check your account settings.' if count > Setting.get('system_agent_limit').to_i
+    raise Exceptions::UnprocessableEntity, __('Agent limit exceeded, please check your account settings.') if count > Setting.get('system_agent_limit').to_i
 
     true
   end
@@ -1188,7 +1186,6 @@ raise 'Minimum one user need to have admin permissions'
 
   def ensure_password
     self.password = ensured_password
-    true
   end
 
   def ensured_password

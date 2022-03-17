@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class ChannelsSmsController < ApplicationController
   prepend_before_action -> { authentication_check && authorize! }, except: [:webhook]
@@ -42,7 +42,7 @@ class ChannelsSmsController < ApplicationController
   end
 
   def test
-    raise 'Missing parameter options.adapter' if params[:options][:adapter].blank?
+    raise __('Missing parameter options.adapter') if params[:options][:adapter].blank?
 
     driver = Channel.driver_class(params[:options][:adapter])
     resp   = driver.new.send(params[:options], test_options)
@@ -86,12 +86,12 @@ class ChannelsSmsController < ApplicationController
   end
 
   def channel_params
-    raise 'Missing area params' if params[:area].blank?
+    raise __('Missing area params') if params[:area].blank?
     if ['Sms::Notification', 'Sms::Account'].exclude?(params[:area])
       raise "Invalid area '#{params[:area]}'!"
     end
-    raise 'Missing options params' if params[:options].blank?
-    raise 'Missing options.adapter params' if params[:options][:adapter].blank?
+    raise __('Missing options params') if params[:options].blank?
+    raise __('Missing options.adapter params') if params[:options][:adapter].blank?
 
     params
   end

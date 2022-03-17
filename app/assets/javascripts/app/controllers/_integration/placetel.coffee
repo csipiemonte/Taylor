@@ -1,10 +1,10 @@
 class Placetel extends App.ControllerIntegrationBase
   featureIntegration: 'placetel_integration'
-  featureName: 'Placetel'
+  featureName: __('Placetel')
   featureConfig: 'placetel_config'
   description: [
-    ['This service shows you contacts of incoming calls and a caller list in realtime.']
-    ['Also caller id of outbound calls can be changed.']
+    [__('This service shows you contacts of incoming calls and a caller list in realtime.')]
+    [__('Caller ID of outbound calls can be changed as well.')]
   ]
   events:
     'click .js-select': 'selectAll'
@@ -111,7 +111,7 @@ class Form extends App.Controller
       }
     )
 
-    # blocked caller ids
+    # blocked caller IDs
     config.inbound.block_caller_ids = []
     @$('.js-inboundBlockCallerId .js-row').each(->
       caller_id = $(@).find('input[name="caller_id"]').val()
@@ -213,9 +213,9 @@ class State
 App.Config.set(
   'IntegrationPlacetel'
   {
-    name: 'Placetel'
+    name: __('Placetel')
     target: '#system/integration/placetel'
-    description: 'VoIP service provider with realtime push.'
+    description: __('VoIP service provider with realtime push.')
     controller: Placetel
     state: State
   }

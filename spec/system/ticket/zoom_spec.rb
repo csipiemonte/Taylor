@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -378,6 +378,8 @@ RSpec.describe 'Ticket zoom', type: :system do
           it expects_visible ? 'delete button is visible' : 'delete button is not visible' do
             visit "ticket/zoom/#{article.ticket.id}"
 
+            wait.until_exists { find("#article-#{article.id}") }
+
             within :active_ticket_article, article do
               expect(page).to send(matcher, '.js-ArticleAction[data-type=delete]', wait: 0)
             end
@@ -588,8 +590,7 @@ RSpec.describe 'Ticket zoom', type: :system do
       end
 
       context 'certificate not present at time of arrival' do
-
-        it 'retry' do
+        let(:mail) do
           smime1 = create(:smime_certificate, :with_private, fixture: system_email_address)
           smime2 = create(:smime_certificate, :with_private, fixture: sender_email_address)
 
@@ -612,6 +613,10 @@ RSpec.describe 'Ticket zoom', type: :system do
           smime1.destroy
           smime2.destroy
 
+          mail
+        end
+
+        it 'does retry successfully' do
           parsed_mail = Channel::EmailParser.new.parse(mail.to_s)
           ticket, article, _user, _mail = Channel::EmailParser.new.process({ group_id: group.id }, parsed_mail['raw'])
           expect(Ticket::Article.find(article.id).body).to eq('no visible content')
@@ -623,6 +628,17 @@ RSpec.describe 'Ticket zoom', type: :system do
           expect(page).to have_no_css('.article-content', text: 'somebody with some text')
           click '.js-securityRetryProcess'
           expect(page).to have_css('.article-content', text: 'somebody with some text')
+        end
+
+        it 'does fail on retry (S/MIME function buttons no longer working in tickets #3957)' do
+          parsed_mail = Channel::EmailParser.new.parse(mail.to_s)
+          ticket, article, _user, _mail = Channel::EmailParser.new.process({ group_id: group.id }, parsed_mail['raw'])
+          expect(Ticket::Article.find(article.id).body).to eq('no visible content')
+
+          visit "#ticket/zoom/#{ticket.id}"
+          expect(page).to have_no_css('.article-content', text: 'somebody with some text')
+          click '.js-securityRetryProcess'
+          expect(page).to have_css('#notify', text: 'Decryption failed! Private key for decryption could not be found.')
         end
       end
     end
@@ -644,8 +660,8 @@ RSpec.describe 'Ticket zoom', type: :system do
         all('a[data-type=emailReply]').last.click
         find('.articleNewEdit-body').send_keys('Test')
 
-        expect(page).to have_css('.js-securityEncrypt.btn--active', wait: 5)
-        expect(page).to have_css('.js-securitySign.btn--active', wait: 5)
+        expect(page).to have_css('.js-securityEncrypt.btn--active')
+        expect(page).to have_css('.js-securitySign.btn--active')
 
         click '.js-securityEncrypt'
         click '.js-securitySign'
@@ -653,8 +669,8 @@ RSpec.describe 'Ticket zoom', type: :system do
         click '.js-submit'
         expect(page).to have_css('.ticket-article-item', count: 2)
 
-        expect(Ticket::Article.last.preferences['security']['encryption']['success']).to be nil
-        expect(Ticket::Article.last.preferences['security']['sign']['success']).to be nil
+        expect(Ticket::Article.last.preferences['security']['encryption']['success']).to be_nil
+        expect(Ticket::Article.last.preferences['security']['sign']['success']).to be_nil
       end
 
       it 'signed' do
@@ -663,15 +679,15 @@ RSpec.describe 'Ticket zoom', type: :system do
         all('a[data-type=emailReply]').last.click
         find('.articleNewEdit-body').send_keys('Test')
 
-        expect(page).to have_css('.js-securityEncrypt.btn--active', wait: 5)
-        expect(page).to have_css('.js-securitySign.btn--active', wait: 5)
+        expect(page).to have_css('.js-securityEncrypt.btn--active')
+        expect(page).to have_css('.js-securitySign.btn--active')
 
         click '.js-securityEncrypt'
 
         click '.js-submit'
         expect(page).to have_css('.ticket-article-item', count: 2)
 
-        expect(Ticket::Article.last.preferences['security']['encryption']['success']).to be nil
+        expect(Ticket::Article.last.preferences['security']['encryption']['success']).to be_nil
         expect(Ticket::Article.last.preferences['security']['sign']['success']).to be true
       end
 
@@ -681,8 +697,8 @@ RSpec.describe 'Ticket zoom', type: :system do
         all('a[data-type=emailReply]').last.click
         find('.articleNewEdit-body').send_keys('Test')
 
-        expect(page).to have_css('.js-securityEncrypt.btn--active', wait: 5)
-        expect(page).to have_css('.js-securitySign.btn--active', wait: 5)
+        expect(page).to have_css('.js-securityEncrypt.btn--active')
+        expect(page).to have_css('.js-securitySign.btn--active')
 
         click '.js-securitySign'
 
@@ -690,7 +706,7 @@ RSpec.describe 'Ticket zoom', type: :system do
         expect(page).to have_css('.ticket-article-item', count: 2)
 
         expect(Ticket::Article.last.preferences['security']['encryption']['success']).to be true
-        expect(Ticket::Article.last.preferences['security']['sign']['success']).to be nil
+        expect(Ticket::Article.last.preferences['security']['sign']['success']).to be_nil
       end
 
       it 'signed and encrypted' do
@@ -699,8 +715,8 @@ RSpec.describe 'Ticket zoom', type: :system do
         all('a[data-type=emailReply]').last.click
         find('.articleNewEdit-body').send_keys('Test')
 
-        expect(page).to have_css('.js-securityEncrypt.btn--active', wait: 5)
-        expect(page).to have_css('.js-securitySign.btn--active', wait: 5)
+        expect(page).to have_css('.js-securityEncrypt.btn--active')
+        expect(page).to have_css('.js-securitySign.btn--active')
 
         click '.js-submit'
         expect(page).to have_css('.ticket-article-item', count: 2)
@@ -731,12 +747,12 @@ RSpec.describe 'Ticket zoom', type: :system do
 
         it "security defaults sign: #{sign}, encrypt: #{encrypt}" do
           within(:active_content) do
-            encrypt_button = find('.js-securityEncrypt', wait: 5)
-            sign_button    = find('.js-securitySign', wait: 5)
+            encrypt_button = find('.js-securityEncrypt')
+            sign_button    = find('.js-securitySign')
 
             active_button_class = '.btn--active'
-            expect(encrypt_button.matches_css?(active_button_class, wait: 2)).to be(encrypt)
-            expect(sign_button.matches_css?(active_button_class, wait: 2)).to be(sign)
+            expect(encrypt_button.matches_css?(active_button_class)).to be(encrypt)
+            expect(sign_button.matches_css?(active_button_class)).to be(sign)
           end
         end
       end
@@ -923,7 +939,6 @@ RSpec.describe 'Ticket zoom', type: :system do
 
     def forward
       within :active_content do
-        # binding.pry
         wait.until_exists { find('.textBubble-content .richtext-content') }
         click '.js-ArticleAction[data-type=emailForward]'
         fill_in 'To', with: 'customer@example.com'
@@ -957,31 +972,28 @@ RSpec.describe 'Ticket zoom', type: :system do
   end
 
   # https://github.com/zammad/zammad/issues/3335
-  context 'ticket state sort order maintained when locale is de-de', authenticated_as: :authenticate do
-    def authenticate
-      user.preferences[:locale] = 'de-de'
-      user
-    end
-
+  context 'ticket state sort order maintained when locale is de-de', authenticated_as: :user do
     context 'when existing ticket is open' do
-      let(:user) { create(:customer) }
+      let(:user) { create(:customer, preferences: { locale: 'de-de' }) }
       let(:ticket) { create(:ticket, customer: user) }
 
       it 'shows ticket state dropdown options in sorted translated alphabetically order' do
         visit "ticket/zoom/#{ticket.id}"
 
-        expect(all('select[name=state_id] option').map(&:text)).to eq(%w[geschlossen neu offen])
+        within :active_content, '.tabsSidebar' do
+          expect(all('select[name=state_id] option').map(&:text)).to eq(%w[geschlossen neu offen])
+        end
       end
     end
 
     context 'when a new ticket is created' do
-      let(:user) { create(:agent, groups: [permitted_group]) }
+      let(:user) { create(:agent, preferences: { locale: 'de-de' }, groups: [permitted_group]) }
       let(:permitted_group) { create(:group) }
 
       it 'shows ticket state dropdown options in sorted order' do
         visit 'ticket/create'
 
-        expect(all('select[name=state_id] option').map(&:text)).to eq ['-', 'geschlossen', 'neu', 'offen', 'warten auf Erinnerung', 'warten auf schliessen']
+        expect(all('select[name=state_id] option').map(&:text)).to eq ['-', 'geschlossen', 'neu', 'offen', 'warten auf Erinnerung', 'warten auf Schließen']
       end
     end
   end
@@ -1018,7 +1030,7 @@ RSpec.describe 'Ticket zoom', type: :system do
         visit "ticket/zoom/#{ticket.id}"
         refresh # refresh to have assets generated for ticket
 
-        expect(page).to have_select('state_id', options: %w[new open closed], wait: 10)
+        expect(page).to have_select('state_id', options: %w[new open closed])
         expect(page).to have_no_select('priority_id')
         expect(page).to have_no_select('owner_id')
         expect(page).to have_no_css('div.tabsSidebar-tab[data-tab=customer]')
@@ -1154,7 +1166,7 @@ RSpec.describe 'Ticket zoom', type: :system do
 
         ticket_note.update!(internal: false)
 
-        expect(page).to have_selector(:active_ticket_article, ticket_note, wait: 10)
+        expect(page).to have_selector(:active_ticket_article, ticket_note)
       end
     end
   end
@@ -1281,7 +1293,7 @@ RSpec.describe 'Ticket zoom', type: :system do
       within :active_content do
         click_on ticket_a.title
 
-        expect(page).to have_css('.pagination-counter', wait: 10)
+        expect(page).to have_css('.pagination-counter')
       end
     end
 
@@ -1291,7 +1303,7 @@ RSpec.describe 'Ticket zoom', type: :system do
         visit 'dashboard'
         visit "ticket/zoom/#{ticket_a.id}"
 
-        expect(page).to have_css('.pagination-counter', wait: 10)
+        expect(page).to have_css('.pagination-counter')
       end
     end
   end
@@ -1337,7 +1349,7 @@ RSpec.describe 'Ticket zoom', type: :system do
       )
 
       # wait for article to be added to the page
-      expect(page).to have_css('.ticket-article-item', count: 2, wait: 10)
+      expect(page).to have_css('.ticket-article-item', count: 2)
 
       # click on forward of created article
       within :active_ticket_article, article1 do
@@ -1375,21 +1387,21 @@ RSpec.describe 'Ticket zoom', type: :system do
           visit "ticket/zoom/#{ticket.id}"
 
           click '.js-subscriptions .js-subscribe input'
-          expect(page).to have_selector('.js-subscriptions .js-unsubscribe input', wait: 10)
-          expect(page).to have_selector('.js-subscriptions span.avatar', wait: 10)
+          expect(page).to have_selector('.js-subscriptions .js-unsubscribe input')
+          expect(page).to have_selector('.js-subscriptions span.avatar')
 
           click '.js-subscriptions .js-unsubscribe input'
-          expect(page).to have_selector('.js-subscriptions .js-subscribe input', wait: 10)
-          expect(page).to have_no_selector('.js-subscriptions span.avatar', wait: 10)
+          expect(page).to have_selector('.js-subscriptions .js-subscribe input')
+          expect(page).to have_no_selector('.js-subscriptions span.avatar')
 
           create(:mention, mentionable: ticket, user: other_agent)
-          expect(page).to have_selector('.js-subscriptions span.avatar', wait: 10)
+          expect(page).to have_selector('.js-subscriptions span.avatar')
 
           # check history for mention entries
           click 'h2.sidebar-header-headline.js-headline'
           click 'li[data-type=ticket-history] a'
-          expect(page).to have_text('created Mention', wait: 10)
-          expect(page).to have_text('removed Mention', wait: 10)
+          expect(page).to have_text('created Mention')
+          expect(page).to have_text('removed Mention')
         end
       end
     end
@@ -1414,6 +1426,7 @@ RSpec.describe 'Ticket zoom', type: :system do
       ticket.update(pending_time: 1.day.from_now, state: Ticket::State.lookup(name: 'pending reminder'))
 
       visit "ticket/zoom/#{ticket.id}"
+      sleep 3 # wait for popover killer to pass
     end
 
     let(:ticket) { Ticket.first }
@@ -1628,7 +1641,7 @@ RSpec.describe 'Ticket zoom', type: :system do
 
         content = find('.sidebar[data-tab=gitlab] .sidebar-content')
         expect(content).to have_text('No linked issues')
-        expect(ticket.reload.preferences[:gitlab][:issue_links][0]).to be nil
+        expect(ticket.reload.preferences[:gitlab][:issue_links][0]).to be_nil
 
         # check that counter got removed
         expect(page).to have_no_selector('.tabsSidebar-tab[data-tab=gitlab] .js-tabCounter')
@@ -1679,7 +1692,7 @@ RSpec.describe 'Ticket zoom', type: :system do
 
         content = find('.sidebar[data-tab=github] .sidebar-content')
         expect(content).to have_text('No linked issues')
-        expect(ticket.reload.preferences[:github][:issue_links][0]).to be nil
+        expect(ticket.reload.preferences[:github][:issue_links][0]).to be_nil
 
         # check that counter got removed
         expect(page).to have_no_selector('.tabsSidebar-tab[data-tab=github] .js-tabCounter')
@@ -1718,11 +1731,11 @@ RSpec.describe 'Ticket zoom', type: :system do
       visit "#ticket/zoom/#{ticket_open.id}"
       click '.tabsSidebar-tab[data-tab=customer]'
       click '.user-tickets[data-type=open]'
-      expect(page).to have_text(ticket_open.title, wait: 20)
+      expect(page).to have_text(ticket_open.title)
 
       visit "#ticket/zoom/#{ticket_open.id}"
       click '.user-tickets[data-type=closed]'
-      expect(page).to have_text(ticket_closed.title, wait: 20)
+      expect(page).to have_text(ticket_closed.title)
     end
   end
 
@@ -1922,6 +1935,9 @@ RSpec.describe 'Ticket zoom', type: :system do
       it 'does setup the last behaviour' do
         click '.js-attributeBar .dropup div'
         click 'span[data-type=stayOnTab]'
+        wait.until do
+          User.find_by(email: 'admin@example.com').preferences['secondaryAction'] == 'stayOnTab'
+        end
         visit "ticket/zoom/#{ticket1.id}"
         expect(page).to have_text('Stay on tab')
       end
@@ -1992,22 +2008,24 @@ RSpec.describe 'Ticket zoom', type: :system do
     end
 
     def wait_for_upload_present
-      wait(5).until { Taskbar.find_by(key: "Ticket-#{ticket.id}").attributes_with_association_ids['attachments'].present? }
+      wait.until { Taskbar.find_by(key: "Ticket-#{ticket.id}").attributes_with_association_ids['attachments'].present? }
     end
 
     def wait_for_upload_blank
-      wait(5).until { Taskbar.find_by(key: "Ticket-#{ticket.id}").attributes_with_association_ids['attachments'].blank? }
+      wait.until { Taskbar.find_by(key: "Ticket-#{ticket.id}").attributes_with_association_ids['attachments'].blank? }
     end
 
     def switch_language_german
       visit '#profile/language'
+      # Suppress the modal dialog that invites to contributions for translations that are < 90% as this breaks the tests for de-de.
+      page.evaluate_script "App.LocalStorage.set('translation_support_no', true, App.Session.get('id'))"
       page.find('.js-input').click
       page.find('.js-input').set('Deutsch')
       page.find('.js-input').send_keys(:enter)
       click_on 'Submit'
 
       visit "#ticket/zoom/#{ticket.id}"
-      expect(page).to have_text('Dateien wählen')
+      expect(page).to have_text(Translation.translate('de-de', 'select attachment…'))
     end
 
     def expect_upload_and_text
@@ -2084,7 +2102,7 @@ RSpec.describe 'Ticket zoom', type: :system do
         expect(page.find('.article-new')).to have_text('mail001.box')
         wait_for_upload_present
         begin
-          page.evaluate_script("$('div.attachment-delete.js-delete:last').click()") # not interactable
+          page.evaluate_script("$('div.attachment-delete.js-delete:last').trigger('click')") # not interactable
         rescue # Lint/SuppressedException
           # because its not interactable it also
           # returns this weird exception for the jquery
@@ -2160,7 +2178,7 @@ RSpec.describe 'Ticket zoom', type: :system do
         it 'does show up the saved value if it would not be possible because of the restriction' do
           expect(page.find("select[name='#{field_name}']").value).to eq('false')
           ticket.update(field_name => true)
-          wait(10, interval: 0.5).until { page.find("select[name='#{field_name}']").value == 'true' }
+          wait.until { page.find("select[name='#{field_name}']").value == 'true' }
           expect(page.find("select[name='#{field_name}']").value).to eq('true')
         end
       end
@@ -2177,7 +2195,7 @@ RSpec.describe 'Ticket zoom', type: :system do
         it 'does show up the saved value if it would not be possible because of the restriction' do
           expect(page.find("select[name='#{field_name}']").value).to eq('false')
           ticket.update(field_name => true)
-          wait(10, interval: 0.5).until { page.find("select[name='#{field_name}']").value == 'true' }
+          wait.until { page.find("select[name='#{field_name}']").value == 'true' }
           expect(page.find("select[name='#{field_name}']").value).to eq('true')
         end
       end
@@ -2194,21 +2212,21 @@ RSpec.describe 'Ticket zoom', type: :system do
     it 'does show up the new priority' do
       high_prio = Ticket::Priority.find_by(name: '3 high')
       ticket.update(priority: high_prio)
-      wait(10, interval: 0.5).until { page.find("select[name='priority_id']").value == high_prio.id.to_s }
+      wait.until { page.find("select[name='priority_id']").value == high_prio.id.to_s }
       expect(page.find("select[name='priority_id']").value).to eq(high_prio.id.to_s)
     end
 
     it 'does show up the new group (different case because it will also trigger a full rerender because of potential permission changes)' do
       group = Group.find_by(name: 'some group1')
       ticket.update(group: group)
-      wait(10, interval: 0.5).until { page.find("select[name='group_id']").value == group.id.to_s }
+      wait.until { page.find("select[name='group_id']").value == group.id.to_s }
       expect(page.find("select[name='group_id']").value).to eq(group.id.to_s)
     end
 
     it 'does show up the new state and pending time' do
       pending_state = Ticket::State.find_by(name: 'pending reminder')
       ticket.update(state: pending_state, pending_time: 1.day.from_now)
-      wait(10, interval: 0.5).until { page.find("select[name='state_id']").value == pending_state.id.to_s }
+      wait.until { page.find("select[name='state_id']").value == pending_state.id.to_s }
       expect(page.find("select[name='state_id']").value).to eq(pending_state.id.to_s)
       expect(page).to have_selector("div[data-name='pending_time']")
     end
@@ -2218,7 +2236,7 @@ RSpec.describe 'Ticket zoom', type: :system do
       high_prio = Ticket::Priority.find_by(name: '3 high')
       closed_state = Ticket::State.find_by(name: 'closed')
       ticket.update(priority: high_prio)
-      wait(10, interval: 0.5).until { page.find("select[name='priority_id']").value == high_prio.id.to_s }
+      wait.until { page.find("select[name='priority_id']").value == high_prio.id.to_s }
       expect(page.find("select[name='priority_id']").value).to eq(high_prio.id.to_s)
       expect(page.find("select[name='state_id']").value).to eq(closed_state.id.to_s)
     end
@@ -2272,14 +2290,14 @@ RSpec.describe 'Ticket zoom', type: :system do
 
     it 'does open automatically when body is given from sidebar' do
       find('.js-textarea').send_keys('test')
-      wait(5).until { Taskbar.find_by(key: "Ticket-#{ticket.id}").state.dig('article', 'body').present? }
+      wait.until { Taskbar.find_by(key: "Ticket-#{ticket.id}").state.dig('article', 'body').present? }
       refresh
       expect(page).to have_selector('form.article-add.is-open')
     end
 
     it 'does open automatically when attachment is given from sidebar' do
       page.find('input#fileUpload_1', visible: :all).set(Rails.root.join('test/data/mail/mail001.box'))
-      wait(5).until { Taskbar.find_by(key: "Ticket-#{ticket.id}").attributes_with_association_ids['attachments'].present? }
+      wait.until { Taskbar.find_by(key: "Ticket-#{ticket.id}").attributes_with_association_ids['attachments'].present? }
       refresh
       expect(page).to have_selector('form.article-add.is-open')
     end
@@ -2310,10 +2328,266 @@ RSpec.describe 'Ticket zoom', type: :system do
 
     it 'does clear agent1 on select of group 2' do
       select group2.name, from: 'Group'
-      wait(5).until { page.find('select[name=owner_id]').value != agent1.id.to_s }
+      wait.until { page.find('select[name=owner_id]').value != agent1.id.to_s }
       expect(page.find('select[name=owner_id]').value).to eq('')
       expect(page.all('select[name=owner_id] option').map(&:value)).not_to include(agent1.id.to_s)
       expect(page.all('select[name=owner_id] option').map(&:value)).to include(agent2.id.to_s)
+    end
+  end
+
+  describe 'Not displayed fields should not impact the edit screen #3819', authenticated_as: :authenticate, db_strategy: :reset do
+    let(:field_name) { SecureRandom.uuid }
+    let(:ticket) { create(:ticket, group: Group.find_by(name: 'Users')) }
+
+    def authenticate
+      create :object_manager_attribute_boolean, default: nil, screens: {
+        edit: {
+          'ticket.agent' => {
+            shown:    false,
+            required: false,
+          }
+        }
+      }
+      ObjectManager::Attribute.migration_execute
+      ticket
+      true
+    end
+
+    before do
+      visit "#ticket/zoom/#{ticket.id}"
+    end
+
+    it 'does not show any changes for the field because it has no value and because it is not shown it should also not show the ticket as changed' do
+      sleep 3
+      expect(page).to have_no_selector('.js-reset')
+    end
+  end
+
+  describe 'Changing ticket status from "new" to any other status always results in uncommited status "closed" #3880', authenticated_as: :authenticate do
+    let(:ticket) { create(:ticket, group: Group.find_by(name: 'Users')) }
+    let(:workflow) do
+      create(:core_workflow,
+             object:             'Ticket',
+             condition_selected: {
+               'ticket.priority_id': {
+                 operator: 'is',
+                 value:    [ Ticket::Priority.find_by(name: '3 high').id.to_s ],
+               },
+             },
+             perform:            { 'ticket.state_id' => { operator: 'remove_option', remove_option: [ Ticket::State.find_by(name: 'pending reminder').id.to_s ] } })
+    end
+
+    def authenticate
+      workflow
+      true
+    end
+
+    before do
+      visit "#ticket/zoom/#{ticket.id}"
+    end
+
+    it 'does switch back to the saved value in the ticket instead of the first value of the dropdown' do
+      page.select 'pending reminder', from: 'state_id'
+      page.select '3 high', from: 'priority_id'
+      expect(page).to have_select('state_id', selected: 'new')
+    end
+  end
+
+  describe 'Multiselect displaying and saving', authenticated_as: :authenticate, db_strategy: :reset do
+    let(:field_name) { SecureRandom.uuid }
+    let(:ticket) { create(:ticket, group: Group.find_by(name: 'Users'), field_name => %w[key_2 key_3]) }
+
+    def authenticate
+      create :object_manager_attribute_multiselect, name: field_name, display: field_name, screens: {
+        'edit' => {
+          'ticket.agent' => {
+            'shown'    => true,
+            'required' => false,
+          }
+        }
+      }
+      ObjectManager::Attribute.migration_execute
+      ticket
+      true
+    end
+
+    before do
+      visit "#ticket/zoom/#{ticket.id}"
+    end
+
+    def multiselect_value
+      page.find("select[name='#{field_name}']").value
+    end
+
+    def multiselect_set(values)
+      multiselect_unset_all
+      values = Array(values)
+      values.each do |value|
+        page.find("select[name='#{field_name}']").select(value)
+      end
+    end
+
+    def multiselect_unset_all
+      values = page.all("select[name='#{field_name}'] option").map(&:text)
+      values.each do |value|
+        page.find("select[name='#{field_name}']").unselect(value)
+      end
+    end
+
+    it 'does show values properly and can save values also' do
+
+      # check ticket state rendering
+      wait.until { multiselect_value == %w[key_2 key_3] }
+      expect(multiselect_value).to eq(%w[key_2 key_3])
+
+      # save 2 values
+      multiselect_set(%w[value_1 value_2])
+      click '.js-submit'
+      wait.until { ticket.reload[field_name] == %w[key_1 key_2] }
+
+      # save 1 value
+      multiselect_set(['value_1'])
+      click '.js-submit'
+      wait.until { ticket.reload[field_name] == ['key_1'] }
+
+      # unset all values
+      multiselect_unset_all
+      click '.js-submit'
+      wait.until { ticket.reload[field_name].nil? }
+    end
+  end
+
+  describe 'Add confirmation dialog on visibility change of an article or in article creation #3924', authenticated_as: :authenticate do
+    let(:ticket) { create(:ticket, group: Group.find_by(name: 'Users')) }
+    let(:article) { create(:ticket_article, ticket: ticket) }
+
+    before do
+      visit "#ticket/zoom/#{article.ticket.id}"
+    end
+
+    context 'when dialog is disabled' do
+      def authenticate
+        true
+      end
+
+      it 'does set the article internal and external for existing articles' do
+        expect { page.find('.js-ArticleAction[data-type=internal]').click }.to change { article.reload.internal }.to(true)
+        expect { page.find('.js-ArticleAction[data-type=public]').click }.to change { article.reload.internal }.to(false)
+      end
+
+      it 'does set the article internal and external for new article' do
+        page.find('.js-writeArea').click({ x: 5, y: 5 })
+        expect(page).to have_css('.article-new .icon-internal')
+        expect(page).to have_no_css('.article-new .icon-public')
+
+        page.find('.article-new .icon-internal').click
+        expect(page).to have_no_css('.article-new .icon-internal')
+        expect(page).to have_css('.article-new .icon-public')
+
+        page.find('.article-new .icon-public').click
+        expect(page).to have_css('.article-new .icon-internal')
+        expect(page).to have_no_css('.article-new .icon-public')
+      end
+    end
+
+    context 'when dialog is enabled' do
+      def authenticate
+        Setting.set('ui_ticket_zoom_article_visibility_confirmation_dialog', true)
+        true
+      end
+
+      it 'does set the article internal and external for existing articles' do
+        expect { page.find('.js-ArticleAction[data-type=internal]').click }.to change { article.reload.internal }.to(true)
+        page.find('.js-ArticleAction[data-type=public]').click
+        expect(page).to have_css('.modal-dialog')
+        expect { find('.modal-dialog button[type=submit]').click }.to change { article.reload.internal }.to(false)
+      end
+
+      it 'does set the article internal and external for new article' do
+        page.find('.js-writeArea').click({ x: 5, y: 5 })
+        expect(page).to have_css('.article-new .icon-internal')
+        expect(page).to have_no_css('.article-new .icon-public')
+
+        page.find('.article-new .icon-internal').click
+        expect(page).to have_css('.modal-dialog')
+        find('.modal-dialog button[type=submit]').click
+        expect(page).to have_no_css('.article-new .icon-internal')
+        expect(page).to have_css('.article-new .icon-public')
+
+        page.find('.article-new .icon-public').click
+        expect(page).to have_css('.article-new .icon-internal')
+        expect(page).to have_no_css('.article-new .icon-public')
+      end
+    end
+  end
+
+  describe 'Show which escalation type escalated in ticket zoom #3928', authenticated_as: :authenticate do
+    let(:sla) { create(:sla, first_response_time: 1, update_time: 1, solution_time: 1) }
+    let(:ticket) { create(:ticket, group: Group.find_by(name: 'Users')) }
+
+    def authenticate
+      sla
+      true
+    end
+
+    before do
+      visit "#ticket/zoom/#{ticket.id}"
+    end
+
+    it 'does show the extended escalation information' do
+      sleep 4 # wait for popup killer
+      page.find('.escalation-popover').hover
+      expect(page).to have_text('FIRST RESPONSE TIME')
+      expect(page).to have_text('UPDATE TIME')
+      expect(page).to have_text('SOLUTION TIME')
+    end
+  end
+
+  context 'Make sidebar attachments unique #3930', authenticated_as: :authenticate do
+    let(:ticket) { create(:ticket, group: Group.find_by(name: 'Users')) }
+    let(:article1)         { create(:ticket_article, ticket: ticket) }
+    let(:article2)         { create(:ticket_article, ticket: ticket) }
+
+    def attachment_add(article, filename)
+      Store.add(
+        object:        'Ticket::Article',
+        o_id:          article.id,
+        data:          "content #{filename}",
+        filename:      filename,
+        preferences:   {
+          'Content-Type' => 'text/plain',
+        },
+        created_by_id: 1,
+      )
+    end
+
+    def authenticate
+      attachment_add(article1, 'some_file.txt')
+      attachment_add(article2, 'some_file.txt')
+      attachment_add(article2, 'some_file2.txt')
+      Setting.set('ui_ticket_zoom_sidebar_article_attachments', true)
+
+      true
+    end
+
+    before do
+      visit "#ticket/zoom/#{ticket.id}"
+      page.find(".tabsSidebar-tabs .tabsSidebar-tab[data-tab='attachment']").click
+    end
+
+    it 'does show the attachment once' do
+      expect(page).to have_selector('.sidebar-content .attachment.attachment--preview', count: 2)
+      expect(page).to have_selector('.sidebar-content', text: 'some_file.txt')
+      expect(page).to have_selector('.sidebar-content', text: 'some_file2.txt')
+    end
+
+    it 'does show up new attachments' do
+      page.find('.js-textarea').send_keys('new article with attachment')
+      page.find('input#fileUpload_1', visible: :all).set(Rails.root.join('test/data/mail/mail001.box'))
+      expect(page).to have_text('mail001.box')
+      wait.until { Taskbar.find_by(key: "Ticket-#{ticket.id}").attributes_with_association_ids['attachments'].present? }
+      click '.js-submit'
+      expect(page).to have_selector('.sidebar-content', text: 'mail001.box')
     end
   end
 end

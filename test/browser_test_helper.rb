@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 ENV['RAILS_ENV'] = 'test'
 # rubocop:disable Lint/NonLocalExitFromIterator, Style/GuardClause, Lint/MissingCopEnableDirective
@@ -91,16 +91,6 @@ class TestCase < ActiveSupport::TestCase
       params = {
         profile: profile,
       }
-      if ENV['BROWSER_HEADLESS'].present?
-        case browser
-        when 'firefox'
-          params[:options] = Selenium::WebDriver::Firefox::Options.new
-          params[:options].add_argument('-headless')
-        when 'chrome'
-          params[:options] = Selenium::WebDriver::Chrome::Options.new
-          params[:options].add_argument('-headless')
-        end
-      end
       local_browser = Selenium::WebDriver.for(browser.to_sym, params)
       @browsers[local_browser.hash] = local_browser
       browser_instance_preferences(local_browser)
@@ -131,21 +121,28 @@ class TestCase < ActiveSupport::TestCase
       caps.version  = ENV['BROWSER_VERSION']
     end
 
-    # (ironically) required for timeout checks
-    # https://github.com/zalando/zalenium/issues/469#issuecomment-371417340
-    # https://opensource.zalando.com/zalenium/#usage
-    caps['idleTimeout'] = 300
-
     http_client = Selenium::WebDriver::Remote::Http::Default.new(
       open_timeout: 120,
       read_timeout: 120
     )
+    case browser
+    when 'firefox'
+      options = Selenium::WebDriver::Firefox::Options.new
+      options.headless!
+    when 'chrome'
+      options = Selenium::WebDriver::Chrome::Options.new(
+        # Disable the "Chrome is controlled by automation software" info bar.
+        excludeSwitches: ['enable-automation'],
+      )
+      options.headless!
+    end
 
     local_browser = Selenium::WebDriver.for(
       :remote,
       url:                  ENV['REMOTE_URL'],
       desired_capabilities: caps,
       http_client:          http_client,
+      options:              options,
     )
     @browsers[local_browser.hash] = local_browser
     browser_instance_preferences(local_browser)
@@ -948,7 +945,7 @@ class TestCase < ActiveSupport::TestCase
     log('check', params)
 
     instance = params[:browser] || @browser
-    instance.execute_script("$('#{params[:css]}:not(:checked)').click()")
+    instance.execute_script("$('#{params[:css]}:not(:checked)').trigger('click')")
     # element = instance.find_elements(css: params[:css])[0]
     # checked = element.attribute('checked')
     # element.click if !checked
@@ -969,7 +966,7 @@ class TestCase < ActiveSupport::TestCase
 
     instance = params[:browser] || @browser
 
-    instance.execute_script("$('#{params[:css]}:checked').click()")
+    instance.execute_script("$('#{params[:css]}:checked').trigger('click')")
     # element = instance.find_elements(css: params[:css])[0]
     # checked = element.attribute('checked')
     # element.click if checked
@@ -1360,7 +1357,7 @@ set type of task (closeTab, closeNextInOverview, stayOnTab)
     end
     # firefix/marionette issue with Selenium::WebDriver::Error::ElementNotInteractableError: could not be scrolled into view
     # use js workaround instead of native click
-    instance.execute_script("$('#navigation .tasks .task:contains(\"#{data[:title]}\") .nav-tab-name').click()")
+    instance.execute_script("$('#navigation .tasks .task:contains(\"#{data[:title]}\") .nav-tab-name').trigger('click')")
     # element.click
     true
   end
@@ -1392,7 +1389,7 @@ set type of task (closeTab, closeNextInOverview, stayOnTab)
 
     instance.action.move_to(element).release.perform
     sleep 0.1
-    instance.execute_script("$('#navigation .tasks .task:contains(\"#{data[:title]}\") .js-close').click()")
+    instance.execute_script("$('#navigation .tasks .task:contains(\"#{data[:title]}\") .js-close').trigger('click')")
 
     # accept task close warning
     if params[:discard_changes]
@@ -1671,7 +1668,7 @@ wait untill text in selector disabppears
       end
       instance.action.move_to(element).release.perform
       sleep 0.1
-      instance.execute_script("$('.js-notificationsContainer .js-items .js-item .activity-text:contains(\"#{data[:title]}\") .js-remove').first().click()")
+      instance.execute_script("$('.js-notificationsContainer .js-items .js-item .activity-text:contains(\"#{data[:title]}\") .js-remove').first().trigger('click')")
 
     else
       css = ".js-notificationsContainer .js-items .js-item:nth-child(#{data[:position]})"
@@ -1742,7 +1739,7 @@ wait untill text in selector disabppears
       # in issues with ff & selenium, sometimes exeption appears
       # "Element is not currently visible and so may not be interacted with"
       log('empty_search via js')
-      instance.execute_script('$(".search .js-emptySearch").click()')
+      instance.execute_script('$(".search .js-emptySearch").trigger("click")')
     end
     sleep 0.5
     text = instance.find_elements(css: '#global-search')[0].attribute('value')
@@ -1841,7 +1838,7 @@ wait untill text in selector disabppears
 
       end
       data[:roles].each do |role|
-        instance.execute_script("$(\".modal [data-name=role_ids] .js-pool .js-option:not(.is-hidden):contains('#{role}')\").first().click()")
+        instance.execute_script("$(\".modal [data-name=role_ids] .js-pool .js-option:not(.is-hidden):contains('#{role}')\").first().trigger('click')")
       end
     end
 
@@ -1974,7 +1971,7 @@ wait untill text in selector disabppears
       mute_log: true,
     )
 
-    instance.execute_script("$(\".content.active td:contains('#{data[:name]}')\").first().click()")
+    instance.execute_script("$(\".content.active td:contains('#{data[:name]}')\").first().trigger('click')")
     sleep 2
 
     if data[:name]
@@ -1996,7 +1993,7 @@ wait untill text in selector disabppears
 
       end
       data[:roles].each do |role|
-        instance.execute_script("$(\".modal [data-name=role_ids] .js-pool .js-option:not(.is-hidden):contains('#{role}')\").first().click()")
+        instance.execute_script("$(\".modal [data-name=role_ids] .js-pool .js-option:not(.is-hidden):contains('#{role}')\").first().trigger('click')")
       end
     end
 
@@ -2806,7 +2803,7 @@ wait untill text in selector disabppears
 
     # open ticket
     # instance.find_element(partial_link_text: params[:number] } ).click
-    instance.execute_script("$(\".js-global-search-result a:contains('#{params[:number]}') .nav-tab-name\").first().click()")
+    instance.execute_script("$(\".js-global-search-result a:contains('#{params[:number]}') .nav-tab-name\").first().trigger('click')")
     watch_for(
       browser: instance,
       css:     '.content.active .ticketZoom-header .ticket-number'
@@ -2843,7 +2840,7 @@ wait untill text in selector disabppears
 
     # open ticket
     # instance.find_element(partial_link_text: params[:title] } ).click
-    instance.execute_script("$(\".js-global-search-result a:contains('#{params[:title]}') .nav-tab-name\").first().click()")
+    instance.execute_script("$(\".js-global-search-result a:contains('#{params[:title]}') .nav-tab-name\").first().trigger('click')")
     sleep 1
     title = instance.find_elements(css: '.content.active .ticketZoom-header .js-objectTitle')[0].text
     if !title.match?(%r{#{params[:title]}})
@@ -2946,7 +2943,7 @@ wait untill text in selector disabppears
     )
 
     # instance.find_element(partial_link_text: params[:value] } ).click
-    instance.execute_script("$(\".js-global-search-result a:contains('#{params[:value]}') .nav-tab-name\").first().click()")
+    instance.execute_script("$(\".js-global-search-result a:contains('#{params[:value]}') .nav-tab-name\").first().trigger('click')")
     watch_for(
       browser: instance,
       css:     '.content.active h1'
@@ -2982,7 +2979,7 @@ wait untill text in selector disabppears
     sleep 3
 
     # instance.find_element(partial_link_text: params[:value]).click
-    instance.execute_script("$(\".js-global-search-result a:contains('#{params[:value]}') .nav-tab-name\").first().click()")
+    instance.execute_script("$(\".js-global-search-result a:contains('#{params[:value]}') .nav-tab-name\").first().trigger('click')")
     watch_for(
       browser: instance,
       css:     '.content.active h1'
@@ -3671,7 +3668,7 @@ wait untill text in selector disabppears
     element.send_keys(data[:name])
     element = instance.find_elements(css: '.modal select[name="email_address_id"]')[0]
     dropdown = Selenium::WebDriver::Support::Select.new(element)
-    dropdown.select_by(:index, 1)
+    dropdown.select_by(:value, '1')
     # dropdown.select_by(:text, action[:group])
     if data[:signature]
       element = instance.find_elements(css: '.modal select[name="signature_id"]')[0]
@@ -3700,7 +3697,7 @@ wait untill text in selector disabppears
         element.send_keys(member[:login])
         sleep 3
         # instance.find_elements(:css => '.content.active table [data-id]')[0].click
-        instance.execute_script('$(".content.active  table [data-id] td").first().click()')
+        instance.execute_script('$(".content.active  table [data-id] td").first().trigger("click")')
         modal_ready(browser: instance)
         # instance.find_elements(:css => 'label:contains(" ' + action[:name] + '")')[0].click
         instance.execute_script(%($(".js-groupList tr:contains(\\"#{data[:name]}\\") .js-groupListItem[value=#{member[:access]}]").prop("checked", true)))
@@ -3905,10 +3902,10 @@ wait untill text in selector disabppears
         element.send_keys(login)
         sleep 3
         # instance.find_elements(:css => '.content.active table [data-id]')[0].click
-        instance.execute_script('$(".content.active table [data-id] td").first().click()')
+        instance.execute_script('$(".content.active table [data-id] td").first().trigger("click")')
         sleep 3
         # instance.find_elements(:css => 'label:contains(" ' + action[:name] + '")')[0].click
-        instance.execute_script(%($('label:contains(" #{data[:name]}")').first().click()))
+        instance.execute_script(%($('label:contains(" #{data[:name]}")').first().trigger('click')))
         instance.find_elements(css: '.modal button.js-submit')[0].click
         modal_disappear(browser: instance)
       end
@@ -3956,7 +3953,7 @@ wait untill text in selector disabppears
     )
 
     await_text(container: '.content.active table tr td', text: data[:name])
-    instance.execute_script(%($('.content.active table tr td:contains(" #{data[:name]}")').first().click()))
+    instance.execute_script(%($('.content.active table tr td:contains(" #{data[:name]}")').first().trigger('click')))
 
     modal_ready(browser: instance)
     element = instance.find_elements(css: '.modal input[name=name]')[0]
@@ -4030,10 +4027,10 @@ wait untill text in selector disabppears
         element.send_keys(login)
         sleep 3
         # instance.find_elements(:css => '.content.active table [data-id]')[0].click
-        instance.execute_script('$(".content.active table [data-id] td").first().click()')
+        instance.execute_script('$(".content.active table [data-id] td").first().trigger("click")')
         sleep 3
         # instance.find_elements(:css => 'label:contains(" ' + action[:name] + '")')[0].click
-        instance.execute_script(%($('label:contains(" #{data[:name]}")').first().click()))
+        instance.execute_script(%($('label:contains(" #{data[:name]}")').first().trigger("click")))
         instance.find_elements(css: '.modal button.js-submit')[0].click
         modal_disappear(browser: instance)
       end
@@ -4296,7 +4293,7 @@ wait untill text in selector disabppears
       css:      ".content.active a[href='#c-#{data[:object]}']",
       mute_log: true,
     )
-    instance.execute_script("$(\".content.active #c-#{data[:object]} td:contains('#{data[:name]}')\").first().click()")
+    instance.execute_script("$(\".content.active #c-#{data[:object]} td:contains('#{data[:name]}')\").first().trigger('click')")
 
     object_manager_attribute_perform('update', params)
   end
@@ -4344,7 +4341,7 @@ wait untill text in selector disabppears
     )
     sleep 4
 
-    instance.execute_script("$(\".content.active #c-#{data[:object]} td:contains('#{data[:name]}')\").first().closest('tr').find('.js-delete').click()")
+    instance.execute_script("$(\".content.active #c-#{data[:object]} td:contains('#{data[:name]}')\").first().closest('tr').find('.js-delete').trigger('click')")
   end
 
 =begin
@@ -4402,7 +4399,7 @@ wait untill text in selector disabppears
     watch_for(
       browser:  instance,
       css:      '.content.active',
-      value:    'Database Update required',
+      value:    'Database Update Required',
       mute_log: true,
     )
     click(
@@ -4414,7 +4411,7 @@ wait untill text in selector disabppears
       browser: instance,
     )
     title_text = instance.find_elements(css: '.modal .modal-title').first.text
-    if ['Zammad is restarting...', 'Zammad need a restart!'].include?(title_text)
+    if ['Zammad is restarting…', 'Zammad requires a restart!'].include?(title_text)
       # in the complex case, wait for server to restart
       modal_disappear(
         browser: instance,
@@ -4686,7 +4683,7 @@ wait untill text in selector disabppears
 =end
 
   def set_setting(name, value)
-    name_to_id = fetch_settings.map { |s| [s['name'], s['id']] }.to_h
+    name_to_id = fetch_settings.to_h { |s| [s['name'], s['id']] }
     id = name_to_id[name]
 
     url = URI.parse(browser_url)
@@ -4886,7 +4883,7 @@ wait untill text in selector disabppears
       sleep 0.5
 
       break if instance.execute_script('return typeof(App) === "undefined"')
-      break if instance.execute_script('return App.Ajax.queue().length').zero? && instance.execute_script('return Object.keys(App.FormHandlerCoreWorkflow.getRequests()).length').zero?
+      break if instance.execute_script('return App.Ajax.queue().length === 0 && $.active === 0 && Object.keys(App.FormHandlerCoreWorkflow.getRequests()).length === 0').present?
     end
   end
 

@@ -1,10 +1,10 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 source 'https://rubygems.org'
 
 # core - base
 ruby '2.7.4'
-gem 'rails', '~> 6.0'
+gem 'rails', '~> 6.0.0'
 
 # core - rails additions
 gem 'activerecord-import'
@@ -161,14 +161,15 @@ group :dev, :qa do
   gem 'appdynamics'
 end
 
+# Translation sync
+gem 'PoParser', require: false
+
 # Gems used only for develop/test and not required
 # in production environments by default.
 group :development, :test do
 
   # app boottime improvement
   gem 'spring'
-  gem 'spring-commands-rspec'
-  gem 'spring-commands-testunit'
 
   # debugging
   gem 'byebug'
@@ -190,11 +191,6 @@ group :development, :test do
   # for testing Pundit authorisation policies in RSpec
   gem 'pundit-matchers'
 
-  # code coverage
-  gem 'coveralls', require: false
-  gem 'simplecov'
-  gem 'simplecov-rcov'
-
   # UI tests w/ Selenium
   gem 'capybara'
   gem 'selenium-webdriver'
@@ -214,12 +210,10 @@ group :development, :test do
   gem 'overcommit'
   gem 'rubocop'
   gem 'rubocop-faker'
+  gem 'rubocop-inflector'
   gem 'rubocop-performance'
   gem 'rubocop-rails'
   gem 'rubocop-rspec'
-
-  # changelog generation
-  gem 'github_changelog_generator'
 
   # generate random test data
   gem 'factory_bot_rails'
@@ -251,5 +245,5 @@ end
 #               without having your changes overwritten during upgrades.)
 # ZAMMAD DEVS:  Consult the internal wiki
 #               (or else risk pushing unwanted changes to Gemfile.lock!)
-#               https://git.znuny.com/zammad/zammad/wikis/Tips#user-content-customizing-the-gemfile
+#               https://git.zammad.com/zammad/zammad/wikis/Tips#user-content-customizing-the-gemfile
 eval_gemfile 'Gemfile.local' if File.exist?('Gemfile.local')

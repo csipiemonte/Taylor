@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 module KnowledgeBaseBreadcrumbHelper
   def render_breadcrumb_if_needed(knowledge_base, object, alternative)
@@ -21,7 +21,7 @@ module KnowledgeBaseBreadcrumbHelper
     objects = calculate_breadcrumb_to_category(object&.parent)
 
     last = if alternative.present? && alternative.translations.any?
-             Translation.translate(system_locale_via_uri&.locale, 'Alternative translations')
+             Translation.translate(system_locale_via_uri&.locale, 'Alternative Translations')
            else
              object
            end

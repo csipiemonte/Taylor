@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'browser_test_helper'
 
@@ -197,6 +197,9 @@ class AgentTicketEmailReplyKeepBodyTest < TestCase
       value:      'yes',
       submit_css: '.modal #ui_ticket_zoom_article_email_full_quote .btn[type="submit"]',
     )
+
+    # Suppress the modal dialog that invites to contributions for translations that are < 90% as this breaks the tests for de-de.
+    @browser.execute_script "App.LocalStorage.set('translation_support_no', true, App.Session.get('id'))"
 
     # switch user profile language to German
     switch_language(

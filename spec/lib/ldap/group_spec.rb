@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 # rails autoloading issue
@@ -107,7 +107,7 @@ RSpec.describe Ldap::Group do
 
       it 'fails if no filter found entries' do
         allow(mocked_ldap).to receive(:entries?).and_return(false)
-        expect(instance.filter).to be nil
+        expect(instance.filter).to be_nil
       end
     end
 

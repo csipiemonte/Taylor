@@ -2,14 +2,15 @@ class App.TicketZoom extends App.Controller
   @include App.TicketNavigable
 
   elements:
-    '.main':             'main'
-    '.ticketZoom':       'ticketZoom'
-    '.scrollPageHeader': 'scrollPageHeader'
+    '.main':               'main'
+    '.ticketZoom':         'ticketZoom'
+    '.scrollPageHeader':   'scrollPageHeader'
 
   events:
     'click .js-submit':   'submit'
     'click .js-bookmark': 'bookmark'
     'click .js-reset':    'reset'
+    'click .js-draft':    'draft'
     'click .main':        'muteTask'
 
   constructor: (params) ->
@@ -128,7 +129,7 @@ class App.TicketZoom extends App.Controller
           @taskIconClass = 'diagonal-cross'
 
           if !detail
-            detail = 'General communication error, maybe internet is not available!'
+            detail = __('General communication error, maybe internet is not available!')
           @renderScreenError(
             status:     status
             detail:     detail
@@ -196,6 +197,9 @@ class App.TicketZoom extends App.Controller
         not_verified_user_mobile : ticket.not_verified_user_mobile
         not_verified_user_phone : ticket.not_verified_user_phone
       }
+
+      if draft = App.TicketSharedDraftZoom.findByAttribute 'ticket_id', @ticket_id
+        draft.remove(clear: true)
 
       App.Collection.loadAssets(data.assets, targetModel: 'Ticket')
 
@@ -369,16 +373,16 @@ class App.TicketZoom extends App.Controller
       article_id: undefined
 
     modifier = 'alt+ctrl+left'
-    $(document).bind("keydown.ticket_zoom#{@ticket_id}", modifier, (e) =>
+    $(document).on("keydown.ticket_zoom#{@ticket_id}", modifier, (e) =>
       @articleNavigate('up')
     )
     modifier = 'alt+ctrl+right'
-    $(document).bind("keydown.ticket_zoom#{@ticket_id}", modifier, (e) =>
+    $(document).on("keydown.ticket_zoom#{@ticket_id}", modifier, (e) =>
       @articleNavigate('down')
     )
 
   shortcutNavigationstop: =>
-    $(document).unbind("keydown.ticket_zoom#{@ticket_id}")
+    $(document).off("keydown.ticket_zoom#{@ticket_id}")
 
   articleNavigate: (direction) =>
     articleStates = []
@@ -414,13 +418,13 @@ class App.TicketZoom extends App.Controller
     @positionPageHeaderUpdate()
 
     # scroll is also fired on window resize, if element scroll is changed
-    @main.bind(
+    @main.on(
       'scroll'
       @positionPageHeaderUpdate
     )
 
   positionPageHeaderStop: =>
-    @main.unbind('scroll', @positionPageHeaderUpdate)
+    @main.off('scroll', @positionPageHeaderUpdate)
 
   @scrollHeaderPos: undefined
 
@@ -491,11 +495,13 @@ class App.TicketZoom extends App.Controller
       )
 
       @attributeBar = new App.TicketZoomAttributeBar(
-        ticket:      @ticket
-        el:          elLocal.find('.js-attributeBar')
-        overview_id: @overview_id
-        callback:    @submit
-        taskKey:     @taskKey
+        ticket:        @ticket
+        el:            elLocal.find('.js-attributeBar')
+        overview_id:   @overview_id
+        macroCallback: @submit
+        draftCallback: @saveDraft
+        draftState:    @draftState()
+        taskKey:       @taskKey
       )
       #if @shown
       #  @attributeBar.start()
@@ -983,6 +989,56 @@ class App.TicketZoom extends App.Controller
         @submitPost(e, ticket, macro)
     )
 
+  saveDraft: (e) =>
+    e.stopPropagation()
+    e.preventDefault()
+
+    params =
+      new_article:       @articleNew.params()
+      ticket_attributes: @ticketParams()
+
+    loaded_draft_id = params.new_article.shared_draft_id
+
+    params.form_id = params.new_article['form_id']
+    delete params.new_article['form_id']
+    delete params.new_article['shared_draft_id']
+
+    sharedDraft = @sharedDraft()
+
+    draftExists = sharedDraft?
+    isLoaded = loaded_draft_id == String(sharedDraft?.id)
+
+    matches = draftExists &&
+      _.isEqual(sharedDraft.new_article, params.new_article) &&
+      _.isEqual(sharedDraft.ticket_attributes, params.ticket_attributes)
+
+    if draftExists && !(isLoaded && matches)
+      new App.TicketSharedDraftOverwriteModal(
+        onShowDraft: @draft
+        onSaveDraft: =>
+          @draftSaveToServer(params)
+      )
+
+      return
+
+    @draftSaveToServer(params)
+
+  draftSaveToServer: (params) =>
+    @draftSaving()
+
+    @ajax
+      id: 'ticket_shared_draft_update'
+      type: 'PUT'
+      url: @apiPath + '/tickets/' + @ticket_id + '/shared_draft'
+      processData: true
+      data: JSON.stringify(params)
+      success: (data, status, xhr) =>
+        App.Collection.loadAssets(data.assets)
+        App.Event.trigger 'ui::ticket::shared_draft_saved', { ticket_id: @ticket_id, shared_draft_id: data.shared_draft_id }
+        @draftFetched()
+      error: =>
+        @draftFetched()
+
   submitPost: (e, ticket, macro) =>
     taskAction = @$('.js-secondaryActionButtonLabel').data('type')
 
@@ -1002,14 +1058,13 @@ class App.TicketZoom extends App.Controller
       processData: true
       success: (data) =>
 
-        #App.SessionStorage.set(@key, data)
-        @load(data, true, true)
-
         # reset article - should not be resubmitted on next ticket update
         ticket.article = undefined
 
         # reset form after save
         @reset()
+
+        @load(data, false, true)
 
         if @sidebarWidget
           @sidebarWidget.commit()
@@ -1043,7 +1098,7 @@ class App.TicketZoom extends App.Controller
           error = settings.responseJSON.error
         App.Event.trigger 'notify', {
           type:    'error'
-          msg:     App.i18n.translateContent(details.error_human || details.error || error || 'Unable to update!')
+          msg:     App.i18n.translateContent(details.error_human || details.error || error || __('Saving failed.'))
           timeout: 2000
         }
         @autosaveStart()
@@ -1054,6 +1109,49 @@ class App.TicketZoom extends App.Controller
 
   bookmark: (e) ->
     $(e.currentTarget).find('.bookmark.icon').toggleClass('filled')
+
+  draft: (e) =>
+    e.preventDefault()
+
+    new App.TicketSharedDraftModal(
+      container:    @el.closest('.content')
+      hasChanges:   App.TaskManager.worker(@taskKey).changed()
+      parent:       @
+      shared_draft: @sharedDraft()
+    )
+
+  fetchDraft: ->
+    @ajax(
+      id:    "ticket_#{@ticket_id}_shared_draft"
+      type: 'GET'
+      url:    "#{@apiPath}/tickets/#{@ticket_id}/shared_draft"
+      processData: true
+      success: (data, status, xhr) =>
+        App.Collection.loadAssets(data.assets)
+        @draftFetched()
+    )
+
+  draftSaving: ->
+    @updateDraftButton(true, 'saving')
+
+  updateDraftButton: (visible, state) ->
+    button = @el.find('.js-draft')
+
+    button.toggleClass('hide', !visible)
+    button.find('.attributeBar-draft--available').toggleClass('hide', state != 'available')
+    button.find('.attributeBar-draft--saving').toggleClass('hide', state != 'saving')
+    button.attr('disabled', state == 'saving')
+
+    @el.find('.js-dropdownActionSaveDraft').attr('disabled', state == 'saving')
+
+  draftFetched: ->
+    @updateDraftButton(@sharedDraft()?, 'available')
+
+  draftState: ->
+    @sharedDraft()?
+
+  sharedDraft: ->
+    App.TicketSharedDraftZoom.findByAttribute 'ticket_id', @ticket_id
 
   reset: (e) =>
     if e

@@ -1,5 +1,5 @@
 class App.ControllerForm extends App.Controller
-  fullFormSubmitLabel: 'Submit'
+  fullFormSubmitLabel: __('Submit')
   fullFormSubmitAdditionalClasses: ''
   fullFormButtonsContainerClass: ''
   fullFormAdditionalButtons: [] # [{className: 'js-class', text: 'Label'}]
@@ -34,11 +34,8 @@ class App.ControllerForm extends App.Controller
     @form.prepend('<div class="alert alert--danger js-danger js-alert hide" role="alert"></div>')
     @form.prepend('<div class="alert alert--success js-success hide" role="alert"></div>')
 
-    # Fix for Issue #2510 - Zammad Customers shown as Agents in IE
-    # Previously the handlers are called directly, before the DOM elements are ready, thereby causing a race condition under IE11.
-    # Now we only dispatch the handlers after the DOM is ready.
     if @handlers.length
-      $(@dispatchHandlers)
+      @dispatchHandlers()
 
     # if element is given, prepend form to it
     if @el
@@ -160,7 +157,7 @@ class App.ControllerForm extends App.Controller
       for eventSelector, callback of @events
         do (eventSelector, callback) ->
           evs = eventSelector.split(' ')
-          fieldset.find(evs[1]).bind(evs[0], (e) -> callback(e))
+          fieldset.find(evs[1]).on(evs[0], (e) -> callback(e))
 
     # bind tool tips
     fieldset.find('.js-helpMessage').tooltip()
@@ -173,7 +170,7 @@ class App.ControllerForm extends App.Controller
   # input text field with max. 100 size
   attribute_config = {
     name:     'subject'
-    display:  'Subject'
+    display:  __('Subject')
     tag:      'input'
     type:     'text'
     limit:    100
@@ -185,7 +182,7 @@ class App.ControllerForm extends App.Controller
   # colection as relation with auto completion
   attribute_config = {
     name:           'customer_id'
-    display:        'Customer'
+    display:        __('Customer')
     tag:            'autocompletion'
     # auto completion params, endpoints, ui,...
     type:           'text'
@@ -193,7 +190,7 @@ class App.ControllerForm extends App.Controller
     null:           false
     relation:       'User'
     autocapitalize: false
-    help:           'Select the customer of the ticket or create one.'
+    help:           __('Select the customer of the ticket or create one.')
     helpLink:       '<a href="" class="customer_new">&raquo;</a>'
     callback:       @userInfo
     class:          'span7'
@@ -202,7 +199,7 @@ class App.ControllerForm extends App.Controller
   # colection as relation
   attribute_config = {
     name:       'priority_id'
-    display:    'Priority'
+    display:    __('Priority')
     tag:        'select'
     multiple:   false
     null:       false
@@ -216,7 +213,7 @@ class App.ControllerForm extends App.Controller
   # colection as options
   attribute_config = {
     name:       'priority_id'
-    display:    'Priority'
+    display:    __('Priority')
     tag:        'select'
     multiple:   false
     null:       false
@@ -278,7 +275,7 @@ class App.ControllerForm extends App.Controller
       attribute.autocomplete = 'autocomplete="' + attribute.autocomplete + '"'
 
     # set default values
-    if attribute.value is undefined && 'default' of attribute
+    if attribute.value is undefined && 'default' of attribute && !@params?.id
       attribute.value = attribute.default
 
     # set params value
@@ -316,7 +313,7 @@ class App.ControllerForm extends App.Controller
         item_bind  = item.find('.richtext-content')
         item_event = 'blur'
 
-      item_bind.bind(item_event, (e) =>
+      item_bind.on(item_event, (e) =>
         @lastChangedAttribute = attribute.name
         params = App.ControllerForm.params(@form)
         for handler in @handlers
@@ -531,7 +528,10 @@ class App.ControllerForm extends App.Controller
         else
           param[item.name].push value
       else
-        param[item.name] = value
+        if item.multiselect && typeof value is 'string'
+          param[item.name] = new Array(value)
+        else
+          param[item.name] = value
 
     # verify if we have not checked checkboxes
     uncheckParam = {}
@@ -784,7 +784,7 @@ class App.ControllerForm extends App.Controller
     # set autofocus by delay to make validation testable
     App.Delay.set(
       ->
-        lookupForm.find('.has-error').find('input, textarea, select').first().focus()
+        lookupForm.find('.has-error').find('input, textarea, select').first().trigger('focus')
       200
       'validate'
     )

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 module RuboCop
   module Cop
@@ -17,7 +17,7 @@ module RuboCop
         PATTERN
 
         def_node_matcher :has_reset?, <<-PATTERN
-          $(send _ {:describe :context :it} (_ ...) (hash ... (pair (sym :db_strategy) (sym {:reset :reset_all}))))
+          $(send _ {:describe :context :it :shared_examples} (_ ...) (hash <(pair (sym :db_strategy) (sym {:reset :reset_all})) ...>  ))
         PATTERN
 
         MSG = 'Add a `db_strategy: :reset` to your context/decribe when you are creating object manager attributes!'.freeze

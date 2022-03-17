@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'browser_test_helper'
 
@@ -49,30 +49,30 @@ class AgentNavigationAndTitleTest < TestCase
       do_not_submit: true,
     )
     sleep 4
-    verify_title(value: 'Call Inbound')
+    verify_title(value: 'Inbound Call')
     verify_task(
       data: {
-        title: 'Call Inbound: ticket create #1',
+        title: 'Inbound Call: ticket create #1',
       }
     )
     exists_not(css: '#navigation .js-menu .is-active')
 
     execute(js: 'App.Event.trigger("ui:rerender")')
     sleep 1
-    verify_title(value: 'Call Inbound')
+    verify_title(value: 'Inbound Call')
     verify_task(
       data: {
-        title: 'Call Inbound: ticket create #1',
+        title: 'Inbound Call: ticket create #1',
       }
     )
     exists_not(css: '#navigation .js-menu .is-active')
 
     reload
     sleep 2
-    verify_title(value: 'Call Inbound')
+    verify_title(value: 'Inbound Call')
     verify_task(
       data: {
-        title: 'Call Inbound: ticket create #1',
+        title: 'Inbound Call: ticket create #1',
       }
     )
     exists_not(css: '#navigation .js-menu .is-active')

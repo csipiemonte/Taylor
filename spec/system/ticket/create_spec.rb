@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -55,8 +55,8 @@ RSpec.describe 'Ticket Create', type: :system do
           expect(page).to have_no_css('span', text: 'Encrypted')
 
           security_result = Ticket::Article.last.preferences['security']
-          expect(security_result['encryption']['success']).to be nil
-          expect(security_result['sign']['success']).to be nil
+          expect(security_result['encryption']['success']).to be_nil
+          expect(security_result['sign']['success']).to be_nil
         end
       end
     end
@@ -91,8 +91,8 @@ RSpec.describe 'Ticket Create', type: :system do
             use_template(template)
 
             # wait till S/MIME check AJAX call is ready
-            expect(page).to have_css('div.js-securityEncrypt.btn--active', wait: 5)
-            expect(page).to have_css('div.js-securitySign.btn--active', wait: 5)
+            expect(page).to have_css('div.js-securityEncrypt.btn--active')
+            expect(page).to have_css('div.js-securitySign.btn--active')
 
             # deactivate encryption and signing
             click '.js-securityEncrypt'
@@ -108,8 +108,8 @@ RSpec.describe 'Ticket Create', type: :system do
             expect(page).to have_no_css('span', text: 'Encrypted')
 
             security_result = Ticket::Article.last.preferences['security']
-            expect(security_result['encryption']['success']).to be nil
-            expect(security_result['sign']['success']).to be nil
+            expect(security_result['encryption']['success']).to be_nil
+            expect(security_result['sign']['success']).to be_nil
           end
         end
 
@@ -120,8 +120,8 @@ RSpec.describe 'Ticket Create', type: :system do
             use_template(template)
 
             # wait till S/MIME check AJAX call is ready
-            expect(page).to have_css('div.js-securityEncrypt.btn--active', wait: 5)
-            expect(page).to have_css('div.js-securitySign.btn--active', wait: 5)
+            expect(page).to have_css('div.js-securityEncrypt.btn--active')
+            expect(page).to have_css('div.js-securitySign.btn--active')
 
             # deactivate encryption
             click '.js-securityEncrypt'
@@ -136,7 +136,7 @@ RSpec.describe 'Ticket Create', type: :system do
             expect(page).to have_no_css('span', text: 'Encrypted')
 
             security_result = Ticket::Article.last.preferences['security']
-            expect(security_result['encryption']['success']).to be nil
+            expect(security_result['encryption']['success']).to be_nil
             expect(security_result['sign']['success']).to be true
           end
         end
@@ -148,8 +148,8 @@ RSpec.describe 'Ticket Create', type: :system do
             use_template(template)
 
             # wait till S/MIME check AJAX call is ready
-            expect(page).to have_css('div.js-securityEncrypt.btn--active', wait: 5)
-            expect(page).to have_css('div.js-securitySign.btn--active', wait: 5)
+            expect(page).to have_css('div.js-securityEncrypt.btn--active')
+            expect(page).to have_css('div.js-securitySign.btn--active')
 
             # deactivate signing
             click '.js-securitySign'
@@ -165,7 +165,7 @@ RSpec.describe 'Ticket Create', type: :system do
 
             security_result = Ticket::Article.last.preferences['security']
             expect(security_result['encryption']['success']).to be true
-            expect(security_result['sign']['success']).to be nil
+            expect(security_result['sign']['success']).to be_nil
           end
         end
 
@@ -176,8 +176,8 @@ RSpec.describe 'Ticket Create', type: :system do
             use_template(template)
 
             # wait till S/MIME check AJAX call is ready
-            expect(page).to have_css('div.js-securityEncrypt.btn--active', wait: 5)
-            expect(page).to have_css('div.js-securitySign.btn--active', wait: 5)
+            expect(page).to have_css('div.js-securityEncrypt.btn--active')
+            expect(page).to have_css('div.js-securitySign.btn--active')
 
             click '.js-submit'
 
@@ -202,12 +202,12 @@ RSpec.describe 'Ticket Create', type: :system do
 
             it "security defaults sign: #{sign}, encrypt: #{encrypt}" do
               within(:active_content) do
-                encrypt_button = find('.js-securityEncrypt', wait: 5)
-                sign_button    = find('.js-securitySign', wait: 5)
+                encrypt_button = find('.js-securityEncrypt')
+                sign_button    = find('.js-securitySign')
 
                 active_button_class = '.btn--active'
-                expect(encrypt_button.matches_css?(active_button_class, wait: 2)).to be(encrypt)
-                expect(sign_button.matches_css?(active_button_class, wait: 2)).to be(sign)
+                expect(encrypt_button.matches_css?(active_button_class)).to be(encrypt)
+                expect(sign_button.matches_css?(active_button_class)).to be(sign)
               end
             end
           end
@@ -535,8 +535,7 @@ RSpec.describe 'Ticket Create', type: :system do
     let(:customer) { create(:customer, password: 'test') }
 
     it 'customer user should not have agent object attributes', authenticated_as: :agent do
-      visit 'ticket/create'
-
+      # Log out again, so that we can execute the next login.
       logout
 
       # Re-create agent session and fetch object attributes.
@@ -625,7 +624,7 @@ RSpec.describe 'Ticket Create', type: :system do
       end
 
       it 'does not show the field' do
-        expect(page).to have_css("div[data-attribute-name='#{field_name}'].is-hidden", visible: :hidden)
+        expect(page).to have_css("div[data-attribute-name='#{field_name}'].is-hidden.is-removed", visible: :hidden)
       end
     end
   end
@@ -681,7 +680,57 @@ RSpec.describe 'Ticket Create', type: :system do
       click '.js-submit'
       expect(current_url).to include('ticket/zoom')
       expect(Ticket.last.state_id).to eq(Ticket::State.find_by(name: 'pending customer feedback').id)
-      expect(Ticket.last.pending_time).to be nil
+      expect(Ticket.last.pending_time).to be_nil
+    end
+  end
+
+  context 'default priority', authenticated_as: :authenticate do
+    let(:template)        { create(:template, :dummy_data) }
+    let(:ticket_priority) { create(:ticket_priority, default_create: true) }
+    let(:another_priority) { Ticket::Priority.find(1) }
+    let(:priority_field)   { find('[name=priority_id]') }
+
+    def authenticate
+      template
+      ticket_priority
+      true
+    end
+
+    it 'shows default priority on load' do
+      visit 'ticket/create'
+
+      expect(priority_field.value).to eq ticket_priority.id.to_s
+    end
+
+    it 'does not reset to default priority on reload' do
+      visit 'ticket/create'
+
+      taskbar_timestamp = Taskbar.last.updated_at
+
+      priority_field.select another_priority.name
+
+      wait.until { Taskbar.last.updated_at != taskbar_timestamp }
+
+      refresh
+
+      expect(priority_field.reload.value).to eq another_priority.id.to_s
+    end
+
+    it 'saves default priority' do
+      visit 'ticket/create'
+      use_template template
+      click '.js-submit'
+
+      expect(Ticket.last).to have_attributes(priority: ticket_priority)
+    end
+
+    it 'saves different priority if overriden' do
+      visit 'ticket/create'
+      use_template template
+      priority_field.select another_priority.name
+      click '.js-submit'
+
+      expect(Ticket.last).to have_attributes(priority: another_priority)
     end
   end
 
@@ -719,20 +768,20 @@ RSpec.describe 'Ticket Create', type: :system do
         find('[name=customer_id_completion]').fill_in with: 'zam'
         expect(page).to have_selector("li.js-organization[data-organization-id='#{organization.id}']")
         page.find("li.js-organization[data-organization-id='#{organization.id}']").click
-        wait(5).until { page.all("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li", visible: :all).count == 12 } # 10 users + back + show more button
+        wait.until { page.all("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li", visible: :all).count == 12 } # 10 users + back + show more button
 
         expect(page).to have_selector("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers[organization-member-limit='10']")
         scroll_into_view('li.js-showMoreMembers')
         page.find("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers").click
-        wait(5).until { page.all("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li", visible: :all).count == 27 } # 25 users + back + show more button
+        wait.until { page.all("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li", visible: :all).count == 27 } # 25 users + back + show more button
 
         expect(page).to have_selector("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers[organization-member-limit='25']")
         scroll_into_view('li.js-showMoreMembers')
         page.find("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers").click
-        wait(5).until { page.all("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li", visible: :all).count == 52 } # 50 users + back + show more button
+        wait.until { page.all("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li", visible: :all).count == 52 } # 50 users + back + show more button
 
         scroll_into_view('li.js-showMoreMembers')
-        expect(page).to have_selector("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers.hidden", visible: :all, wait: 20)
+        expect(page).to have_selector("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers.hidden", visible: :all)
       end
     end
   end
@@ -744,24 +793,26 @@ RSpec.describe 'Ticket Create', type: :system do
 
     it 'does not loose attachments on rerender of the ui' do
       # upload two files
+      await_empty_ajax_queue
       page.find('input#fileUpload_1', visible: :all).set(Rails.root.join('test/data/mail/mail001.box'))
       await_empty_ajax_queue
+      wait.until { page.all('div.attachment-delete.js-delete', visible: :all).count == 1 }
+      expect(page).to have_text('mail001.box')
       page.find('input#fileUpload_1', visible: :all).set(Rails.root.join('test/data/mail/mail002.box'))
       await_empty_ajax_queue
-      wait(5).until { page.all('div.attachment-delete.js-delete', visible: :all).count == 2 }
-      expect(page).to have_text('mail001.box')
+      wait.until { page.all('div.attachment-delete.js-delete', visible: :all).count == 2 }
       expect(page).to have_text('mail002.box')
 
       # remove last file
       begin
-        page.evaluate_script("$('div.attachment-delete.js-delete:last').click()") # not interactable
+        page.evaluate_script("$('div.attachment-delete.js-delete:last').trigger('click')") # not interactable
       rescue # Lint/SuppressedException
         # because its not interactable it also
         # returns this weird exception for the jquery
         # even tho it worked fine
       end
       await_empty_ajax_queue
-      wait(5).until { page.all('div.attachment-delete.js-delete', visible: :all).count == 1 }
+      wait.until { page.all('div.attachment-delete.js-delete', visible: :all).count == 1 }
       expect(page).to have_text('mail001.box')
       expect(page).to have_no_text('mail002.box')
 
@@ -780,7 +831,7 @@ RSpec.describe 'Ticket Create', type: :system do
     end
 
     it 'does show an empty list of owners' do
-      wait(5).until { page.all('select[name=owner_id] option').count == 1 }
+      wait.until { page.all('select[name=owner_id] option').count == 1 }
       expect(page.all('select[name=owner_id] option').count).to eq(1)
     end
   end
@@ -808,7 +859,7 @@ RSpec.describe 'Ticket Create', type: :system do
     end
 
     def add_email(input)
-      fill_in 'Cc', with: input
+      fill_in 'CC', with: input
       send_keys(:enter) # trigger blur
       find '.token', text: input # wait for email to tokenize
     end
@@ -827,6 +878,34 @@ RSpec.describe 'Ticket Create', type: :system do
 
     it 'does render the create screen with an initial core workflow state to set signatures and other defaults properly' do
       expect(page.find('.richtext-content')).to have_text('Support')
+    end
+  end
+
+  describe 'Zammad 5 mail template double signature #3816', authenticated_as: :authenticate do
+    let(:agent_template) { create(:agent) }
+    let!(:template) do
+      create(
+        :template,
+        :dummy_data,
+        group: Group.first, owner: agent_template,
+        body: 'Content dummy.<br><br><div data-signature="true" data-signature-id="1">  Test Other Agent<br><br>--<br> Super Support - Waterford Business Park<br> 5201 Blue Lagoon Drive - 8th Floor &amp; 9th Floor - Miami, 33126 USA<br> Email: hot@example.com - Web: <a href="http://www.example.com/" rel="nofollow noreferrer noopener" target="_blank">http://www.example.com/</a><br>--</div>'
+      )
+    end
+
+    def authenticate
+      Group.first.update(signature: Signature.first)
+      true
+    end
+
+    before do
+      visit 'ticket/create'
+      find('[data-type=email-out]').click
+    end
+
+    it 'does not show double signature on template usage' do
+      select Group.first.name, from: 'group_id'
+      use_template(template)
+      expect(page).to have_no_text('Test Other Agent')
     end
   end
 end

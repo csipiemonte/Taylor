@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'test_helper'
 
@@ -40,7 +40,7 @@ class ObjectCacheTest < ActiveSupport::TestCase
     roles  = Role.where(name: %w[Agent Admin])
     groups = Group.all.order(:id)
 
-    # be sure that minimum one admin is available
+    # be sure that at least one admin is available
     User.create_or_update(
       login:         'last_admin_check@example.org',
       firstname:     'last_admin_check',

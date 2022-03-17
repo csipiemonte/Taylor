@@ -9,12 +9,13 @@ class Edit extends App.Controller
       return if data.ticket_id.toString() isnt @ticket.id.toString()
 
       @ticket   = App.Ticket.find(@ticket.id)
-      @formMeta = data.form_meta
-      @render()
+      if data.form_meta
+        @formMeta = data.form_meta
+      @render(data.draft)
     )
     @render()
 
-  render: =>
+  render: (draft = {}) =>
     defaults = @ticket.attributes()
     delete defaults.article # ignore article infos
     followUpPossible = App.Group.find(defaults.group_id).follow_up_possible
@@ -45,7 +46,7 @@ class Edit extends App.Controller
       handlersConfig: handlers
       filter:         @formMeta.filter
       formMeta:       @formMeta
-      params:         defaults
+      params:         _.extend(defaults, draft)
       isDisabled:     editable
       taskKey:        @taskKey
       core_workflow: {
@@ -83,23 +84,23 @@ class SidebarTicket extends App.Controller
     @item = {
       name: 'ticket'
       badgeIcon: 'message'
-      sidebarHead: 'Ticket'
+      sidebarHead: __('Ticket')
       sidebarCallback: @editTicket
     }
     if @ticket.currentView() is 'agent'
       @item.sidebarActions = [
         {
-          title:    'History'
+          title:    __('History')
           name:     'ticket-history'
           callback: @showTicketHistory
         },
         {
-          title:    'Merge'
+          title:    __('Merge')
           name:     'ticket-merge'
           callback: @showTicketMerge
         },
         {
-          title:    'Change Customer'
+          title:    __('Change Customer')
           name:     'customer-change'
           callback: @changeCustomer
         },

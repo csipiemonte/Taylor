@@ -77,8 +77,7 @@ class App.Controller extends Spine.Controller
 
     # release bindings
     if @el
-      @el.undelegate()
-      @el.unbind()
+      @el.off()
       @el.empty()
 
     # release spine bindings (see release() of spine.coffee)
@@ -114,7 +113,7 @@ class App.Controller extends Spine.Controller
     if window.clipboardData # IE
       window.clipboardData.setData('Text', text)
     else
-      window.prompt('Copy to clipboard: Ctrl+C, Enter', text)
+      window.prompt(__('Copy to clipboard: Ctrl+C, Enter'), text)
 
   # disable all delay's and interval's
   disconnectClient: ->
@@ -220,7 +219,7 @@ class App.Controller extends Spine.Controller
 
   userInfo: (data) ->
     el = data.el || $('[data-id="customer_info"]')
-    el.unbind()
+    el.off()
 
     # start customer info controller
     new App.WidgetUser(
@@ -310,7 +309,8 @@ class App.Controller extends Spine.Controller
     if item.attr('timezone')
       newTitle += ' ' + item.attr('timezone')
 
-    item.attr('title', newTitle)
+    if !item.hasClass('noTitle')
+      item.attr('title', newTitle)
     item.html(time)
 
   recentView: (object, o_id) =>

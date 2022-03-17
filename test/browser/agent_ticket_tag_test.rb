@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'browser_test_helper'
 
@@ -256,7 +256,7 @@ class AgentTicketTagTest < TestCase
     sleep 3
     execute(
       browser: browser2,
-      js:      "$('.content.active .js-name:contains(\"tag3\")').click()",
+      js:      "$('.content.active .js-name:contains(\"tag3\")').trigger('click')",
     )
 
     modal_ready(
@@ -317,7 +317,7 @@ class AgentTicketTagTest < TestCase
     sleep 3
     execute(
       browser: browser2,
-      js:      "$('.content.active .js-name:contains(\"tag5\")').closest('tr').find('.js-delete').click()",
+      js:      "$('.content.active .js-name:contains(\"tag5\")').closest('tr').find('.js-delete').trigger('click')",
     )
 
     modal_ready(

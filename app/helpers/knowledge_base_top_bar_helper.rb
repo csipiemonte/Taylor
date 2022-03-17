@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 module KnowledgeBaseTopBarHelper
   def kb_top_bar_color(object)
@@ -36,7 +36,7 @@ module KnowledgeBaseTopBarHelper
   end
 
   def render_top_bar_if_needed(object, knowledge_base)
-    return if !policy(:knowledge_base).edit?
+    return if !can_preview?
 
     editable = object || knowledge_base
 

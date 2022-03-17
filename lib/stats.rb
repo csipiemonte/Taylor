@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class Stats
 
@@ -29,7 +29,7 @@ returns
 
       backends = Setting.where(area: 'Dashboard::Stats')
       if backends.blank?
-        raise "No settings with area 'Dashboard::Stats' defined"
+        raise __("No settings with area 'Dashboard::Stats' defined")
       end
 
       backends.each do |stats_item|

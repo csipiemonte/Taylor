@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class Facebook
 
@@ -334,7 +334,7 @@ result
 
   def get_state(page, post, ticket = nil)
 
-    # no changes in post is from page user it self
+    # no changes in post is from page user itself
     if post['from'] && post['from']['id'].to_s == page['id'].to_s
       if !ticket
         return Ticket::State.find_by(name: 'closed')

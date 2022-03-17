@@ -406,7 +406,7 @@ class App.ControllerTable extends App.Controller
       if @bindCheckbox.events
         for event, callback of @bindCheckbox.events
           do (table, event, callback) ->
-            table.delegate('input[name="bulk"]', event, (e) ->
+            table.on(event, 'input[name="bulk"]', (e) ->
               e.stopPropagation()
               id      = $(e.currentTarget).parents('tr').data('id')
               checked = $(e.currentTarget).prop('checked')
@@ -424,12 +424,12 @@ class App.ControllerTable extends App.Controller
     if @checkbox
 
       # click first tr>td, catch click
-      table.delegate('tr > td:nth-child(1)', 'click', (e) ->
+      table.on('click', 'tr > td:nth-child(1)', (e) ->
         e.stopPropagation()
       )
 
       # bind on full bulk click
-      table.delegate('input[name="bulk_all"]', 'change', (e) =>
+      table.on('change', 'input[name="bulk_all"]', (e) =>
         e.stopPropagation()
         clicks = []
         if $(e.currentTarget).prop('checked')
@@ -493,16 +493,6 @@ class App.ControllerTable extends App.Controller
       sortable:   @dndCallback
     ))
 
-  getGroupByKeyName: (object, groupBy) ->
-    reference_key = groupBy + '_id'
-
-    if reference_key of object
-      attribute = _.findWhere(object.constructor.configure_attributes, { name: reference_key })
-
-      return App[attribute.relation]?.find(object[reference_key])?.displayName() || reference_key
-
-    groupBy
-
   sortObjectKeys: (objects, direction) ->
     sorted = Object.keys(objects).sort()
 
@@ -525,7 +515,7 @@ class App.ControllerTable extends App.Controller
     objectsToShow = @objectsOfPage(@pagerShownPage)
     if @groupBy
       # group by raw (and not printable) value so dates work also
-      objectsGrouped = _.groupBy(objectsToShow, (object) => object[@getGroupByKeyName(object, @groupBy)])
+      objectsGrouped = _.groupBy(objectsToShow, (object) => @groupObjectName(object, @groupBy, excludeTags: ['date', 'datetime']))
     else
       objectsGrouped = { '': objectsToShow }
 
@@ -641,7 +631,7 @@ class App.ControllerTable extends App.Controller
     if @clone
       @actions.push
         name: 'clone'
-        display: 'Clone'
+        display: __('Clone')
         icon: 'clipboard'
         class: 'create  js-clone'
         callback: (id) =>
@@ -660,7 +650,7 @@ class App.ControllerTable extends App.Controller
     if @destroy
       @actions.push
         name: 'delete'
-        display: 'Delete'
+        display: __('Delete')
         icon: 'trash'
         class: 'danger js-delete'
         callback: (id) =>
@@ -672,7 +662,7 @@ class App.ControllerTable extends App.Controller
     if @actions.length
       @headers.push
         name:         'action'
-        display:      'Action'
+        display:      __('Action')
         width:        '50px'
         displayWidth: 50
         align:        'right'
@@ -865,11 +855,15 @@ class App.ControllerTable extends App.Controller
     @objects = localObjects
     @lastSortedobjects = localObjects
 
-  groupObjectName: (object, key = undefined) ->
+  groupObjectName: (object, key = undefined, options = {}) ->
     group = object
     if key
       if key not of object
         key += '_id'
+
+      # return internal value if needed
+      return object[key] if options.excludeTags && _.find(@attributesList, (attr) -> attr.name == key && _.contains(options.excludeTags, attr.tag))
+
       group = App.viewPrint(object, key, @attributesList)
     if _.isEmpty(group)
       group = ''

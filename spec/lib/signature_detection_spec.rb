@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -119,7 +119,7 @@ RSpec.describe SignatureDetection do
       end
 
       it 'does not detect the warning information as signature' do
-        expect(described_class.find_signature(messages)).to eq(nil)
+        expect(described_class.find_signature(messages)).to be_nil
       end
     end
   end

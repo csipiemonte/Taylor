@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 rescue => exception
   
@@ -124,7 +124,13 @@ RSpec.describe 'Import Zendesk', type: :system, external_env: true, set_up: fals
 
       Rake::Task['zammad:setup:auto_wizard'].execute
 
-      expect(page).to have_text('Login')
+      expect(page).to have_text(Setting.get('fqdn'))
+
+      # Check that the login is working and also the left navigation side bar is visible.
+      login(
+        username: 'admin@example.com',
+        password: 'test',
+      )
     end
   end
 end

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -188,7 +188,7 @@ RSpec.describe AutoWizard do
                     host:     'mx1.example.com',
                     user:     'not_existing',
                     password: 'some_pass',
-                    ssl:      true
+                    ssl:      'ssl'
                   }
                 },
                 outbound: {
@@ -227,7 +227,7 @@ RSpec.describe AutoWizard do
                     host:     'mx1.example.com',
                     user:     'not_existing',
                     password: 'some_pass',
-                    ssl:      true
+                    ssl:      'ssl'
                   }
                 },
                 outbound: {

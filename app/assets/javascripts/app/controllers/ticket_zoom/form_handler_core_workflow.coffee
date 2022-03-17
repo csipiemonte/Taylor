@@ -56,7 +56,7 @@ class App.FormHandlerCoreWorkflow
     if $(target).get(0).tagName == 'FORM'
       target = $(target).find('button[type=submit]').first()
 
-    $(target).click()
+    $(target).trigger('click')
 
   # checks if the controller has a running Core Workflow request
   @requestsRunning: (controllerForm) ->
@@ -124,21 +124,32 @@ class App.FormHandlerCoreWorkflow
         coreWorkflowRestrictions[classname][item.name] = App.FormHandlerCoreWorkflow.restrictValuesAttributeCache(attribute, values)
 
         valueFound = false
-        for value in values
+        if item.tag is 'multiselect'
+          if _.isArray(paramValue)
+            paramValue = _.intersection(paramValue, values)
+            if paramValue.length > 0
+              valueFound = true
+        else
+          for value in values
 
-          # false values are valid values e.g. for boolean fields (be careful)
-          if value isnt undefined && paramValue isnt undefined
-            if value.toString() == paramValue.toString()
-              valueFound = true
-              break
-            if _.isArray(paramValue) && _.contains(paramValue, value.toString())
-              valueFound = true
-              break
+            # false values are valid values e.g. for boolean fields (be careful)
+            continue if value is undefined
+            continue if value is null
+            continue if paramValue is undefined
+            continue if paramValue is null
+            continue if value.toString() != paramValue.toString()
+            valueFound = true
+            break
 
         item.filter   = values
         if valueFound
           item.default  = paramValue
           item.newValue = paramValue
+        else if params.id
+          obj = App[ui.model.className].find(params.id)
+          if obj && obj[item.name]
+            item.default  = obj[item.name]
+            item.newValue = obj[item.name]
         else
           item.default  = ''
           item.newValue = ''
@@ -159,7 +170,7 @@ class App.FormHandlerCoreWorkflow
                 eventToBind = event.type + '.' + event.namespace
               target = newElement.find("[name='" + target_name + "']")
               if target.length > 0
-                target.bind(eventToBind, event.data, event.handler)
+                target.on(eventToBind, event.data, event.handler)
             )
           )
         )

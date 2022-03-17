@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 FactoryBot.define do
   factory :object_manager_attribute, class: 'ObjectManager::Attribute' do
@@ -48,6 +48,21 @@ FactoryBot.define do
       {
         'type'      => 'text',
         'maxlength' => 200,
+        'null'      => true,
+        'translate' => false,
+        'default'   => default,
+        'options'   => {},
+        'relation'  => '',
+      }
+    end
+  end
+
+  factory :object_manager_attribute_textarea, parent: :object_manager_attribute do
+    data_type { 'textarea' }
+    data_option do
+      {
+        'type'      => 'textarea',
+        'maxlength' => 255,
         'null'      => true,
         'translate' => false,
         'default'   => default,
@@ -114,9 +129,37 @@ FactoryBot.define do
   end
 
   factory :object_manager_attribute_select, parent: :object_manager_attribute do
+    transient do
+      data_option_options do
+        {
+          'key_1' => 'value_1',
+          'key_2' => 'value_2',
+          'key_3' => 'value_3',
+        }
+      end
+    end
+
     default { '' }
 
     data_type { 'select' }
+    data_option do
+      {
+        'default'    => default,
+        'options'    => data_option_options,
+        'relation'   => '',
+        'nulloption' => true,
+        'multiple'   => false,
+        'null'       => true,
+        'translate'  => true,
+        'maxlength'  => 255
+      }
+    end
+  end
+
+  factory :object_manager_attribute_multiselect, parent: :object_manager_attribute do
+    default { '' }
+
+    data_type { 'multiselect' }
     data_option do
       {
         'default'    => default,
@@ -127,7 +170,7 @@ FactoryBot.define do
         },
         'relation'   => '',
         'nulloption' => true,
-        'multiple'   => false,
+        'multiple'   => true,
         'null'       => true,
         'translate'  => true,
         'maxlength'  => 255

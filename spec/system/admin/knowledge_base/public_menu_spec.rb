@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -13,10 +13,32 @@ RSpec.describe 'Admin Panel > Knowledge Base > Public Menu', type: :system do
       find('a', text: 'Public Menu').click
     end
 
-    it { expect(find_locale('Footer menu', alternative_locale).text).to include menu_item_4.title }
-    it { expect(find_locale('Header menu', primary_locale).text).to include menu_item_1.title }
-    it { expect(find_locale('Header menu', alternative_locale).text).not_to include menu_item_2.title }
-    it { expect(find_locale('Header menu', primary_locale).text).to include menu_item_2.title }
+    it { expect(find_locale('Footer Menu', alternative_locale).text).to include menu_item_4.title }
+    it { expect(find_locale('Header Menu', primary_locale).text).to include menu_item_1.title }
+    it { expect(find_locale('Header Menu', alternative_locale).text).not_to include menu_item_2.title }
+    it { expect(find_locale('Header Menu', primary_locale).text).to include menu_item_2.title }
+  end
+
+  context 'menu items color' do
+    before do
+      knowledge_base.update! color_header_link: color
+      visit '/#manage/knowledge_base'
+      find('a', text: 'Public Menu').click
+    end
+
+    let(:color) { 'rgb(255, 0, 255)' }
+
+    it 'applies color for header preview' do
+      elem = all('.kb-menu-preview a')[0]
+
+      expect(elem).to have_computed_style :color, color
+    end
+
+    it 'does not apply color for footer preview' do
+      elem = all('.kb-menu-preview a')[3]
+
+      expect(elem).not_to have_computed_style :color, color
+    end
   end
 
   context 'menu items color' do
@@ -45,7 +67,7 @@ RSpec.describe 'Admin Panel > Knowledge Base > Public Menu', type: :system do
     before do
       visit '/#manage/knowledge_base'
       find('a', text: 'Public Menu').click
-      find_location('Header menu').find('a', text: 'Edit').click
+      find_location('Header Menu').find('a', text: 'Edit').click
 
       modal_ready
     end
@@ -56,7 +78,7 @@ RSpec.describe 'Admin Panel > Knowledge Base > Public Menu', type: :system do
 
       modal_disappear
 
-      expect(find_locale('Header menu', primary_locale).text).to include 'test menu'
+      expect(find_locale('Header Menu', primary_locale).text).to include 'test menu'
     end
 
     it 'adds menu item' do
@@ -70,7 +92,7 @@ RSpec.describe 'Admin Panel > Knowledge Base > Public Menu', type: :system do
 
       modal_disappear
 
-      expect(find_locale('Header menu', alternative_locale).text).to include 'new item'
+      expect(find_locale('Header Menu', alternative_locale).text).to include 'new item'
     end
 
     it 'deletes menu item' do
@@ -84,7 +106,7 @@ RSpec.describe 'Admin Panel > Knowledge Base > Public Menu', type: :system do
 
       modal_disappear
 
-      expect(find_locale('Header menu', alternative_locale).text).not_to include menu_item_1.title
+      expect(find_locale('Header Menu', alternative_locale).text).not_to include menu_item_1.title
     end
   end
 

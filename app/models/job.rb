@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class Job < ApplicationModel
   include ChecksClientNotification
@@ -70,10 +70,10 @@ job.run(true)
     return false if !active
 
     # only execute jobs older than 1 min to give admin time to make last-minute changes
-    return false if updated_at > Time.zone.now - 1.minute
+    return false if updated_at > 1.minute.ago
 
     # check if job got stuck
-    return false if running == true && last_run_at && Time.zone.now - 1.day < last_run_at
+    return false if running == true && last_run_at && 1.day.ago < last_run_at
 
     # check if jobs need to be executed
     # ignore if job was running within last 10 min.
@@ -83,13 +83,15 @@ job.run(true)
   end
 
   def in_timeplan?(time = Time.zone.now)
-    Job::TimeplanCalculation.new(timeplan).contains?(time)
+    timeplan_calculation.contains?(time)
   end
 
   def matching_count
     ticket_count, _tickets = Ticket.selectors(condition, limit: 1, execution_time: true)
     ticket_count || 0
   end
+
+  private
 
   def next_run_at_calculate(time = Time.zone.now)
     return nil if !active
@@ -98,10 +100,8 @@ job.run(true)
       time += 10.minutes
     end
 
-    Job::TimeplanCalculation.new(timeplan).next_at(time)
+    timeplan_calculation.next_at(time)
   end
-
-  private
 
   def updated_matching
     self.matching = matching_count
@@ -185,5 +185,11 @@ job.run(true)
           ticket.perform_changes(self, 'job')
         end
     end
+  end
+
+  def timeplan_calculation
+    timezone = Setting.get('timezone_default').presence || 'UTC'
+
+    Job::TimeplanCalculation.new(timeplan, timezone)
   end
 end

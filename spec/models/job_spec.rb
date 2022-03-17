@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'models/application_model_examples'
@@ -345,6 +345,22 @@ RSpec.describe Job, type: :model do
         end
       end
     end
+
+    describe '#in_timeplan?' do
+      before do
+        job.timeplan = { days: { Mon: true }, hours: { 0 => true }, minutes: { 0 => true } }
+      end
+
+      it 'checks in selected time zone' do
+        Setting.set 'timezone_default', 'Europe/Vilnius'
+
+        expect(job).to be_in_timeplan Time.zone.parse('2020-12-27 22:00')
+      end
+
+      it 'checks in UTC' do
+        expect(job).to be_in_timeplan Time.zone.parse('2020-12-28 00:00')
+      end
+    end
   end
 
   describe 'Attributes:' do
@@ -449,6 +465,24 @@ RSpec.describe Job, type: :model do
                 .to(valid_timeslots.fifth.to_i)      # integers are less precise
             end
           end
+        end
+      end
+
+      context 'when updating #next_run_at' do
+        before do
+          travel_to Time.zone.parse('2020-12-27 00:00')
+
+          job.timeplan = { days: { Mon: true }, hours: { 0 => true }, minutes: { 0 => true } }
+        end
+
+        it 'sets #next_run_at time in selected time zone' do
+          Setting.set 'timezone_default', 'Europe/Vilnius'
+
+          expect { job.save }.to change(job, :next_run_at).to(Time.zone.parse('2020-12-27 22:00'))
+        end
+
+        it 'sets #next_run_at time in UTC' do
+          expect { job.save }.to change(job, :next_run_at).to(Time.zone.parse('2020-12-28 00:00'))
         end
       end
     end

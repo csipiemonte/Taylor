@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2022 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class SessionsController < ApplicationController
   prepend_before_action -> { authentication_check && authorize! }, only: %i[switch_to_user list delete]
@@ -26,7 +26,7 @@ class SessionsController < ApplicationController
       User.lookup(login: login&.downcase)
     end
 
-    raise Exceptions::NotAuthorized, 'Missing SSO ENV REMOTE_USER or X-Forwarded-User header' if login.blank?
+    raise Exceptions::NotAuthorized, __('Missing SSO ENV REMOTE_USER or X-Forwarded-User header') if login.blank?
     raise Exceptions::NotAuthorized, "No such user '#{login}' found!" if user.blank?
 
     session.delete(:switched_from_user_id)
@@ -72,6 +72,9 @@ class SessionsController < ApplicationController
 
   # "Delete" a login, aka "log the user out"
   def destroy
+    if Rails.env.test? && ENV['FAKE_SELENIUM_LOGIN_USER_ID'].present?
+      ENV['FAKE_SELENIUM_LOGIN_USER_ID'] = nil # rubocop:disable Rails/EnvironmentVariableAccess
+    end
 
     # CSI Piemonte custom
     cu_session = SessionHelper.json_hash(@_current_user)

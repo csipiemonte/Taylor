@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 # This file should contain all the record creation needed to seed the database with its default values.
 # The data can then be loaded with the rake db:seed (or created alongside the db with db:setup).
@@ -32,7 +32,7 @@ DbHelper.import_post
 Locale.create_if_not_exists(
   locale: 'en-us',
   alias:  'en',
-  name:   'English (United States)',
+  name:   __('English (United States)'),
 )
 Locale.sync
 Translation.sync

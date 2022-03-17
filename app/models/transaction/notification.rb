@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class Transaction::Notification
 
@@ -299,8 +299,8 @@ class Transaction::Notification
             if relation_model
               if relation_model['name']
                 value_str[0] = relation_model['name']
-              elsif relation_model.respond_to?('fullname')
-                value_str[0] = relation_model.send('fullname')
+              elsif relation_model.respond_to?(:fullname)
+                value_str[0] = relation_model.send(:fullname)
               end
             end
           end
@@ -309,8 +309,8 @@ class Transaction::Notification
             if relation_model
               if relation_model['name']
                 value_str[1] = relation_model['name']
-              elsif relation_model.respond_to?('fullname')
-                value_str[1] = relation_model.send('fullname')
+              elsif relation_model.respond_to?(:fullname)
+                value_str[1] = relation_model.send(:fullname)
               end
             end
           end

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -121,7 +121,7 @@ RSpec.describe ExternalCredential::Google do
               'options' => a_hash_including(
                 'auth_type' => 'XOAUTH2',
                 'host'      => 'imap.gmail.com',
-                'ssl'       => true,
+                'ssl'       => 'ssl',
                 'user'      => primary_email,
               )
             ),

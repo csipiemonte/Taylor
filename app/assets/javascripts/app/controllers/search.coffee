@@ -56,13 +56,9 @@ class App.Search extends App.Controller
     @navupdate(url: '#search', type: 'menu')
     return if _.isEmpty(params.query)
 
-    @$('.js-search').val(params.query).trigger('change')
-    return if @shown
-
-    @search(1000, true)
+    @$('.js-search').val(params.query).trigger('keyup')
 
   hide: ->
-    @shown = false
     if @table
       @table.hide()
 
@@ -108,6 +104,7 @@ class App.Search extends App.Controller
       return
 
     # on other keys, show result
+    @navigate "#search/#{encodeURIComponent(@searchInput.val())}"
     @search(0)
 
   empty: =>
@@ -248,7 +245,7 @@ class App.Search extends App.Controller
         @bulkForm.show()
 
       # show/hide bulk action
-      localElement.delegate('input[name="bulk"], input[name="bulk_all"]', 'change', (e) =>
+      localElement.on('change', 'input[name="bulk"], input[name="bulk_all"]', (e) =>
         if @shouldShowBulkForm()
           @bulkForm.show()
         else
@@ -257,7 +254,7 @@ class App.Search extends App.Controller
       )
 
       # deselect bulk_all if one item is uncheck observ
-      localElement.delegate('[name="bulk"]', 'change', (e) ->
+      localElement.on('change', '[name="bulk"]', (e) ->
         bulkAll = localElement.find('[name="bulk_all"]')
         checkedCount = localElement.find('input[name="bulk"]:checked').length
         checkboxCount = localElement.find('input[name="bulk"]').length

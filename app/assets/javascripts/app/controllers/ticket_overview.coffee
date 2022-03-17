@@ -1,4 +1,6 @@
 class App.TicketOverview extends App.Controller
+  @extend App.TicketMassUpdatable
+
   className: 'overviews'
   activeFocus: 'nav'
   mouse:
@@ -192,65 +194,35 @@ class App.TicketOverview extends App.Controller
         duration: 300
 
   performBatchAction: (items, action, id, groupId) ->
-    if action is 'macro'
-      @batchCount = items.length
-      @batchCountIndex = 0
-      macro = App.Macro.find(id)
-      for item in items
-        #console.log "perform action #{action} with id #{id} on ", $(item).val()
-        ticket = App.Ticket.find($(item).val())
-        article = {}
-        App.Ticket.macro(
-          macro: macro.perform
-          ticket: ticket
-          article: article
-        )
-        ticket.article = article
-        ticket.save(
-          done: (r) =>
-            @batchCountIndex++
+    ticket_ids = items.toArray().map (item) -> $(item).val()
 
-            # refresh view after all tickets are proceeded
-            if @batchCountIndex == @batchCount
-              App.Event.trigger('overview:fetch')
-        )
-      return
+    switch action
+      when 'macro'
+        path = 'macro'
+        data =
+          ticket_ids: ticket_ids
+          macro_id:   id
 
-    if action is 'user_assign'
-      @batchCount = items.length
-      @batchCountIndex = 0
-      for item in items
-        #console.log "perform action #{action} with id #{id} on ", $(item).val()
-        ticket = App.Ticket.find($(item).val())
-        ticket.owner_id = id
+      when 'user_assign'
+        path = 'update'
+
+        data =
+          ticket_ids: ticket_ids
+          attributes:
+            owner_id: id
+
         if !_.isEmpty(groupId)
-          ticket.group_id = groupId
-        ticket.save(
-          done: (r) =>
-            @batchCountIndex++
+          data.attributes.group_id = groupId
 
-            # refresh view after all tickets are proceeded
-            if @batchCountIndex == @batchCount
-              App.Event.trigger('overview:fetch')
-        )
-      return
+      when 'group_assign'
+        path = 'update'
 
-    if action is 'group_assign'
-      @batchCount = items.length
-      @batchCountIndex = 0
-      for item in items
-        #console.log "perform action #{action} with id #{id} on ", $(item).val()
-        ticket = App.Ticket.find($(item).val())
-        ticket.group_id = id
-        ticket.save(
-          done: (r) =>
-            @batchCountIndex++
+        data =
+          ticket_ids: ticket_ids
+          attributes:
+            group_id: id
 
-            # refresh view after all tickets are proceeded
-            if @batchCountIndex == @batchCount
-              App.Event.trigger('overview:fetch')
-        )
-      return
+    @ajax_mass(path, data)
 
   showBatchOverlay: ->
     @batchOverlay.addClass('is-visible')
@@ -734,7 +706,7 @@ class App.TicketOverview extends App.Controller
     else if e.keyCode is 32 # space
       e.preventDefault()
       if @activeFocus is 'overview'
-        @$('.table-overview table tbody tr.is-hover td.js-checkbox-field label input').first().click()
+        @$('.table-overview table tbody tr.is-hover td.js-checkbox-field label input').first().trigger('click')
     else if e.keyCode is 9 # tab
       e.preventDefault()
       if @activeFocus is 'nav'
@@ -754,18 +726,18 @@ class App.TicketOverview extends App.Controller
       items = @$('.table-overview table tbody')
       current = items.find('tr.is-hover')
 
-      if !current.size()
+      if !current.length
         items.find('tr').first().addClass('is-hover')
         return
 
       if position is 1
         next = current.next('tr')
-        if next.size()
+        if next.length
           current.removeClass('is-hover')
           next.addClass('is-hover')
       else
         prev = current.prev('tr')
-        if prev.size()
+        if prev.length
           current.removeClass('is-hover')
           prev.addClass('is-hover')
 
@@ -779,7 +751,7 @@ class App.TicketOverview extends App.Controller
       items = @$('.sidebar')
       current = items.find('li.active')
 
-      if !current.size()
+      if !current.length
         location = items.find('li a').first().attr('href')
         if location
           @navigate location
@@ -787,11 +759,11 @@ class App.TicketOverview extends App.Controller
 
       if position is 1
         next = current.next('li')
-        if next.size()
+        if next.length
           @navigate next.find('a').attr('href')
       else
         prev = current.prev('li')
-        if prev.size()
+        if prev.length
           @navigate prev.find('a').attr('href')
 
       if next
@@ -859,7 +831,7 @@ class Navbar extends App.Controller
 
     # if all tabs are visible
     # remove dropdown and dropdown button
-    if @dropdownItem.not('.hide').size() is 0
+    if @dropdownItem.not('.hide').length is 0
       @dropdown.remove()
       @dropdownToggle.remove()
 
@@ -880,7 +852,7 @@ class Navbar extends App.Controller
       content.find('.js-error').removeClass('hide')
       @renderScreenError(
         el: @el.closest('.content').find('.js-error')
-        detail:     'Currently no overview is assigned to your roles. Please contact your administrator.'
+        detail:     __('Currently no overview is assigned to your roles. Please contact your administrator.')
         objectName: 'Ticket'
       )
       return
@@ -1059,7 +1031,7 @@ class Table extends App.Controller
         checkbox: checkbox
       )
       table = $(table)
-      table.delegate('[name="bulk_all"]', 'change', (e) ->
+      table.on('change', '[name="bulk_all"]', (e) ->
         if $(e.currentTarget).prop('checked')
           $(e.currentTarget).closest('table').find('[name="bulk"]').prop('checked', true)
         else
@@ -1252,7 +1224,7 @@ class Table extends App.Controller
       @bulkForm.show()
 
     # show/hide bulk action
-    localElement.delegate('input[name="bulk"], input[name="bulk_all"]', 'change', (e) =>
+    localElement.on('change', 'input[name="bulk"], input[name="bulk_all"]', (e) =>
       if @shouldShowBulkForm()
         @bulkForm.show()
       else
@@ -1261,7 +1233,7 @@ class Table extends App.Controller
     )
 
     # deselect bulk_all if one item is uncheck observ
-    localElement.delegate('[name="bulk"]', 'change', (e) ->
+    localElement.on('change', '[name="bulk"]', (e) ->
       bulkAll = localElement.find('[name="bulk_all"]')
       checkedCount = localElement.find('input[name="bulk"]:checked').length
       checkboxCount = localElement.find('input[name="bulk"]').length
@@ -1342,7 +1314,7 @@ class App.OverviewSettings extends App.ControllerModal
     if @view_mode is 'd'
       @configure_attributes_article.push({
         name:     'view::per_page'
-        display:  'Items per page'
+        display:  __('Items per page')
         tag:      'select'
         multiple: false
         null:     false
@@ -1358,7 +1330,7 @@ class App.OverviewSettings extends App.ControllerModal
 
     @configure_attributes_article.push({
       name:      "view::#{@view_mode}"
-      display:   'Attributes'
+      display:   __('Attributes')
       tag:       'checkboxTicketAttributes'
       default:   @overview.view[@view_mode]
       null:      false
@@ -1367,7 +1339,7 @@ class App.OverviewSettings extends App.ControllerModal
     },
     {
       name:      'order::by'
-      display:   'Order'
+      display:   __('Order')
       tag:       'selectTicketAttributes'
       default:   @overview.order.by
       null:      false
@@ -1376,7 +1348,7 @@ class App.OverviewSettings extends App.ControllerModal
     },
     {
       name:      'order::direction'
-      display:   'Order by Direction'
+      display:   __('Order by Direction')
       tag:       'select'
       default:   @overview.order.direction
       null:      false
@@ -1387,7 +1359,7 @@ class App.OverviewSettings extends App.ControllerModal
     },
     {
       name:       'group_by'
-      display:    'Group by'
+      display:    __('Group by')
       tag:        'select'
       default:    @overview.group_by
       null:       true
@@ -1397,7 +1369,7 @@ class App.OverviewSettings extends App.ControllerModal
     },
     {
       name:    'group_direction'
-      display: 'Group by Direction'
+      display: __('Group by Direction')
       tag:     'select'
       default: @overview.group_direction
       null:    false
@@ -1475,4 +1447,4 @@ class TicketOverviewRouter extends App.ControllerPermanent
 App.Config.set('ticket/view', TicketOverviewRouter, 'Routes')
 App.Config.set('ticket/view/:view', TicketOverviewRouter, 'Routes')
 App.Config.set('TicketOverview', { controller: 'TicketOverview', permission: ['ticket.agent', 'ticket.customer'] }, 'permanentTask')
-App.Config.set('TicketOverview', { prio: 1000, parent: '', name: 'Overviews', target: '#ticket/view', key: 'TicketOverview', permission: ['ticket.agent', 'ticket.customer'], class: 'overviews' }, 'NavBar')
+App.Config.set('TicketOverview', { prio: 1000, parent: '', name: __('Overviews'), target: '#ticket/view', key: 'TicketOverview', permission: ['ticket.agent', 'ticket.customer'], class: 'overviews' }, 'NavBar')

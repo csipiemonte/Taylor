@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 require 'base64'
 
 class Ticket < ApplicationModel
@@ -72,7 +72,7 @@ class Ticket < ApplicationModel
                              :article_count,
                              :preferences
 
-  history_relation_object 'Ticket::Article', 'Mention'
+  history_relation_object 'Ticket::Article', 'Mention', 'Ticket::SharedDraftZoom'
 
   sanitized_html :note
 
@@ -82,6 +82,7 @@ class Ticket < ApplicationModel
   has_many      :ticket_time_accounting, class_name: 'Ticket::TimeAccounting', dependent: :destroy, inverse_of: :ticket
   has_many      :flags,                  class_name: 'Ticket::Flag', dependent: :destroy
   has_many      :mentions,               as: :mentionable, dependent: :destroy
+  has_one       :shared_draft,           class_name: 'Ticket::SharedDraftZoom', inverse_of: :ticket, dependent: :destroy
   belongs_to    :state,                  class_name: 'Ticket::State', optional: true
   belongs_to    :priority,               class_name: 'Ticket::Priority', optional: true
   belongs_to    :owner,                  class_name: 'User', optional: true
@@ -189,7 +190,7 @@ returns
     result = []
 
     # fetch all escalated and soon to be escalating tickets
-    where('escalation_at <= ?', Time.zone.now + 15.minutes).find_each(batch_size: 500) do |ticket|
+    where('escalation_at <= ?', 15.minutes.from_now).find_each(batch_size: 500) do |ticket|
 
       article_id = nil
       article = Ticket::Article.last_customer_agent_article(ticket.id)
@@ -210,7 +211,7 @@ returns
         next
       end
 
-      # check if warning need to be sent
+      # check if warning needs to be sent
       TransactionJob.perform_now(
         object:     'Ticket',
         type:       'escalation_warning',
@@ -293,7 +294,7 @@ returns
     raise Exceptions::UnprocessableEntity, 'ticket already merged, no merge into merged ticket possible' if target_ticket.state.state_type.name == 'merged'
 
     # check different ticket ids
-    raise Exceptions::UnprocessableEntity, 'Can\'t merge ticket with it self!' if id == target_ticket.id
+    raise Exceptions::UnprocessableEntity, __('Can\'t merge ticket with itself!') if id == target_ticket.id
 
     # update articles
     Transaction.execute context: 'merge' do
@@ -651,7 +652,7 @@ condition example
 
       if selector['operator'].include?('in working time')
         next if attributes[1] != 'calendar_id'
-        raise 'Please enable execution_time feature to use it (currently only allowed for triggers and schedulers)' if !options[:execution_time]
+        raise __('Please enable execution_time feature to use it (currently only allowed for triggers and schedulers)') if !options[:execution_time]
 
         biz = Calendar.lookup(id: selector['value'])&.biz
         next if biz.blank?
@@ -797,65 +798,81 @@ condition example
         query += "#{attribute} NOT #{like} (?)"
         value = "%#{selector['value']}%"
         bind_params.push value
-      elsif selector['operator'] == 'contains all' && attributes[0] == 'ticket' && attributes[1] == 'tags'
-        query += "? = (
-                                              SELECT
-                                                COUNT(*)
-                                              FROM
-                                                tag_objects,
-                                                tag_items,
-                                                tags
-                                              WHERE
-                                                tickets.id = tags.o_id AND
-                                                tag_objects.id = tags.tag_object_id AND
-                                                tag_objects.name = 'Ticket' AND
-                                                tag_items.id = tags.tag_item_id AND
-                                                tag_items.name IN (?)
-                                            )"
-        bind_params.push selector['value'].count
-        bind_params.push selector['value']
-      elsif selector['operator'] == 'contains one' && attributes[0] == 'ticket' && attributes[1] == 'tags'
-        tables += ', tag_objects, tag_items, tags'
-        query += "
-          tickets.id = tags.o_id AND
-          tag_objects.id = tags.tag_object_id AND
-          tag_objects.name = 'Ticket' AND
-          tag_items.id = tags.tag_item_id AND
-          tag_items.name IN (?)"
+      elsif selector['operator'] == 'contains all'
+        if attributes[0] == 'ticket' && attributes[1] == 'tags'
+          query += "? = (
+                                                SELECT
+                                                  COUNT(*)
+                                                FROM
+                                                  tag_objects,
+                                                  tag_items,
+                                                  tags
+                                                WHERE
+                                                  tickets.id = tags.o_id AND
+                                                  tag_objects.id = tags.tag_object_id AND
+                                                  tag_objects.name = 'Ticket' AND
+                                                  tag_items.id = tags.tag_item_id AND
+                                                  tag_items.name IN (?)
+                                              )"
+          bind_params.push selector['value'].count
+          bind_params.push selector['value']
+        elsif Ticket.column_names.include?(attributes[1])
+          query += SqlHelper.new(object: Ticket).array_contains_all(attributes[1], selector['value'])
+        end
+      elsif selector['operator'] == 'contains one' && attributes[0] == 'ticket'
+        if attributes[1] == 'tags'
+          tables += ', tag_objects, tag_items, tags'
+          query += "
+            tickets.id = tags.o_id AND
+            tag_objects.id = tags.tag_object_id AND
+            tag_objects.name = 'Ticket' AND
+            tag_items.id = tags.tag_item_id AND
+            tag_items.name IN (?)"
 
-        bind_params.push selector['value']
-      elsif selector['operator'] == 'contains all not' && attributes[0] == 'ticket' && attributes[1] == 'tags'
-        query += "0 = (
-                        SELECT
-                          COUNT(*)
-                        FROM
-                          tag_objects,
-                          tag_items,
-                          tags
-                        WHERE
-                          tickets.id = tags.o_id AND
-                          tag_objects.id = tags.tag_object_id AND
-                          tag_objects.name = 'Ticket' AND
-                          tag_items.id = tags.tag_item_id AND
-                          tag_items.name IN (?)
-                      )"
-        bind_params.push selector['value']
-      elsif selector['operator'] == 'contains one not' && attributes[0] == 'ticket' && attributes[1] == 'tags'
-        query += "(
-                    SELECT
-                      COUNT(*)
-                    FROM
-                      tag_objects,
-                      tag_items,
-                      tags
-                    WHERE
-                      tickets.id = tags.o_id AND
-                      tag_objects.id = tags.tag_object_id AND
-                      tag_objects.name = 'Ticket' AND
-                      tag_items.id = tags.tag_item_id AND
-                      tag_items.name IN (?)
-                  ) BETWEEN 0 AND 0"
-        bind_params.push selector['value']
+          bind_params.push selector['value']
+        elsif Ticket.column_names.include?(attributes[1])
+          query += SqlHelper.new(object: Ticket).array_contains_one(attributes[1], selector['value'])
+        end
+      elsif selector['operator'] == 'contains all not' && attributes[0] == 'ticket'
+        if attributes[1] == 'tags'
+          query += "0 = (
+                          SELECT
+                            COUNT(*)
+                          FROM
+                            tag_objects,
+                            tag_items,
+                            tags
+                          WHERE
+                            tickets.id = tags.o_id AND
+                            tag_objects.id = tags.tag_object_id AND
+                            tag_objects.name = 'Ticket' AND
+                            tag_items.id = tags.tag_item_id AND
+                            tag_items.name IN (?)
+                        )"
+          bind_params.push selector['value']
+        elsif Ticket.column_names.include?(attributes[1])
+          query += SqlHelper.new(object: Ticket).array_contains_all(attributes[1], selector['value'], negated: true)
+        end
+      elsif selector['operator'] == 'contains one not' && attributes[0] == 'ticket'
+        if attributes[1] == 'tags'
+          query += "(
+                      SELECT
+                        COUNT(*)
+                      FROM
+                        tag_objects,
+                        tag_items,
+                        tags
+                      WHERE
+                        tickets.id = tags.o_id AND
+                        tag_objects.id = tags.tag_object_id AND
+                        tag_objects.name = 'Ticket' AND
+                        tag_items.id = tags.tag_item_id AND
+                        tag_items.name IN (?)
+                    ) BETWEEN 0 AND 0"
+          bind_params.push selector['value']
+        elsif Ticket.column_names.include?(attributes[1])
+          query += SqlHelper.new(object: Ticket).array_contains_one(attributes[1], selector['value'], negated: true)
+        end
       elsif selector['operator'] == 'before (absolute)'
         query += "#{attribute} <= ?"
         bind_params.push selector['value']
@@ -864,113 +881,29 @@ condition example
         bind_params.push selector['value']
       elsif selector['operator'] == 'within last (relative)'
         query += "#{attribute} BETWEEN ? AND ?"
-        time = nil
-        case selector['range']
-        when 'minute'
-          time = selector['value'].to_i.minutes.ago
-        when 'hour'
-          time = selector['value'].to_i.hours.ago
-        when 'day'
-          time = selector['value'].to_i.days.ago
-        when 'month'
-          time = selector['value'].to_i.months.ago
-        when 'year'
-          time = selector['value'].to_i.years.ago
-        else
-          raise "Unknown selector attributes '#{selector.inspect}'"
-        end
+        time = range(selector).ago
         bind_params.push time
         bind_params.push Time.zone.now
       elsif selector['operator'] == 'within next (relative)'
         query += "#{attribute} BETWEEN ? AND ?"
-        time = nil
-        case selector['range']
-        when 'minute'
-          time = selector['value'].to_i.minutes.from_now
-        when 'hour'
-          time = selector['value'].to_i.hours.from_now
-        when 'day'
-          time = selector['value'].to_i.days.from_now
-        when 'month'
-          time = selector['value'].to_i.months.from_now
-        when 'year'
-          time = selector['value'].to_i.years.from_now
-        else
-          raise "Unknown selector attributes '#{selector.inspect}'"
-        end
+        time = range(selector).from_now
         bind_params.push Time.zone.now
         bind_params.push time
       elsif selector['operator'] == 'before (relative)'
         query += "#{attribute} <= ?"
-        time = nil
-        case selector['range']
-        when 'minute'
-          time = selector['value'].to_i.minutes.ago
-        when 'hour'
-          time = selector['value'].to_i.hours.ago
-        when 'day'
-          time = selector['value'].to_i.days.ago
-        when 'month'
-          time = selector['value'].to_i.months.ago
-        when 'year'
-          time = selector['value'].to_i.years.ago
-        else
-          raise "Unknown selector attributes '#{selector.inspect}'"
-        end
+        time = range(selector).ago
         bind_params.push time
       elsif selector['operator'] == 'after (relative)'
         query += "#{attribute} >= ?"
-        time = nil
-        case selector['range']
-        when 'minute'
-          time = selector['value'].to_i.minutes.from_now
-        when 'hour'
-          time = selector['value'].to_i.hours.from_now
-        when 'day'
-          time = selector['value'].to_i.days.from_now
-        when 'month'
-          time = selector['value'].to_i.months.from_now
-        when 'year'
-          time = selector['value'].to_i.years.from_now
-        else
-          raise "Unknown selector attributes '#{selector.inspect}'"
-        end
+        time = range(selector).from_now
         bind_params.push time
       elsif selector['operator'] == 'till (relative)'
         query += "#{attribute} <= ?"
-        time = nil
-        case selector['range']
-        when 'minute'
-          time = selector['value'].to_i.minutes.from_now
-        when 'hour'
-          time = selector['value'].to_i.hours.from_now
-        when 'day'
-          time = selector['value'].to_i.days.from_now
-        when 'month'
-          time = selector['value'].to_i.months.from_now
-        when 'year'
-          time = selector['value'].to_i.years.from_now
-        else
-          raise "Unknown selector attributes '#{selector.inspect}'"
-        end
+        time = range(selector).from_now
         bind_params.push time
       elsif selector['operator'] == 'from (relative)'
         query += "#{attribute} >= ?"
-        time = nil
-        case selector['range']
-        when 'minute'
-          time = selector['value'].to_i.minutes.ago
-        when 'hour'
-          time = selector['value'].to_i.hours.ago
-        when 'day'
-          time = selector['value'].to_i.days.ago
-        when 'month'
-          time = selector['value'].to_i.months.ago
-        when 'year'
-          time = selector['value'].to_i.years.ago
-        else
-          raise "Unknown selector attributes '#{selector.inspect}'"
-        end
+        time = range(selector).ago
         bind_params.push time
       else
         raise "Invalid operator '#{selector['operator']}' for '#{selector['value'].inspect}'"
@@ -1111,7 +1044,7 @@ perform changes on ticket
         if value['pre_condition'].start_with?('not_set')
           value['value'] = 1
         elsif value['pre_condition'].start_with?('current_user.')
-          raise 'Unable to use current_user, got no current_user_id for ticket.perform_changes' if !current_user_id
+          raise __("The required parameter 'current_user_id' is missing.") if !current_user_id
 
           value['value'] = current_user_id
         end
@@ -1133,7 +1066,7 @@ perform changes on ticket
     objects = build_notification_template_objects(article)
 
     perform_article.each do |key, value|
-      raise 'Unable to create article, we only support article.note and article.note_ext_act' if key != 'article.note' && key != 'article.note_ext_act'
+      raise __("Article could not be created. An unsupported key other than 'article.note' and 'article.note_ext_act' was provided.") if key != 'article.note' && key != 'article.note_ext_act'
 
       if key == 'article.note'
         add_trigger_note(id, value, objects, perform_origin)
@@ -1283,7 +1216,7 @@ perform active triggers on ticket
                else
                  ::Trigger.where(active: true).order(:name)
                end
-    return [true, 'No triggers active'] if triggers.blank?
+    return [true, __('No triggers active')] if triggers.blank?
 
     # check if notification should be send because of customer emails
     send_notification = true
@@ -1525,6 +1458,12 @@ perform active triggers on ticket
       end
     end
     [true, ticket, local_options]
+  end
+
+  def self.range(selector)
+    selector['value'].to_i.send(selector['range'].pluralize)
+  rescue
+    raise 'unknown selector'
   end
 
 =begin
@@ -2230,4 +2169,5 @@ result
     # blocked for 60 full days
     (user.preferences[:mail_delivery_failed_data].to_date - Time.zone.now.to_date).to_i + 61
   end
+
 end

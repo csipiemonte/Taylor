@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class NotificationFactory::Renderer
 
@@ -199,14 +199,19 @@ examples how to use
 
   def display_value(object, method_name, previous_method_names, key)
     return key if method_name != 'value' ||
-                  !key.instance_of?(String)
+                  (!key.instance_of?(String) && !key.instance_of?(Array))
 
     attributes = ObjectManager::Attribute
                  .where(object_lookup_id: ObjectLookup.by_name(object.class.to_s))
                  .where(name: previous_method_names.split('.').last)
 
-    return key if attributes.count.zero? || attributes.first.data_type != 'select'
-
-    attributes.first.data_option['options'][key] || key
+    case attributes.first.data_type
+    when 'select'
+      attributes.first.data_option['options'][key] || key
+    when 'multiselect'
+      key.map { |k| attributes.first.data_option['options'][k] || k }
+    else
+      key
+    end
   end
 end

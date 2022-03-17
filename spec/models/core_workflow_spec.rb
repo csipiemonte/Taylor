@@ -1,10 +1,10 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
 RSpec.describe CoreWorkflow, type: :model do
   let(:group) { create(:group) }
-  let!(:ticket) { create(:ticket, state: Ticket::State.find_by(name: 'pending reminder'), pending_time: Time.zone.now + 5.days, group: group) }
+  let!(:ticket) { create(:ticket, state: Ticket::State.find_by(name: 'pending reminder'), pending_time: 5.days.from_now, group: group) }
   let!(:base_payload) do
     {
       'event'      => 'core_workflow',
@@ -295,7 +295,38 @@ RSpec.describe CoreWorkflow, type: :model do
     end
 
     it 'does show the field as optional because it has no required value' do
-      expect(result[:mandatory][field_name]).to eq(false)
+      expect(result[:mandatory][field_name]).to be(false)
+    end
+  end
+
+  describe '.perform - Default - Restrict values for multiselect fields', db_strategy: :reset do
+    let(:field_name) { SecureRandom.uuid }
+
+    before do
+      create :object_manager_attribute_multiselect, name: field_name, display: field_name
+      ObjectManager::Attribute.migration_execute
+    end
+
+    context 'without saved values' do
+      it 'does return the correct list of selectable values' do
+        expect(result[:restrict_values][field_name]).to eq(['', 'key_1', 'key_2', 'key_3'])
+      end
+    end
+
+    context 'with saved values' do
+      let(:payload) do
+        base_payload.merge('params' => {
+                             'id' => ticket.id,
+                           })
+      end
+
+      before do
+        ticket.reload.update(field_name.to_sym => %w[key_2 key_3])
+      end
+
+      it 'does return the correct list of selectable values' do
+        expect(result[:restrict_values][field_name]).to eq(['', 'key_1', 'key_2', 'key_3'])
+      end
     end
   end
 
@@ -339,15 +370,15 @@ RSpec.describe CoreWorkflow, type: :model do
     end
 
     it 'does set first_response_time_in_text optional' do
-      expect(result[:mandatory]['first_response_time_in_text']).to eq(false)
+      expect(result[:mandatory]['first_response_time_in_text']).to be(false)
     end
 
     it 'does set update_time_in_text optional' do
-      expect(result[:mandatory]['update_time_in_text']).to eq(false)
+      expect(result[:mandatory]['update_time_in_text']).to be(false)
     end
 
     it 'does set solution_time_in_text optional' do
-      expect(result[:mandatory]['solution_time_in_text']).to eq(false)
+      expect(result[:mandatory]['solution_time_in_text']).to be(false)
     end
 
     describe 'on first_response_time_enabled' do
@@ -360,15 +391,15 @@ RSpec.describe CoreWorkflow, type: :model do
       end
 
       it 'does set first_response_time_in_text mandatory' do
-        expect(result[:mandatory]['first_response_time_in_text']).to eq(true)
+        expect(result[:mandatory]['first_response_time_in_text']).to be(true)
       end
 
       it 'does set update_time_in_text optional' do
-        expect(result[:mandatory]['update_time_in_text']).to eq(false)
+        expect(result[:mandatory]['update_time_in_text']).to be(false)
       end
 
       it 'does set solution_time_in_text optional' do
-        expect(result[:mandatory]['solution_time_in_text']).to eq(false)
+        expect(result[:mandatory]['solution_time_in_text']).to be(false)
       end
     end
 
@@ -382,15 +413,15 @@ RSpec.describe CoreWorkflow, type: :model do
       end
 
       it 'does set first_response_time_in_text optional' do
-        expect(result[:mandatory]['first_response_time_in_text']).to eq(false)
+        expect(result[:mandatory]['first_response_time_in_text']).to be(false)
       end
 
       it 'does set update_time_in_text mandatory' do
-        expect(result[:mandatory]['update_time_in_text']).to eq(true)
+        expect(result[:mandatory]['update_time_in_text']).to be(true)
       end
 
       it 'does set solution_time_in_text optional' do
-        expect(result[:mandatory]['solution_time_in_text']).to eq(false)
+        expect(result[:mandatory]['solution_time_in_text']).to be(false)
       end
     end
 
@@ -404,15 +435,15 @@ RSpec.describe CoreWorkflow, type: :model do
       end
 
       it 'does set first_response_time_in_text optional' do
-        expect(result[:mandatory]['first_response_time_in_text']).to eq(false)
+        expect(result[:mandatory]['first_response_time_in_text']).to be(false)
       end
 
       it 'does set update_time_in_text optional' do
-        expect(result[:mandatory]['update_time_in_text']).to eq(false)
+        expect(result[:mandatory]['update_time_in_text']).to be(false)
       end
 
       it 'does set solution_time_in_text mandatory' do
-        expect(result[:mandatory]['solution_time_in_text']).to eq(true)
+        expect(result[:mandatory]['solution_time_in_text']).to be(true)
       end
     end
   end
@@ -1189,7 +1220,7 @@ RSpec.describe CoreWorkflow, type: :model do
       end
 
       it 'does not select owner' do
-        expect(result[:select]['owner_id']).to be nil
+        expect(result[:select]['owner_id']).to be_nil
       end
 
       it 'does rerun 0 times' do
@@ -1295,7 +1326,7 @@ RSpec.describe CoreWorkflow, type: :model do
       end
 
       it 'does not fill in title' do
-        expect(result[:fill_in]['title']).to be nil
+        expect(result[:fill_in]['title']).to be_nil
       end
 
       it 'does rerun 1 times (group select)' do
@@ -1487,7 +1518,7 @@ RSpec.describe CoreWorkflow, type: :model do
 
   describe '.perform - Default - auto selection based on only_shown_if_selectable' do
     it 'does auto select group' do
-      expect(result[:select]['group_id']).not_to be nil
+      expect(result[:select]['group_id']).not_to be_nil
     end
 
     it 'does auto hide group' do
@@ -1513,7 +1544,7 @@ RSpec.describe CoreWorkflow, type: :model do
     end
 
     it 'does set owner optional' do
-      expect(result[:mandatory]['owner_id']).to eq(false)
+      expect(result[:mandatory]['owner_id']).to be(false)
     end
   end
 
@@ -1597,7 +1628,7 @@ RSpec.describe CoreWorkflow, type: :model do
     end
 
     it 'does set group readonly' do
-      expect(result[:readonly]['group_id']).to eq(true)
+      expect(result[:readonly]['group_id']).to be(true)
     end
 
     context 'when readonly unset' do
@@ -1617,7 +1648,7 @@ RSpec.describe CoreWorkflow, type: :model do
       end
 
       it 'does set group readonly' do
-        expect(result[:readonly]['group_id']).to eq(false)
+        expect(result[:readonly]['group_id']).to be(false)
       end
     end
   end
@@ -1753,6 +1784,44 @@ RSpec.describe CoreWorkflow, type: :model do
     end
   end
 
+  describe 'If selected value is not part of the restriction of set_fixed_to it should recalculate it with the new value #3822', db_strategy: :reset do
+    let(:field_name1) { SecureRandom.uuid }
+    let(:screens) do
+      {
+        'create_middle' => {
+          'ticket.agent' => {
+            'shown'    => false,
+            'required' => false,
+          }
+        }
+      }
+    end
+    let!(:workflow1) do
+      create(:core_workflow,
+             object:  'Ticket',
+             perform: { "ticket.#{field_name1}" => { 'operator' => 'set_fixed_to', 'set_fixed_to' => ['key_3'] } })
+    end
+    let!(:workflow2) do
+      create(:core_workflow,
+             object:             'Ticket',
+             condition_selected: {
+               "ticket.#{field_name1}": {
+                 operator: 'is',
+                 value:    'key_3',
+               },
+             })
+    end
+
+    before do
+      create :object_manager_attribute_select, name: field_name1, display: field_name1, screens: screens
+      ObjectManager::Attribute.migration_execute
+    end
+
+    it 'does select key_3 as new param value and based on this executes workflow 2' do
+      expect(result[:matched_workflows]).to include(workflow1.id, workflow2.id)
+    end
+  end
+
   describe 'Add clear selection action or has changed condition #3821' do
     let!(:workflow_has_changed) do
       create(:core_workflow,
@@ -1810,44 +1879,6 @@ RSpec.describe CoreWorkflow, type: :model do
       it 'does not match on condition changed to' do
         expect(result[:matched_workflows]).not_to include(workflow_changed_to.id)
       end
-    end
-  end
-
-  describe 'If selected value is not part of the restriction of set_fixed_to it should recalculate it with the new value #3822', db_strategy: :reset do
-    let(:field_name1) { SecureRandom.uuid }
-    let(:screens) do
-      {
-        'create_middle' => {
-          'ticket.agent' => {
-            'shown'    => false,
-            'required' => false,
-          }
-        }
-      }
-    end
-    let!(:workflow1) do
-      create(:core_workflow,
-             object:  'Ticket',
-             perform: { "ticket.#{field_name1}" => { 'operator' => 'set_fixed_to', 'set_fixed_to' => ['key_3'] } })
-    end
-    let!(:workflow2) do
-      create(:core_workflow,
-             object:             'Ticket',
-             condition_selected: {
-               "ticket.#{field_name1}": {
-                 operator: 'is',
-                 value:    'key_3',
-               },
-             })
-    end
-
-    before do
-      create :object_manager_attribute_select, name: field_name1, display: field_name1, screens: screens
-      ObjectManager::Attribute.migration_execute
-    end
-
-    it 'does select key_3 as new param value and based on this executes workflow 2' do
-      expect(result[:matched_workflows]).to include(workflow1.id, workflow2.id)
     end
   end
 end

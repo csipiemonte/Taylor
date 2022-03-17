@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 # encoding: utf-8
 
@@ -7,7 +7,8 @@ class Channel::EmailParser
   EMAIL_REGEX = %r{.+@.+}.freeze
   RECIPIENT_FIELDS = %w[to cc delivered-to x-original-to envelope-to].freeze
   SENDER_FIELDS = %w[from reply-to return-path sender].freeze
-  EXCESSIVE_LINKS_MSG = 'This message cannot be displayed because it contains over 5,000 links. Download the raw message below and open it via an Email client if you still wish to view it.'.freeze
+  EXCESSIVE_LINKS_MSG = __('This message cannot be displayed because it contains over 5,000 links. Download the raw message below and open it via an Email client if you still wish to view it.').freeze
+  MESSAGE_STRUCT = Struct.new(:from_display_name, :subject, :msg_size).freeze
 
 =begin
 
@@ -180,7 +181,7 @@ returns
       # get sender user
       session_user_id = mail[:'x-zammad-session-user-id']
       if !session_user_id
-        raise 'No x-zammad-session-user-id, no sender set!'
+        raise __('No x-zammad-session-user-id, no sender set!')
       end
 
       session_user = User.lookup(id: session_user_id)
@@ -502,7 +503,7 @@ process unprocessable_mails (tmp/unprocessable_mail/*.eml) again
     path = Rails.root.join('tmp/unprocessable_mail')
     files = []
     Dir.glob("#{path}/*.eml") do |entry|
-      ticket, _article, _user, _mail = Channel::EmailParser.new.process(params, IO.binread(entry))
+      ticket, _article, _user, _mail = Channel::EmailParser.new.process(params, File.binread(entry))
       next if ticket.blank?
 
       files.push entry
@@ -560,7 +561,7 @@ process unprocessable_mails (tmp/unprocessable_mail/*.eml) again
   end
 
   def message_header_hash(mail)
-    imported_fields = mail.header.fields.map do |f|
+    imported_fields = mail.header.fields.to_h do |f|
       begin
         value = if f.value.match?(ISO2022JP_REGEXP)
                   value = header_field_unpack_japanese(f)
@@ -581,7 +582,7 @@ process unprocessable_mails (tmp/unprocessable_mail/*.eml) again
         value = f.decoded.to_utf8(fallback: :read_as_sanitized_binary)
       end
       [f.name.downcase, value]
-    end.to_h
+    end
 
     # imported_fields = mail.header.fields.map { |f| [f.name.downcase, f.to_utf8] }.to_h
     raw_fields = mail.header.fields.index_by { |f| "raw-#{f.name.downcase}" }
@@ -606,6 +607,20 @@ process unprocessable_mails (tmp/unprocessable_mail/*.eml) again
     if mail.html_part&.body.present?
       content_type = mail.html_part.mime_type || 'text/plain'
       body = body_text(mail.html_part, strict_html: true)
+    elsif mail.text_part.present? && mail.all_parts.any? { |elem| elem.inline? && elem.content_type&.start_with?('image') }
+      content_type = 'text/html'
+
+      body = mail
+        .all_parts
+        .reduce('') do |memo, part|
+          if part.mime_type == 'text/plain' && !part.attachment?
+            memo += body_text(part, strict_html: false).text2html
+          elsif part.inline? && part.content_type&.start_with?('image')
+            memo += "<img src=\'cid:#{part.cid}\'>"
+          end
+
+          memo
+        end
     elsif mail.text_part.present?
       content_type = 'text/plain'
 
@@ -614,9 +629,6 @@ process unprocessable_mails (tmp/unprocessable_mail/*.eml) again
         .reduce('') do |memo, part|
           if part.mime_type == 'text/plain' && !part.attachment?
             memo += body_text(part, strict_html: false)
-          elsif part.inline? && part.content_type&.start_with?('image')
-            content_type = 'text/html'
-            memo += "<img src=\'cid:#{part.cid}\'>"
           end
 
           memo
@@ -898,9 +910,7 @@ process unprocessable_mails (tmp/unprocessable_mail/*.eml) again
     md5 = Digest::MD5.hexdigest(msg)
     file_path = Rails.root.join('tmp', folder, "#{md5}.eml")
 
-    File.open(file_path, 'wb') do |file|
-      file.write msg
-    end
+    File.binwrite(file_path, msg)
 
     file_path
   end
@@ -927,7 +937,7 @@ process unprocessable_mails (tmp/unprocessable_mail/*.eml) again
     parsed_incoming_mail = Channel::EmailParser.new.parse(raw_incoming_mail)
 
     # construct a dummy mail object
-    mail = OpenStruct.new
+    mail = MESSAGE_STRUCT.new
     mail.from_display_name = parsed_incoming_mail[:from_display_name]
     mail.subject = parsed_incoming_mail[:subject]
     mail.msg_size = format('%<MB>.2f', MB: raw_incoming_mail.size.to_f / 1024 / 1024)

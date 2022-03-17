@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class CoreWorkflow::Result::SetFixedTo < CoreWorkflow::Result::BaseOption
   def run
@@ -13,7 +13,7 @@ class CoreWorkflow::Result::SetFixedTo < CoreWorkflow::Result::BaseOption
 
   def config_value
     result = Array(@perform_config['set_fixed_to'])
-    result |= Array(saved_value)
+    result |= saved_value
     result
   end
 

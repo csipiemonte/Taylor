@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'http/uri'
 
@@ -531,7 +531,7 @@ create a tweet or direct message from an article
                 user(tweet).id
               end
 
-    # no changes in post is from page user it self
+    # no changes in post is from page user itself
     if channel.options[:user][:id].to_s == user_id.to_s
       if !ticket
         return Ticket::State.find_by(name: 'closed')
@@ -551,7 +551,7 @@ create a tweet or direct message from an article
     max_count = 120
     max_count *= factor
     type_id = Ticket::Article::Type.lookup(name: 'twitter status').id
-    created_at = Time.zone.now - 15.minutes
+    created_at = 15.minutes.ago
     created_count = Ticket::Article.where('created_at > ? AND type_id = ?', created_at, type_id).count
     if created_count > max_count
       Rails.logger.info "Tweet limit of #{created_count}/#{max_count} reached, ignored tweed id (#{tweet.id})"
