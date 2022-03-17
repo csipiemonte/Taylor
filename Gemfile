@@ -157,8 +157,8 @@ gem 'openssl'
 
 # monitoring
 group :dev, :qa do
-  # gem 'newrelic_rpm'
-  gem 'appdynamics'
+  gem 'newrelic_rpm'
+  # gem 'appdynamics'
 end
 
 # Gems used only for develop/test and not required
