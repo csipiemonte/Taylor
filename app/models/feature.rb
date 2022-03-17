@@ -2,8 +2,8 @@
 class Feature < ApplicationModel
 
   def self.update_from_configuration
-    nexcrm_instance = ENV["NEXTCRM_CLIENTE"]
-    raise "variabile ambiente NEXTCRM_CLIENTE non trovata" unless nexcrm_instance
+    nexcrm_instance = ENV["PRODUCT_LINE"]
+    raise "variabile ambiente PRODUCT_LINE non trovata" unless nexcrm_instance
     environment = Rails.env 
 
     feature_config = HashWithIndifferentAccess.new(YAML.load(File.read(File.expand_path("../../../config/features/#{nexcrm_instance}.yml", __FILE__))))
