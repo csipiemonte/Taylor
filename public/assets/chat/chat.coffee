@@ -1188,12 +1188,13 @@ do($ = window.jQuery, window) ->
       # close window
       remainerHeight = @el.height() - @el.find('.zammad-chat-header').outerHeight()
       @el.animate { bottom: -remainerHeight }, 500, @onCloseAnimationEnd
-
+      @isOpen = false
+      
     # aggiunta metodo reloadChat sostituisce location reload
     reloadChat: =>
       @log.debug 'reload chat'
       @close()
-      # @isOpen = false
+      @isOpen = false
       # setTimeout(@open(), 2000)
 
     onCloseAnimationEnd: =>
