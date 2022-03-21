@@ -67,4 +67,5 @@ VALUES
 (62, 'sw', 'PROTES -Componente che eroga il servizio WEB dell''applic', NOW(), NOW()),
 (64, 'sw', 'MDPCORESERVICES - Servizi core di MDPNEW', NOW(), NOW()),
 (65, 'sw', 'ROL per cittadino non autenticato', NOW(), NOW()),
-(66, 'sw', 'COVID SOL CITTADINO NON AUTENTICATO', NOW(), NOW())
+(66, 'sw', 'COVID SOL CITTADINO NON AUTENTICATO', NOW(), NOW()),
+(67, 'sw', 'Deleghe Cittadini Minori', NOW(), NOW())
