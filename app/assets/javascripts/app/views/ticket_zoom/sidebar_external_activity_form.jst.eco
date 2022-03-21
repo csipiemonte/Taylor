@@ -2,20 +2,24 @@
   <% if @dispatched: %>
     <% if @needs_attention: %>
       <div class="">
-          <div class="page-header-title">
-            <div class="zammad-switch zammad-switch--small">
-               <input name="External_Activity_<%= @externalActivityId %>_needs_attention" type="checkbox" id="External_Activity_<%= @externalActivityId %>_needs_attention" checked>
-               <label for="External_Activity_<%= @externalActivityId %>_needs_attention"></label>
-            </div>
-            <h4><%- @T('Needs Attention') %></h4>
+        <div class="page-header-title">
+          <div class="zammad-switch zammad-switch--small">
+              <input name="External_Activity_<%= @externalActivityId %>_needs_attention" type="checkbox" id="External_Activity_<%= @externalActivityId %>_needs_attention" checked>
+              <label for="External_Activity_<%= @externalActivityId %>_needs_attention"></label>
           </div>
-        <div class="text-muted" style="margin-bottom: 1em;"><%- @T('⚠ There are new changes on this activity') %></div>
+          <h4><%- @T('Needs Attention') %></h4>
+        </div>
+        <div class="text-muted" style="margin-bottom: 1em;"><%- @T('⚠ There are new changes on this activity') %>
+        </div>
       </div>
-     <% end %>
+    <% end %>
     <p class="text-muted">
       <%- @T('Created at') %>: <time class="humanTimeFromNow" datetime="<%= @activity.created_at %>" title="<%= @activity.timestamp %>"><%= @activity.humanTime %></time>
     </p>
   <% else: %>
+    <button id="External_Activity_<%= @externalActivityId %>_submit" class="btn btn--primary"><%- @T('Create') %></button>
+    <button id="External_Activity_<%= @externalActivityId %>_hidden_submit" class="btn btn--primary" style="display: none;"><%- @T('Create') %></button>
+    <p>Attenzione: clicca sul bottone CREA per creare l'attività esterna, una volta inserite le informazioni.</p>
     <p id="External_Activity_<%= @externalActivityId %>_import-from-ticket" style="color: #429ed7;cursor: pointer;"><%- @T('✎ Import data from user\'s ticket') %></p>
   <% end %>
   <form>
@@ -75,20 +79,19 @@
     <% end %>
   <% end %>
   <% if @dispatched: %>
-    <button id="External_Activity_<%= @externalActivityId %>_update_button" class="btn btn--primary" style="display: block;margin: 1em 0 1em auto;"><%- @T('Update') %></button>
+    <button id="External_Activity_<%= @externalActivityId %>_update_button" class="btn btn--primary" style="display: block;margin: 1em 0 1em auto;"><%- @T('Edit') %>
+    </button>
   <% else: %>
     <div class="">
-        <div class="page-header-title">
-          <div class="zammad-switch zammad-switch--small">
-              <input name="External_Activity_<%= @externalActivityId %>_bidirectional_alignment" type="checkbox" id="External_Activity_<%= @externalActivityId %>_bidirectional_alignment" checked>
-              <label for="External_Activity_<%= @externalActivityId %>_bidirectional_alignment"></label>
-          </div>
-          <h4><%- @T('Get Updates') %></h4>
+      <div class="page-header-title">
+        <div class="zammad-switch zammad-switch--small">
+            <input name="External_Activity_<%= @externalActivityId %>_bidirectional_alignment" type="checkbox" id="External_Activity_<%= @externalActivityId %>_bidirectional_alignment" checked>
+            <label for="External_Activity_<%= @externalActivityId %>_bidirectional_alignment"></label>
         </div>
+        <h4><%- @T('Get Updates') %></h4>
+      </div>
       <div class="text-muted" style="margin-bottom: 1em;"><%- @T('Get activity updates from the external system') %></div>
     </div>
-    <button id="External_Activity_<%= @externalActivityId %>_submit" class="btn btn--primary"><%- @T('Create') %></button>
-    <button id="External_Activity_<%= @externalActivityId %>_hidden_submit" class="btn btn--primary" style="display: none;"><%- @T('Create') %></button>
   <% end %>
   </form>
   <hr>

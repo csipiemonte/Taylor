@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -101,10 +101,43 @@ RSpec.describe 'Ticket', type: :request do
         article:     {},
       }
       authenticated_as(agent)
-      post '/api/v1/tickets', params: params, as: :json
+      expect { post '/api/v1/tickets', params: params, as: :json }.not_to change(Ticket, :count)
       expect(response).to have_http_status(:unprocessable_entity)
       expect(json_response).to be_a_kind_of(Hash)
-      expect(json_response['error']).to eq('Need at least article: { body: "some text" }')
+      expect(json_response['error']).to eq("Need at least an 'article body' field.")
+    end
+
+    it 'does ticket create with agent - article.body set to empty string (01.03)' do
+      params = {
+        title:       'a new ticket #3',
+        group:       ticket_group.name,
+        priority:    '2 normal',
+        state:       'new',
+        customer_id: customer.id,
+        article:     { body: " \n " },
+      }
+      authenticated_as(agent)
+      expect { post '/api/v1/tickets', params: params, as: :json }.not_to change(Ticket, :count)
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(json_response).to be_a_kind_of(Hash)
+      expect(json_response['error']).to eq("Need at least an 'article body' field.")
+    end
+
+    it 'does ticket create with agent - missing article (01.03)' do
+      params = {
+        title:       'a new ticket #3',
+        group:       ticket_group.name,
+        priority:    '2 normal',
+        state:       'new',
+        customer_id: customer.id
+      }
+      authenticated_as(agent)
+      expect { post '/api/v1/tickets', params: params, as: :json }.to change(Ticket, :count).by(1)
+      expect(response).to have_http_status(:created)
+      expect(json_response).to be_a_kind_of(Hash)
+
+      ticket = Ticket.find(json_response['id'])
+      expect(ticket.articles).to be_empty
     end
 
     it 'does ticket create with agent - minimal article (01.03)' do
@@ -149,30 +182,6 @@ RSpec.describe 'Ticket', type: :request do
       expect(json_response['customer_id']).to eq(customer.id)
       expect(json_response['updated_by_id']).to eq(agent.id)
       expect(json_response['created_by_id']).to eq(agent.id)
-    end
-
-    it 'does ticket create with empty article body' do
-      params = {
-        title:    'a new ticket with empty article body',
-        group:    ticket_group.name,
-        priority: '2 normal',
-        state:    'new',
-        customer: customer.email,
-        article:  { body: '' }
-      }
-      authenticated_as(agent)
-      post '/api/v1/tickets', params: params, as: :json
-      expect(response).to have_http_status(:created)
-      expect(json_response).to be_a_kind_of(Hash)
-      expect(json_response['state_id']).to eq(Ticket::State.lookup(name: 'new').id)
-      expect(json_response['title']).to eq('a new ticket with empty article body')
-      expect(json_response['customer_id']).to eq(customer.id)
-      expect(json_response['updated_by_id']).to eq(agent.id)
-      expect(json_response['created_by_id']).to eq(agent.id)
-      ticket = Ticket.find(json_response['id'])
-      expect(ticket.articles.count).to eq(1)
-      article = ticket.articles.first
-      expect(article.body).to eq('')
     end
 
     it 'does ticket create with agent - wrong owner_id - 0 (01.05)' do
@@ -474,7 +483,7 @@ RSpec.describe 'Ticket', type: :request do
       post '/api/v1/tickets', params: params, as: :json
       expect(response).to have_http_status(:unprocessable_entity)
       expect(json_response).to be_a_kind_of(Hash)
-      expect(json_response['error']).to eq('Need at least article: { body: "some text" }')
+      expect(json_response['error']).to eq("Need at least an 'article body' field.")
     end
 
     it 'does ticket create with agent - minimal article and attachment with customer (01.13)' do
@@ -870,7 +879,7 @@ RSpec.describe 'Ticket', type: :request do
       expect(article_json_response['subject']).to eq('some subject')
       expect(article_json_response['body']).to eq('some body')
       expect(article_json_response['content_type']).to eq('text/plain')
-      expect(article_json_response['internal']).to eq(false)
+      expect(article_json_response['internal']).to be(false)
       expect(article_json_response['created_by_id']).to eq(agent.id)
       expect(article_json_response['sender_id']).to eq(Ticket::Article::Sender.lookup(name: 'Agent').id)
       expect(article_json_response['type_id']).to eq(Ticket::Article::Type.lookup(name: 'note').id)
@@ -915,7 +924,7 @@ RSpec.describe 'Ticket', type: :request do
       expect(json_response['subject']).to eq('some subject')
       expect(json_response['body']).to eq('some body')
       expect(json_response['content_type']).to eq('text/plain')
-      expect(json_response['internal']).to eq(true)
+      expect(json_response['internal']).to be(true)
       expect(json_response['created_by_id']).to eq(agent.id)
       expect(json_response['sender_id']).to eq(Ticket::Article::Sender.lookup(name: 'Agent').id)
       expect(json_response['type_id']).to eq(Ticket::Article::Type.lookup(name: 'email').id)
@@ -931,7 +940,7 @@ RSpec.describe 'Ticket', type: :request do
       expect(json_response['subject']).not_to eq('new subject')
       expect(json_response['body']).to eq('some body')
       expect(json_response['content_type']).to eq('text/plain')
-      expect(json_response['internal']).to eq(true)
+      expect(json_response['internal']).to be(true)
       expect(json_response['created_by_id']).to eq(agent.id)
       expect(json_response['sender_id']).to eq(Ticket::Article::Sender.lookup(name: 'Agent').id)
       expect(json_response['type_id']).to eq(Ticket::Article::Type.lookup(name: 'email').id)
@@ -946,7 +955,7 @@ RSpec.describe 'Ticket', type: :request do
       }
       post '/api/v1/ticket_articles', params: params, as: :json
       expect(response).to have_http_status(:created)
-      expect(json_response['internal']).to eq(false)
+      expect(json_response['internal']).to be(false)
 
       delete "/api/v1/ticket_articles/#{json_response['id']}", params: {}, as: :json
       expect(response).to have_http_status(:forbidden)
@@ -1003,7 +1012,7 @@ RSpec.describe 'Ticket', type: :request do
       expect(json_response['subject']).to eq('some subject')
       expect(json_response['body']).to eq('some body')
       expect(json_response['content_type']).to eq('text/plain')
-      expect(json_response['internal']).to eq(false)
+      expect(json_response['internal']).to be(false)
       expect(json_response['created_by_id']).to eq(admin.id)
       expect(json_response['sender_id']).to eq(Ticket::Article::Sender.lookup(name: 'Agent').id)
       expect(json_response['type_id']).to eq(Ticket::Article::Type.lookup(name: 'note').id)
@@ -1020,7 +1029,7 @@ RSpec.describe 'Ticket', type: :request do
       expect(json_response['subject']).not_to eq('new subject')
       expect(json_response['body']).to eq('some body')
       expect(json_response['content_type']).to eq('text/plain')
-      expect(json_response['internal']).to eq(true)
+      expect(json_response['internal']).to be(true)
       expect(json_response['created_by_id']).to eq(admin.id)
       expect(json_response['sender_id']).to eq(Ticket::Article::Sender.lookup(name: 'Agent').id)
       expect(json_response['type_id']).to eq(Ticket::Article::Type.lookup(name: 'note').id)
@@ -1042,7 +1051,7 @@ RSpec.describe 'Ticket', type: :request do
       expect(json_response['subject']).to eq('some subject')
       expect(json_response['body']).to eq('some body')
       expect(json_response['content_type']).to eq('text/plain')
-      expect(json_response['internal']).to eq(false)
+      expect(json_response['internal']).to be(false)
       expect(json_response['created_by_id']).to eq(admin.id)
       expect(json_response['sender_id']).to eq(Ticket::Article::Sender.lookup(name: 'Agent').id)
       expect(json_response['type_id']).to eq(Ticket::Article::Type.lookup(name: 'email').id)
@@ -1338,7 +1347,7 @@ RSpec.describe 'Ticket', type: :request do
       expect(json_response['subject']).to eq('some subject')
       expect(json_response['body']).to eq('some body')
       expect(json_response['content_type']).to eq('text/plain')
-      expect(json_response['internal']).to eq(false)
+      expect(json_response['internal']).to be(false)
       expect(json_response['created_by_id']).to eq(customer.id)
       expect(json_response['sender_id']).to eq(Ticket::Article::Sender.lookup(name: 'Customer').id)
       expect(json_response['type_id']).to eq(Ticket::Article::Type.lookup(name: 'web').id)
@@ -2022,7 +2031,7 @@ RSpec.describe 'Ticket', type: :request do
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['result']).to eq('failed')
-      expect(json_response['message']).to eq('No such target ticket number!')
+      expect(json_response['message']).to eq('Could not find target ticket number!')
 
       put "/api/v1/ticket_merge/#{ticket3.id}/#{ticket1.number}", params: {}, as: :json
       expect(response).to have_http_status(:forbidden)

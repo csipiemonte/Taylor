@@ -53,18 +53,21 @@ class App.TicketZoomArticleNew extends App.Controller
 
       @setArticleTypePre(data.type.name, data.signaturePosition)
 
-      @openTextarea(null, true, true)
+      @openTextarea(null, true, !data.nofocus)
       for key, value of data.article
         if key is 'body'
           @$("[data-name=\"#{key}\"]").html(value)
         else
           @$("[name=\"#{key}\"]").val(value).trigger('change')
 
+
+      @$('[name=shared_draft_id]').val(data.shared_draft_id)
+
       @setArticleTypePost(data.type.name, data.signaturePosition)
 
       # set focus into field
       if data.focus
-        @$("[name=\"#{data.focus}\"], [data-name=\"#{data.focus}\"]").focus().parent().find('.token-input').focus()
+        @$("[name=\"#{data.focus}\"], [data-name=\"#{data.focus}\"]").trigger('focus').parent().find('.token-input').trigger('focus')
         return
 
       # set focus at end of field
@@ -75,6 +78,9 @@ class App.TicketZoomArticleNew extends App.Controller
       # fixes email validation issue right after new ticket creation
       @tokanice(data.type.name)
     )
+
+    @controllerBind('ui::ticket::import_draft_attachments', @importDraftAttachments)
+    @controllerBind('ui::ticket::shared_draft_saved',       @sharedDraftSaved)
 
     # add article attachment
     @controllerBind('ui::ticket::addArticleAttachent', (data) =>
@@ -296,11 +302,11 @@ class App.TicketZoomArticleNew extends App.Controller
     attachmentCount = @$('.article-add .textBubble .attachments .attachment').length
     if !params.body && attachmentCount > 0
       new App.ControllerModal(
-        head: 'Text missing'
-        buttonCancel: 'Cancel'
+        head: __('Text missing')
+        buttonCancel: __('Cancel')
         buttonCancelClass: 'btn--danger'
         buttonSubmit: false
-        message: 'Please fill also some text in!'
+        message: __('Please enter a text.')
         shown: true
         small: true
         container: @el.closest('.content')
@@ -311,7 +317,7 @@ class App.TicketZoomArticleNew extends App.Controller
     if params.body && attachmentCount < 1
       matchingWord = App.Utils.checkAttachmentReference(params.body)
       if matchingWord
-        if !confirm(App.i18n.translateContent('You use %s in text but no attachment is attached. Do you want to continue?', matchingWord))
+        if !confirm(App.i18n.translateContent('You used %s in the text but no attachment could be found. Do you want to continue?', matchingWord))
           return false
 
     # backend based validation
@@ -329,7 +335,14 @@ class App.TicketZoomArticleNew extends App.Controller
     if @articleNewEdit.hasClass('is-public')
       @setArticleInternal(true)
     else
-      @setArticleInternal(false)
+      if App.Config.get('ui_ticket_zoom_article_visibility_confirmation_dialog')
+        new App.ControllerArticlePublicConfirm(
+          callback: =>
+            @setArticleInternal(false)
+          container: $(e.target).closest('.content')
+        )
+      else
+        @setArticleInternal(false)
 
   showSelectableArticleType: (event) =>
     event.stopPropagation()
@@ -415,7 +428,7 @@ class App.TicketZoomArticleNew extends App.Controller
               @securityOptionsShow()
 
               # add observer to change options
-              @$('.js-to, .js-cc').bind('change', =>
+              @$('.js-to, .js-cc').on('change', =>
                 @updateSecurityOptions()
               )
               @updateSecurityOptions()
@@ -452,7 +465,7 @@ class App.TicketZoomArticleNew extends App.Controller
 
   propagateOpenTextarea: (event) ->
     event.stopPropagation()
-    @textarea.focus()
+    @textarea.trigger('focus')
 
   updateLetterCount: =>
     return if !@maxTextLength
@@ -498,7 +511,7 @@ class App.TicketZoomArticleNew extends App.Controller
         easing: 'easeOutQuad'
         complete: =>
           $(window).on('click.ticket-zoom-textarea', @closeTextarea)
-          @textarea.focus() if focus
+          @textarea.trigger('focus') if focus
 
     @textBubble.velocity
       properties:
@@ -626,6 +639,33 @@ class App.TicketZoomArticleNew extends App.Controller
 
       @richTextUploadDeleteCallback?(@attachments)
     )
+
+  importDraftAttachments: (options) =>
+    return if @ticket.id != options.ticket_id
+
+    @ajax
+      id: 'import_attachments'
+      type: 'POST'
+      url: "#{@apiPath}/tickets/#{@ticket.id}/shared_draft/import_attachments"
+      data: JSON.stringify({ form_id: @form_id })
+      processData: true
+      success: (data, status, xhr) =>
+        App.Event.trigger('ui::ticket::addArticleAttachent', {
+          ticket:      @ticket
+          attachments: data.attachments
+          form_id:     @form_id
+        })
+
+        App.Event.trigger(options.callbackName, { success: true })
+      error: ->
+        App.Event.trigger(options.callbackName, { success: false })
+
+  sharedDraftSaved: (options) =>
+    return if @ticket.id != options.ticket_id
+
+    @el
+      .find('input[name=shared_draft_id]')
+      .val(options.shared_draft_id)
 
   actions: ->
     actionConfig = App.Config.get('TicketZoomArticleAction')

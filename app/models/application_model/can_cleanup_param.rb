@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 module ApplicationModel::CanCleanupParam
   extend ActiveSupport::Concern
@@ -71,7 +71,7 @@ returns
         clean_params[attribute] = data[attribute]
       end
 
-      clean_params['form_id'] = data['form_id'] if data.key?('form_id') && new.respond_to?('form_id')
+      clean_params['form_id'] = data['form_id'] if data.key?('form_id') && new.respond_to?(:form_id)
 
       if inside_nested
         clean_params['id'] = params[:id] if params[:id].present?

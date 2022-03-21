@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -42,12 +42,12 @@ RSpec.describe 'Manage > Users', type: :system do
       visit 'manage/users'
 
       within(:active_content) do
-        row = find("tr[data-id=\"#{user.id}\"]", wait: 10)
+        row = find("tr[data-id=\"#{user.id}\"]")
         row.find('.js-action').click
         row.find('.js-switchTo').click
       end
 
-      expect(page).to have_text("Zammad looks like this for \"#{user.firstname} #{user.lastname}\"", wait: 10)
+      expect(page).to have_text("Zammad looks like this for \"#{user.firstname} #{user.lastname}\"")
     end
   end
 
@@ -107,6 +107,69 @@ RSpec.describe 'Manage > Users', type: :system do
         row.find('li.unlock').click
 
         expect(row).to have_no_css('.icon-lock')
+      end
+    end
+  end
+
+  context 'updating a user' do
+    let(:user) { create(:admin) }
+    let(:row)  { find 'table.user-list tbody tr', text: user.firstname }
+
+    before do
+      user
+
+      visit '#manage/users'
+
+      within(:active_content) do
+        row.click
+      end
+    end
+
+    it 'handles permission checkboxes correctly' do
+      in_modal disappears: false do
+        scroll_into_view 'table.settings-list'
+        within 'table.settings-list tbody tr:first-child' do
+          click 'input[value="full"]', visible: :all
+          expect(find('input[value="full"]', visible: :all).checked?).to be true
+          click 'input[value="read"]', visible: :all
+          expect(find('input[value="full"]', visible: :all).checked?).to be false
+          expect(find('input[value="read"]', visible: :all).checked?).to be true
+          click 'input[value="full"]', visible: :all
+          expect(find('input[value="full"]', visible: :all).checked?).to be true
+          expect(find('input[value="read"]', visible: :all).checked?).to be false
+        end
+      end
+    end
+
+    it 'allows to update a user with no email/first/last/phone if login is present' do
+      in_modal do
+        fill_in 'firstname', with: ''
+        fill_in 'lastname', with: ''
+        fill_in 'Email', with: ''
+        fill_in 'Phone', with: ''
+
+        click_on 'Submit'
+      end
+
+      within :active_content do
+        expect(page).to have_no_text(user.firstname)
+      end
+    end
+
+    context 'when user has auto login' do
+      let(:user) { create(:admin, login: "auto-#{SecureRandom.uuid}") }
+
+      it 'does not allow to update a user with no email/first/last/phone' do
+        in_modal disappears: false do
+          fill_in 'firstname', with: ''
+          fill_in 'lastname', with: ''
+          fill_in 'Email', with: ''
+          fill_in 'Phone', with: ''
+
+          click_on 'Submit'
+
+          expect(page).to have_text('At least one identifier')
+        end
       end
     end
   end

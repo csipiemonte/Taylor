@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class MentionsController < ApplicationController
   prepend_before_action -> { authorize! }
@@ -55,7 +55,7 @@ class MentionsController < ApplicationController
 
   def mentionable_type!
     @mentionable_type ||= begin
-      raise 'Invalid mentionable_type!' if 'Ticket'.freeze != params[:mentionable_type]
+      raise __('Invalid mentionable_type!') if 'Ticket'.freeze != params[:mentionable_type]
 
       params[:mentionable_type]
     end

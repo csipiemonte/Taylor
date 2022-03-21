@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'browser_test_helper'
 
@@ -16,7 +16,7 @@ class AaaGettingStartedTest < TestCase
     location(url: browser_url)
     watch_for(
       css:   '.setup.wizard',
-      value: 'setup new system',
+      value: 'Set up a new system',
     )
     click(css: '.js-start .btn--primary')
     watch_for(
@@ -67,7 +67,7 @@ class AaaGettingStartedTest < TestCase
     )
     watch_for(
       css:   'body',
-      value: 'An URL looks like this',
+      value: 'A URL looks like this',
     )
     set(
       css:   '.js-base input[name="url"]',
@@ -149,6 +149,7 @@ class AaaGettingStartedTest < TestCase
     # click(
     #  css: '.js-agent input[name="group_ids"][value="1"]',
     # )
+    check(css: '.js-agent .js-groupListItem[value=full]')
     click(
       css: '.js-agent .btn--success',
     )

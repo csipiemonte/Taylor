@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class Stats::TicketReopen
 
@@ -7,7 +7,7 @@ class Stats::TicketReopen
     # get my closed tickets
     total = Ticket.select('id').where(
       'owner_id = ? AND close_at > ?',
-      user.id, Time.zone.now - 7.days
+      user.id, 7.days.ago
     ).count
 
     # get count of reopens
@@ -38,7 +38,7 @@ class Stats::TicketReopen
 
     return result if !result.key?(:used_for_average)
 
-    if result[:total] < 1 || result[:average_per_agent].to_d == 0.0.to_d
+    if result[:total] < 1 || result[:average_per_agent].to_d == BigDecimal('0.0')
       result[:state] = 'supergood'
       return result
     end

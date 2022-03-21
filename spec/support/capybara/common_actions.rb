@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 module CommonActions
 
@@ -37,7 +37,7 @@ module CommonActions
       click_button
     end
 
-    wait(4).until_exists do
+    wait.until_exists do
       current_login
     end
 
@@ -95,6 +95,8 @@ module CommonActions
   def logout
     ENV['FAKE_SELENIUM_LOGIN_USER_ID'] = nil
     visit('logout')
+
+    wait.until_disappears { find('.user-menu .user a', wait: false) }
   end
 
   # Overwrites the Capybara::Session#visit method to allow SPA navigation
@@ -162,8 +164,7 @@ module CommonActions
       route = Regexp.new(Regexp.quote("/##{route}"))
     end
 
-    # wait 1 sec by default because Firefox is slow
-    options.reverse_merge!(wait: 1, url: true)
+    options.reverse_merge!(url: true)
 
     have_current_path(route, **options)
   end
@@ -222,14 +223,14 @@ module CommonActions
       wrapper = all('div.ticket-article-item').last
 
       wrapper.find('.article-content .textBubble').click
-      wait(3).until do
+      wait.until do
         wrapper.find('.article-content-meta .article-meta.top').in_fixed_position
       end
     end
   end
 
   def use_template(template)
-    wait(4).until do
+    wait.until do
       field  = find('#form-template select[name="id"]')
       option = field.find(:option, template.name)
       option.select_option
@@ -251,14 +252,14 @@ module CommonActions
   # Checks if modal is ready
   #
   # @param timeout [Integer] seconds to wait
-  def modal_ready(timeout: 4)
+  def modal_ready(timeout: Capybara.default_max_wait_time)
     wait(timeout).until_exists { find('.modal.in', wait: 0) }
   end
 
   # Checks if modal has disappeared
   #
   # @param timeout [Integer] seconds to wait
-  def modal_disappear(timeout: 4)
+  def modal_disappear(timeout: Capybara.default_max_wait_time)
     wait(timeout).until_disappears { find('.modal', wait: 0) }
   end
 
@@ -266,7 +267,7 @@ module CommonActions
   #
   # @param timeout [Integer] seconds to wait
   # @param wait_for_disappear [Bool] wait for modal to close
-  def in_modal(timeout: 4, disappears: true, &block)
+  def in_modal(timeout: Capybara.default_max_wait_time, disappears: true, &block)
     modal_ready(timeout: timeout)
 
     within('.modal', &block)

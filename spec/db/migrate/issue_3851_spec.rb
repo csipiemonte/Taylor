@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -15,18 +15,18 @@ RSpec.describe Issue3851, type: :db_migration do
   end
 
   it 'shows field follow_up_assignment required in create' do
-    expect(follow_up_assignment.screens['create']['-all-']['null']).to eq(false)
+    expect(follow_up_assignment.screens['create']['-all-']['null']).to be(false)
   end
 
   it 'shows field follow_up_assignment required in edit' do
-    expect(follow_up_assignment.screens['edit']['-all-']['null']).to eq(false)
+    expect(follow_up_assignment.screens['edit']['-all-']['null']).to be(false)
   end
 
   it 'shows field follow_up_possible required in create' do
-    expect(follow_up_possible.screens['create']['-all-']['null']).to eq(false)
+    expect(follow_up_possible.screens['create']['-all-']['null']).to be(false)
   end
 
   it 'shows field follow_up_possible required in edit' do
-    expect(follow_up_possible.screens['edit']['-all-']['null']).to eq(false)
+    expect(follow_up_possible.screens['edit']['-all-']['null']).to be(false)
   end
 end

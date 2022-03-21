@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class Macro < ApplicationModel
   include ChecksClientNotification
@@ -16,4 +16,23 @@ class Macro < ApplicationModel
   sanitized_html :note
 
   collection_push_permission('ticket.agent')
+
+  ApplicableOn = Struct.new(:result, :blocking_tickets) do
+    delegate :==, to: :result
+    delegate :!, to: :result
+
+    def error_message
+      "Macro blocked by: #{blocking_tickets.join(', ')}"
+    end
+  end
+
+  def applicable_on?(tickets)
+    tickets = Array(tickets)
+
+    return ApplicableOn.new(true, []) if group_ids.blank?
+
+    blocking = tickets.reject { |elem| group_ids.include? elem.group_id }
+
+    ApplicableOn.new(blocking.none?, blocking)
+  end
 end

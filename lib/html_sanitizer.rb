@@ -1,13 +1,13 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class HtmlSanitizer
   LINKABLE_URL_SCHEMES = URI.scheme_list.keys.map(&:downcase) - ['mailto'] + ['tel']
   PROCESSING_TIMEOUT = 20
-  UNPROCESSABLE_HTML_MSG = 'This message cannot be displayed due to HTML processing issues. Download the raw message below and open it via an Email client if you still wish to view it.'.freeze
+  UNPROCESSABLE_HTML_MSG = __('This message cannot be displayed due to HTML processing issues. Download the raw message below and open it via an Email client if you still wish to view it.').freeze
 
 =begin
 
-satinize html string based on whiltelist
+sanitize html string based on whiltelist
 
   string = HtmlSanitizer.strict(string, external)
 
@@ -161,8 +161,8 @@ satinize html string based on whiltelist
         # wrap plain-text URLs in <a> tags
         if node.is_a?(Nokogiri::XML::Text) && node.content.present? && node.content.include?(':') && node.ancestors.map(&:name).exclude?('a')
           urls = URI.extract(node.content, LINKABLE_URL_SCHEMES)
-                    .map { |u| u.sub(%r{[,.]$}, '') }      # URI::extract captures trailing dots/commas
-                    .reject { |u| u.match?(%r{^[^:]+:$}) } # URI::extract will match, e.g., 'tel:'
+                    .map { |u| u.sub(%r{[,.]$}, '') } # URI::extract captures trailing dots/commas
+                    .grep_v(%r{^[^:]+:$}) # URI::extract will match, e.g., 'tel:'
 
           next if urls.blank?
 
@@ -409,7 +409,7 @@ cleanup html string:
 
 =begin
 
-reolace inline images with cid images
+replace inline images with cid images
 
   string = HtmlSanitizer.replace_inline_images(article.body)
 
@@ -450,7 +450,7 @@ reolace inline images with cid images
 
 =begin
 
-satinize style of img tags
+sanitize style of img tags
 
   string = HtmlSanitizer.dynamic_image_size(article.body)
 

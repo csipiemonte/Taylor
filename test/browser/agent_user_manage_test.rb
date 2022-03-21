@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'browser_test_helper'
 
@@ -203,7 +203,7 @@ class AgentUserManageTest < TestCase
 
     # there are 2 models, take the correct one
     # click(css: '.content.active .modal button.js-submit')
-    @browser.execute_script("$('.content.active .modal input[name=\"firstname\"]').closest('form').find('button.js-submit').click()")
+    @browser.execute_script("$('.content.active .modal input[name=\"firstname\"]').closest('form').find('button.js-submit').trigger('click')")
 
     # check is used to check selected
     watch_for(

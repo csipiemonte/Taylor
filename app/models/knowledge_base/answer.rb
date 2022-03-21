@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class KnowledgeBase::Answer < ApplicationModel
   include HasTranslations
@@ -6,6 +6,7 @@ class KnowledgeBase::Answer < ApplicationModel
   include HasTags
   include CanBePublished
   include ChecksKbClientNotification
+  include ChecksKbClientVisibility
   include CanCloneAttachments
 
   AGENT_ALLOWED_ATTRIBUTES       = %i[category_id promoted internal_note].freeze
@@ -17,8 +18,6 @@ class KnowledgeBase::Answer < ApplicationModel
   scope :sorted,           -> { order(position: :asc) }
 
   acts_as_list scope: :category, top_of_list: 0
-
-  validates :category, presence: true
 
   # provide consistent naming with KB category
   alias_attribute :parent, :category
@@ -48,13 +47,8 @@ class KnowledgeBase::Answer < ApplicationModel
     data = category.assets(data)
 
     # include all siblings to make sure ordering is always up to date. Reader gets only accessible siblings.
-    siblings = category.answers
+    data = ApplicationModel::CanAssets.reduce(assets_siblings, data)
 
-    if !User.lookup(id: UserInfo.current_user_id)&.permissions?('knowledge_base.editor')
-      siblings = siblings.internal
-    end
-
-    data = ApplicationModel::CanAssets.reduce(siblings, data)
     ApplicationModel::CanAssets.reduce(translations, data)
   end
 
@@ -105,6 +99,27 @@ class KnowledgeBase::Answer < ApplicationModel
   end
 
   private
+
+  def assets_siblings(siblings: category.answers, current_user: User.lookup(id: UserInfo.current_user_id))
+    if KnowledgeBase.granular_permissions?
+      ep = KnowledgeBase::EffectivePermission.new current_user, category
+
+      case ep.access_effective
+      when 'public_reader'
+        siblings.published
+      when 'none'
+        siblings.none
+      when 'reader'
+        siblings.internal
+      else
+        siblings
+      end
+    elsif !current_user&.permissions?('knowledge_base.editor')
+      siblings.internal
+    else
+      siblings
+    end
+  end
 
   def reordering_callback
     return if !category_id_changed? && !position_changed?

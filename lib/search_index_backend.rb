@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class SearchIndexBackend
 
@@ -145,6 +145,45 @@ add new object to search index
     return if url.blank?
 
     make_request_and_validate(url, data: data, method: :post)
+  end
+
+=begin
+
+  CSI Custom: add batch of object to search index
+
+  SearchIndexBackend.bulk_add('Ticket', some_data_objects)
+
+=end
+
+  def self.bulk_add(type, data)
+
+    url = build_url(type: type, bulk: true)
+    return if url.blank?
+
+    puts "\t\t - performing bulk add to " + url
+
+    # custom request, see UserAgent
+    uri  = URI.parse(url)
+    http = UserAgent.get_http(uri, {})
+    http.read_timeout = 120
+
+    request = Net::HTTP::Post.new(uri)
+    request['Content-Type'] = 'application/json'
+    request['User-Agent'] = 'Zammad User Agent'
+    request = UserAgent.set_basic_auth(request, {})
+    request.body = data
+
+    Rails.logger.info { "# curl -X POST \"#{uri}\" " }
+    response = http.request(request)
+    response = UserAgent.process(request, response, uri, 1, {}, {})
+    return true if response.success?
+
+    raise humanized_error(
+      verb:     'POST',
+      url:      url,
+      payload:  data,
+      response: response
+    )
   end
 
 =begin
@@ -775,7 +814,7 @@ generate url for index or document access (only for internal use)
 =end
 
   # rubocop:disable Metrics/ParameterLists
-  def self.build_url(type: nil, action: nil, object_id: nil, with_pipeline: true, with_document_type: true, url_params: {})
+  def self.build_url(type: nil, action: nil, object_id: nil, with_pipeline: true, with_document_type: true, url_params: {}, bulk: false)
     # rubocop:enable  Metrics/ParameterLists
     return if !SearchIndexBackend.enabled?
 
@@ -802,8 +841,11 @@ generate url for index or document access (only for internal use)
     # add type information
     url = "#{url}/#{index}"
 
+    # csi custom - aggiunta parametro per bulk requests
+    if bulk
+      url = "#{url}/_bulk"
     # add document type
-    if with_document_type
+    elsif with_document_type
       url = "#{url}/_doc"
     end
 
@@ -831,12 +873,12 @@ generate url for index or document access (only for internal use)
       suffix += "Payload:\n#{payload.inspect}"
     end
 
-    message = if response&.error&.match?('Connection refused')
-                "Elasticsearch is not reachable, probably because it's not running or even installed."
+    message = if response&.error&.match?(__('Connection refused'))
+                __("Elasticsearch is not reachable. It's possible that it's not running. Please check whether it is installed.")
               elsif url.end_with?('pipeline/zammad-attachment', 'pipeline=zammad-attachment') && response.code == 400
-                'The installed attachment plugin could not handle the request payload. Ensure that the correct attachment plugin is installed (ingest-attachment).'
+                __('The installed attachment plugin could not handle the request payload. Ensure that the correct attachment plugin is installed (ingest-attachment).')
               else
-                'Check the response and payload for detailed information: '
+                __('Check the response and payload for detailed information:')
               end
 
     result = "#{prefix} #{message}#{suffix}"
@@ -1163,7 +1205,7 @@ helper method for making HTTP calls and raising error if response was not succes
         },
         {
           action:      'create',
-          description: 'Extract zammad-attachment information from arrays',
+          description: __('Extract zammad-attachment information from arrays'),
           processors:  [
             {
               foreach: {
@@ -1230,7 +1272,7 @@ helper method for making HTTP calls and raising error if response was not succes
 
     error_prefix  = "Unable to process request to elasticsearch URL '#{url}'."
     error_suffix  = "Payload:\n#{payload.to_json}"
-    error_message = 'Conflicting date ranges'
+    error_message = __('Conflicting date ranges')
 
     result = "#{error_prefix} #{error_message} #{error_suffix}"
     Rails.logger.error result.first(40_000)

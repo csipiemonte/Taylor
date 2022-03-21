@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 # Using older 5.0 migration to stick to Integer primary keys. Otherwise migration fails in MySQL.
 class InitializeKnowledgeBase < ActiveRecord::Migration[5.0]
@@ -108,6 +108,18 @@ class InitializeKnowledgeBase < ActiveRecord::Migration[5.0]
       t.timestamps # rubocop:disable Zammad/ExistsDateTimePrecision
     end
 
+    create_table :knowledge_base_permissions do |t|
+      t.references :permissionable, polymorphic: true, null: false, index: { name: 'index_knowledge_base_permissions_on_permissionable' }
+      t.references :role, null: false, foreign_key: { to_table: :roles }
+
+      t.string 'access', limit: 50, default: 'full', null: false
+      t.index 'access'
+
+      t.index %i[role_id permissionable_id permissionable_type], unique: true, name: 'knowledge_base_permissions_uniqueness'
+
+      t.timestamps limit: 3
+    end
+
     Setting.create_if_not_exists(
       title:       'Kb multi-lingual support',
       name:        'kb_multi_lingual_support',
@@ -169,11 +181,12 @@ class InitializeKnowledgeBase < ActiveRecord::Migration[5.0]
     )
 
     Permission.create_if_not_exists(
-      name:        'knowledge_base.reader',
-      note:        'Access %s',
-      preferences: {
+      name:         'knowledge_base.reader',
+      note:         'Access %s',
+      preferences:  {
         translations: ['Knowledge Base']
-      }
+      },
+      allow_signup: true,
     )
 
     Permission.create_if_not_exists(

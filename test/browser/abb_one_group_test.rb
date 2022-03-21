@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'browser_test_helper'
 
@@ -58,16 +58,11 @@ class AgentTicketActionLevel0Test < TestCase
       css:   '.modal [name="email"]',
       value: "#{agent}@example.com",
     )
-    exists(
-      displayed: false,
-      css:       '.modal .js-groupList',
-    )
-    exists(
-      css: '.modal .js-groupListItem[value=full]:checked',
-    )
+    check(css: '.modal .js-groupListItem[value=full]')
     click(
       css:  '.modal button.btn.btn--primary',
       fast: true,
+      ajax: false,
     )
     watch_for(
       css:   'body div.modal',
@@ -99,35 +94,12 @@ class AgentTicketActionLevel0Test < TestCase
       value: "#{agent}2@example.com",
     )
 
-    # disable agent role
-    uncheck(
-      css: '.modal [name="role_ids"][value=2]',
-    )
-
-    exists(
-      displayed: false,
-      css:       '.modal .js-groupList',
-    )
-    exists_not(
-      css: '.modal .js-groupListItem[value=full]:checked',
-    )
-
-    # enable agent role
-    check(
-      css: '.modal [name="role_ids"][value=2]',
-    )
-
-    exists(
-      displayed: false,
-      css:       '.modal .js-groupList',
-    )
-    exists(
-      css: '.modal .js-groupListItem[value=full]:checked',
-    )
+    check(css: '.modal .js-groupListItem[value=full]')
 
     click(
       css:  '.modal button.btn.btn--primary',
       fast: true,
+      ajax: false,
     )
     watch_for(
       css:   'body div.modal',

@@ -3,8 +3,8 @@ class SipgateIo extends App.ControllerIntegrationBase
   featureName: 'sipgate.io'
   featureConfig: 'sipgate_config'
   description: [
-    ['This service shows you contacts of incoming calls and a caller list in realtime.']
-    ['Also caller id of outbound calls can be changed.']
+    [__('This service shows you contacts of incoming calls and a caller list in realtime.')]
+    [__('Caller ID of outbound calls can be changed as well.')]
   ]
   events:
     'click .js-select': 'selectAll'
@@ -57,6 +57,31 @@ class Form extends App.Controller
 
     @html App.view('integration/sipgate')(
       config: @config
+      sipgate_token: App.Setting.get('sipgate_token')
+    )
+
+    configure_attributes = [
+      {
+        name: 'view_limit',
+        display: '',
+        tag: 'select',
+        null: false,
+        options: [
+          { name: 60, value: 60 }
+          { name: 120, value: 120 }
+          { name: 180, value: 180 }
+          { name: 240, value: 240 }
+          { name: 300, value: 300 }
+        ]
+      },
+    ]
+    new App.ControllerForm(
+      el: @$('.js-viewLimit')
+      model:
+        configure_attributes: configure_attributes,
+      params:
+        view_limit: @config['view_limit']
+      autofocus: false
     )
 
     configure_attributes = [
@@ -108,7 +133,7 @@ class Form extends App.Controller
       }
     )
 
-    # blocked caller ids
+    # blocked caller IDs
     config.inbound.block_caller_ids = []
     @$('.js-inboundBlockCallerId .js-row').each(->
       caller_id = $(@).find('input[name="caller_id"]').val()
@@ -212,7 +237,7 @@ App.Config.set(
   {
     name: 'sipgate.io'
     target: '#system/integration/sipgate'
-    description: 'VoIP service provider with realtime push.'
+    description: __('VoIP service provider with realtime push.')
     controller: SipgateIo
     state: State
   }

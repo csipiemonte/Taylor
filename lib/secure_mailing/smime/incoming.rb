@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class SecureMailing::SMIME::Incoming < SecureMailing::Backend::Handler
   attr_accessor :mail, :content_type
@@ -73,7 +73,7 @@ class SecureMailing::SMIME::Incoming < SecureMailing::Backend::Handler
     return if !smime?
 
     success = false
-    comment = 'Unable to find private key to decrypt'
+    comment = __('Private key for decryption could not be found.')
     ::SMIMECertificate.where.not(private_key: [nil, '']).find_each do |cert|
       key = OpenSSL::PKey::RSA.new(cert.private_key, cert.private_key_secret)
 
@@ -106,7 +106,7 @@ class SecureMailing::SMIME::Incoming < SecureMailing::Backend::Handler
     return if !signed?
 
     success = false
-    comment = 'Unable to find certificate for verification'
+    comment = __('Certificate for verification could not be found.')
 
     result = verify_certificate_chain(verify_sign_p7enc.certificates)
     if result.present?

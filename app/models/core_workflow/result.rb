@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class CoreWorkflow::Result
   include ::Mixin::HasBackends
@@ -6,8 +6,8 @@ class CoreWorkflow::Result
   attr_accessor :payload, :user, :assets, :assets_in_result, :result, :rerun
 
   def initialize(payload:, user:, assets: {}, assets_in_result: true, result: {})
-    raise ArgumentError, 'No payload->class_name given!' if !payload['class_name']
-    raise ArgumentError, 'No payload->screen given!' if !payload['screen']
+    raise ArgumentError, __("The required parameter 'payload->class_name' is missing.") if !payload['class_name']
+    raise ArgumentError, __("The required parameter 'payload->screen' is missing.") if !payload['screen']
 
     @payload          = payload
     @user             = user

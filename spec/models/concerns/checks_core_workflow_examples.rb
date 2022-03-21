@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 RSpec.shared_examples 'ChecksCoreWorkflow' do
 
@@ -9,18 +9,8 @@ RSpec.shared_examples 'ChecksCoreWorkflow' do
     UserInfo.current_user_id = agent.id
   end
 
-  context 'when pending time on open ticket' do
-    subject(:ticket) { create(:ticket, group: agent_group, screen: 'create_middle', state: Ticket::State.find_by(name: 'open'), pending_time: Time.zone.now + 5.days) }
-
-    before { subject }
-
-    it 'checks if the pending time got removed' do
-      expect(ticket.pending_time).to be nil
-    end
-  end
-
   context 'when creation of closed tickets are only allowed by type set' do
-    subject(:ticket) { create(:ticket, group: agent_group, screen: 'create_middle', state: Ticket::State.find_by(name: 'open'), pending_time: Time.zone.now + 5.days) }
+    subject(:ticket) { create(:ticket, group: agent_group, screen: 'create_middle', state: Ticket::State.find_by(name: 'open'), pending_time: 5.days.from_now) }
 
     before do
       create(:core_workflow,
@@ -39,7 +29,7 @@ RSpec.shared_examples 'ChecksCoreWorkflow' do
   end
 
   context 'when creation of closed tickets are only allowed by type remove' do
-    subject(:ticket) { create(:ticket, group: agent_group, screen: 'create_middle', state: Ticket::State.find_by(name: 'open'), pending_time: Time.zone.now + 5.days) }
+    subject(:ticket) { create(:ticket, group: agent_group, screen: 'create_middle', state: Ticket::State.find_by(name: 'open'), pending_time: 5.days.from_now) }
 
     before do
       create(:core_workflow,
@@ -58,7 +48,7 @@ RSpec.shared_examples 'ChecksCoreWorkflow' do
   end
 
   context 'when creation of closed tickets are only allowed by type add' do
-    subject(:ticket) { create(:ticket, group: agent_group, screen: 'create_middle', state: Ticket::State.find_by(name: 'open'), pending_time: Time.zone.now + 5.days) }
+    subject(:ticket) { create(:ticket, group: agent_group, screen: 'create_middle', state: Ticket::State.find_by(name: 'open'), pending_time: 5.days.from_now) }
 
     before do
       create(:core_workflow,

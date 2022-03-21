@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -34,7 +34,7 @@ RSpec.describe 'Manage > Integration > S/MIME', type: :system do
       # add private key
       click '.js-addPrivateKey'
       fill_in 'Paste Private Key', with: private_key
-      fill_in 'Enter Private Key secret', with: private_key_secret
+      fill_in 'Enter Private Key Secret', with: private_key_secret
       click '.js-submit'
 
       # check result

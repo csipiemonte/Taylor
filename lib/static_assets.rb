@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 module StaticAssets
 
@@ -74,7 +74,7 @@ returns
       return Store.find(list[0])
     end
 
-    raise 'No such raw logo!'
+    raise __('Could not read raw logo!')
   end
 
 =begin

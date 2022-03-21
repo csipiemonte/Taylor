@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'digest/md5'
 
@@ -56,21 +56,41 @@ class CoreWorkflow::Attributes
     result
   end
 
-  def selected
-    if @payload['params']['id'] && payload_class.exists?(id: @payload['params']['id'])
-      result = saved_only
+  def exists?
+    return if @payload['params']['id'].blank?
+
+    @exists ||= payload_class.exists?(id: @payload['params']['id'])
+  end
+
+  def overwritten
+
+    # params loading and preparing is very expensive so cache it
+    checksum = Digest::MD5.hexdigest(Marshal.dump(@payload['params']))
+    return @overwritten[checksum] if @overwritten.present? && @overwritten[checksum]
+
+    @overwritten = {}
+    @overwritten[checksum] = begin
+      result = saved_only(dump: true)
       overwrite_selected(result)
+    end
+  end
+
+  def selected
+    if exists?
+      overwritten
     else
       selected_only
     end
   end
 
-  def saved_only
-    return if @payload['params']['id'].blank?
+  def saved_only(dump: false)
+    return if !exists?
 
     # dont use lookup here because the cache will not
     # know about new attributes and make crashes
     @saved_only ||= payload_class.find_by(id: @payload['params']['id'])
+
+    return @saved_only if !dump
 
     # we use marshal here because clone still uses references and dup can't
     # detect changes for the rails object
@@ -102,7 +122,7 @@ class CoreWorkflow::Attributes
   # dont cache this else the result object will work with references and cache bugs occur
   def visibility_default
     object_elements.each_with_object({}) do |attribute, result|
-      result[ attribute[:name] ] = screen_value(attribute, 'shown') == false ? 'hide' : 'show'
+      result[ attribute[:name] ] = screen_value(attribute, 'shown') == false ? 'remove' : 'show'
     end
   end
 
@@ -193,7 +213,7 @@ class CoreWorkflow::Attributes
   end
 
   def attribute_options_relation?(attribute)
-    attribute[:relation].present?
+    attribute[:tag] == 'select' && attribute[:relation].present?
   end
 
   def values(attribute)
@@ -214,8 +234,8 @@ class CoreWorkflow::Attributes
     return values if values == ['']
 
     saved_value = saved_attribute_value(attribute)
-    if saved_value.present? && values.exclude?(saved_value)
-      values |= Array(saved_value.to_s)
+    if saved_value.present?
+      values |= Array(saved_value).map(&:to_s)
     end
 
     if attribute[:nulloption] && values.exclude?('')
@@ -239,10 +259,12 @@ class CoreWorkflow::Attributes
 
   def saved_attribute_value(attribute)
 
-    # special case for owner_id & service_catalog_sub_item_id
+    # special case for owner_id
     return if saved_only&.class == Ticket && attribute[:name] == 'owner_id'
+
+    # CSI Piemonte custom: special case for service_catalog_sub_item_id
     return if saved_only&.class == Ticket && attribute[:name] == 'service_catalog_sub_item_id'
-    
+
     saved_only&.try(attribute[:name])
   end
 end

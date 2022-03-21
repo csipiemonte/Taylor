@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 module ApplicationController::HandlesDevices
   extend ActiveSupport::Concern
@@ -24,9 +24,9 @@ module ApplicationController::HandlesDevices
 
     if user_device_updated_at
       # check if entry exists / only if write action
-      diff = Time.zone.now - 10.minutes
+      diff = 10.minutes.ago
       if %w[GET OPTIONS HEAD].include?(request.method)
-        diff = Time.zone.now - 30.minutes
+        diff = 30.minutes.ago
       end
 
       # only update if needed
@@ -45,7 +45,7 @@ module ApplicationController::HandlesDevices
     # for sessions we need the fingperprint
     if type == 'session'
       if !session[:user_device_updated_at] && !params[:fingerprint] && !session[:user_device_fingerprint]
-        raise Exceptions::UnprocessableEntity, 'Need fingerprint param!'
+        raise Exceptions::UnprocessableEntity, __('Need fingerprint param!')
       end
 
       if params[:fingerprint]

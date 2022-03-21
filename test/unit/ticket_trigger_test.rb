@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'test_helper'
 
@@ -6,6 +6,15 @@ class TicketTriggerTest < ActiveSupport::TestCase
 
   setup do
     Setting.set('ticket_trigger_recursive', true)
+
+    @processing_timeout = HtmlSanitizer.const_get(:PROCESSING_TIMEOUT)
+
+    # XSS processing may run into a timeout on slow CI systems, so turn the timeout off for the test.
+    HtmlSanitizer.const_set(:PROCESSING_TIMEOUT, nil)
+  end
+
+  teardown do
+    HtmlSanitizer.const_set(:PROCESSING_TIMEOUT, @processing_timeout)
   end
 
   test '1 basic' do

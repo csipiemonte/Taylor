@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class Scheduler < ApplicationModel
   include ChecksHtmlSanitized
@@ -122,7 +122,7 @@ class Scheduler < ApplicationModel
   def self.cleanup(force: false)
 
     if !force && caller_locations(1..1).first.label != 'threads'
-      raise 'This method should only get called when Scheduler.threads are initialized. Use `force: true` to start anyway.'
+      raise 'This method should only get called when Scheduler.threads are initialized. Use `force: true` to start anyway.' # rubocop:disable Zammad/DetectTranslatableString
     end
 
     start_time = Time.zone.now
@@ -210,7 +210,7 @@ class Scheduler < ApplicationModel
   # return [nil]
   def self.cleanup_import_jobs(after)
     log_start_finish(:info, "Cleanup of left over import jobs #{after}") do
-      error = 'Interrupted by scheduler restart. Please restart manually or wait till next execution time.'.freeze
+      error = __('Interrupted by scheduler restart. Please restart manually or wait till next execution time.').freeze
 
       # we need to exclude jobs that were updated at or since we started
       # cleaning up (via the #reschedule? call) because they might

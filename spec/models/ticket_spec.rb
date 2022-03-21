@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'models/application_model_examples'
@@ -17,6 +17,7 @@ require 'models/ticket/escalation_examples'
 require 'models/ticket/resets_pending_time_seconds_examples'
 require 'models/ticket/sets_close_time_examples'
 require 'models/ticket/sets_last_owner_update_time_examples'
+require 'models/ticket/selector_2_sql_examples'
 
 RSpec.describe Ticket, type: :model do
   subject(:ticket) { create(:ticket) }
@@ -25,7 +26,7 @@ RSpec.describe Ticket, type: :model do
   it_behaves_like 'CanBeImported'
   it_behaves_like 'CanCsvImport'
   it_behaves_like 'ChecksCoreWorkflow'
-  it_behaves_like 'HasHistory', history_relation_object: ['Ticket::Article', 'Mention']
+  it_behaves_like 'HasHistory', history_relation_object: ['Ticket::Article', 'Mention', 'Ticket::SharedDraftZoom']
   it_behaves_like 'HasTags'
   it_behaves_like 'TagWritesToTicketHistory'
   it_behaves_like 'HasTaskbars'
@@ -37,6 +38,7 @@ RSpec.describe Ticket, type: :model do
   it_behaves_like 'TicketResetsPendingTimeSeconds'
   it_behaves_like 'TicketSetsCloseTime'
   it_behaves_like 'TicketSetsLastOwnerUpdateTime'
+  it_behaves_like 'TicketSelector2Sql'
 
   describe 'Class methods:' do
     describe '.selectors' do
@@ -97,7 +99,7 @@ RSpec.describe Ticket, type: :model do
       context 'when attempting to self-merge (i.e., to merge A → A)' do
         it 'raises an error' do
           expect { ticket.merge_to(ticket_id: ticket.id, user_id: 1) }
-            .to raise_error("Can't merge ticket with it self!")
+            .to raise_error("Can't merge ticket with itself!")
         end
       end
 
@@ -438,11 +440,16 @@ RSpec.describe Ticket, type: :model do
     end
 
     describe '#perform_changes' do
+      before do
+        stub_const('PERFORMABLE_STRUCT', Struct.new(:id, :perform, keyword_init: true))
+      end
 
       # a `performable` can be a Trigger or a Job
       # we use DuckTyping and expect that a performable
       # implements the following interface
-      let(:performable) { OpenStruct.new(id: 1, perform: perform) }
+      let(:performable) do
+        PERFORMABLE_STRUCT.new(id: 1, perform: perform)
+      end
 
       # Regression test for https://github.com/zammad/zammad/issues/2001
       describe 'argument handling' do
@@ -823,7 +830,7 @@ RSpec.describe Ticket, type: :model do
         let(:customer) { create(:customer) }
 
         it 'send trigger base notification' do
-          expect(ticket.send(:trigger_based_notification?, customer)).to eq(true)
+          expect(ticket.send(:trigger_based_notification?, customer)).to be(true)
         end
       end
 
@@ -839,7 +846,7 @@ RSpec.describe Ticket, type: :model do
         end
 
         it 'send no trigger base notification' do
-          expect(ticket.send(:trigger_based_notification?, customer)).to eq(false)
+          expect(ticket.send(:trigger_based_notification?, customer)).to be(false)
         end
 
         context 'with failed date 61 days ago' do
@@ -847,7 +854,7 @@ RSpec.describe Ticket, type: :model do
           let(:failed_date) { 61.days.ago }
 
           it 'send trigger base notification' do
-            expect(ticket.send(:trigger_based_notification?, customer)).to eq(true)
+            expect(ticket.send(:trigger_based_notification?, customer)).to be(true)
           end
         end
       end
@@ -1172,7 +1179,7 @@ RSpec.describe Ticket, type: :model do
 
       context 'with no SLAs in the system' do
         it 'defaults to nil' do
-          expect(ticket.escalation_at).to be(nil)
+          expect(ticket.escalation_at).to be_nil
         end
       end
 
@@ -1383,7 +1390,7 @@ RSpec.describe Ticket, type: :model do
 
       context 'with no SLAs in the system' do
         it 'defaults to nil' do
-          expect(ticket.first_response_escalation_at).to be(nil)
+          expect(ticket.first_response_escalation_at).to be_nil
         end
       end
 
@@ -1415,7 +1422,7 @@ RSpec.describe Ticket, type: :model do
 
       context 'with no SLAs in the system' do
         it 'defaults to nil' do
-          expect(ticket.update_escalation_at).to be(nil)
+          expect(ticket.update_escalation_at).to be_nil
         end
       end
 
@@ -1455,7 +1462,7 @@ RSpec.describe Ticket, type: :model do
 
       context 'with no SLAs in the system' do
         it 'defaults to nil' do
-          expect(ticket.close_escalation_at).to be(nil)
+          expect(ticket.close_escalation_at).to be_nil
         end
       end
 
@@ -1771,9 +1778,10 @@ RSpec.describe Ticket, type: :model do
       end
 
       it 'destroys all related dependencies' do
-        refs_known = { 'Ticket::Article'        => { 'ticket_id'=>1 },
-                       'Ticket::TimeAccounting' => { 'ticket_id'=>1 },
-                       'Ticket::Flag'           => { 'ticket_id'=>1 } }
+        refs_known = { 'Ticket::Article'         => { 'ticket_id'=>1 },
+                       'Ticket::TimeAccounting'  => { 'ticket_id'=>1 },
+                       'Ticket::SharedDraftZoom' => { 'ticket_id'=>0 },
+                       'Ticket::Flag'            => { 'ticket_id'=>1 } }
 
         ticket     = create(:ticket)
         article    = create(:ticket_article, ticket: ticket)
@@ -2171,7 +2179,7 @@ RSpec.describe Ticket, type: :model do
       let(:current_payload_size) { 3.megabyte }
 
       it 'return false' do
-        expect(ticket.send(:search_index_attribute_lookup_oversized?, current_payload_size)).to eq false
+        expect(ticket.send(:search_index_attribute_lookup_oversized?, current_payload_size)).to be false
       end
     end
 
@@ -2179,7 +2187,7 @@ RSpec.describe Ticket, type: :model do
       let(:current_payload_size) { 350.megabyte }
 
       it 'return true' do
-        expect(ticket.send(:search_index_attribute_lookup_oversized?, current_payload_size)).to eq true
+        expect(ticket.send(:search_index_attribute_lookup_oversized?, current_payload_size)).to be true
       end
     end
   end
@@ -2199,7 +2207,7 @@ RSpec.describe Ticket, type: :model do
       let(:current_payload_size) { 200.megabyte }
 
       it 'return false' do
-        expect(ticket.send(:search_index_attribute_lookup_file_oversized?, store, current_payload_size)).to eq false
+        expect(ticket.send(:search_index_attribute_lookup_file_oversized?, store, current_payload_size)).to be false
       end
     end
 
@@ -2207,7 +2215,7 @@ RSpec.describe Ticket, type: :model do
       let(:current_payload_size) { 299.megabyte }
 
       it 'return true' do
-        expect(ticket.send(:search_index_attribute_lookup_file_oversized?, store, current_payload_size)).to eq true
+        expect(ticket.send(:search_index_attribute_lookup_file_oversized?, store, current_payload_size)).to be true
       end
     end
   end
@@ -2225,7 +2233,7 @@ RSpec.describe Ticket, type: :model do
       end
 
       it 'return false' do
-        expect(ticket.send(:search_index_attribute_lookup_file_ignored?, store_with_indexable_extention)).to eq false
+        expect(ticket.send(:search_index_attribute_lookup_file_ignored?, store_with_indexable_extention)).to be false
       end
     end
 
@@ -2241,7 +2249,7 @@ RSpec.describe Ticket, type: :model do
       end
 
       it 'return true' do
-        expect(ticket.send(:search_index_attribute_lookup_file_ignored?, store_without_indexable_extention)).to eq true
+        expect(ticket.send(:search_index_attribute_lookup_file_ignored?, store_without_indexable_extention)).to be true
       end
     end
   end

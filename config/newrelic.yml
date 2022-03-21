@@ -1,68 +1,66 @@
 #
 # This file configures the New Relic Agent.  New Relic monitors Ruby, Java,
-# .NET, PHP, Python and Node applications with deep visibility and low
+# .NET, PHP, Python, Node, and Go applications with deep visibility and low
 # overhead.  For more information, visit www.newrelic.com.
+#
+# Generated March 16, 2022
+#
+# This configuration file is custom generated for NewRelic Administration
 #
 # For full documentation of agent configuration options, please refer to
 # https://docs.newrelic.com/docs/agents/ruby-agent/installation-configuration/ruby-agent-configuration
 
 common: &default_settings
   # Required license key associated with your New Relic account.
-  # account SYMON_TEST2_old
-  license_key: 31e2ceffe2201c17ad3955a86085110a4bfa459a
+  license_key: eu01xxa7a995504a351dd3fedc25fb5b2c30NRAL
 
   # Your application name. Renaming here affects where data displays in New
   # Relic.  For more details, see https://docs.newrelic.com/docs/apm/new-relic-apm/maintenance/renaming-applications
-  app_name: Zammad
-  log_file_path: /appserv/zammad/zammad/log
+  app_name: NextCRM-TST
+
+  distributed_tracing:
+    enabled: true
 
   # To disable the agent regardless of other settings, uncomment the following:
-  # agent_enabled: false
+  agent_enabled: false
 
   # Logging level for log/newrelic_agent.log
   log_level: info
+
+  log_file_path: /appserv/zammad/zammad/log
+
+  proxy_host: proxy-nivola
+  proxy_port: 3128
 
 # Environment-specific settings are in this section.
 # RAILS_ENV or RACK_ENV (as appropriate) is used to determine the environment.
 # If your application has other named environments, configure them here.
 development:
   <<: *default_settings
-  app_name: ZammadDEV
-  # To disable the agent 
+  app_name: NextCRM-TST (Development)
+  # To disable the agent regardless of other settings, uncomment the following:
   agent_enabled: false
 
-  # NOTE: There is substantial overhead when running in developer mode.
-  # Do not use for production or load testing.
-  developer_mode: false
-
-dev:
-  <<: *default_settings
-  app_name: ZammadDEV
-  # To disable the agent 
-  agent_enabled: false
-
-  # NOTE: There is substantial overhead when running in developer mode.
-  # Do not use for production or load testing.
-  developer_mode: false
-  
 qa:
   <<: *default_settings
-  app_name: ZammadTST
-  # To disable the agent
-  agent_enabled: false
-
-  # NOTE: There is substantial overhead when running in developer mode.
-  # Do not use for production or load testing.
+  # It doesn't make sense to report to New Relic from automated test runs.
+  # monitor_mode: false
   developer_mode: false
 
 test:
   <<: *default_settings
   # It doesn't make sense to report to New Relic from automated test runs.
   monitor_mode: false
-  # To disable the agent
+  # To disable the agent regardless of other settings, uncomment the following:
+  agent_enabled: false
+
+staging:
+  <<: *default_settings
+  app_name: NextCRM-TST (Staging)
+  # To disable the agent regardless of other settings, uncomment the following:
   agent_enabled: false
 
 production:
   <<: *default_settings
-  # To disable the agent
+  # To disable the agent regardless of other settings, uncomment the following:
   agent_enabled: false

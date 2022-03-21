@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 module ApplicationController::HasUser
   extend ActiveSupport::Concern
@@ -41,7 +41,7 @@ module ApplicationController::HasUser
     return @_user_on_behalf if @_user_on_behalf         # return memoized user
     return if !current_user_real                        # require session user
     if !SessionsPolicy.new(current_user_real, Sessions).impersonate?
-      raise Exceptions::Forbidden, "Current user has no permission to use 'From'/'X-On-Behalf-Of'!"
+      raise Exceptions::Forbidden, __("Current user has no permission to use 'From'/'X-On-Behalf-Of'!")
     end
 
     @_user_on_behalf = find_on_behalf_user request_header_from.to_s.downcase.strip
@@ -73,7 +73,7 @@ module ApplicationController::HasUser
 
     session[:ping] = Time.zone.now.iso8601
 
-    # check if remote ip need to be updated
+    # check if remote ip needs to be updated
     if session[:user_id]
       if !session[:remote_ip] || session[:remote_ip] != request.remote_ip # rubocop:disable Style/SoleNestedConditional
         session[:remote_ip] = request.remote_ip

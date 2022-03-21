@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class Sessions::Event::ChatSessionInit < Sessions::Event::ChatBase
 
@@ -63,8 +63,8 @@ return is sent as message back to peer
     Chat.broadcast_agent_state_update([chat_session.chat_id])
 
     # Codice custom CSI - Inizio
-    # Transazione di background invocata solo se il chatbot e' attivo
-    Transaction::BackgroundJob.run(
+    # Transazione invocata solo se il chatbot e' attivo
+    TransactionJob.perform_now(
       object:       'Chat Session',
       type:         'chat_session',
       object_id:    chat_session.chat_id,

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'browser_test_helper'
 
@@ -55,8 +55,8 @@ class OtrsImportBrowserTest < TestCase
     click(css: '.js-migration-start')
 
     watch_for(
-      css:     'body',
-      value:   'login',
+      css:     '#login',
+      value:   'username',
       timeout: 600,
     )
 

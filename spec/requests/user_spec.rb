@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -315,7 +315,7 @@ RSpec.describe 'User', type: :request do
       post '/api/v1/users', params: params, as: :json
       expect(response).to have_http_status(:unprocessable_entity)
       expect(json_response).to be_truthy
-      expect(json_response['error']).to eq('Minimum one identifier (login, firstname, lastname, phone or email) for user is required.')
+      expect(json_response['error']).to eq('At least one identifier (firstname, lastname, phone or email) for user is required.')
 
       # invalid email
       params = { firstname: 'newfirstname123', email: 'some_what', note: 'some note' }
@@ -454,14 +454,14 @@ RSpec.describe 'User', type: :request do
       expect(json_response[0]['id']).to eq(json_response1['id'])
       expect(json_response[0]['label']).to eq("Customer#{firstname} Customer Last <new_customer_by_agent@example.com>")
       expect(json_response[0]['value']).to eq('new_customer_by_agent@example.com')
-      expect(json_response[0]['inactive']).to eq(false)
+      expect(json_response[0]['inactive']).to be(false)
       expect(json_response[0]['role_ids']).to be_falsey
       expect(json_response[0]['roles']).to be_falsey
 
       get "/api/v1/users/search?term=#{CGI.escape('CustomerInactive')}", params: {}, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Array)
-      expect(json_response[0]['inactive']).to eq(true)
+      expect(json_response[0]['inactive']).to be(true)
 
       # Regression test for issue #2539 - search pagination broken in users_controller.rb
       # Get the total number of users N, then search with one result per page, so there should N pages with one result each
@@ -897,7 +897,7 @@ RSpec.describe 'User', type: :request do
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Hash)
 
-      expect(json_response['try']).to eq(true)
+      expect(json_response['try']).to be(true)
       expect(json_response['records']).to be_empty
       expect(json_response['result']).to eq('failed')
       expect(json_response['errors'].count).to eq(2)
@@ -910,7 +910,7 @@ RSpec.describe 'User', type: :request do
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Hash)
 
-      expect(json_response['try']).to eq(true)
+      expect(json_response['try']).to be(true)
       expect(json_response['records'].count).to eq(2)
       expect(json_response['result']).to eq('success')
 
@@ -923,7 +923,7 @@ RSpec.describe 'User', type: :request do
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a_kind_of(Hash)
 
-      expect(json_response['try']).to eq(false)
+      expect(json_response['try']).to be(false)
       expect(json_response['records'].count).to eq(2)
       expect(json_response['result']).to eq('success')
 
@@ -933,14 +933,14 @@ RSpec.describe 'User', type: :request do
       expect(user1.firstname).to eq('firstname-simple-import1')
       expect(user1.lastname).to eq('lastname-simple-import1')
       expect(user1.email).to eq('user-simple-import1@example.com')
-      expect(user1.active).to eq(true)
+      expect(user1.active).to be(true)
       user2 = User.find_by(login: 'user-simple-import2')
       expect(user2).to be_truthy
       expect(user2.login).to eq('user-simple-import2')
       expect(user2.firstname).to eq('firstname-simple-import2')
       expect(user2.lastname).to eq('lastname-simple-import2')
       expect(user2.email).to eq('user-simple-import2@example.com')
-      expect(user2.active).to eq(false)
+      expect(user2.active).to be(false)
 
       user1.destroy!
       user2.destroy!
@@ -1225,7 +1225,7 @@ RSpec.describe 'User', type: :request do
 
     it 'requires at least one identifier' do
       make_request({ web: 'example.com' })
-      expect(json_response['error']).to start_with('Minimum one identifier')
+      expect(json_response['error']).to start_with('At least one identifier')
     end
 
     it 'takes first name as identifier' do
@@ -1505,12 +1505,12 @@ RSpec.describe 'User', type: :request do
 
     it 'returns verbose error when full image is missing' do
       make_request(avatar_full: '')
-      expect(json_response).to include('error' => match(%r{Full}).and(match(%r{is invalid})))
+      expect(json_response).to include('error' => match(%r{full}).and(match(%r{is invalid})))
     end
 
     it 'returns verbose error when resized image is missing' do
       make_request(avatar_full: base64)
-      expect(json_response).to include('error' => match(%r{Resized}).and(match(%r{is invalid})))
+      expect(json_response).to include('error' => match(%r{resized}).and(match(%r{is invalid})))
     end
 
     it 'successfully changes avatar' do
@@ -1523,7 +1523,16 @@ RSpec.describe 'User', type: :request do
 
       it 'returns verbose error for a not allowed mime-type' do
         make_request(avatar_full: base64)
-        expect(json_response).to include('error' => 'Mime type is invalid')
+        expect(json_response).to include('error' => 'The MIME type of the full-size image is invalid.')
+      end
+    end
+
+    context 'with a not allowed resized image mime-type' do
+      let(:resized_base64) { 'data:image/svg+xml;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' }
+
+      it 'returns verbose error for a not allowed mime-type' do
+        make_request(avatar_full: base64, avatar_resize: resized_base64)
+        expect(json_response).to include('error' => 'The MIME type of the resized image is invalid.')
       end
     end
   end

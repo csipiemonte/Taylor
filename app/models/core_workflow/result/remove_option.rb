@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class CoreWorkflow::Result::RemoveOption < CoreWorkflow::Result::BaseOption
   def run
@@ -10,7 +10,7 @@ class CoreWorkflow::Result::RemoveOption < CoreWorkflow::Result::BaseOption
 
   def config_value
     result = Array(@perform_config['remove_option'])
-    result -= Array(saved_value)
+    result -= saved_value
     result
   end
 end

@@ -1,8 +1,9 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
 DEFAULT_VALUES = {
+  textarea: 'rspec',
   text:     'rspec',
   boolean:  true,
   date:     1,
@@ -71,7 +72,7 @@ RSpec.describe ObjectManager::Attribute::SetDefaults, type: :model do
       subject(:example) { create :ticket }
 
       it 'boolean is set' do
-        expect(example.rspec_boolean).to eq true
+        expect(example.rspec_boolean).to be true
       end
 
       it 'date is set' do

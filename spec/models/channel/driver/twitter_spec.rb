@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -15,7 +15,7 @@ RSpec.describe Channel::Driver::Twitter, external_env: true, required_envs: %w[T
 
     let(:payload) { YAML.safe_load(File.read(payload_file), [ActiveSupport::HashWithIndifferentAccess]) }
 
-    # https://git.znuny.com/zammad/zammad/-/issues/305
+    # https://git.zammad.com/zammad/zammad/-/issues/305
     shared_examples 'for user processing' do
       let(:sender_attributes) do
         {

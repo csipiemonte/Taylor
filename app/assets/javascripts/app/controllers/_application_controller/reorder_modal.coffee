@@ -1,5 +1,5 @@
 class App.ControllerReorderModal extends App.ControllerModal
-  head: 'Drag to reorder'
+  head: __('Drag to reorder')
   content: ->
     view = $(App.view('reorder_modal')())
 
@@ -10,7 +10,7 @@ class App.ControllerReorderModal extends App.ControllerModal
         true
       overview: ['title']
       attribute_list: [
-        { name: 'title', display: 'Name' }
+        { name: 'title', display: __('Name') }
       ]
       objects: @items
     )
@@ -21,7 +21,7 @@ class App.ControllerReorderModal extends App.ControllerModal
 
   onShown: ->
     super
-    @$('.js-submit').focus()
+    @$('.js-submit').trigger('focus')
 
   save: ->
     ids = @$('tr.item').toArray().map (el) -> parseInt(el.dataset.id)
@@ -49,4 +49,3 @@ class App.ControllerReorderModal extends App.ControllerModal
   onSubmit: ->
     super
     @save()
-

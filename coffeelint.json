@@ -132,7 +132,7 @@
   "transform_messes_up_line_numbers": {
     "level": "error"
   },
-  "prevent_underscore_backport": {
+  "detect_translatable_string": {
     "level": "error"
   }
 }

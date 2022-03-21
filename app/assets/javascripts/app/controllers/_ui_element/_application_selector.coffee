@@ -5,68 +5,70 @@ class App.UiElement.ApplicationSelector
 
     groups =
       ticket:
-        name: 'Ticket'
+        name: __('Ticket')
         model: 'Ticket'
       article:
-        name: 'Article'
+        name: __('Article')
         model: 'TicketArticle'
       customer:
-        name: 'Customer'
+        name: __('Customer')
         model: 'User'
       organization:
-        name: 'Organization'
+        name: __('Organization')
         model: 'Organization'
 
     if attribute.executionTime
       groups.execution_time =
-        name: 'Execution Time'
+        name: __('Execution Time')
 
     # Aggiunta voce e sottovoce nel menu condition
     # cfr zammad/app/assets/javascripts/app/models/trigger.coffee parametro 'condition'
-    if ! App.Feature.isDisabled("external_activity") # solo se feature toggle external activity e' enabled
+    if ! App.Feature.isDisabled('external_activity') # solo se feature toggle external activity e' enabled
       if attribute.externalActivity
         groups.external_activity =
-          name: 'External Activity'
-    else 
-      console.debug("[feature toggle] external activity triggers removed ")
+          name: __('External activity')
+    else
+      console.debug('[feature toggle] external activity triggers removed')
 
     operators_type =
-      '^datetime$': ['before (absolute)', 'after (absolute)', 'before (relative)', 'after (relative)', 'within next (relative)', 'within last (relative)', 'till (relative)', 'from (relative)']
-      '^timestamp$': ['before (absolute)', 'after (absolute)', 'before (relative)', 'after (relative)', 'within next (relative)', 'within last (relative)', 'till (relative)', 'from (relative)']
+      '^datetime$': [__('before (absolute)'), __('after (absolute)'), __('before (relative)'), __('after (relative)'), __('within next (relative)'), __('within last (relative)'), __('till (relative)'), __('from (relative)')]
+      '^timestamp$': [__('before (absolute)'), __('after (absolute)'), __('before (relative)'), __('after (relative)'), __('within next (relative)'), __('within last (relative)'), __('till (relative)'), __('from (relative)')]
       '^date$': ['before (absolute)', 'after (absolute)', 'before (relative)', 'after (relative)', 'within next (relative)', 'within last (relative)']
-      'boolean$': ['is', 'is not']
-      'integer$': ['is', 'is not']
-      '^radio$': ['is', 'is not']
-      '^select$': ['is', 'is not']
-      '^tree_select$': ['is', 'is not']
-      '^input$': ['contains', 'contains not']
-      '^richtext$': ['contains', 'contains not']
-      '^textarea$': ['contains', 'contains not']
-      '^tag$': ['contains all', 'contains one', 'contains all not', 'contains one not']
+      'boolean$': [__('is'), __('is not')]
+      'integer$': [__('is'), __('is not')]
+      '^radio$': [__('is'), __('is not')]
+      '^select$': [__('is'), __('is not')]
+      '^multiselect$': [__('contains all'), __('contains one'), __('contains all not'), __('contains one not')]
+      '^tree_select$': [__('is'), __('is not')]
+      '^input$': [__('contains'), __('contains not')]
+      '^richtext$': [__('contains'), __('contains not')]
+      '^textarea$': [__('contains'), __('contains not')]
+      '^tag$': [__('contains all'), __('contains one'), __('contains all not'), __('contains one not')]
 
     if attribute.hasChanged
       operators_type =
-        '^datetime$': ['before (absolute)', 'after (absolute)', 'before (relative)', 'after (relative)', 'within next (relative)', 'within last (relative)', 'till (relative)', 'from (relative)', 'has changed']
-        '^timestamp$': ['before (absolute)', 'after (absolute)', 'before (relative)', 'after (relative)', 'within next (relative)', 'within last (relative)', 'till (relative)', 'from (relative)', 'has changed']
-        '^date$': ['before (absolute)', 'after (absolute)', 'before (relative)', 'after (relative)', 'within next (relative)', 'within last (relative)', 'till (relative)', 'from (relative)', 'has changed']
-        'boolean$': ['is', 'is not', 'has changed']
-        'integer$': ['is', 'is not', 'has changed']
-        '^radio$': ['is', 'is not', 'has changed']
-        '^select$': ['is', 'is not', 'has changed']
-        '^tree_select$': ['is', 'is not', 'has changed']
-        '^input$': ['contains', 'contains not', 'has changed']
-        '^richtext$': ['contains', 'contains not', 'has changed']
-        '^textarea$': ['contains', 'contains not', 'has changed']
-        '^tag$': ['contains all', 'contains one', 'contains all not', 'contains one not']
+        '^datetime$': [__('before (absolute)'), __('after (absolute)'), __('before (relative)'), __('after (relative)'), __('within next (relative)'), __('within last (relative)'), __('till (relative)'), __('from (relative)'), __('has changed')]
+        '^timestamp$': [__('before (absolute)'), __('after (absolute)'), __('before (relative)'), __('after (relative)'), __('within next (relative)'), __('within last (relative)'), __('till (relative)'), __('from (relative)'), __('has changed')]
+        '^date$': [__('before (absolute)'), __('after (absolute)'), __('before (relative)'), __('after (relative)'), __('within next (relative)'), __('within last (relative)'), __('till (relative)'), __('from (relative)'), __('has changed')]
+        'boolean$': [__('is'), __('is not'), __('has changed')]
+        'integer$': [__('is'), __('is not'), __('has changed')]
+        '^radio$': [__('is'), __('is not'), __('has changed')]
+        '^select$': [__('is'), __('is not'), __('has changed')]
+        '^multiselect$': [__('contains all'), __('contains one'), __('contains all not'), __('contains one not')]
+        '^tree_select$': [__('is'), __('is not'), __('has changed')]
+        '^input$': [__('contains'), __('contains not'), __('has changed')]
+        '^richtext$': [__('contains'), __('contains not'), __('has changed')]
+        '^textarea$': [__('contains'), __('contains not'), __('has changed')]
+        '^tag$': [__('contains all'), __('contains one'), __('contains all not'), __('contains one not')]
 
     operators_name =
-      '_id$': ['is', 'is not']
-      '_ids$': ['is', 'is not']
+      '_id$': [__('is'), __('is not')]
+      '_ids$': [__('is'), __('is not')]
 
     if attribute.hasChanged
       operators_name =
-        '_id$': ['is', 'is not', 'has changed']
-        '_ids$': ['is', 'is not', 'has changed']
+        '_id$': [__('is'), __('is not'), __('has changed')]
+        '_ids$': [__('is'), __('is not'), __('has changed')]
 
     # merge config
     elements = {}
@@ -77,7 +79,7 @@ class App.UiElement.ApplicationSelector
     if attribute.action
       elements['ticket.action'] =
         name: 'action'
-        display: 'Action'
+        display: __('Action')
         tag: 'select'
         null: false
         translate: true
@@ -86,19 +88,19 @@ class App.UiElement.ApplicationSelector
           update:                  'updated'
           'update.merged_into':    'merged into'
           'update.received_merge': 'received merge'
-        operator: ['is', 'is not']
+        operator: [__('is'), __('is not')]
 
     for groupKey, groupMeta of groups
       if groupKey is 'execution_time'
         if attribute.executionTime
           elements['execution_time.calendar_id'] =
             name: 'calendar_id'
-            display: 'Calendar'
+            display: __('Calendar')
             tag: 'select'
             relation: 'Calendar'
             null: false
             translate: false
-            operator: ['is in working time', 'is not in working time']
+            operator: [__('is in working time'), __('is not in working time')]
 
       else if groupKey is 'external_activity'
         if attribute.externalActivity
@@ -135,6 +137,8 @@ class App.UiElement.ApplicationSelector
           # ignore passwords and relations
           if row.type isnt 'password' && row.name.substr(row.name.length-4,4) isnt '_ids' && row.searchable isnt false
             config = _.clone(row)
+            if config.tag is 'textarea'
+              config.expanding = false
             if config.type is 'email' || config.type is 'tel'
               config.type = 'text'
             for operatorRegEx, operator of operators_type
@@ -154,12 +158,12 @@ class App.UiElement.ApplicationSelector
     if attribute.out_of_office
       elements['ticket.out_of_office_replacement_id'] =
         name: 'out_of_office_replacement_id'
-        display: 'Out of office replacement'
+        display: __('Out of office replacement')
         tag: 'autocompletion_ajax'
         relation: 'User'
         null: false
         translate: true
-        operator: ['is', 'is not']
+        operator: [__('is'), __('is not')]
 
     # Remove 'has changed' operator from attributes which don't support the operator.
     ['ticket.created_at', 'ticket.updated_at'].forEach (element_name) ->
@@ -167,12 +171,12 @@ class App.UiElement.ApplicationSelector
 
     elements['ticket.mention_user_ids'] =
       name: 'mention_user_ids'
-      display: 'Subscribe'
+      display: __('Subscribe')
       tag: 'autocompletion_ajax'
       relation: 'User'
       null: false
       translate: true
-      operator: ['is', 'is not']
+      operator: [__('is'), __('is not')]
 
     [defaults, groups, elements]
 
@@ -197,7 +201,7 @@ class App.UiElement.ApplicationSelector
     item = $( App.view('generic/application_selector')(attribute: attribute) )
 
     # add filter
-    item.delegate('.js-add', 'click', (e) =>
+    item.on('click', '.js-add', (e) =>
       element = $(e.target).closest('.js-filterElement')
 
       # add first available attribute
@@ -226,7 +230,7 @@ class App.UiElement.ApplicationSelector
     )
 
     # remove filter
-    item.delegate('.js-remove', 'click', (e) =>
+    item.on('click', '.js-remove', (e) =>
       return if $(e.currentTarget).hasClass('is-disabled')
 
       if @hasEmptySelectorAtStart()
@@ -264,7 +268,7 @@ class App.UiElement.ApplicationSelector
           item.filter('.js-filter').append(row)
 
     # change attribute selector
-    item.delegate('.js-attributeSelector select', 'change', (e) =>
+    item.on('change', '.js-attributeSelector select', (e) =>
       elementRow = $(e.target).closest('.js-filterElement')
       groupAndAttribute = elementRow.find('.js-attributeSelector option:selected').attr('value')
       return if !groupAndAttribute
@@ -273,7 +277,7 @@ class App.UiElement.ApplicationSelector
     )
 
     # change operator selector
-    item.delegate('.js-operator select', 'change', (e) =>
+    item.on('change', '.js-operator select', (e) =>
       elementRow = $(e.target).closest('.js-filterElement')
       groupAndAttribute = elementRow.find('.js-attributeSelector option:selected').attr('value')
       return if !groupAndAttribute
@@ -370,7 +374,7 @@ class App.UiElement.ApplicationSelector
     if !@hasDuplicateSelector()
 
       # enable all
-      elementFull.find('.js-attributeSelector select option').removeAttr('disabled')
+      elementFull.find('.js-attributeSelector select option').prop('disabled', false)
 
       # disable all used attributes
       elementFull.find('.js-attributeSelector select').each(->
@@ -470,6 +474,9 @@ class App.UiElement.ApplicationSelector
       else
         elementRow.find('.js-external-activity-condition-value').html(inputFld)
 
+  @mapOperatorDisplayName: (operator) ->
+    return operator
+
   @buildOperator: (elementFull, elementRow, groupAndAttribute, elements, meta, attribute) ->
     currentOperator = elementRow.find('.js-operator option:selected').attr('value')
 
@@ -496,7 +503,7 @@ class App.UiElement.ApplicationSelector
           break
 
       for operator in attributeConfig.operator
-        operatorName = App.i18n.translateInline(operator.replace(/_/g, ' '))
+        operatorName = App.i18n.translateInline(@mapOperatorDisplayName(operator))
         selected = ''
         if !groupAndAttribute.match(/^ticket/) && operator is 'has changed'
           # do nothing, only show "has changed" in ticket attributes
@@ -573,7 +580,7 @@ class App.UiElement.ApplicationSelector
     elementRow.find('.js-preCondition').closest('.controls').removeClass('hide')
     elementRow.find('.js-preCondition select').replaceWith(selection)
 
-    elementRow.find('.js-preCondition select').bind('change', (e) ->
+    elementRow.find('.js-preCondition select').on('change', (e) ->
       toggleValue()
     )
 

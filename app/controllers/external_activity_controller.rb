@@ -13,7 +13,7 @@ class ExternalActivityController < ApplicationController
     external_activities = external_activities.where(archived: params[:archived]) if params[:archived].present? && params[:archived] != ''
     external_activities = external_activities.where(delivered: params[:delivered]) if params[:delivered].present? && params[:delivered] != ''
     external_activities.each do |external_activity|
-      external_activity.data = process_attachments system.model, external_activity.data, external_activity, true
+      external_activity.json_data = process_attachments system.model, external_activity.json_data, external_activity, true
     end
     render json: external_activities
   end
@@ -34,7 +34,7 @@ class ExternalActivityController < ApplicationController
   def show_external_activity
     external_activity = ExternalActivity.find_by(id: params[:id])
     system = ExternalTicketingSystem.find_by(id: external_activity.external_ticketing_system_id)
-    external_activity.data = process_attachments system.model, external_activity.data, external_activity, true
+    external_activity.json_data = process_attachments system.model, external_activity.json_data, external_activity, true
     render json: external_activity
   end
 
@@ -43,12 +43,12 @@ class ExternalActivityController < ApplicationController
     return if !params[:ticket_id]
 
     system = ExternalTicketingSystem.find_by(id: params[:ticketing_system_id])
-    data = process_attachments system.model, params.permit!.to_h['data'], nil
+    data = process_attachments system.model, params.permit!.to_h['json_data'], nil
 
     external_activity = ExternalActivity.create(
       external_ticketing_system_id: params[:ticketing_system_id],
       ticket_id:                    params[:ticket_id],
-      data:                         data,
+      json_data:                    data,
       bidirectional_alignment:      params[:bidirectional_alignment],
       updated_by_id:                current_user.id,
       created_by_id:                current_user.id,
@@ -78,7 +78,7 @@ class ExternalActivityController < ApplicationController
     end
     return if !can_update
 
-    new_values = params[:data]
+    new_values = params[:json_data]
     if new_values
       # system.model e' un hash
       system.model.each_value do |field|
@@ -88,7 +88,7 @@ class ExternalActivityController < ApplicationController
         # activity.
         next unless field['notify_changes']
 
-        next if new_values[field['name']].eql?(external_activity.data[field['name']])
+        next if new_values[field['name']].eql?(external_activity.json_data[field['name']])
 
         # attiva 'Richiede attenzione' sulla external activity sidebar
         external_activity.needs_attention = true
@@ -106,10 +106,10 @@ class ExternalActivityController < ApplicationController
         end
         break # si suppone che l'attributo 'notify_changes' ce l'abbia solo un campo (logica originale)
       end
-      data = process_attachments system.model, params.permit!.to_h['data'], external_activity
+      data = process_attachments system.model, params.permit!.to_h['json_data'], external_activity
     end
 
-    external_activity.data = data if data && external_activity.data != data
+    external_activity.json_data = data if data && external_activity.json_data != data
     external_activity.archived = stop_monitoring? external_activity
     external_activity.delivered = params[:delivered] if !params[:delivered].nil?
     external_activity.needs_attention = params[:needs_attention] if !params[:needs_attention].nil?
@@ -224,7 +224,7 @@ class ExternalActivityController < ApplicationController
     system.model.each_value do |field|
       next if !field['stop_monitoring']
 
-      if field['stop_monitoring'].include?(external_activity.data[field['name']])
+      if field['stop_monitoring'].include?(external_activity.json_data[field['name']])
         stop_monitoring = true
       end
     end

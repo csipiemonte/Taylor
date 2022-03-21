@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'browser_test_helper'
 
@@ -139,9 +139,7 @@ class AgentUserProfileTest < TestCase
       browser: browser1,
       css:     '.active [data-name="note"]',
       value:   message,
-    )
-    empty_search(
-      browser: browser1,
+      blur:    true,
     )
 
     watch_for(

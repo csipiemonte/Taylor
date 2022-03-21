@@ -50,13 +50,13 @@ VALUES
 (63, 'sw', 'FINDOM - GEST.DOM - PROMOZIONE EDITORIA 2021', NOW(), NOW()),
 (64, 'sw', 'FINDOM - GEST.DOM - VOUCHER SALONE LIBRO 2021', NOW(), NOW()),
 (65, 'sw', 'FINDOM - GEST.DOM. FINPIEMONTE - STRUTT. RICETTIVE PMI', NOW(), NOW()),
-(66, 'sw', 'GEST.DOM – ATTIVITA''  CULTURALI 2021', NOW(), NOW()),
+(66, 'sw', 'GEST.DOM - ATTIVITA''  CULTURALI 2021', NOW(), NOW()),
 (67, 'sw', 'FINDOM - GESTIONALE DOMANDA FINPIEMONTE- SOSTEGNO FORMAZIONE', NOW(), NOW()),
 (68, 'sw', 'FINDOM - GESTIONALE DOMANDA FINPIEMONTE - RISTORO NEVE-M.12', NOW(), NOW()),
 (69, 'sw', 'FINDOM - GESTIONALE DOMANDA FINPIEMONTE - RISTORO NEVE 12-21', NOW(), NOW()),
 (70, 'sw', 'FINDOM - Gestionale Domanda FESR', NOW(), NOW()),
 (71, 'sw', 'FINDOM- GESTIONALE DOMANDA A21 SPORT', NOW(), NOW()),
-(72, 'sw', 'Gestione e monitoraggio finanziamenti - Gestionale Finanziamenti Regione - FESR', NOW(), NOW())
+(72, 'sw', 'Gestione e monitoraggio finanziamenti - Gestionale Finanziamenti Regione - FESR', NOW(), NOW()),
 (73, 'sw', 'Sanità', NOW(), NOW()),
 (74, 'sw', 'Tributi', NOW(), NOW()),
 (75, 'sw', 'Mobilità e trasporti', NOW(), NOW()),
@@ -65,4 +65,11 @@ VALUES
 (78, 'sw', 'Adozioni', NOW(), NOW()),
 (79, 'sw', 'Altri argomenti', NOW(), NOW()),
 (80, 'sw', 'Linea interrotta/Errore coda telefonica', NOW(), NOW()),
-(81, 'sw', 'Sis. Gest. Tassa Auto – Serv. online contrib. (Vis., Rich.)', NOW(), NOW())
+(81, 'sw', 'Sis. Gest. Tassa Auto - Serv. online contrib. (Vis., Rich.)', NOW(), NOW()),
+(82, 'sw', 'CNU-PF - CEDOLINO MENSILE - CALCOLO E PRODUZIONE', NOW(), NOW()),
+(83, 'sw', 'SPI - CEDOLINO MENSILE CALCOLO E PRODUZIONE', NOW(), NOW()),
+(84, 'sw', 'LOCCSI LOCALIZATION CENTRALIZED SEARCH INTERFACE', NOW(), NOW()),
+(85, 'sw', 'PROTES -Componente che eroga il servizio WEB dell''applic', NOW(), NOW()),
+(87, 'sw', 'MDPCORESERVICES - Servizi core di MDPNEW', NOW(), NOW()),
+(88, 'sw', 'ROL per cittadino non autenticato', NOW(), NOW()),
+(89, 'sw', 'COVID SOL CITTADINO NON AUTENTICATO', NOW(), NOW())

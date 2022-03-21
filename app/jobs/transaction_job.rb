@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class TransactionJob < ApplicationJob
 
@@ -16,6 +16,8 @@ class TransactionJob < ApplicationJob
     user_id: 123,
   },
 =end
+
+  # self.log_arguments = false # CSI Piemonte custom: disable logging of arguments in Active Job
 
   def perform(item, params = {})
     Setting.where(area: 'Transaction::Backend::Async').order(:name).each do |setting|

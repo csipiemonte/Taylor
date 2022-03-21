@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class ChannelsMicrosoft365Controller < ApplicationController
   prepend_before_action -> { authentication_check && authorize! }
@@ -93,7 +93,7 @@ class ChannelsMicrosoft365Controller < ApplicationController
 
   def rollback_migration
     channel = Channel.find_by(id: params[:id], area: 'Microsoft365::Account')
-    raise 'Failed to find backup on channel!' if !channel.options[:backup_imap_classic]
+    raise __('Failed to find backup on channel!') if !channel.options[:backup_imap_classic]
 
     channel.update!(channel.options[:backup_imap_classic][:attributes])
     render json: {}

@@ -102,10 +102,10 @@
         var active = this.$widget.find('.dropdown-menu li.is-active')
         active.removeClass('is-active')
 
-        if (e.keyCode == 38 && active.prev().size()) {
+        if (e.keyCode == 38 && active.prev().length) {
           active = active.prev()
         }
-        else if (e.keyCode == 40 && active.next().size()) {
+        else if (e.keyCode == 40 && active.next().length) {
           active = active.next()
         }
 
@@ -554,7 +554,7 @@
   KbAnswer.renderValue = function(textmodule, elem, callback) {
     textmodule.emptyResultsContainer()
 
-    var element = $('<li>').text(App.i18n.translateInline('Please wait...'))
+    var element = $('<li>').text(App.i18n.translateInline('Please wait…'))
     textmodule.appendResults(element)
 
     var form_id = textmodule.$element.closest('form').find('[name=form_id]').val()
@@ -599,13 +599,13 @@
     textmodule.emptyResultsContainer()
 
     if(!term) {
-      var element = $('<li>').text(App.i18n.translateInline('Start typing to search in Knowledge Base...'))
+      var element = $('<li>').text(App.i18n.translateInline('Start typing to search in Knowledge Base…'))
       textmodule.appendResults(element)
 
       return
     }
 
-    var element = $('<li>').text(App.i18n.translateInline('Loading...'))
+    var element = $('<li>').text(App.i18n.translateInline('Loading…'))
     textmodule.appendResults(element)
 
     App.Delay.set(function() {
@@ -672,7 +672,7 @@
   Mention.renderValue = function(textmodule, elem, callback) {
     textmodule.emptyResultsContainer()
 
-    var element = $('<li>').text(App.i18n.translateInline('Please wait...'))
+    var element = $('<li>').text(App.i18n.translateInline('Please wait…'))
     textmodule.appendResults(element)
 
     var form_id = textmodule.$element.closest('form').find('[name=form_id]').val()
@@ -699,13 +699,13 @@
     textmodule.emptyResultsContainer()
 
     if(!term) {
-      var element = $('<li>').text(App.i18n.translateInline('Start typing to search for users...'))
+      var element = $('<li>').text(App.i18n.translateInline('Start typing to search for users…'))
       textmodule.appendResults(element)
 
       return
     }
 
-    var element = $('<li>').text(App.i18n.translateInline('Loading...'))
+    var element = $('<li>').text(App.i18n.translateInline('Loading…'))
     textmodule.appendResults(element)
 
     App.Delay.set(function() {
@@ -742,7 +742,7 @@
       }
       else {
         textmodule.emptyResultsContainer()
-        items.push($('<li>').text(App.i18n.translateInline('Please select a group first, before you mention a user!')))
+        items.push($('<li>').text(App.i18n.translateInline('Before you mention a user, please select a group.')))
         textmodule.appendResults(items)
       }
     }, 200, 'textmoduleMentionDelay', 'textmodule')

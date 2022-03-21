@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 module ApplicationController::RendersModels
   extend ActiveSupport::Concern
@@ -160,7 +160,7 @@ module ApplicationController::RendersModels
     result = Models.references(object, generic_object.id)
     return false if result.blank?
 
-    raise Exceptions::UnprocessableEntity, 'Can\'t delete, object has references.'
+    raise Exceptions::UnprocessableEntity, __('Can\'t delete, object has references.')
   rescue => e
     raise Exceptions::UnprocessableEntity, e
   end

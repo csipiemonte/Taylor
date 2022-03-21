@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 module ChecksCoreWorkflow
   extend ActiveSupport::Concern
@@ -25,7 +25,6 @@ module ChecksCoreWorkflow
                                           }, user: User.find(UserInfo.current_user_id))
 
     check_restrict_values(perform_result)
-    check_visibility(perform_result)
     check_mandatory(perform_result)
   end
 
@@ -35,19 +34,15 @@ module ChecksCoreWorkflow
       next if self[key].blank?
       next if restricted_value?(perform_result, key)
 
-      raise Exceptions::UnprocessableEntity, "Invalid value '#{self[key]}' for field '#{key}'!"
+      raise Exceptions::ApplicationModel.new(self, "Invalid value '#{self[key]}' for field '#{key}'!")
     end
   end
 
   def restricted_value?(perform_result, key)
-    perform_result[:restrict_values][key].any? { |value| value.to_s == self[key].to_s }
-  end
-
-  def check_visibility(perform_result)
-    perform_result[:visibility].each_key do |key|
-      next if perform_result[:visibility][key] != 'remove'
-
-      self[key] = nil
+    if self[key].is_a?(Array)
+      (self[key].map(&:to_s) - perform_result[:restrict_values][key].map(&:to_s)).blank?
+    else
+      perform_result[:restrict_values][key].any? { |value| value.to_s == self[key].to_s }
     end
   end
 
@@ -58,7 +53,7 @@ module ChecksCoreWorkflow
       next if !column_value?(key)
       next if !colum_default?(key)
 
-      raise Exceptions::UnprocessableEntity, "Missing required value for field '#{key}'!"
+      raise Exceptions::ApplicationModel.new(self, "Missing required value for field '#{key}'!")
     end
   end
 

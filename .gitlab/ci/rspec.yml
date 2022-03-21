@@ -7,7 +7,9 @@ include:
     - .env_base
     - .variables_rspec_slicing
   script:
+    - echo -e "\\e[0Ksection_start:`date +%s`:zammad_db_init[collapsed=true]\\r\\e[0Kbundle exec rake zammad:db:init"
     - bundle exec rake zammad:db:init
+    - echo -e "\\e[0Ksection_end:`date +%s`:zammad_db_init\\r\\e[0K"
     - echo "RSpec filter:" "$RSPEC_EXAMPLE_MATCHES"
     - bundle exec rspec --require ./spec/rspec_extensions.rb --example-matches "$RSPEC_EXAMPLE_MATCHES" --exclude-pattern "spec/{system,integration}/**/*_spec.rb" -t ~searchindex --profile 10
 
@@ -23,13 +25,8 @@ rspec:integration:
     - .rules_integration_manual_start
   variables:
     RAILS_ENV: "test"
-  rules:
-    - if: $CI_MERGE_REQUEST_ID
-      when: never
-    - if: '$CI_COMMIT_BRANCH =~ /^private/ && $INTEGRATION_TESTS != "enabled"'
-      when: manual
-      allow_failure: true
-    - when: always
   script:
+    - echo -e "\\e[0Ksection_start:`date +%s`:zammad_db_init[collapsed=true]\\r\\e[0Kbundle exec rake zammad:db:init"
     - bundle exec rake zammad:db:init
+    - echo -e "\\e[0Ksection_end:`date +%s`:zammad_db_init\\r\\e[0K"
     - bundle exec rspec -t type:integration --profile 10

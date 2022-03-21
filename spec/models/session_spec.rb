@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -17,8 +17,8 @@ RSpec.describe Session, type: :model do
       subject(:session) { described_class.create(session_id: SecureRandom.urlsafe_base64(64), data: { 'persistent' => true }) }
 
       it 'sets the persistent attribute in the session and removes the persistent attribute from the data payload' do
-        expect(session.persistent).to eq(true)
-        expect(session.persistent).to eq(true)
+        expect(session.persistent).to be(true)
+        expect(session.persistent).to be(true)
       end
     end
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class Avatar < ApplicationModel
   belongs_to :object_lookup, optional: true
@@ -148,7 +148,7 @@ add avatar by url
           logger.info "Can't fetch '#{url}' (maybe no avatar available), http code: #{response.code}"
           return
         end
-        logger.info "Fetchd image '#{url}', http code: #{response.code}"
+        logger.info "Fetched image '#{url}', http code: #{response.code}"
         mime_type = 'image'
         if url.match?(%r{\.png}i)
           mime_type = 'image/png'
@@ -180,7 +180,7 @@ add avatar by url
       end
     end
 
-    # check if avatar need to be updated
+    # check if avatar needs to be updated
     if data[:resize].present? && data[:resize][:content].present?
       record[:store_hash] = Digest::MD5.hexdigest(data[:resize][:content])
       if avatar_already_exists&.store_hash == record[:store_hash]

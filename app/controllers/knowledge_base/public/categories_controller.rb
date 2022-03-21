@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class KnowledgeBase::Public::CategoriesController < KnowledgeBase::Public::BaseController
   skip_before_action :load_kb, only: :forward_root
@@ -7,7 +7,7 @@ class KnowledgeBase::Public::CategoriesController < KnowledgeBase::Public::BaseC
     @categories     = categories_filter(@knowledge_base.categories.root)
     @object_locales = find_locales(@knowledge_base)
 
-    authorize(@categories, policy_class: KnowledgeBase::Public::CategoryPolicy)
+    authorize(@categories, policy_class: Controllers::KnowledgeBase::Public::CategoriesControllerPolicy)
   rescue Pundit::NotAuthorizedError
     raise ActiveRecord::RecordNotFound
   end
@@ -15,14 +15,11 @@ class KnowledgeBase::Public::CategoriesController < KnowledgeBase::Public::BaseC
   def show
     @object = find_category(params[:category])
 
-    render_alternatives && return if @object.nil? || !policy(@object).show?
+    render_alternatives && return if @object.nil? || !policy(@object).show_public?
 
     @categories     = categories_filter(@object.children)
     @object_locales = find_locales(@object)
-
-    @answers = policy_scope(@object.answers)
-               .localed(system_locale_via_uri)
-               .sorted
+    @answers        = answers_filter(@object.answers)
 
     render :index
   end

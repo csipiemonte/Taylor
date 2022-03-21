@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class LongPollingController < ApplicationController
   skip_before_action :session_update # prevent race conditions
@@ -56,7 +56,7 @@ class LongPollingController < ApplicationController
 
     # check client id
     client_id = client_id_verify
-    raise Exceptions::UnprocessableEntity, 'Invalid client_id receive!' if !client_id
+    raise Exceptions::UnprocessableEntity, __('Invalid client_id received!') if !client_id
 
     # check queue to send
     begin
@@ -90,7 +90,7 @@ class LongPollingController < ApplicationController
         end
       end
     rescue
-      raise Exceptions::UnprocessableEntity, 'Invalid client_id in receive loop!'
+      raise Exceptions::UnprocessableEntity, __('Invalid client_id in receive loop!')
     end
   end
 

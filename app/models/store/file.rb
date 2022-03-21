@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class Store < ApplicationModel
   class File < ApplicationModel
@@ -26,7 +26,7 @@ do also verify of written data
         # load backend based on config
         adapter_name = Setting.get('storage_provider') || 'DB'
         if !adapter_name
-          raise 'Missing storage_provider setting option'
+          raise __('Missing storage_provider setting option')
         end
 
         adapter = "Store::Provider::#{adapter_name}".constantize

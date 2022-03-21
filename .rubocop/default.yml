@@ -6,6 +6,8 @@ require:
   - rubocop-performance
   - rubocop-rails
   - rubocop-rspec
+  - rubocop-inflector
+  - ../config/initializers/inflections.rb
   - ./rubocop_zammad.rb
 
 inherit_from:
@@ -187,6 +189,10 @@ Rails/SkipsModelValidations:
     - "**/*_spec.rb"
     - "**/*_examples.rb"
 
+Rails/ReversibleMigration:
+  Description: This cop checks whether the change method of the migration file is reversible.
+  Enabled: false
+
 Style/ClassAndModuleChildren:
   Description: 'Checks style of children classes and modules.'
   Enabled: false
@@ -314,6 +320,25 @@ Zammad/ExistsResetColumnInformation:
   Exclude:
     - 'db/migrate/201*_*.rb'
     - 'db/migrate/2020*_*.rb'
+
+Zammad/DetectTranslatableString:
+  Enabled: true
+  Include:
+    - "app/**/*.rb"
+    - "db/**/*.rb"
+    - "lib/**/*.rb"
+  Exclude:
+    - "db/migrate/**/*.rb"
+    - "db/addon/**/*.rb"
+    - "lib/generators/**/*.rb"
+    - "lib/sequencer/**/*.rb"
+    - "lib/import/**/*.rb"
+    - "lib/tasks/**/*.rb"
+
+Zammad/ForbidTranslatableMarker:
+  Enabled: true
+  Include:
+    - "db/migrate/*.rb"
 
 Zammad/ExistsDbStrategy:
   Include:

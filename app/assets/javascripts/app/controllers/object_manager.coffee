@@ -39,9 +39,16 @@ treeParams = (e, params) ->
     params.data_option.options = tree
   params
 
+multiselectParams = (params) ->
+  return params if !params.data_type || params.data_type isnt 'multiselect'
+
+  if typeof params.data_option.default is 'string'
+    params.data_option.default = new Array(params.data_option.default)
+  params
+
 setSelectDefaults = (el) ->
   data_type = el.find('select[name=data_type]').val()
-  return if data_type isnt 'select' && data_type isnt 'boolean'
+  return if !/^((multi)?select)$/.test(data_type) && data_type isnt 'boolean'
 
   el.find('.js-value, .js-valueTrue, .js-valueFalse').each(->
     element = $(@)
@@ -53,6 +60,19 @@ setSelectDefaults = (el) ->
       key_value = element.closest('tr').find('.js-key').val()
       element.val(key_value)
   )
+
+customsortDataOptions = ({target}, params) ->
+  return params if !params.data_option || params.data_option.customsort isnt 'on'
+
+  options = []
+  $(target).closest('.modal').find('table.js-Table tr.input-data-row').each( ->
+    $element = $(@)
+    name = $element.find('input.js-value').val().trim()
+    value = $element.find('input.js-key').val().trim()
+    options.push({name, value})
+  )
+  params.data_option.options = options
+  params
 
 class ObjectManager extends App.ControllerTabs
   requiredPermission: 'admin.object'
@@ -85,7 +105,7 @@ class ObjectManager extends App.ControllerTabs
     @render()
 
 class Items extends App.ControllerSubContent
-  header: 'Object Manager'
+  header: __('Object Manager')
   events:
     'click .js-delete':  'destroy'
     'click .js-new':     'new'
@@ -125,7 +145,7 @@ class Items extends App.ControllerSubContent
     new New(
       pageData:
         head:      @object
-        title:     'Attribute'
+        title:     __('Attribute')
         home:      'object_manager'
         object:    'ObjectManagerAttribute'
         objects:   'ObjectManagerAttributes'
@@ -142,7 +162,7 @@ class Items extends App.ControllerSubContent
     new Edit(
       pageData:
         head:      @object
-        title:     'Attribute'
+        title:     __('Attribute')
         home:      'object_manager'
         object:    'ObjectManagerAttribute'
         objects:   'ObjectManagerAttributes'
@@ -198,6 +218,8 @@ class New extends App.ControllerGenericNew
 
     params = @formParam(e.target)
     params = treeParams(e, params)
+    params = multiselectParams(params)
+    params = customsortDataOptions(e, params)
 
     # show attributes for create_middle in two column style
     if params.screens && params.screens.create_middle
@@ -230,7 +252,7 @@ class New extends App.ControllerGenericNew
       fail: (settings, details) ->
         ui.log 'errors', details
         ui.formEnable(e)
-        ui.controller.showAlert(details.error_human || details.error || 'Unable to create object!')
+        ui.controller.showAlert(details.error_human || details.error || __('The object could not be created.'))
     )
 
 class Edit extends App.ControllerGenericEdit
@@ -261,6 +283,8 @@ class Edit extends App.ControllerGenericEdit
 
     params = @formParam(e.target)
     params = treeParams(e, params)
+    params = multiselectParams(params)
+    params = customsortDataOptions(e, params)
 
     # show attributes for create_middle in two column style
     if params.screens && params.screens.create_middle
@@ -294,7 +318,7 @@ class Edit extends App.ControllerGenericEdit
       fail: (settings, details) ->
         ui.log 'errors'
         ui.formEnable(e)
-        ui.controller.showAlert(details.error_human || details.error || 'Unable to update object!')
+        ui.controller.showAlert(details.error_human || details.error || __('The object could not be updated.'))
     )
 
-App.Config.set('SystemObject', { prio: 1700, parent: '#system', name: 'Objects', target: '#system/object_manager', controller: ObjectManager, permission: ['admin.object'] }, 'NavBarAdmin')
+App.Config.set('SystemObject', { prio: 1700, parent: '#system', name: __('Objects'), target: '#system/object_manager', controller: ObjectManager, permission: ['admin.object'] }, 'NavBarAdmin')

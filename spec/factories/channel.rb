@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 FactoryBot.define do
   factory :channel do
@@ -133,7 +133,7 @@ FactoryBot.define do
             'options' => {
               'auth_type'      => 'XOAUTH2',
               'host'           => 'imap.gmail.com',
-              'ssl'            => true,
+              'ssl'            => 'ssl',
               'user'           => ENV['GMAIL_USER'],
               'folder'         => '',
               'keep_on_server' => false,
@@ -175,7 +175,7 @@ FactoryBot.define do
             'options' => {
               'auth_type'      => 'XOAUTH2',
               'host'           => 'outlook.office365.com',
-              'ssl'            => true,
+              'ssl'            => 'ssl',
               'user'           => ENV['MICROSOFT365_USER'],
               'folder'         => '',
               'keep_on_server' => false,

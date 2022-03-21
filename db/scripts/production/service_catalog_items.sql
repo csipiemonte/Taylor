@@ -3,18 +3,19 @@
 -- da un deploy che inneschi i db:seeds (cfr. db/seeds/object_manager_attributes_csi.rb)
 
 INSERT INTO "zammad"."service_catalog_items"
-(id, name, created_at, updated_at)
+(id, name, crm, itsm, created_at, updated_at)
 VALUES
-(1,  '1L - Assistenza applicativa', NOW(), NOW()),
-(2,  '1L - Gestione utenze applicative', NOW(), NOW()),
-(3,  '1L - Malfunzionamento applicativo', NOW(), NOW()),
-(4,  '1L - Problema Centralizzato Applicativo', NOW(), NOW()),
-(5,  '1L - Trattamento dati', NOW(), NOW()),
-(6,  '2L - Assistenza applicativa', NOW(), NOW()),
-(7,  '2L - Malfunzionamento applicativo', NOW(), NOW()),
-(8,  '2L - Manutenzione correttiva', NOW(), NOW()),
-(9,  '2L - Trattamento dati', NOW(), NOW()),
-(10, '1L - Dispatching applicativo', NOW(), NOW()),
-(11, '1L - Gestione CUC', NOW(), NOW()),
-(12, '1L – Informazioni Front Line', NOW(), NOW()),
-(13, '1L – Assistenza Applicativa', NOW(), NOW())
+(1,  '1L - Assistenza applicativa', 1, 1, NOW(), NOW()),
+(2,  '1L - Gestione utenze applicative', 0, 1, NOW(), NOW()),
+(3,  '1L - Malfunzionamento applicativo', 0, 1, NOW(), NOW()),
+(4,  '1L - Problema Centralizzato Applicativo', 1, 0, NOW(), NOW()),
+(5,  '1L - Trattamento dati', 1, 1, NOW(), NOW()),
+(6,  '2L - Assistenza applicativa', 1, 1, NOW(), NOW()),
+(7,  '2L - Malfunzionamento applicativo', 1, 1, NOW(), NOW()),
+(8,  '2L - Manutenzione correttiva', 1, 1, NOW(), NOW()),
+(9,  '2L - Trattamento dati', 1, 1, NOW(), NOW()),
+(10, '1L - Dispatching applicativo', 1, 1, NOW(), NOW()),
+(11, '1L - Gestione CUC', 1, 1, NOW(), NOW()),
+(12, '1L - Informazioni Front Line', 1, 1, NOW(), NOW()),
+(14, '1L - Gestione credenziali di accesso applicative', 1, 1, NOW(), NOW()),
+(15, '2L - Gestione credenziali di accesso applicative', 0, 1, NOW(), NOW())

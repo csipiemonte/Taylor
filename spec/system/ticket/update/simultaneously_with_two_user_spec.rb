@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -157,7 +157,7 @@ RSpec.describe 'Ticket > Update > Simultaneously with two different user', type:
         find('.js-objectTitle').set('TTTsome level 2 <b>subject</b> 123äöü')
 
         # Click in the body field, to trigger the title update.
-        click '.js-textarea'
+        find('.js-textarea').send_keys('trigger title')
 
         expect(page).to have_css('.js-objectTitle', text: 'TTTsome level 2 <b>subject</b> 123äöü')
 

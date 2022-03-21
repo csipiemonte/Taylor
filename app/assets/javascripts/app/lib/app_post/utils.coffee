@@ -176,7 +176,9 @@ class App.Utils
 
   # textCleand = App.Utils.textCleanup(rawText)
   @textCleanup: (ascii) ->
-    $.trim( ascii )
+    return '' if !ascii
+
+    ascii.trim()
       .replace(/(\r\n|\n\r)/g, "\n")  # cleanup
       .replace(/\r/g, "\n")           # cleanup
       .replace(/[ ]\n/g, "\n")        # remove tailing spaces
@@ -274,7 +276,7 @@ class App.Utils
   @quote: (ascii, max = 82) ->
     ascii = @textCleanup(ascii)
     ascii = @wrap(ascii, max)
-    $.trim(ascii)
+    ascii.trim()
       .replace /^(.*)$/mg, (match) ->
         if match
           '> ' + match
@@ -1008,7 +1010,7 @@ class App.Utils
       valueTmp = value.toString().toLowerCase()
       byNames.push valueTmp
       byNamesWithValue[valueTmp] = [i, value]
-    
+
     # sort() by default doesn't compare non-ascii characters such as ['é', 'a', 'ú', 'c']
     # hence using localecompare in sorting for translated strings
     byNames = byNames.sort((a, b) -> a.localeCompare(b))
@@ -1327,7 +1329,7 @@ class App.Utils
         if type is 'email' && !e.attrs.value.match(/@/) || e.attrs.value.match(/\s/)
           e.preventDefault()
           return false
-        e.attrs.label = e.attrs.value
+        e.attrs.label ||= e.attrs.value
         true
       )
     App.Delay.set(a, 500, undefined, 'tags')
@@ -1417,7 +1419,7 @@ class App.Utils
     imageCache.onload = ->
       App.Utils._htmlImage2DataUrl(imageCache, params)
     imageCache.onerror = ->
-      App.Log.notice('Utils', "Unable to load image from #{originalImage.src}")
+      App.Log.notice('Utils', "Image could not be loaded from #{originalImage.src}")
       params.fail(originalImage) if params.fail
     imageCache.alt = originalImage.alt
     imageCache.src = originalImage.src

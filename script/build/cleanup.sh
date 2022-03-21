@@ -17,7 +17,7 @@ rm .gitlab-ci.yml
 
 # linting
 rm -rf .rubocop
-rm .csslintrc
+rm .stylelintrc.json
 rm .eslintignore
 rm .eslintrc
 rm .rubocop.yml
@@ -26,4 +26,3 @@ rm .overcommit.yml
 
 # misc
 rm .codeclimate.yml
-rm .github_changelog_generator

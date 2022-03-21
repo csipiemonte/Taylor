@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2021 Zammad Foundation, http://zammad-foundation.org/
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
 
 class Store < ApplicationModel
   PREFERENCES_SIZE_MAX = 2400
@@ -160,7 +160,7 @@ returns
     if !file
       raise "No such file #{store_file_id}!"
     end
-    raise 'Unable to generate preview' if options[:silence] != true && preferences[:content_preview] != true
+    raise __('Content preview could not be generated.') if options[:silence] != true && preferences[:content_preview] != true
 
     image_resize(file.content, 200)
   end
@@ -183,7 +183,7 @@ returns
     if !file
       raise "No such file #{store_file_id}!"
     end
-    raise 'Unable to generate inline' if options[:silence] != true && preferences[:content_inline] != true
+    raise __('Inline content could not be generated.') if options[:silence] != true && preferences[:content_inline] != true
 
     image_resize(file.content, 1800)
   end
@@ -211,14 +211,12 @@ returns
     if !path
       path = Rails.root.join('tmp', filename)
     end
-    ::File.open(path, 'wb') do |handle|
-      handle.write file.content
-    end
+    ::File.binwrite(path, file.content)
     path
   end
 
   def attributes_for_display
-    slice :id, :filename, :size, :preferences
+    slice :id, :store_file_id, :filename, :size, :preferences
   end
 
   RESIZABLE_MIME_REGEXP = %r{image/(jpeg|jpg|png)}i.freeze

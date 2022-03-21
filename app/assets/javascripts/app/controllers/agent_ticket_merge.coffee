@@ -2,7 +2,7 @@ class App.TicketMerge extends App.ControllerModal
   buttonClose: true
   buttonCancel: true
   buttonSubmit: true
-  head: 'Merge'
+  head: __('Merge')
   veryLarge: true
   shown: false
 
@@ -49,11 +49,11 @@ class App.TicketMerge extends App.ControllerModal
       radio:      true
     )
 
-    content.delegate('[name="target_ticket_number"]', 'focus', (e) ->
+    content.on('focus', '[name="target_ticket_number"]', (e) ->
       $(e.target).parents().find('[name="radio"]').prop('checked', false)
     )
 
-    content.delegate('[name="radio"]', 'click', (e) ->
+    content.on('click', '[name="radio"]', (e) ->
       if $(e.target).prop('checked')
         ticket_id = $(e.target).val()
         ticket    = App.Ticket.fullLocal(ticket_id)
@@ -95,7 +95,7 @@ class App.TicketMerge extends App.ControllerModal
           # notify UI
           @notify
             type:    'success'
-            msg:     App.i18n.translateContent('Ticket %s merged!', data.source_ticket['number'])
+            msg:     App.i18n.translateContent('Ticket %s merged.', data.source_ticket['number'])
             timeout: 4000
 
           App.TaskManager.remove("Ticket-#{data.source_ticket['id']}")
@@ -113,7 +113,7 @@ class App.TicketMerge extends App.ControllerModal
         details = data.responseJSON || {}
         @notify
           type:    'error'
-          msg:     App.i18n.translateContent(details.error_human || details.error || 'Unable to merge!')
+          msg:     App.i18n.translateContent(details.error_human || details.error || __('The tickets could not be merged.'))
           timeout: 6000
         @formEnable(e)
     )
