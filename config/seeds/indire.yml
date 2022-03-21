@@ -1,0 +1,113 @@
+development:
+  seeds:
+    auth_advanced_saml:
+      idp_sso_target_url:
+      idp_cert:
+      issuer:
+      private_key:
+    chat_bot:
+      api_url:
+    classification_engine:
+      api_url:
+    notification:
+      sender_email:
+    remedy: 
+      base_url:
+      forwarded_for:
+      request_id:
+      token:
+
+dev:
+  seeds:
+    auth_advanced_saml:
+      idp_sso_target_url:
+      idp_cert:
+      issuer:
+      private_key:
+    chat_bot:
+      api_url:
+    classification_engine:
+      api_url:
+    notification:
+      sender_email:
+    remedy: 
+      base_url:
+      forwarded_for:
+      request_id:
+      token:
+
+test:
+  seeds:
+    auth_advanced_saml:
+      idp_sso_target_url:
+      idp_cert:
+      issuer:
+      private_key:
+    chat_bot:
+      api_url:
+    classification_engine:
+      api_url:
+    notification:
+      sender_email:
+    remedy: 
+      base_url:
+      forwarded_for:
+      request_id:
+      token:
+
+qa:
+  seeds:
+    auth_advanced_saml:
+      idp_sso_target_url:
+      idp_cert:
+      issuer:
+      private_key:
+    chat_bot:
+      api_url:
+    classification_engine:
+      api_url:
+    notification:
+      sender_email:
+    remedy: 
+      base_url:
+      forwarded_for:
+      request_id:
+      token:
+
+tu:
+  seeds:
+    auth_advanced_saml:
+      idp_sso_target_url:
+      idp_cert:
+      issuer:
+      private_key:
+    chat_bot:
+      api_url:
+    classification_engine:
+      api_url:
+    notification:
+      sender_email:
+    remedy: 
+      base_url:
+      forwarded_for:
+      request_id:
+      token:
+
+production:
+  seeds:
+    auth_advanced_saml:
+      idp_sso_target_url:
+      idp_cert:
+      issuer:
+      private_key:
+    chat_bot:
+      api_url:
+    classification_engine:
+      api_url:
+    notification:
+      sender_email:
+    remedy: 
+      base_url:
+      forwarded_for:
+      request_id:
+      token:
