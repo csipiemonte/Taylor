@@ -1,14 +1,15 @@
+# Copyright (C) 2020-2022 CSI Piemonte, https://www.csipiemonte.it/
+
 product_line = ENV['PRODUCT_LINE']
-unless product_line
-  Rails.logger.warn "environment variable PRODUCT_LINE not found, using default value: 'csi' "
-  product_line = 'csi'
-end
+raise 'variabile ambiente PRODUCT_LINE non trovata' if !product_line
 
 environment = Rails.env.downcase
 
-seed_config = HashWithIndifferentAccess.new(YAML.load(File.read(File.expand_path("#{Rails.root}/config/seeds/#{product_line}.yml", __FILE__))))
+seed_config_file = Rails.root.join('config', 'seeds', "#{product_line}.yml")
+seed_config = HashWithIndifferentAccess.new(YAML.safe_load(File.read(File.expand_path(seed_config_file, __FILE__))))
 
-raise "environment '#{environment}'  non trovato nel file di configurazione '#{Rails.root}/config/seeds/#{product_line}.yml' " unless seed_config[environment]
+raise "environment '#{environment}' non trovato nel file di configurazione '#{seed_config_file}' " if !seed_config[environment]
+
 seeds = seed_config[environment][:seeds]
 
 remedy_env_vars = Setting.find_by(name: 'remedy_env_vars')
