@@ -458,7 +458,8 @@ admin.permission_grant('knowledge_base.editor')
 agent = Role.find_by(name: 'Agent')
 agent.permission_grant('user_preferences')
 agent.permission_grant('ticket.agent')
-agent.permission_grant('chat.agent')
+# csi custom: remove chat.agent permission from agent role
+#agent.permission_grant('chat.agent')
 agent.permission_grant('cti.agent')
 agent.permission_grant('knowledge_base.reader')
 

@@ -26,6 +26,7 @@ Overview.create_if_not_exists(
     m:                 %w[number title customer group created_at],
     view_mode_default: 's',
   },
+  active: false
 )
 
 Overview.create_if_not_exists(
@@ -53,6 +54,7 @@ Overview.create_if_not_exists(
     m:                 %w[number title customer group created_at],
     view_mode_default: 's',
   },
+  active: false
 )
 
 Overview.create_if_not_exists(
@@ -85,6 +87,7 @@ Overview.create_if_not_exists(
     m:                 %w[number title customer group created_at],
     view_mode_default: 's',
   },
+  active: false
 )
 
 Overview.create_if_not_exists(
@@ -103,6 +106,7 @@ Overview.create_if_not_exists(
     m:                 %w[number title customer group created_at],
     view_mode_default: 's',
   },
+  active: false
 )
 
 Overview.create_if_not_exists(
@@ -126,6 +130,7 @@ Overview.create_if_not_exists(
     m:                 %w[number title customer group state owner created_at],
     view_mode_default: 's',
   },
+  active: false
 )
 
 Overview.create_if_not_exists(
@@ -154,6 +159,7 @@ Overview.create_if_not_exists(
     m:                 %w[number title customer group owner created_at],
     view_mode_default: 's',
   },
+  active: false
 )
 
 Overview.create_if_not_exists(
@@ -178,6 +184,7 @@ Overview.create_if_not_exists(
     m:                 %w[number title customer group owner escalation_at],
     view_mode_default: 's',
   },
+  active: false
 )
 
 Overview.create_if_not_exists(
@@ -206,7 +213,9 @@ Overview.create_if_not_exists(
     m:                 %w[number title customer group owner escalation_at],
     view_mode_default: 's',
   },
+  active: false
 )
+
 # CSI custom: overview per ticket con ext. act. non ancora archiviate
 Overview.create_if_not_exists(
   name:                'Ext. Act. in corso',
@@ -258,6 +267,7 @@ Overview.create_if_not_exists(
     m:                 %w[number title state created_at],
     view_mode_default: 's',
   },
+  active: false
 )
 Overview.create_if_not_exists(
   name:                __('My Organization Tickets'),
@@ -285,4 +295,5 @@ Overview.create_if_not_exists(
     m:                 %w[number title customer state created_at],
     view_mode_default: 's',
   },
+  active: false
 )
