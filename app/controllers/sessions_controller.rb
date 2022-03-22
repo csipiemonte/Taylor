@@ -327,6 +327,12 @@ class SessionsController < ApplicationController
       config['session_id'] = session.id.public_id
     end
 
+    # feature toggle
+    config['features'] = {}
+    Feature.all.each do | feature |
+      config['features'][feature.name] = feature      
+    end
+
     config
   end
 

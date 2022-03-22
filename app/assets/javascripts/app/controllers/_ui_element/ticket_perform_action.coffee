@@ -18,10 +18,13 @@ class App.UiElement.ticket_perform_action
 
     # Aggiunta voce e sottovoce nel menu perform
     # cfr zammad/app/assets/javascripts/app/models/trigger.coffee parametro 'perform'
-    if attribute.externalActivity
-      groups.external_activity =
-        name: __('External activity')
-        model: 'ExternalActivity'
+    if ! App.Feature.isDisabled('external_activity') # solo se feature toggle external activity e' enabled
+      if attribute.externalActivity
+        groups.external_activity =
+          name: __('External activity')
+          model: 'ExternalActivity'
+    else
+      console.debug('[feature toggle] external activity triggers removed')
 
     # merge config
     elements = {}

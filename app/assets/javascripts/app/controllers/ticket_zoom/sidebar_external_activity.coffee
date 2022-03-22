@@ -1,6 +1,10 @@
 class ExternalActivity extends App.Controller
   sidebarItem: =>
-    return if !@permissionCheck('ticket.agent') # Sidebar external activity accessibile solo agli operatori del ticket
+    # feature toggle Sidebar external activity accessibile solo se feature attiva
+    return if App.Feature.isDisabled("external_activity")
+
+    # Sidebar external activity accessibile solo agli operatori del ticket
+    return if !@permissionCheck('ticket.agent') 
     systems = []
     instance = @
     @ajax(
@@ -421,7 +425,11 @@ class ExternalActivity extends App.Controller
       
 
   showObjectsContent: (objectIds) =>
-    return if !@permissionCheck('ticket.agent') # Sidebar external activity accessibile solo agli operatori del ticket
+    # feature toggle Sidebar external activity accessibile solo se feature attiva
+    return if App.Feature.isDisabled("external_activity")
+
+    # Sidebar external activity accessibile solo agli operatori del ticket
+    return if !@permissionCheck('ticket.agent') 
     if @systems.length > 0
       @isRemedy = null
       for item in @systems

@@ -23,9 +23,12 @@ class App.UiElement.ApplicationSelector
 
     # Aggiunta voce e sottovoce nel menu condition
     # cfr zammad/app/assets/javascripts/app/models/trigger.coffee parametro 'condition'
-    if attribute.externalActivity
-      groups.external_activity =
-        name: __('External activity')
+    if ! App.Feature.isDisabled('external_activity') # solo se feature toggle external activity e' enabled
+      if attribute.externalActivity
+        groups.external_activity =
+          name: __('External activity')
+    else
+      console.debug('[feature toggle] external activity triggers removed')
 
     operators_type =
       '^datetime$': [__('before (absolute)'), __('after (absolute)'), __('before (relative)'), __('after (relative)'), __('within next (relative)'), __('within last (relative)'), __('till (relative)'), __('from (relative)')]
