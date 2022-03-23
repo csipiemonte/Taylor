@@ -13169,3 +13169,18 @@ msgstr "∅ Tempi di attesa - Oggi"
 #~ msgstr ""
 #~ "Tradotto il %s% di questa lingua, aiuta a migliorare ulteriormente Zammad "
 #~ "completando la traduzione. "
+
+
+# CSI custom - priorities translations
+#: db/seeds/ticket_priorities.rb
+msgid "critical"
+msgstr "1 Critica"
+
+msgid "high"
+msgstr "2 Alta"
+
+msgid "medium"
+msgstr "3 Media"
+
+msgid "low"
+msgstr "4 Bassa"

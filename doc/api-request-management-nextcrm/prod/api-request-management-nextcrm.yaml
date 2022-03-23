@@ -878,7 +878,7 @@ components:
           type: integer
           default: 2
           enum: [1,2,3,4]
-          description: "priority of the ticket: 4: mild, 3: low, 2: normal, 1: high" 
+          description: "priority of the ticket: 1: critical, 2: high, 3: medium, 4: low" 
         # customer_id:  
         #   type: integer
         #   example: 1
@@ -930,9 +930,9 @@ components:
         #   type: integer
         priority_id:  
           type: integer
-          default: 2
+          default: 3
           enum: [1,2,3,4]
-          description: "id of the priority of the ticket: 4-> mild, 3-> low, 2-> normal, 1-> high" 
+          description: "id of the priority of the ticket: 1: critical, 2: high, 3: medium, 4: low" 
         priority:  
           type: string
           description: "label of the priority" 
@@ -1118,9 +1118,9 @@ components:
       properties:
         priority_id:  
           type: integer
-          default: 2
+          default: 3
           enum: [1,2,3,4]
-          description: "priority of the ticket: 4: mild, 3: low, 2: normal, 1: high" 
+          description: "priority of the ticket: 1: critical, 2: high, 3: medium, 4: low" 
         state_id:  
           type: integer
           enum: [2,8]
