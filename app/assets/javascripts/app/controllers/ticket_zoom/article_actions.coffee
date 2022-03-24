@@ -25,6 +25,11 @@ class App.TicketZoomArticleActions extends App.Controller
       config = actionConfig[key]
       if config
         actions = config.action(actions, ticket, article, @)
+
+    # rimozione della feature ticket split se non abilitata tramite feature toggle
+    if App.Feature.isDisabled('ticket_split')
+      actions = actions.filter (act) -> act['name'] isnt 'split'
+
     actions
 
   actionPerform: (e) =>

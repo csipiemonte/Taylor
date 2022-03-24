@@ -21,6 +21,9 @@ default_env: &default_env
     classification_engine:
       name: classification_engine
       enabled: true
+    ticket_split:
+      name: ticket_split
+      enabled: false
 
 development:
   <<: *default_env
