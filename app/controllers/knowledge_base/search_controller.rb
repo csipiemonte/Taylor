@@ -90,7 +90,7 @@ class KnowledgeBase::SearchController < ApplicationController
           when :public
             custom_path_if_needed(path, object.answer.category.knowledge_base)
           when :agent
-            knowledge_base_answer_path(object.answer.category.knowledge_base, object.answer) + "?include_contents=#{object.id}"
+            knowledge_base_answer_path(object.answer.category.knowledge_base, object.answer) + "?include_contents=#{object.content_id}" # csi fix
           end
 
     {
