@@ -12,11 +12,11 @@
 
 common: &default_settings
   # Required license key associated with your New Relic account.
-  license_key: eu01xxa7a995504a351dd3fedc25fb5b2c30NRAL
+  license_key: eu01xx69709e72cfab4bab3e777e2df13154NRAL
 
   # Your application name. Renaming here affects where data displays in New
   # Relic.  For more details, see https://docs.newrelic.com/docs/apm/new-relic-apm/maintenance/renaming-applications
-  app_name: NextCRM-TST
+  app_name: NextCRM-TST-01
 
   distributed_tracing:
     enabled: true
@@ -37,7 +37,7 @@ common: &default_settings
 # If your application has other named environments, configure them here.
 development:
   <<: *default_settings
-  app_name: NextCRM-TST (Development)
+  app_name: NextCRM-TST-01 (Development)
   # To disable the agent regardless of other settings, uncomment the following:
   agent_enabled: false
 
@@ -56,7 +56,7 @@ test:
 
 staging:
   <<: *default_settings
-  app_name: NextCRM-TST (Staging)
+  app_name: NextCRM-TST-01 (Staging)
   # To disable the agent regardless of other settings, uncomment the following:
   agent_enabled: false
 
