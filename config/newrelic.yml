@@ -46,6 +46,7 @@ qa:
   # It doesn't make sense to report to New Relic from automated test runs.
   # monitor_mode: false
   developer_mode: false
+  agent_enabled: false
 
 test:
   <<: *default_settings
