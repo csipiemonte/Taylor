@@ -93,7 +93,6 @@ Translation.create_if_not_exists(
   source:         'Virtual Agent %s',
   target:         'Operatore Virtuale %s',
   target_initial: 'Operatore Virtuale %s',
-  format:         'string',
   created_by_id:  '1',
   updated_by_id:  '1',
 )
@@ -140,7 +139,6 @@ Translation.create_if_not_exists(
   source:         'Access to NextCRM API by external Api Manager',
   target:         'Accesso alle API NEXTCRM via Api Manager',
   target_initial: 'Accesso alle API NEXTCRM via Api Manager',
-  format:         'string',
   created_by_id:  '1',
   updated_by_id:  '1',
 )
@@ -150,7 +148,6 @@ Translation.create_if_not_exists(
   source:         'Login Account for external Api Manager',
   target:         'Login Account per Api Manager',
   target_initial: 'Login Account per Api Manager',
-  format:         'string',
   created_by_id:  '1',
   updated_by_id:  '1',
 )
@@ -171,7 +168,6 @@ Translation.create_if_not_exists(
   source:         'No preferences',
   target:         'Nessuna abilitazione',
   target_initial: 'Nessuna abilitazione',
-  format:         'string',
   created_by_id:  '1',
   updated_by_id:  '1',
 )

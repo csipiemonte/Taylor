@@ -44,7 +44,6 @@ Translation.create_if_not_exists(
   source:         'resolved',
   target:         'risolto',
   target_initial: 'risolto',
-  format:         'string',
   created_by_id:  '1',
   updated_by_id:  '1',
 )
@@ -53,7 +52,6 @@ Translation.create_if_not_exists(
   source:         'pending user feedback',
   target:         'in attesa di informazioni da utente',
   target_initial: 'in attesa di informazioni da utente',
-  format:         'string',
   created_by_id:  '1',
   updated_by_id:  '1',
 )
@@ -62,7 +60,6 @@ Translation.create_if_not_exists(
   source:         'pending external activity',
   target:         'in attesa di lavorazione esterna',
   target_initial: 'in attesa di lavorazione esterna',
-  format:         'string',
   created_by_id:  '1',
   updated_by_id:  '1',
 )

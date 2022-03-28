@@ -262,7 +262,6 @@ def create_translation(locale, source, target)
     source:         source,
     target:         target,
     target_initial: target,
-    format:         'string',
     created_by_id:  '1',
     updated_by_id:  '1',
   )
