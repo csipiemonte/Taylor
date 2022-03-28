@@ -15,6 +15,9 @@ default_env: &default_env
     chat:
       name: chat
       enabled: true
+    saml:
+      name: saml
+      enabled: false
     advanced_saml:
       name: advanced_saml
       enabled: true

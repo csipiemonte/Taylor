@@ -92,7 +92,6 @@ Setting.create_if_not_exists(
   frontend:    false
 )
 
-old_saml_setting = Setting.find_by(name:'auth_saml')
-old_saml_setting.preferences[:hidden] = true
-old_saml_setting.save!
-
+base_saml_setting = Setting.find_by(name: 'auth_saml')
+base_saml_setting.preferences[:hidden] = false
+base_saml_setting.save!

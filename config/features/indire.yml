@@ -15,9 +15,12 @@ default_env: &default_env
     chat:
       name: chat
       enabled: true
+    saml:
+      name: saml
+      enabled: true
     advanced_saml:
       name: advanced_saml
-      enabled: true
+      enabled: false
     classification_engine:
       name: classification_engine
       enabled: true
