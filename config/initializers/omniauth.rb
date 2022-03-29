@@ -52,6 +52,9 @@ Rails.application.config.middleware.use OmniAuth::Builder do
   # CSI SAML
   provider :saml_csi_database
 
+  # SAML database connect
+  provider :saml_database
+
   # CSI SPID (Shibboleth) custom omniauth Strategy
   provider :csimodshib
 end
