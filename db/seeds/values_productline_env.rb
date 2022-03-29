@@ -32,8 +32,15 @@ chat_bot_api_url = Setting.find_by(name: 'chat_bot_api_settings')
 chat_bot_api_url.state = seeds[:chat_bot][:api_url]
 chat_bot_api_url.save!
 
-saml_settings = Setting.find_by(name: 'auth_advanced_saml_credentials')
+saml_settings = Setting.find_by(name: 'auth_saml_credentials')
 saml_settings.state = {
+  idp_sso_target_url: seeds[:auth_saml][:idp_sso_target_url],
+  idp_cert:           seeds[:auth_saml][:idp_cert]
+}
+saml_settings.save!
+
+auth_saml_settings = Setting.find_by(name: 'auth_advanced_saml_credentials')
+auth_saml_settings.state = {
   idp_sso_target_url:             seeds[:auth_advanced_saml][:idp_sso_target_url],
   idp_cert:                       seeds[:auth_advanced_saml][:idp_cert],
   idp_cert_fingerprint:           '',
@@ -42,7 +49,7 @@ saml_settings.state = {
   private_key:                    seeds[:auth_advanced_saml][:private_key],
   assertion_consumer_service_url: ENV['ASSERTION_CONSUMER_SERVICE_URL']
 }
-saml_settings.save!
+auth_saml_settings.save!
 
 remedy_base_url = Setting.find_by(name: 'remedy_base_url')
 remedy_base_url.state = seeds[:remedy][:base_url]

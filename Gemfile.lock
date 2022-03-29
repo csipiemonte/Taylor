@@ -21,11 +21,6 @@ PATH
   specs:
     omniauth-csimodshib (0.1.0)
 
-PATH
-  remote: vendor/custom_gems/omniauth-csisaml
-  specs:
-    omniauth-csisaml (0.1.0)
-
 GEM
   remote: https://rubygems.org/
   specs:
@@ -665,7 +660,6 @@ DEPENDENCIES
   oauth2
   oj
   omniauth-csimodshib!
-  omniauth-csisaml!
   omniauth-facebook
   omniauth-github
   omniauth-gitlab
