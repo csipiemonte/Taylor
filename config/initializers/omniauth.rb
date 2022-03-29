@@ -49,10 +49,8 @@ Rails.application.config.middleware.use OmniAuth::Builder do
   # weibo database connect
   provider :weibo_database, 'not_change_will_be_set_by_database', 'not_change_will_be_set_by_database'
 
-  # CSI SAML: la custom omniauth strategy 'csisaml' e' implementata nella custom gem
-  # presente nella directory 'vendor/custom_gems/omniauth-csisaml'
-  # La strategy e' caricata automaticamente in vendor/custom_gems/omniauth-csisaml/lib/omniauth-csisaml.rb
-  provider :csisaml
+  # CSI SAML
+  provider :saml_csi_database
 
   # CSI SPID (Shibboleth) custom omniauth Strategy
   provider :csimodshib

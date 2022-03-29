@@ -94,7 +94,6 @@ gem 'omniauth-saml'
 gem 'omniauth-twitter'
 gem 'omniauth-weibo-oauth2'
 gem "omniauth-csimodshib", path: "vendor/custom_gems/omniauth-csimodshib"
-gem "omniauth-csisaml", path: "vendor/custom_gems/omniauth-csisaml"
 
 # channels
 gem 'gmail_xoauth'

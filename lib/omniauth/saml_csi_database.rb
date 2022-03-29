@@ -9,7 +9,7 @@
 # Non e' possibile usare 'uid' perche' per IAMIDPCSI non e' univoco per ciascun utente,
 # quindi si prende 'Shib-Identita-CodiceFiscale' per dare un identificativo univoco
 # all'utente che si e' autenticato con SAML.
-class Csisaml < OmniAuth::Strategies::SAML
+class SamlCsiDatabase < OmniAuth::Strategies::SAML
   # la custom strategy CSI deve chiamarsi 'saml' per funzionare
   # perche' si tratta di autenticazione SAML
   option :name, 'saml'
