@@ -27,6 +27,9 @@ default_env: &default_env
     ticket_split:
       name: ticket_split
       enabled: true
+    ticket_merge:
+      name: ticket_merge
+      enabled: true
 
 production:
   <<: *default_env
