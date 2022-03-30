@@ -14,7 +14,7 @@ class SamlDatabase < OmniAuth::Strategies::SAML
     assertion_consumer_service_url = "#{http_type}://#{fqdn}/auth/base_saml/callback"
 
     config  = Setting.get('auth_saml_credentials') || {}
-    options = config.compact_blank
+    options = config.reject { |_k, v| v.blank? }
       .merge(
         assertion_consumer_service_url: assertion_consumer_service_url,
         issuer:                         entity_id,
