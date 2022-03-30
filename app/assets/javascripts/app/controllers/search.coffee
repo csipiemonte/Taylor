@@ -213,7 +213,7 @@ class App.Search extends App.Controller
       @table = new App.TicketList(
         tableId:    "find_#{model}"
         el:         localeEl
-        columns:    [ 'number', 'title', 'customer', 'group', 'owner', 'created_at' ]
+        columns:    [ 'number', 'title', 'customer', 'group', 'owner', 'asset_id', 'created_at' ]
         ticket_ids: ticket_ids
         radio:      false
         checkbox:   checkbox
