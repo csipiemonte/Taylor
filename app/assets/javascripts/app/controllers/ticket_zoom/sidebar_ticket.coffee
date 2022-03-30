@@ -95,16 +95,19 @@ class SidebarTicket extends App.Controller
           callback: @showTicketHistory
         },
         {
-          title:    __('Merge')
-          name:     'ticket-merge'
-          callback: @showTicketMerge
-        },
-        {
           title:    __('Change Customer')
           name:     'customer-change'
           callback: @changeCustomer
-        },
+        }
       ]
+
+      if !App.Feature.isDisabled('ticket_merge')
+        @item.sidebarActions.push {
+          title:    __('Merge')
+          name:     'ticket-merge'
+          callback: @showTicketMerge
+        }
+
     @item
 
   reload: (args) =>
