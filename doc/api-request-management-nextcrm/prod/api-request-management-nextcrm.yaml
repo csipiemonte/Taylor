@@ -876,7 +876,7 @@ components:
           example: 1
         priority_id:  
           type: integer
-          default: 2
+          default: 3
           enum: [1,2,3,4]
           description: "priority of the ticket: 1: critical, 2: high, 3: medium, 4: low" 
         # customer_id:  
