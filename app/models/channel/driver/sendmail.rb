@@ -16,8 +16,11 @@ class Channel::Driver::Sendmail
     end
 
     mail = Channel::EmailBuild.build(attr, notification)
+    
     mail.delivery_method delivery_method
-    mail.deliver
+    res = mail.deliver
+    Rails.logger.info "[Channel::Driver::Smtp] Sending mail:\n\tTo: #{res.to}\n\tFrom: #{res.from}\n\tSubject: #{res.subject}\n\tDate: #{res.date}\n\tBody:\n#{res.decoded[0...500]}\n\tMessage-id: #{res.message_id}"
+    res
   end
 
   private

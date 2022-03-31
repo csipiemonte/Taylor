@@ -80,7 +80,10 @@ class Channel::Driver::Smtp
       smtp_params[:password] = options[:password]
       smtp_params[:authentication] = options[:authentication]
     end
+
     mail.delivery_method :smtp, smtp_params
-    mail.deliver
+    res = mail.deliver
+    Rails.logger.info "[Channel::Driver::Smtp] Sending mail:\n\tTo: #{res.to}\n\tFrom: #{res.from}\n\tSubject: #{res.subject}\n\tDate: #{res.date}\n\tBody:\n#{res.decoded[0...500]}\n\tMessage-id: #{res.message_id}"
+    res
   end
 end
