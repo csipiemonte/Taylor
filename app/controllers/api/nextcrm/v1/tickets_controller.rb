@@ -84,7 +84,7 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
 
   def create
     apilogger.info {"init ticket create business logic"}
-    apilogger.info {"raw input params: #{params.filtered}"}
+    apilogger.debug {"raw input params: #{params.filtered}"}
     
     # apilogger.info {"input parameters: "} # TODO filtrare campi lunghi/file/password
 
@@ -126,7 +126,7 @@ class Api::Nextcrm::V1::TicketsController < ::VirtualAgentTicketsController
     params["ticket_type_id"] = params.delete("type_id")
 
     apilogger.info {"business logic end"}
-    apilogger.info {"modified input params, before invoking zammad core controller : #{params.filtered}"}
+    apilogger.debug {"modified input params, before invoking zammad core controller : #{params.filtered}"}
     super
     apilogger.info {"zammad core create end. processing output response"}
     alterTicketAttributesInResponse()
