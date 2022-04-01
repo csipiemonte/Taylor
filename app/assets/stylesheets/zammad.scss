@@ -11582,7 +11582,7 @@ output {
     flex-wrap: nowrap;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
-    scroll-snap-mode: x mandatory;
+    scroll-snap-type: x mandatory;
   }
 }
 
