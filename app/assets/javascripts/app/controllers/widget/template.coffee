@@ -22,9 +22,11 @@ class App.WidgetTemplate extends App.Controller
     if @id && App.Template.exists(@id)
       template = App.Template.find(@id)
 
+    # CSI custom - permessi per editing dei template
     # insert data
     @html App.view('widget/template')(
       template: template
+      has_editing_permission: @permissionCheck('admin.template')
     )
     @controller = new App.ControllerForm(
       el:        @el.find('#form-template')

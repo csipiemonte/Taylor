@@ -278,6 +278,14 @@ Permission.create_if_not_exists(
     translations: [__('Core Workflow')]
   },
 )
+# CSI custom - permission per gesione dei template
+Permission.create_if_not_exists(
+  name:        'admin.template',
+  note:        __('Manage %s'),
+  preferences: {
+    translations: [__('Templates')]
+  },
+)
 Permission.create_if_not_exists(
   name:         'user_preferences',
   note:         __('User Preferences'),
