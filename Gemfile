@@ -160,6 +160,10 @@ group :dev, :qa do
   # gem 'appdynamics'
 end
 
+group :qa do
+  gem 'elastic-apm'
+end
+
 # Translation sync
 gem 'PoParser', require: false
 
