@@ -3,8 +3,7 @@
 
 INSERT INTO "zammad"."assets"
 (id, asset_type, name, created_at, updated_at)
-VALUES
-(1, 'sw', 'Il mio medico - Scelta e revoca rivolta al cittadino', NOW(), NOW()),
+VALUES (1, 'sw', 'Il mio medico - Scelta e revoca rivolta al cittadino', NOW(), NOW()),
 (2, 'sw', 'AUTOCERTIFICAZIONE ESENZIONE PER REDDITO CITTADINI', NOW(), NOW()),
 (3, 'sw', 'GESTIONE VACCINAZIONI CITTADINO', NOW(), NOW()),
 (4, 'sw', 'GESTIONE CONSENSI E PREFERENZE CITTADINI', NOW(), NOW()),
@@ -68,4 +67,6 @@ VALUES
 (64, 'sw', 'MDPCORESERVICES - Servizi core di MDPNEW', NOW(), NOW()),
 (65, 'sw', 'ROL per cittadino non autenticato', NOW(), NOW()),
 (66, 'sw', 'COVID SOL CITTADINO NON AUTENTICATO', NOW(), NOW()),
-(67, 'sw', 'Deleghe Cittadini Minori', NOW(), NOW())
+(67, 'sw', 'Deleghe Cittadini Minori', NOW(), NOW()),
+(68, 'sw', 'FSE - Documenti inseriti da te per cittadino', NOW(), NOW()),
+(69, 'sw', 'AURA - Archivio Unico Regionale Assistiti', NOW(), NOW())
