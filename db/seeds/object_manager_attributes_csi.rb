@@ -393,12 +393,12 @@ ObjectManager::Attribute.add(
   screens:     {
     'create_middle' => {
       'ticket.customer' => {
-        'shown' => true,
+        'shown' => false,
         'required' => false,
         'item_class' => 'column'
       },
       'ticket.agent'    => {
-        'shown' => true,
+        'shown' => false,
         'required' => false,
         'item_class' => 'column'
       }
@@ -437,12 +437,12 @@ ObjectManager::Attribute.add(
   screens:     {
     'create_middle' => {
       'ticket.customer' => {
-        'shown' => true,
+        'shown' => false,
         'required' => false,
         'item_class' => 'column'
       },
       'ticket.agent'    => {
-        'shown' => true,
+        'shown' => false,
         'required' => false,
         'item_class' => 'column'
       }
