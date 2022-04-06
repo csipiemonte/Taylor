@@ -110,3 +110,6 @@
 # CSI Piemonte custom: il file '.gitlab-ci.yml' innesca la continuous integration da Gitlab; lo si mette nel .gitignore
 # dal momento che per il progetto si usa Jenkins.
 .gitlab-ci.yml
+
+.github
+
