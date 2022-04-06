@@ -1,0 +1,42 @@
+default_env: &default_env
+  features:
+    external_activity: 
+      name: external_activity
+      enabled: true
+    telegram:
+      name: telegram
+      enabled: true
+    api_crm:
+      name: api_crm
+      enabled: true
+    chat_bot:
+      name: chat_bot
+      enabled: true
+    chat:
+      name: chat
+      enabled: true
+    saml:
+      name: saml
+      enabled: true
+    advanced_saml:
+      name: advanced_saml
+      enabled: false
+    classification_engine:
+      name: classification_engine
+      enabled: true
+    ticket_split:
+      name: ticket_split
+      enabled: true
+    ticket_merge:
+      name: ticket_merge
+      enabled: true
+
+production:
+  <<: *default_env
+  features:
+    telegram:
+      enabled: false
+
+tu:
+  <<: *default_env
+

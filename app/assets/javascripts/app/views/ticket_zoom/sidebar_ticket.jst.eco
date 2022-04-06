@@ -1,0 +1,9 @@
+<form>
+  <fieldset class="edit"></fieldset>
+</form>
+<div class="js-tags tags"></div>
+<div class="js-links links"></div>
+<div class="js-linkKbAnswers link_kb_answers"></div>
+<div class="js-timeUnit"></div>
+<div class="not_verified_info"></div>
+<div class="js-subscriptions"></div>

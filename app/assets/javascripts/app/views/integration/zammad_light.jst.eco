@@ -1,0 +1,92 @@
+<form>
+
+  <h2><%- @T('ASL API') %></h2>
+
+  <div class="settings-entry">
+    <table class="settings-list" style="width: 100%;">
+      <thead>
+        <tr>
+          <th width="20%"><%- @T('Type') %>
+          <th width="80%"><%- @T('URL') %>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="settings-list-row-control"><%- @T('Endpoint') %>
+          <td class="settings-list-control-cell"><input type="url" class="form-control form-control--small js-select" id="asl_base_url" value="<%- @asl_base_url %>">
+        <tr>
+          <td class="settings-list-row-control"><%- @T('Token') %>
+          <td class="settings-list-control-cell"><input type="text" class="form-control form-control--small js-select" id="asl_token" value="<%- @asl_token %>">
+      </tbody>
+    </table>
+  </div>
+
+
+<table class="settings-list">
+  <thead>
+    <tr>
+      <th><%- @T('Virtual Agent') %></th>
+      <th><%- @T('Public Data')%></th></tr>
+  </thead>
+  <tbody>
+    <% for virtual_agent in @virtual_agents: %>
+      <tr>
+        <td><%= virtual_agent.firstname %> <%= virtual_agent.lastname %></td>
+        <td>
+          <label class="inline-label checkbox-replacement">
+            <input type="checkbox" value="read" id="zammad_light_visibility_for_<%= virtual_agent.id %>" <% if @visibility["ASL"] && @visibility["ASL"]["virtual_agent_"+virtual_agent.id]: %>checked<%end%> >
+            <svg class="icon icon-checkbox icon-unchecked"><use xlink:href="assets/images/icons.svg#icon-checkbox"></use></svg>
+            <svg class="icon icon-checkbox-checked icon-checked"><use xlink:href="assets/images/icons.svg#icon-checkbox-checked"></use></svg>
+          </label>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<table class="settings-list">
+  <thead>
+    <tr>
+      <th><%- @T('Group') %></th>
+      <th><%- @T('Read Only')%></th>
+      <th><%- @T('Read & Write')%></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% for group in @groups: %>
+      <tr>
+        <td><%= group.name %></td>
+        <td>
+          <label class="inline-label checkbox-replacement">
+            <input type="checkbox" value="read" id="zammad_light_read_only_for_<%= group.id %>" <% if @group_access["ASL"] && @group_access["ASL"]["group_"+group.id]=="r": %>checked<%end%>>
+            <svg class="icon icon-checkbox icon-unchecked"><use xlink:href="assets/images/icons.svg#icon-checkbox"></use></svg>
+            <svg class="icon icon-checkbox-checked icon-checked"><use xlink:href="assets/images/icons.svg#icon-checkbox-checked"></use></svg>
+          </label>
+        </td>
+        <td>
+          <label class="inline-label checkbox-replacement">
+            <input type="checkbox" value="read" id="zammad_light_read_write_for_<%= group.id %>" <% if @group_access["ASL"] && @group_access["ASL"]["group_"+group.id]=="rw": %>checked<%end%>>
+            <svg class="icon icon-checkbox icon-unchecked"><use xlink:href="assets/images/icons.svg#icon-checkbox"></use></svg>
+            <svg class="icon icon-checkbox-checked icon-checked"><use xlink:href="assets/images/icons.svg#icon-checkbox-checked"></use></svg>
+          </label>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+
+<!--
+<div class="settings-entry">
+  <h2><%- @T('Data Alignment') %></h2>
+  <div class="page-header-title">
+    <div class="zammad-switch zammad-switch--small">
+       <input type="checkbox" id="asl_state_alignment" <% if @asl_state_alignment: %>checked<% end %>>
+       <label for="asl_state_alignment"></label>
+    </div>
+    <p>Enable alignment on ticket's state</p>
+  </div>
+</div>
+-->
+
+  <button type="submit" class="btn btn--primary js-submit"><%- @T('Save') %></button>
+</form>

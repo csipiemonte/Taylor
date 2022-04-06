@@ -1,0 +1,131 @@
+development:
+  seeds:
+    auth_saml:
+      idp_sso_target_url:
+      idp_cert:
+    auth_advanced_saml:
+      idp_sso_target_url:
+      idp_cert:
+      issuer:
+      private_key:
+    chat_bot:
+      api_url:
+    classification_engine:
+      api_url:
+    notification:
+      sender_email:
+    remedy: 
+      base_url:
+      forwarded_for:
+      request_id:
+      token:
+
+dev:
+  seeds:
+    auth_saml:
+      idp_sso_target_url:
+      idp_cert:
+    auth_advanced_saml:
+      idp_sso_target_url:
+      idp_cert:
+      issuer:
+      private_key:
+    chat_bot:
+      api_url:
+    classification_engine:
+      api_url:
+    notification:
+      sender_email:
+    remedy: 
+      base_url:
+      forwarded_for:
+      request_id:
+      token:
+
+test:
+  seeds:
+    auth_saml:
+      idp_sso_target_url:
+      idp_cert:
+    auth_advanced_saml:
+      idp_sso_target_url:
+      idp_cert:
+      issuer:
+      private_key:
+    chat_bot:
+      api_url:
+    classification_engine:
+      api_url:
+    notification:
+      sender_email:
+    remedy: 
+      base_url:
+      forwarded_for:
+      request_id:
+      token:
+
+qa:
+  seeds:
+    auth_saml:
+      idp_sso_target_url:
+      idp_cert:
+    auth_advanced_saml:
+      idp_sso_target_url:
+      idp_cert:
+      issuer:
+      private_key:
+    chat_bot:
+      api_url:
+    classification_engine:
+      api_url:
+    notification:
+      sender_email:
+    remedy: 
+      base_url:
+      forwarded_for:
+      request_id:
+      token:
+
+tu:
+  seeds:
+    auth_saml:
+      idp_sso_target_url: https://login.microsoftonline.com/902a33a9-252f-46e6-8116-3d89aec665c2/saml2
+      idp_cert: -----BEGIN CERTIFICATE----- MIIC8DCCAdigAwIBAgIQMCaVUQ3CyoBA7CDM9wEoATANBgkqhkiG9w0BAQsFADA0MTIwMAYDVQQDEylNaWNyb3NvZnQgQXp1cmUgRmVkZXJhdGVkIFNTTyBDZXJ0aWZpY2F0ZTAeFw0yMjAzMjgxNDIxMTBaFw0yNTAzMjgxNTIxMTBaMDQxMjAwBgNVBAMTKU1pY3Jvc29mdCBBenVyZSBGZWRlcmF0ZWQgU1NPIENlcnRpZmljYXRlMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArxwVkcjODZjF3hy3FaoqUc28b8WTctOXyymkJOl+w1aK88TS48jRB70TnuN5HyzJvVg3dR1nbfVWfc3t+UVsDVUm6O63r5hbtbSKf2vuydsm+3kJm1TVeVym1DoAl4PSrR043uXX2UIL8r7l5RiXQrK0JhxKvGuQuZNbEKlF6kmrpcmCk+OiPioRZsLQd1vUqRg2OaaB0WyGw5dwlCdrhtqfT1EtWeNy3N4X26wSNbYoA/Ll1E4fjautMwaGtqRr5+qiYXn2fSReN3fyOiwfLkaE6oeTXzvz1rRRXe8m+LCmv4tE5oLsHFEvulIrL/s65095oI0g3ba/kuyiJ6VGEQIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBb5k7TCbBmkYIZrYK4ZFH2Xv94dTMj5XI19Yz5Q4zKoX/rpQpEz0q43bCtLvVxlUktGLy4ZW1PUCVgjNMB3c0fZV2DQBS537tWB9hfbYZO2gPaJ3SOgMSqrDK9AsTPucRLjgbL9j/A5+lQYVCNnYVt7SQNqF6+daefjZ54f3BpKRSOz2YKWhCv4y8ma0gYKlo6BT8+UcjhwrNKjKvi4vPxVlMDPIvXS/thEoT2PZTlOFfqkI8+YrD25vgGgQBdJAH7KNmc9dq7f7kyH7fYiiIKUNDlRC49gyQNhZgDW/41tLeHpmiiQ7rG/IrklOQe5D/dsjArOM8pJ+qMQHt8dEtl -----END CERTIFICATE-----
+    auth_advanced_saml:
+      idp_sso_target_url:
+      idp_cert:
+      issuer:
+      private_key:
+    chat_bot:
+      api_url:
+    classification_engine:
+      api_url:
+    notification:
+      sender_email:
+    remedy: 
+      base_url:
+      forwarded_for:
+      request_id:
+      token:
+
+production:
+  seeds:
+    auth_saml:
+      idp_sso_target_url:
+      idp_cert:
+    auth_advanced_saml:
+      idp_sso_target_url:
+      idp_cert:
+      issuer:
+      private_key:
+    chat_bot:
+      api_url:
+    classification_engine:
+      api_url:
+    notification:
+      sender_email:
+    remedy: 
+      base_url:
+      forwarded_for:
+      request_id:
+      token:

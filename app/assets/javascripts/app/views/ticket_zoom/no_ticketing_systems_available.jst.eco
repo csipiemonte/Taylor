@@ -1,0 +1,1 @@
+<p><%- @T('No ticketing systems available') %>.</p>

@@ -1,0 +1,25 @@
+include:
+  - local: '/.gitlab/ci/integration/es.yml'
+  - local: '/.gitlab/ci/integration/other.yml'
+  - local: '/.gitlab/ci/integration/otrs.yml'
+
+.template_integration: &template_integration
+  extends:
+    - .env_base
+    - .services_mysql_postgresql_imap
+    - .rules_integration_manual_start
+  tags:
+    - integration
+  stage: test
+  variables:
+    RAILS_ENV: "test"
+
+# we need at least one job to store and include this template
+# $IGNORE is not defined
+ignore:
+  stage: test
+  only:
+    variables:
+      - $IGNORE
+  script:
+    - ''

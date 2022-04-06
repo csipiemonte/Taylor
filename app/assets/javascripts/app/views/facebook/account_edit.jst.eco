@@ -1,0 +1,15 @@
+<div class="alert alert--danger hidden" role="alert"></div>
+<fieldset>
+
+  <h1><%- @T('Pages') %></h1>
+  <p class="description"><%- @T('Choose the Group to which page posts will get added.') %></p>
+  <div class="js-pages">
+    <% if @channel.options.pages: %>
+      <% for page in @channel.options.pages: %>
+        <h2><%= page.name %></h2>
+        <div data-page-id="<%= page.id %>" class="js-groups"></div>
+      <% end %>
+    <% end %>
+  </div>
+
+</fieldset>

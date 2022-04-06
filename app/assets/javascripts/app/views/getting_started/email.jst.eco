@@ -1,0 +1,124 @@
+<div class="main flex vertical centered darkBackground">
+  <%- @Icon('full-logo', 'wizard-logo') %>
+
+  <form class="setup wizard js-intro">
+    <div class="wizard-slide">
+      <h2><%- @T('Email Account') %></h2>
+      <div class="wizard-body vertical justified">
+        <div class="alert alert--danger hide" role="alert"></div>
+        <fieldset>
+          <div class="form-group">
+            <label><%- @T('Full Name') %></label>
+            <input type="text" class="form-control" value="" name="realname" placeholder="<%- @Ti('Organization Support') %>" required autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label><%- @T('Email') %></label>
+            <input type="email" class="form-control" value="" name="email" placeholder="<%- @Ti('support@example.com') %>" required autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label><%- @T('Password') %></label>
+            <input type="password" class="form-control" name="password" value="" required autocomplete="off">
+          </div>
+        </fieldset>
+      </div>
+      <div class="wizard-controls center">
+        <a class="btn btn--text btn--secondary" href="#getting_started/channel"><%- @T('Go Back') %></a>
+        <button class="btn btn--primary align-right"><%- @T( 'Connect' ) %></button>
+      </div>
+    </div>
+  </form>
+
+  <form class="setup wizard hide js-probe">
+    <div class="wizard-slide">
+      <h2><%- @T('Email Account') %></h2>
+      <div class="wizard-body vertical justified">
+        <p class="wizard-loadingText">
+          <span class="loading icon"></span> <%- @T('Testing') %> <span class="js-email"></span>
+        </p>
+      </div>
+    </div>
+  </form>
+
+  <form class="setup wizard hide js-test">
+    <div class="wizard-slide">
+      <h2><%- @T('Email Account') %></h2>
+      <div class="wizard-body vertical justified">
+        <p class="wizard-loadingText">
+          <span class="loading icon"></span> <%- @T('Verifying…') %>
+        </p>
+      </div>
+    </div>
+  </form>
+
+  <form class="setup wizard hide js-verify">
+    <div class="wizard-slide">
+      <h2><%- @T('Email Account') %></h2>
+      <div class="wizard-body vertical justified">
+        <div class="alert alert--danger hide" role="alert"></div>
+        <p class="wizard-loadingText">
+          <span class="loading icon"></span> <%- @T('Verify sending and receiving') %>
+        </p>
+      </div>
+    </div>
+  </form>
+
+  <form class="setup wizard hide js-inbound">
+    <div class="wizard-slide wizard-slide--large">
+      <h2><%- @T('Email Inbound') %></h2>
+      <div class="wizard-body vertical justified">
+        <div class="alert alert--danger hide" role="alert"></div>
+        <div class="base-inbound-settings"></div>
+      </div>
+      <div class="wizard-controls center">
+        <a class="btn btn--text btn--secondary js-goToSlide" data-slide="js-intro"><%- @T('Go Back') %></a>
+        <button class="btn btn--primary align-right"><%- @T('Continue') %></button>
+      </div>
+    </div>
+  </form>
+
+  <form class="setup wizard hide js-inbound-acknowledge">
+    <div class="wizard-slide">
+      <h2><%- @T('Email Inbound') %></h2>
+      <div class="wizard-body vertical justified">
+        <div class="alert alert--danger hide" role="alert"></div>
+        <p class="js-messageFound"><%- @T('We have already found %s email(s) in your mailbox. We will move them all from your mailbox into Zammad.', 'x') %></p>
+
+        <div class="js-archiveMessage">
+          <p class="js-archiveMessageCount"><%- @T('In addition, we have found emails in your mailbox that are older than %s weeks. You can import such emails as an "archive", which means that no notifications are sent and the tickets have the status "closed". However, you can find them in Zammad anytime using the search function. ', 'x') %></p>
+
+          <p><%- @T('Should the emails from this mailbox be imported as an archive or as regular emails?') %></p>
+
+          <ul>
+            <li><%- @T('Import as archive: |No notifications are sent|, the |tickets are closed|, and original timestamps are used. You can still find them in Zammad using the search.') %></li>
+            <li><%- @T('Import as regular: |Notifications are sent| and the |tickets are open| - you can find the tickets in the overview of open tickets.') %></li>
+          </ul>
+
+          <p class="js-importType">
+            Import as: <span class="js-importTypeSelect"></span>
+          </p>
+        </div>
+        <div class="inbound-acknowledge-settings"></div>
+      </div>
+      <div class="wizard-controls center">
+        <a class="btn btn--text btn--secondary js-goToSlide js-back" data-slide="js-intro"><%- @T('Go Back') %></a>
+        <button class="btn btn--primary js-goToSlide js-next align-right" data-slide="js-outbound"><%- @T('Continue') %></button>
+      </div>
+    </div>
+  </form>
+
+  <form class="setup wizard hide js-outbound">
+    <div class="wizard-slide">
+      <h2><%- @T('Email Outbound') %></h2>
+      <div class="wizard-body vertical justified">
+        <div class="alert alert--danger hide" role="alert"></div>
+        <div class="base-outbound-type"></div>
+        <div class="base-outbound-settings"></div>
+      </div>
+      <div class="wizard-controls center">
+        <a class="btn btn--text btn--secondary js-goToSlide" data-slide="js-inbound"><%- @T('Go Back') %></a>
+        <button class="btn btn--primary align-right"><%- @T('Continue') %></button>
+      </div>
+    </div>
+  </form>
+
+</div>

@@ -1,0 +1,1 @@
+<div class="u-clickable js-add" style="color: #429ed7;">📋 <%- @T('Not verified customer\'s information') %></div>

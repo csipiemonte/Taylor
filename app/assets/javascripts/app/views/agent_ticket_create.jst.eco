@@ -1,0 +1,61 @@
+<div class="tabsSidebar-holder flex">
+  <div class="main no-padding flex tabsSidebar-sidebarSpacer tabsSidebar-tabsSpacer">
+    <div class="newTicket">
+      <div class="box box--newTicket">
+        <div class="page-header">
+          <h1><%- @T(@head) %></h1>
+        </div>
+
+        <div class="page-content">
+          <% if !_.isEmpty(@availableTypes) && @availableTypes.length > 1: %>
+            <ul class="tabs type-tabs">
+              <% for type in @availableTypes: %>
+                <li class="tab u-textTruncate" data-type="<%= type %>">
+                  <%- @Icon(@types[type]['icon'], 'tab-icon') %>
+                  <%- @T(@types[type]['label']) %>
+                </li>
+              <% end %>
+            </ul>
+          <% end %>
+
+          <% if !_.isEmpty(@C('ui_ticket_create_notes')): %>
+            <% for type, note of @C('ui_ticket_create_notes'): %>
+              <div class="alert alert--warning js-note" role="alert" data-type="<%= type %>"><%- @T(note) %></div>
+            <% end %>
+          <% end %>
+
+          <form role="form" class="ticket-create">
+            <input type="hidden" name="formSenderType"/>
+            <input type="hidden" name="shared_draft_id" value="<%= @shared_draft_id %>"/>
+            <input type="hidden" name="form_id" value="<%= @form_id %>"/>
+            <div class="ticket-form-top"></div>
+            <div class="form-group js-securityOptions hide">
+              <div class="formGroup-label">
+                <label for=""><%- @T('Security') %></label>
+              </div>
+              <div class="horizontal">
+                <span class="js-securityEncryptComment">
+                  <div class="btn btn--action js-securityEncrypt js-active-toggle" disabled><%- @Icon('lock-open', 'btn-inactive-icon') %><%- @Icon('lock', 'btn-active-icon') %><%- @T('Encrypt') %></div>
+                </span>
+                <span class="js-securitySignComment" style="margin-left: 10px;">
+                  <div class="btn btn--action js-securitySign js-active-toggle" disabled><%- @Icon('not-signed', 'btn-inactive-icon') %><%- @Icon('signed', 'btn-active-icon') %><%- @T('Sign') %></div>
+                </span>
+              </div>
+            </div>
+            <div class="article-form-top"></div>
+            <div class="formset-inset">
+              <div class="ticket-form-middle horizontal two-columns"></div>
+              <div class="ticket-form-bottom"></div>
+            </div>
+
+            <div class="form-controls">
+              <a class="btn btn--text btn--subtle js-cancel" href="#/"><%- @T('Cancel & Go Back') %></a>
+              <button type="submit" class="btn btn--success js-submit align-right"><%- @T('Create') %></button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="tabsSidebar vertical"></div>
+</div>

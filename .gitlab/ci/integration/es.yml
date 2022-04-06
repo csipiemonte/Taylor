@@ -1,0 +1,27 @@
+.template_integration_es: &template_integration_es
+  extends:
+    - .env_base
+    - .services_mysql_postgresql_elasticsearch
+    - .variables_es
+  stage: test
+  tags:
+    - integration
+  script:
+    - echo -e "\\e[0Ksection_start:`date +%s`:zammad_db_unseeded[collapsed=true]\\r\\e[0Kbundle exec rake zammad:db:unseeded"
+    - bundle exec rake zammad:db:unseeded
+    - echo -e "\\e[0Ksection_end:`date +%s`:zammad_db_unseeded\\r\\e[0K"
+    - bundle exec rails test test/integration/elasticsearch_active_test.rb
+    - bundle exec rails test test/integration/elasticsearch_test.rb
+    - bundle exec rspec --tag searchindex --tag ~type:system --profile 10
+
+"rspec:es:7":
+  <<: *template_integration_es
+  variables:
+    ELASTICSEARCH_TAG: '7'
+    RAILS_ENV: "test"
+
+"rspec:es:7.8":
+  <<: *template_integration_es
+  variables:
+    ELASTICSEARCH_TAG: '7.8.1'
+    RAILS_ENV: "test"

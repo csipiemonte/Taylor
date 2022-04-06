@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title><%= Setting.get('product_name') %></title>
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <%= stylesheet_link_tag "application", :media => 'all' %>
+  <%= stylesheet_link_tag "application-print", :media => 'print' %>
+  <% if Rails.configuration.assets.debug %>
+  <%= javascript_include_tag "application", nonce: true %>
+  <% else %>
+  <%= javascript_include_tag "application", nonce: true, :defer => 'defer' %>
+  <% end %>
+  <%= csrf_meta_tags %>
+</head>
+<body>
+
+  <%= content_for?(:content) ? yield(:content) : yield %>
+
+</body>
+</html>

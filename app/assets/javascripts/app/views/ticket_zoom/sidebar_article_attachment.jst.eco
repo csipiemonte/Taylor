@@ -1,0 +1,20 @@
+<div class="attachments-block js-attachments">
+  <% for data in @ticketAttachments: %>
+    <% content_type = @ContentOrMimeType(data.attachment) %>
+    <a class="attachment attachment--preview" target="_blank" href="<%= App.Config.get('api_path') %>/ticket_attachment/<%= data.article.ticket_id %>/<%= data.article.id %>/<%= data.attachment.id %>?disposition=attachment" data-type="attachment"<% if @canDownload(content_type): %> download<% end %>>
+      <div class="attachment-icon">
+      <% if content_type && @ContentTypeIcon(content_type): %>
+        <% if @canPreview(content_type): %>
+          <img src="<%= App.Config.get('api_path') %>/ticket_attachment/<%= data.article.ticket_id %>/<%= data.article.id %>/<%= data.attachment.id %>?view=preview">
+        <% else: %>
+          <%- @Icon( @ContentTypeIcon(content_type) ) %>
+        <% end %>
+      <% else: %>
+        <%- @Icon('file-unknown') %>
+      <% end %>
+      </div>
+      <span class="attachment-name u-highlight"><%= data.attachment.filename %></span>
+      <div class="attachment-size"><%- @humanTime(data.article.created_at) %> (<%- @humanFileSize(data.attachment.size) %>)</div>
+    </a>
+  <% end %>
+</div>

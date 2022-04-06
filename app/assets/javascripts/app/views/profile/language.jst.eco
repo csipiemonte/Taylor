@@ -1,0 +1,13 @@
+<div class="page-header">
+  <div class="page-header-title">
+    <h1><%- @T('Language') %></h1>
+  </div>
+</div>
+<div class="page-content">
+  <p><%- @T('Choose your language.') %></p>
+  <form class="settings-entry horizontal end">
+    <div class="form-item js-language flex"></div>
+    <button type="submit" class="btn btn--primary"><%- @T('Submit') %></button>
+  </form>
+  <p><%- @T('Did you know? You can help translating %s at:', 'Zammad') %> <a href="https://translations.zammad.org" target="_blank">translations.zammad.org</a></p>
+</div>

@@ -1,0 +1,30 @@
+1_firefox:
+  extends:
+    - .template_browser-core_firefox
+  variables:
+    TEST_SLICE: "1"
+
+2_firefox:
+  extends:
+    - .template_browser-core_firefox
+  variables:
+    TEST_SLICE: "2"
+
+3_firefox:
+  extends:
+    - .template_browser-core_firefox
+    - .tags_mail
+  variables:
+    TEST_SLICE: "3"
+
+4_firefox:
+  extends:
+    - .template_browser-core_firefox
+  variables:
+    TEST_SLICE: "4"
+
+5_firefox:
+  extends:
+    - .template_browser-core_firefox
+  variables:
+    TEST_SLICE: "5"

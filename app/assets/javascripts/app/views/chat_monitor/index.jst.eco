@@ -1,0 +1,13 @@
+<div class="chat main">
+  <div class="page-header">
+      <div class="page-header-title">
+        <h1><%- @T('Chat Monitor') %></h1>
+      </div>
+      <div class="page-header-center js-header"></div>
+      <div class="page-header-meta">
+        <div class="btn btn--action js-settings"><%- @T('Settings') %></div>
+      </div>
+    </div>
+  <div id="monitored-chats" class="chat-workspace"></div>
+  <div id="chat-table-wrapper"></div>
+</div>

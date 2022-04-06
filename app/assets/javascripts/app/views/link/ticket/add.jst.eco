@@ -1,0 +1,30 @@
+<fieldset>
+  <% ticket_number_input = () => %>
+    <input type="text" name="ticket_number" value="" class="span2" required/>
+  <% end %>
+  <% if @link_types.length > 1: %>
+    <% link_type_selector = () => %>
+    <select name="link_type" class="span2" required>
+      <% for link_type in @link_types: %>
+        <option value="<%= link_type[0] %>"><%- @T(link_type[1]) %></option>
+      <% end %>
+    </select>
+    <% end %>
+    <%- App.i18n.translatePlain( 'Link %s %s as %s of Ticket# %s', @T(@link_object), ticket_number_input(), link_type_selector(), @object.number ) %>
+  <% else: %>
+    <%- ticket_number_input() %>
+    <input type="hidden" name="link_type" value="<%= @link_types[0][0] %>"/>
+  <% end %>
+
+  <% if @hasByCustomer: %>
+    <hr>
+    <h4><%- @T('Recent Customer Tickets') %></h4>
+    <div id="ticket-merge-customer-tickets"></div>
+  <% end %>
+
+  <% if @hasRecentViewed: %>
+    <hr>
+    <h4><%- @T('Recently Viewed Tickets') %></h4>
+    <div id="ticket-merge-recent-tickets"></div>
+  <% end %>
+</fieldset>

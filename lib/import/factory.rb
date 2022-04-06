@@ -1,0 +1,11 @@
+# Copyright (C) 2012-2022 Zammad Foundation, https://zammad-foundation.org/
+
+module Import
+  module Factory
+    include Import::BaseFactory
+
+    # rubocop:disable Style/ModuleFunction
+    extend self
+    alias import import_action
+  end
+end

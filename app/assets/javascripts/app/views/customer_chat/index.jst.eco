@@ -1,0 +1,12 @@
+<div class="chat main">
+  <div class="page-header">
+      <div class="page-header-title">
+        <h1><%- @T('Customer Chat') %></h1>
+      </div>
+      <div class="page-header-center js-header"></div>
+      <div class="page-header-meta">
+        <div class="btn btn--action js-settings"><%- @T('Settings') %></div>
+      </div>
+    </div>
+  <div class="chat-workspace"></div>
+</div>
