@@ -584,6 +584,9 @@ class App.TicketZoom extends App.Controller
             ticket_auto_assignment_selector = @Config.get('ticket_auto_assignment_selector')
             if App.Ticket.selector(@ticket, ticket_auto_assignment_selector['condition'])
               assign = =>
+                # CSI custom - aggiunta conferma per assegnazione automatica
+                return unless confirm('Il ticket non è ancora assegnato a nessuno\nVuoi prenderlo in carico?')
+                
                 @ticket.owner_id = App.Session.get('id')
                 @ticket.save()
               @delay(assign, 800, "ticket-auto-assign-#{@ticket.id}")
