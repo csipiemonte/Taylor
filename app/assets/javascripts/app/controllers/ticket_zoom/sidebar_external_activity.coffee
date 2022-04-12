@@ -1,10 +1,11 @@
 class ExternalActivity extends App.Controller
+  
   sidebarItem: =>
     # feature toggle Sidebar external activity accessibile solo se feature attiva
-    return if App.Feature.isDisabled("external_activity")
+    return if App.Feature.isDisabled('external_activity')
 
     # Sidebar external activity accessibile solo agli operatori del ticket
-    return if !@permissionCheck('ticket.agent') 
+    return if !@permissionCheck('ticket.agent')
     systems = []
     instance = @
     @ajax(
@@ -56,16 +57,16 @@ class ExternalActivity extends App.Controller
   showNoSystemsMessage: =>
     @html App.view('ticket_zoom/no_ticketing_systems_available')()
 
-  loadSystem: (system) =>
+  loadSystem: (system, default_ext_act = null) =>
     @system = system
     addButton = $(App.view('ticket_zoom/new_external_activity_button')(
       system: @system
     ))
     @html(addButton)
-    @$('#external_activity_reload').on('click', =>
-      @reload()
-      newActivityButton.hide()
-    )
+    #@$('#external_activity_reload').on('click', =>
+    #  @reload()
+    #  newActivityButton.hide()
+    #)
     @ajax(
       id:    'external_activities'
       type:  'GET'
@@ -74,20 +75,59 @@ class ExternalActivity extends App.Controller
         # se uso actual_ticket_state_id = @ticket.state.id la variabile @ticket non e'aggiornata col nuovo valore se avviene update del ticket
         actual_ticket_state_id = $('form div[data-attribute-name=state_id] select option:selected').val()
         if actual_ticket_state_id == 4 or actual_ticket_state_id == '4' # ticket_state_id = 4 corrisponde a ticket 'closed'
-          @$('.js-newExternalActivityLabel').hide()
+          @$('.js-newExternalActivityBtn').hide()
 
         if data.length > 0
-          cb = @displayExternalActivity
-          @$('.js-newExternalActivityLabel').hide()
-          data.forEach (activity) ->
-            cb(activity)
+          ext_act_options = {}
+
+          # get title core field
+          #title_field = null
+          #for k, field of @system.model
+          #  if field['core_field'] == 'title'
+          #    title_field = field['name']
+          #    break
+
+          data.forEach (activity) =>
+            # option for ext act selector
+            option_name = if activity['json_data']['remedy_id'] then activity['json_data']['remedy_id'] else '-'
+            #if title_field
+            #  option_name += ' // ' + activity.json_data[title_field].slice(0, 15)
+
+            ext_act_options[activity['id']] = option_name
+
+            # build external activity
+            @displayExternalActivity(activity)
+
+          # build ext act selector
+          selectField = App.UiElement.select.render(
+            name: 'external_activity_select'
+            options: ext_act_options
+            value: data[0]['id']
+          )
+
+          @$('.js-external-activity-select')
+            .html(selectField)
+            .change((e) ->
+              $('.external-activity-container').hide()
+              selection = $(@).find('select[name=external_activity_select]').val()
+              $(".external-activity-#{selection}").show()
+            )
+
+          # show ext act e selector
+          default_ext_act = if default_ext_act then default_ext_act else data[0]['id']
+          @$('.external-activity-select select').val(default_ext_act)
+          @$('.external-activity-select').show()
+          @$(".external-activity-#{default_ext_act}").show()
+    
+        # build new ext act form
+        @createDispatchForm()
     )
 
     @fetchedOptions = []
-    newActivityButton = @$('.js-newExternalActivityLabel')
+    newActivityButton = @$('.js-newExternalActivityBtn')
     newActivityButton.on('click', =>
-      @createDispatchForm()
-      newActivityButton.hide()
+      @$('.external-activity-container').hide()
+      @$('.external-activity-new').show()
     )
 
   displayExternalActivity: (activity) =>
@@ -99,8 +139,6 @@ class ExternalActivity extends App.Controller
     # ticket_state_id = 4 corrisponde a ticket 'closed'
     closed = @isClosed(activity) || actual_ticket_state_id == '4' || actual_ticket_state_id == 4 || @system.permission != 'rw'
 
-    if @$('.dispatch-box').children().length > 0
-      @$('.dispatch-box').children().last().remove()
     @$('.dispatch-box').append App.view('ticket_zoom/sidebar_external_activity_form')(
       system: @system
       externalActivityId : externalActivityId
@@ -150,8 +188,6 @@ class ExternalActivity extends App.Controller
   createDispatchForm: ->
     externalActivityId = Math.floor(Math.random() * 10000) + 10000
 
-    if @$('.dispatch-box').children().length > 0
-      @$('.dispatch-box').children().last().remove()
     @$('.dispatch-box').append App.view('ticket_zoom/sidebar_external_activity_form')(
       system: @system
       externalActivityId : externalActivityId
@@ -210,7 +246,7 @@ class ExternalActivity extends App.Controller
         for key, option of field['select']['options']
           instance.addOption(selectField, option, field['select']['string_id'])
         if field['select']['service'] != undefined
-          instance.fetchOptionValues(field,selectField,null,activity)
+          instance.fetchOptionValues(field, selectField, externalActivityId, null, activity)
         if field['default'] != undefined
           instance.setOptionValue(selectField,field['default'])
         if activity != null && activity.json_data[field['name']]
@@ -223,7 +259,7 @@ class ExternalActivity extends App.Controller
             else
               parentValue = @.value
 
-            instance.fetchOptionValues(field, selectField, parentValue)
+            instance.fetchOptionValues(field, selectField, externalActivityId, parentValue)
 
   buildCommentFields: (externalActivityId,activity=null) =>
     instance = @
@@ -282,7 +318,8 @@ class ExternalActivity extends App.Controller
       e.preventDefault()
       [data,validated] = instance.readActivityValues externalActivityId, activity
       if !validated
-        instance.$('#External_Activity_'+externalActivityId+'_hidden_submit').click()
+        alert(__('Missing required fields'))
+        #instance.$('#External_Activity_'+externalActivityId+'_hidden_submit').click()
         return
       activity['json_data'] = data
       @updateExternalActivity activity
@@ -295,7 +332,7 @@ class ExternalActivity extends App.Controller
       url:   "#{@apiPath}/external_activity/" + activity['id']
       data: JSON.stringify({json_data:activity['json_data']})
       success: (data, status, xhr) =>
-        @loadSystem(@system)
+        @loadSystem(@system, activity['id'])
     )
 
   addComment: (commentField, comment, selector) =>
@@ -335,13 +372,13 @@ class ExternalActivity extends App.Controller
   setOptionValue: (selectField, value) ->
     selectField.val(value)
 
-  fetchOptionValues: (field, selectField, parentValue=null, activity=null) =>
+  fetchOptionValues: (field, selectField, activity_id, parentValue=null, activity=null) =>
     cb = @addOption
     url = "#{@apiPath}/" + field['select']['service']
     if parentValue!=null
       url += '?parent_id=' + parentValue
     @.ajax(
-      id:    'options for ' + field['name']
+      id:    'options for ' + field['name'] + '_' + activity_id
       type:  'GET'
       url: url
       success: (data, status, xhr) =>
@@ -373,8 +410,10 @@ class ExternalActivity extends App.Controller
   createExternalActivity: (externalActivityId) =>
     [new_activity_fields,validated] = @readActivityValues externalActivityId
     if !validated
-      @$('#External_Activity_'+externalActivityId+'_hidden_submit').click()
+      alert(__('Missing required fields'))
+      #@$('#External_Activity_'+externalActivityId+'_hidden_submit').click()
       return
+
     bidirectional_alignment = $('#External_Activity_'+externalActivityId+'_bidirectional_alignment:checkbox:checked').length > 0
     data = JSON.stringify(
       'ticketing_system_id':@system.id,
@@ -426,10 +465,11 @@ class ExternalActivity extends App.Controller
 
   showObjectsContent: (objectIds) =>
     # feature toggle Sidebar external activity accessibile solo se feature attiva
-    return if App.Feature.isDisabled("external_activity")
+    return if App.Feature.isDisabled('external_activity')
 
     # Sidebar external activity accessibile solo agli operatori del ticket
-    return if !@permissionCheck('ticket.agent') 
+    return if !@permissionCheck('ticket.agent')
+
     if @systems.length > 0
       @isRemedy = null
       for item in @systems
