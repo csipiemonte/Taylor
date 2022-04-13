@@ -58,7 +58,7 @@ class ExternalActivity extends App.Controller
     @html App.view('ticket_zoom/no_ticketing_systems_available')()
 
   loadSystem: (system, default_ext_act = null) =>
-    console.log "[ExternalActivity] loadSystem #{@TaskKey}"
+    console.log "[ExternalActivity] loadSystem #{@taskKey}"
     @system = system
     addButton = $(App.view('ticket_zoom/new_external_activity_button')(
       system: @system
@@ -69,7 +69,7 @@ class ExternalActivity extends App.Controller
     #  newActivityButton.hide()
     #)
     @ajax(
-      id:    "external_activities-#{@TaskKey}"
+      id:    "external_activities-#{@taskKey}"
       type:  'GET'
       url:   "#{@apiPath}/external_activity/system/#{@system.id}?ticket_id=#{@ticket.id}"
       success: (data, status, xhr) =>
