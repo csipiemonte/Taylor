@@ -58,6 +58,7 @@ class ExternalActivity extends App.Controller
     @html App.view('ticket_zoom/no_ticketing_systems_available')()
 
   loadSystem: (system, default_ext_act = null) =>
+    console.log "[ExternalActivity] loadSystem #{@TaskKey}"
     @system = system
     addButton = $(App.view('ticket_zoom/new_external_activity_button')(
       system: @system
@@ -68,28 +69,30 @@ class ExternalActivity extends App.Controller
     #  newActivityButton.hide()
     #)
     @ajax(
-      id:    'external_activities'
+      id:    "external_activities-#{@TaskKey}"
       type:  'GET'
       url:   "#{@apiPath}/external_activity/system/#{@system.id}?ticket_id=#{@ticket.id}"
       success: (data, status, xhr) =>
+        console.log "[ExternalActivity] loadSystem callback (#{data.length} activities)"
         # se uso actual_ticket_state_id = @ticket.state.id la variabile @ticket non e'aggiornata col nuovo valore se avviene update del ticket
         actual_ticket_state_id = $('form div[data-attribute-name=state_id] select option:selected').val()
         if actual_ticket_state_id == 4 or actual_ticket_state_id == '4' # ticket_state_id = 4 corrisponde a ticket 'closed'
-          @$('.js-newExternalActivityBtn').hide()
+          @$('.js-newExternalActivityBtn').parent('div').hide()
 
         if data.length > 0
           ext_act_options = {}
 
-          # get title core field
-          #title_field = null
-          #for k, field of @system.model
-          #  if field['core_field'] == 'title'
-          #    title_field = field['name']
-          #    break
+          # get title core fields
+          title_field = null
+          for k, field of @system.model
+            if field['core_field'] == 'title'
+              title_field = field['name']
+            if field['name'] in ['zammad_light_id', 'remedy_id']
+              id_field = field['name']
 
           data.forEach (activity) =>
             # option for ext act selector
-            option_name = if activity['json_data']['remedy_id'] then activity['json_data']['remedy_id'] else '-'
+            option_name = if activity.json_data[id_field] then activity.json_data[id_field] else '-'
             #if title_field
             #  option_name += ' // ' + activity.json_data[title_field].slice(0, 15)
 

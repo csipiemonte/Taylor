@@ -3,10 +3,13 @@
 <div class="external-activity-select" style="display: none;">
   <div class="text-muted"><%- @T('Select external activity')%></div>
   <div class="js-external-activity-select"></div>
+  <hr>
 </div>
-<hr>
-<button class="btn btn--fullWidth js-newExternalActivityBtn" name="new_external_activity">
-  <%- @T('New external activity on')%> <%= @system.name %>
-</button>
-<hr>
+
+<div>
+  <button class="btn btn--fullWidth js-newExternalActivityBtn" name="new_external_activity">
+    <%- @T('New external activity on')%> <%= @system.name %>
+  </button>
+  <hr>
+</div>
 <div class="dispatch-box"></div>
