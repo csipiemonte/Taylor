@@ -47,7 +47,7 @@ examples how to use
   # d - data of object
   # d('user.firstname', htmlEscape)
   def d(key, escape = nil)
-
+    
     # do validation, ignore some methods
     return "\#{#{key} / not allowed}" if !data_key_valid?(key)
 
@@ -74,6 +74,12 @@ examples how to use
     value          = nil
     object_methods = key.split('.')
     object_name    = object_methods.shift
+    
+    # custom csi
+    if object_name == "ticket" && object_methods == ["asset_name"] 
+      old_object_methods = ["asset_name"]
+      object_methods = ["asset_id"]
+    end
 
     # if no object is given, just return
     return '#{no such object}' if object_name.blank? # rubocop:disable Lint/InterpolationCheck
@@ -148,6 +154,16 @@ examples how to use
       end
     end
     placeholder = value || object_refs
+
+    # custom csi
+    if object_name == "ticket" && object_methods == ["asset_id"] && old_object_methods == ["asset_name"]
+      begin
+        name_asset = Asset.where(id: placeholder).first.name
+        placeholder = name_asset
+      rescue
+        placeholder = "-"
+      end 
+    end
 
     escaping(convert_to_timezone(placeholder), escape)
   end
