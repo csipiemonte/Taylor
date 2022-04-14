@@ -813,6 +813,50 @@ ObjectManager::Attribute.add(
   position:    5000,
 )
 
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'Ticket',
+  name:        'solicit_number',
+  display:     'Numero Sollecito',
+  data_type:   'integer',
+  data_option: {
+    null:       true,
+    default:    0,
+    min:        0,
+    max:        99
+  },
+  editable:    true,
+  active:      true,
+  screens:     {
+    'create_middle' => {
+      'ticket.customer' => {
+        'shown' => false,
+        'required' => false,
+        'item_class' => 'column'
+      },
+      'ticket.agent'    => {
+        'shown' => false,
+        'required' => false,
+        'item_class' => 'column'
+      }
+    },
+    'edit' => {
+      'ticket.customer' => {
+        'shown' => false,
+        'required' => false
+      },
+      'ticket.agent' => {
+        'shown' => true,
+        'required' => false
+      }
+    }
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    3500,
+)
+
 ######################
 #### Translations ####
 ######################
