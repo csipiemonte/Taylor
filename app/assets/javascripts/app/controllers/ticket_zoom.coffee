@@ -583,13 +583,20 @@ class App.TicketZoom extends App.Controller
           if userIgnored is false
             ticket_auto_assignment_selector = @Config.get('ticket_auto_assignment_selector')
             if App.Ticket.selector(@ticket, ticket_auto_assignment_selector['condition'])
+              
+              # CSI custom - aggiunta conferma per assegnazione automatica
               assign = =>
-                # CSI custom - aggiunta conferma per assegnazione automatica
-                return unless confirm('Il ticket non è ancora assegnato a nessuno\nVuoi prenderlo in carico?')
-                
                 @ticket.owner_id = App.Session.get('id')
                 @ticket.save()
-              @delay(assign, 800, "ticket-auto-assign-#{@ticket.id}")
+              
+              openConfirmModal = =>
+                new App.ControllerConfirm(
+                  message: __("Il ticket #{@ticket.id} non è ancora assegnato a nessuno\nVuoi prenderlo in carico?")
+                  buttonClass: 'btn--positive'
+                  callback: assign
+                )
+              # using base delay impl to not be bound to the controller instance
+              App.Delay.set(openConfirmModal, 10000, 'ticket-auto-assign', null, false)
 
     # render init content
     if elLocal
