@@ -591,8 +591,9 @@ class App.TicketZoom extends App.Controller
               
               openConfirmModal = =>
                 new App.ControllerConfirm(
-                  message: __("Il ticket #{@ticket.id} non è ancora assegnato a nessuno\nVuoi prenderlo in carico?")
+                  message: __("Il ticket #{@ticket.id} non è ancora assegnato a nessuno.\nVuoi prenderlo in carico?")
                   buttonClass: 'btn--positive'
+                  head: __('Conferma assegnazione')
                   callback: assign
                 )
               # using base delay impl to not be bound to the controller instance
