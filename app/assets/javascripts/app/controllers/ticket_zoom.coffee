@@ -948,7 +948,7 @@ class App.TicketZoom extends App.Controller
         @autosaveStart()
         return
 
-      if article.internal && !confirm('La nota che stai per inserire è interna e non sarà visibile al cittadino, vuoi proseguire?')
+      if article.internal && !confirm("La nota che stai per inserire è interna e non sarà visibile all'utente, vuoi proseguire?")
         @submitEnable(e)
         @autosaveStart()
         return
