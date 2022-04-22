@@ -18,7 +18,8 @@
 
   <div class="userSearch horizontal">
     <div class="userSearch-label"><%- @T('Roles') %>:</div>
-    <div class="tabs tabs-wide">
+    <!-- CSI custom - class roles-tabs -->
+    <div class="tabs tabs-wide roles-tabs">
       <% for role in @roles: %>
         <div class="tab" data-id="<%= role.id %>"><%- @T(role.displayName() ) %></div>
       <% end %>

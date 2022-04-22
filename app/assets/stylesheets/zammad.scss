@@ -3492,6 +3492,18 @@ ol.tabs li {
   }
 }
 
+// CSI custom - roles-tabs style
+.roles-tabs {
+  overflow-x: scroll;
+  overflow-y: hidden;
+}
+
+.roles-tabs .tab {
+  height: auto;
+  white-space: nowrap;
+  min-width: auto;
+}
+
 .separator {
   margin: 20px 0;
   position: relative;
