@@ -62,3 +62,10 @@ remedy_token.save!
 notification_sender_email = Setting.find_by(name: 'notification_sender')
 notification_sender_email.state = seeds[:notification][:sender_email]
 notification_sender_email.save!
+
+solicit_number_tk_attribute = ObjectManager::Attribute.get(
+  object: 'Ticket',
+  name:   'solicit_number',
+)
+solicit_number_tk_attribute.active = seeds[:ticket][:attributes][:solicit_number][:active]
+solicit_number_tk_attribute.save!
