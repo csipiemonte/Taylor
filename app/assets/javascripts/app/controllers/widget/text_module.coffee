@@ -48,6 +48,11 @@ class App.WidgetTextModule extends App.Controller
       if !_.isEmpty(item.group_ids) && @searchCondition.group_id && !_.includes(item.group_ids, parseInt(@searchCondition.group_id))
         continue
 
+      # CSI custom: filtraggio addizionale per ogni modulo che non appartiene al gruppo dell'utente
+      userGroups = (id for id, value of @data?.user?.group_ids)
+      if !userGroups.some((el) -> item.group_ids.includes(parseInt(el)))
+        continue
+
       attributes = item.attributes()
       attributes.content = App.Utils.replaceTags(attributes.content, @data)
       @all.push attributes
