@@ -414,7 +414,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Ticket',
   name:        'notification_email',
-  display:     'Notification email address',
+  display:     'Email per notifica aggiuntiva',
   data_type:   'input',
   data_option: {
     type:       'text',
@@ -422,17 +422,17 @@ ObjectManager::Attribute.add(
     null:       true,
     # item_class: 'formGroup--halfSize'
   },
-  editable:    false,
+  editable:    true,
   active:      true,
   screens:     {
     'create_middle' => {
       'ticket.customer' => {
-        'shown' => false,
+        'shown' => true,
         'required' => false,
         'item_class' => 'column'
       },
       'ticket.agent'    => {
-        'shown' => false,
+        'shown' => true,
         'required' => false,
         'item_class' => 'column'
       }
@@ -458,7 +458,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Ticket',
   name:        'recall_phone',
-  display:     'Contact telephone number',
+  display:     'Numero telefonico di contatto secondario',
   data_type:   'input',
   data_option: {
     type:       'text',
@@ -466,17 +466,17 @@ ObjectManager::Attribute.add(
     null:       true,
     # item_class: 'formGroup--halfSize'
   },
-  editable:    false,
+  editable:    true,
   active:      true,
   screens:     {
     'create_middle' => {
       'ticket.customer' => {
-        'shown' => false,
+        'shown' => true,
         'required' => false,
         'item_class' => 'column'
       },
       'ticket.agent'    => {
-        'shown' => false,
+        'shown' => true,
         'required' => false,
         'item_class' => 'column'
       }
