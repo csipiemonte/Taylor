@@ -95,6 +95,9 @@ gem 'omniauth-twitter'
 gem 'omniauth-weibo-oauth2'
 gem "omniauth-csimodshib", path: "vendor/custom_gems/omniauth-csimodshib"
 
+# Rate limiting
+gem 'rack-attack'
+
 # channels
 gem 'gmail_xoauth'
 gem 'koala'

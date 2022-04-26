@@ -927,6 +927,10 @@ msgstr ""
 msgid "Article"
 msgstr "Artikel"
 
+#: db/seeds/settings.rb
+msgid "Article - visibility confirmation dialog"
+msgstr ""
+
 #: lib/excel_sheet/ticket.rb
 msgid "Article Count"
 msgstr "Kiraan Artikel"
@@ -2218,7 +2222,7 @@ msgstr ""
 msgid "Could not read raw logo!"
 msgstr ""
 
-#: app/assets/javascripts/app/views/knowledge_base/new_modal.coffee
+#: app/assets/javascripts/app/views/knowledge_base/new_controller.coffee
 msgid "Couldn't create Knowledge Base"
 msgstr ""
 
@@ -2267,7 +2271,7 @@ msgstr ""
 msgid "Create Channels"
 msgstr ""
 
-#: app/assets/javascripts/app/views/knowledge_base/new_modal.coffee
+#: app/assets/javascripts/app/views/knowledge_base/new_controller.coffee
 msgid "Create Knowledge Base"
 msgstr ""
 
@@ -5584,6 +5588,7 @@ msgstr ""
 
 #: app/controllers/integration/cti_controller.rb
 #: app/controllers/integration/placetel_controller.rb
+#: app/controllers/integration/sipgate_controller.rb
 msgid "Invalid token, please contact your admin!"
 msgstr ""
 
@@ -6973,7 +6978,6 @@ msgid "Not configured"
 msgstr ""
 
 #: app/assets/javascripts/app/controllers/_ui_element/ticket_perform_action.coffee
-#: app/assets/javascripts/app/models/calendar.coffee
 #: app/assets/javascripts/app/models/chat.coffee
 #: app/assets/javascripts/app/models/email_address.coffee
 #: app/assets/javascripts/app/models/group.coffee
@@ -6994,10 +6998,6 @@ msgstr ""
 
 #: db/seeds/settings.rb
 msgid "Note - default visibility"
-msgstr ""
-
-#: db/seeds/settings.rb
-msgid "Note - visibility confirmation dialog"
 msgstr ""
 
 #: app/assets/javascripts/app/models/email_address.coffee
@@ -8036,11 +8036,6 @@ msgstr ""
 #: app/assets/javascripts/app/views/widget/http_log_show.jst.eco
 msgid "Response"
 msgstr ""
-
-#: app/assets/javascripts/app/views/sla/index.jst.eco
-#, fuzzy
-msgid "Response Time"
-msgstr "Masa Jawapan Pertama"
 
 #: app/assets/javascripts/app/views/monitoring.jst.eco
 msgid "Restart failed jobs"
@@ -9585,10 +9580,6 @@ msgstr ""
 msgid "There is existing content. Do you want to overwrite it?"
 msgstr ""
 
-#: app/assets/javascripts/app/controllers/_manage/knowledge_base.coffee
-msgid "There is no Knowledge Base yet. Please create one."
-msgstr ""
-
 #: app/assets/javascripts/app/views/channel/chat.jst.eco
 msgid "There is no agent online."
 msgstr ""
@@ -10031,6 +10022,10 @@ msgstr "Akses Token"
 
 #: db/seeds/settings.rb
 msgid "Token for CTI."
+msgstr ""
+
+#: db/seeds/settings.rb
+msgid "Token for Sipgate."
 msgstr ""
 
 #: db/seeds/settings.rb
@@ -11423,6 +11418,7 @@ msgid "before (relative)"
 msgstr ""
 
 #: app/assets/javascripts/app/views/generic/sla_times.jst.eco
+#: app/assets/javascripts/app/views/sla/index.jst.eco
 msgid "between agent updates"
 msgstr ""
 
@@ -11624,6 +11620,7 @@ msgid "fill in empty"
 msgstr ""
 
 #: app/assets/javascripts/app/views/generic/sla_times.jst.eco
+#: app/assets/javascripts/app/views/sla/index.jst.eco
 msgid "for an agent to respond"
 msgstr ""
 
@@ -11850,6 +11847,12 @@ msgstr ""
 msgid "note"
 msgstr ""
 
+#: app/assets/javascripts/app/controllers/knowledge_base/content_can_be_published_form.coffee
+#, fuzzy
+#| msgid "no"
+msgid "now"
+msgstr "tidak"
+
 #: db/seeds/ticket_state_types.rb db/seeds/ticket_states.rb
 msgid "open"
 msgstr "buka"
@@ -11983,6 +11986,10 @@ msgstr ""
 #: app/assets/javascripts/app/views/organization_profile/object.jst.eco
 #: app/assets/javascripts/app/views/widget/organization.jst.eco
 msgid "show more"
+msgstr ""
+
+#: db/seeds/settings.rb
+msgid "sipgate.io Token"
 msgstr ""
 
 #: db/seeds/settings.rb
@@ -12172,6 +12179,10 @@ msgstr ""
 #: app/assets/javascripts/app/views/dashboard/stats/ticket_waiting_time.jst.eco
 msgid "∅ Waiting time today"
 msgstr "Masa menuggungu hari ini"
+
+#, fuzzy
+#~ msgid "Response Time"
+#~ msgstr "Masa Jawapan Pertama"
 
 #~ msgid "of"
 #~ msgstr "daripada"

@@ -2,13 +2,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: zammad\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: \n"
-"Last-Translator: \n"
-"Language-Team: \n"
+"PO-Revision-Date: 2022-04-14 07:11+0000\n"
+"Last-Translator: valentin2323 <sttor11@gmail.com>\n"
+"Language-Team: Bulgarian <https://translations.zammad.org/projects/zammad/"
+"zammad-stable/bg/>\n"
 "Language: bg\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.11.2\n"
 
 #. Default date format to use for the current locale.
 #. These placeholders are supported:
@@ -949,6 +952,10 @@ msgstr ""
 #: app/assets/javascripts/app/controllers/_ui_element/_application_selector.coffee
 #: app/assets/javascripts/app/controllers/_ui_element/ticket_perform_action.coffee
 msgid "Article"
+msgstr ""
+
+#: db/seeds/settings.rb
+msgid "Article - visibility confirmation dialog"
 msgstr ""
 
 #: lib/excel_sheet/ticket.rb
@@ -2220,7 +2227,7 @@ msgstr ""
 msgid "Could not read raw logo!"
 msgstr ""
 
-#: app/assets/javascripts/app/views/knowledge_base/new_modal.coffee
+#: app/assets/javascripts/app/views/knowledge_base/new_controller.coffee
 msgid "Couldn't create Knowledge Base"
 msgstr ""
 
@@ -2269,7 +2276,7 @@ msgstr ""
 msgid "Create Channels"
 msgstr ""
 
-#: app/assets/javascripts/app/views/knowledge_base/new_modal.coffee
+#: app/assets/javascripts/app/views/knowledge_base/new_controller.coffee
 msgid "Create Knowledge Base"
 msgstr ""
 
@@ -5034,7 +5041,7 @@ msgstr ""
 #: app/assets/javascripts/app/views/integration/idoit_object_result.jst.eco
 #: app/assets/javascripts/app/views/ticket_zoom/sidebar_idoit.jst.eco
 msgid "ID"
-msgstr ""
+msgstr "ID"
 
 #: db/seeds/settings.rb
 msgid "IDP SSO target URL"
@@ -5572,6 +5579,7 @@ msgstr ""
 
 #: app/controllers/integration/cti_controller.rb
 #: app/controllers/integration/placetel_controller.rb
+#: app/controllers/integration/sipgate_controller.rb
 msgid "Invalid token, please contact your admin!"
 msgstr ""
 
@@ -5935,7 +5943,7 @@ msgstr ""
 #: app/assets/javascripts/app/controllers/widget/payload_example.coffee
 #: app/assets/javascripts/app/models/knowledge_base_answer_translation.coffee
 msgid "Loading failed."
-msgstr ""
+msgstr "Зареждането не бе успешно."
 
 #: app/assets/javascripts/app/lib/app_post/task_manager.coffee
 #: app/assets/javascripts/app/lib/base/jquery.textmodule.js
@@ -6951,7 +6959,6 @@ msgid "Not configured"
 msgstr ""
 
 #: app/assets/javascripts/app/controllers/_ui_element/ticket_perform_action.coffee
-#: app/assets/javascripts/app/models/calendar.coffee
 #: app/assets/javascripts/app/models/chat.coffee
 #: app/assets/javascripts/app/models/email_address.coffee
 #: app/assets/javascripts/app/models/group.coffee
@@ -6972,10 +6979,6 @@ msgstr "Бележка"
 
 #: db/seeds/settings.rb
 msgid "Note - default visibility"
-msgstr ""
-
-#: db/seeds/settings.rb
-msgid "Note - visibility confirmation dialog"
 msgstr ""
 
 #: app/assets/javascripts/app/models/email_address.coffee
@@ -8007,10 +8010,6 @@ msgstr ""
 msgid "Response"
 msgstr ""
 
-#: app/assets/javascripts/app/views/sla/index.jst.eco
-msgid "Response Time"
-msgstr ""
-
 #: app/assets/javascripts/app/views/monitoring.jst.eco
 msgid "Restart failed jobs"
 msgstr ""
@@ -8331,14 +8330,14 @@ msgstr ""
 #: app/assets/javascripts/app/controllers/data_privacy.coffee
 #: app/assets/javascripts/app/controllers/ticket_zoom/article_view.coffee
 msgid "See less"
-msgstr ""
+msgstr "Покажи по-малко"
 
 #: app/assets/javascripts/app/controllers/data_privacy.coffee
 #: app/assets/javascripts/app/controllers/ticket_zoom/article_view.coffee
 #: app/assets/javascripts/app/views/data_privacy/tasks.jst.eco
 #: app/assets/javascripts/app/views/ticket_zoom/article_view.jst.eco
 msgid "See more"
-msgstr ""
+msgstr "Покажи повече"
 
 #: app/assets/javascripts/app/views/profile/calendar_subscriptions.jst.eco
 msgid ""
@@ -8950,7 +8949,7 @@ msgstr ""
 
 #: db/seeds/object_manager_attributes.rb
 msgid "Street"
-msgstr ""
+msgstr "Улица"
 
 #: app/assets/javascripts/app/controllers/_application_controller/form.coffee
 #: app/assets/javascripts/app/controllers/_ui_element/postmaster_match.coffee
@@ -9550,10 +9549,6 @@ msgstr ""
 msgid "There is existing content. Do you want to overwrite it?"
 msgstr ""
 
-#: app/assets/javascripts/app/controllers/_manage/knowledge_base.coffee
-msgid "There is no Knowledge Base yet. Please create one."
-msgstr ""
-
 #: app/assets/javascripts/app/views/channel/chat.jst.eco
 msgid "There is no agent online."
 msgstr ""
@@ -9994,6 +9989,10 @@ msgstr ""
 
 #: db/seeds/settings.rb
 msgid "Token for CTI."
+msgstr ""
+
+#: db/seeds/settings.rb
+msgid "Token for Sipgate."
 msgstr ""
 
 #: db/seeds/settings.rb
@@ -11386,6 +11385,7 @@ msgid "before (relative)"
 msgstr "преди (относително)"
 
 #: app/assets/javascripts/app/views/generic/sla_times.jst.eco
+#: app/assets/javascripts/app/views/sla/index.jst.eco
 msgid "between agent updates"
 msgstr ""
 
@@ -11588,6 +11588,7 @@ msgid "fill in empty"
 msgstr ""
 
 #: app/assets/javascripts/app/views/generic/sla_times.jst.eco
+#: app/assets/javascripts/app/views/sla/index.jst.eco
 msgid "for an agent to respond"
 msgstr ""
 
@@ -11814,6 +11815,12 @@ msgstr "не е преведено"
 msgid "note"
 msgstr ""
 
+#: app/assets/javascripts/app/controllers/knowledge_base/content_can_be_published_form.coffee
+#, fuzzy
+#| msgid "no"
+msgid "now"
+msgstr "не"
+
 #: db/seeds/ticket_state_types.rb db/seeds/ticket_states.rb
 msgid "open"
 msgstr "отворен"
@@ -11949,6 +11956,10 @@ msgstr ""
 #: app/assets/javascripts/app/views/organization_profile/object.jst.eco
 #: app/assets/javascripts/app/views/widget/organization.jst.eco
 msgid "show more"
+msgstr ""
+
+#: db/seeds/settings.rb
+msgid "sipgate.io Token"
 msgstr ""
 
 #: db/seeds/settings.rb

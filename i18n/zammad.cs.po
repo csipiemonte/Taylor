@@ -2,13 +2,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: zammad\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: \n"
-"Last-Translator: \n"
-"Language-Team: \n"
+"PO-Revision-Date: 2022-04-19 13:18+0000\n"
+"Last-Translator: Petr Daniel Ambrož <paces@paces.cz>\n"
+"Language-Team: Czech <https://translations.zammad.org/projects/zammad/"
+"zammad-stable/cs/>\n"
 "Language: cs\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+"X-Generator: Weblate 4.11.2\n"
 
 #. Default date format to use for the current locale.
 #. These placeholders are supported:
@@ -967,6 +970,10 @@ msgstr "Jste si jisti?"
 #: app/assets/javascripts/app/controllers/_ui_element/ticket_perform_action.coffee
 msgid "Article"
 msgstr "Položka"
+
+#: db/seeds/settings.rb
+msgid "Article - visibility confirmation dialog"
+msgstr ""
 
 #: lib/excel_sheet/ticket.rb
 msgid "Article Count"
@@ -2294,7 +2301,7 @@ msgstr ""
 msgid "Could not read raw logo!"
 msgstr ""
 
-#: app/assets/javascripts/app/views/knowledge_base/new_modal.coffee
+#: app/assets/javascripts/app/views/knowledge_base/new_controller.coffee
 msgid "Couldn't create Knowledge Base"
 msgstr ""
 
@@ -2343,7 +2350,7 @@ msgstr ""
 msgid "Create Channels"
 msgstr ""
 
-#: app/assets/javascripts/app/views/knowledge_base/new_modal.coffee
+#: app/assets/javascripts/app/views/knowledge_base/new_controller.coffee
 msgid "Create Knowledge Base"
 msgstr ""
 
@@ -5808,6 +5815,7 @@ msgstr ""
 
 #: app/controllers/integration/cti_controller.rb
 #: app/controllers/integration/placetel_controller.rb
+#: app/controllers/integration/sipgate_controller.rb
 msgid "Invalid token, please contact your admin!"
 msgstr ""
 
@@ -6177,10 +6185,8 @@ msgstr "Načíst"
 #: app/assets/javascripts/app/controllers/ticket_zoom/sidebar_idoit.coffee
 #: app/assets/javascripts/app/controllers/widget/payload_example.coffee
 #: app/assets/javascripts/app/models/knowledge_base_answer_translation.coffee
-#, fuzzy
-#| msgid "Loading..."
 msgid "Loading failed."
-msgstr "Nahrávám..."
+msgstr "Nahrávání se nezdařilo."
 
 #: app/assets/javascripts/app/lib/app_post/task_manager.coffee
 #: app/assets/javascripts/app/lib/base/jquery.textmodule.js
@@ -7219,7 +7225,6 @@ msgid "Not configured"
 msgstr "Nekonfigurováno"
 
 #: app/assets/javascripts/app/controllers/_ui_element/ticket_perform_action.coffee
-#: app/assets/javascripts/app/models/calendar.coffee
 #: app/assets/javascripts/app/models/chat.coffee
 #: app/assets/javascripts/app/models/email_address.coffee
 #: app/assets/javascripts/app/models/group.coffee
@@ -7241,10 +7246,6 @@ msgstr "Poznámka"
 #: db/seeds/settings.rb
 msgid "Note - default visibility"
 msgstr "Poznámka - výchozí viditelnost"
-
-#: db/seeds/settings.rb
-msgid "Note - visibility confirmation dialog"
-msgstr ""
 
 #: app/assets/javascripts/app/models/email_address.coffee
 #: app/assets/javascripts/app/models/group.coffee
@@ -8306,11 +8307,6 @@ msgstr "Resetovat změny"
 #: app/assets/javascripts/app/views/widget/http_log_show.jst.eco
 msgid "Response"
 msgstr ""
-
-#: app/assets/javascripts/app/views/sla/index.jst.eco
-#, fuzzy
-msgid "Response Time"
-msgstr "První Reakční doba"
 
 #: app/assets/javascripts/app/views/monitoring.jst.eco
 msgid "Restart failed jobs"
@@ -9907,10 +9903,6 @@ msgstr ""
 msgid "There is existing content. Do you want to overwrite it?"
 msgstr ""
 
-#: app/assets/javascripts/app/controllers/_manage/knowledge_base.coffee
-msgid "There is no Knowledge Base yet. Please create one."
-msgstr ""
-
 #: app/assets/javascripts/app/views/channel/chat.jst.eco
 msgid "There is no agent online."
 msgstr "Není online žádný řešitel."
@@ -10033,7 +10025,7 @@ msgstr ""
 
 #: app/assets/javascripts/app/controllers/_application_controller/_modal_generic_history.coffee
 msgid "This ticket was merged into"
-msgstr ""
+msgstr "Tento tiket byl sloučen s"
 
 #: app/assets/javascripts/app/views/widget/mention.jst.eco
 msgid "This user has no access and will not receive notifications."
@@ -10361,6 +10353,10 @@ msgstr "Přístup přes Token"
 
 #: db/seeds/settings.rb
 msgid "Token for CTI."
+msgstr ""
+
+#: db/seeds/settings.rb
+msgid "Token for Sipgate."
 msgstr ""
 
 #: db/seeds/settings.rb
@@ -11830,6 +11826,7 @@ msgid "before (relative)"
 msgstr "před (relativně)"
 
 #: app/assets/javascripts/app/views/generic/sla_times.jst.eco
+#: app/assets/javascripts/app/views/sla/index.jst.eco
 #, fuzzy
 msgid "between agent updates"
 msgstr "Nejnovější aktualizace"
@@ -12033,6 +12030,7 @@ msgid "fill in empty"
 msgstr ""
 
 #: app/assets/javascripts/app/views/generic/sla_times.jst.eco
+#: app/assets/javascripts/app/views/sla/index.jst.eco
 msgid "for an agent to respond"
 msgstr ""
 
@@ -12259,6 +12257,12 @@ msgstr "nepřeložená"
 msgid "note"
 msgstr "poznámka"
 
+#: app/assets/javascripts/app/controllers/knowledge_base/content_can_be_published_form.coffee
+#, fuzzy
+#| msgid "no"
+msgid "now"
+msgstr "ne"
+
 #: db/seeds/ticket_state_types.rb db/seeds/ticket_states.rb
 msgid "open"
 msgstr "otevřený"
@@ -12394,6 +12398,10 @@ msgstr ""
 #: app/assets/javascripts/app/views/organization_profile/object.jst.eco
 #: app/assets/javascripts/app/views/widget/organization.jst.eco
 msgid "show more"
+msgstr ""
+
+#: db/seeds/settings.rb
+msgid "sipgate.io Token"
 msgstr ""
 
 #: db/seeds/settings.rb
@@ -12604,6 +12612,10 @@ msgstr "...celé textové oblasti"
 #: app/assets/javascripts/app/views/dashboard/stats/ticket_waiting_time.jst.eco
 msgid "∅ Waiting time today"
 msgstr "dnešní ∅ čekací doby"
+
+#, fuzzy
+#~ msgid "Response Time"
+#~ msgstr "První Reakční doba"
 
 #, fuzzy
 #~| msgid "Sure to delete this object?"
