@@ -49,8 +49,13 @@ class App.WidgetTextModule extends App.Controller
         continue
 
       # CSI custom: filtraggio addizionale per ogni modulo che non appartiene al gruppo dell'utente
-      userGroups = (id for id, value of @data?.user?.group_ids)
-      if !userGroups.some((el) -> item.group_ids.includes(parseInt(el)))
+      # merge groups permission from user.group_ids and user.roles.group_ids
+      userGroups = [ @data?.user?.group_ids ]
+      userGroups.push role.group_ids for role in @data?.user?.roles
+      userGroups = Object.assign({}, userGroups...)
+
+      userGroupIds = (id for id, value of userGroups)
+      if !userGroupIds.some((el) -> item.group_ids.includes(parseInt(el)))
         continue
 
       attributes = item.attributes()
