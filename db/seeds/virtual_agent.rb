@@ -42,6 +42,7 @@ virtual_agent_chatbot = Role.create_if_not_exists(
 ) || Role.find_by(name: 'Virtual Agent (Chatbot)')
 
 virtual_agent_chatbot.permission_grant('virtual_agent.chatbot')
+virtual_agent_chatbot.permission_grant('chat.agent')
 
 virtual_agent_api_user = Role.create_if_not_exists(
   name:              'Virtual Agent (Api User)',

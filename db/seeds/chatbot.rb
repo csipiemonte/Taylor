@@ -62,8 +62,6 @@ Setting.create_if_not_exists(
 )
 
 # User 'chatbot@zammad.org'
-# TODO, capire se lo user 'chatbot@zammad.org' debba avere un role di 'Virtual Agent (Chatbot)'
-# invece che di 'Agent'
 User.create_if_not_exists(
   login:     'chatbot@zammad.org',
   firstname: 'Zimmy',
@@ -71,7 +69,7 @@ User.create_if_not_exists(
   email:     'chatbot@zammad.org',
   password:  '',
   active:    true,
-  roles:     [ Role.find_by(name: 'Agent') ]
+  roles:     [ Role.find_by(name: 'Virtual Agent (Chatbot)') ]
 )
 
 Permission.create_if_not_exists(
