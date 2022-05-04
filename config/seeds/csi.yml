@@ -19,6 +19,10 @@ development:
       forwarded_for: "127.0.0.1"
       request_id: zammad_to_remedy
       token: f9b12cd4-16f3-3956-96fa-2f288667b9f3
+    ticket:
+      attributes:
+        solicit_number:
+          active: true
 
 dev:
   seeds:
@@ -41,6 +45,10 @@ dev:
       forwarded_for: "127.0.0.1"
       request_id: zammad_to_remedy
       token: f9b12cd4-16f3-3956-96fa-2f288667b9f3
+    ticket:
+      attributes:
+        solicit_number:
+          active: true
 
 test:
   seeds:
@@ -63,6 +71,10 @@ test:
       forwarded_for: "127.0.0.1"
       request_id: zammad_to_remedy
       token: f9b12cd4-16f3-3956-96fa-2f288667b9f3
+    ticket:
+      attributes:
+        solicit_number:
+          active: true
 
 qa:
   seeds:
@@ -85,6 +97,10 @@ qa:
       forwarded_for: "127.0.0.1"
       request_id: zammad_to_remedy
       token: f9b12cd4-16f3-3956-96fa-2f288667b9f3
+    ticket:
+      attributes:
+        solicit_number:
+          active: true
 
 tu:
   seeds:
@@ -107,6 +123,10 @@ tu:
       forwarded_for: "127.0.0.1"
       request_id: zammad_to_remedy
       token: f9b12cd4-16f3-3956-96fa-2f288667b9f3
+    ticket:
+      attributes:
+        solicit_number:
+          active: true
 
 production:
   seeds:
@@ -129,3 +149,7 @@ production:
       forwarded_for: "127.0.0.1"
       request_id: zammad_to_remedy
       token: 71087ed6-07a0-3628-a0c5-5601aae89ae8
+    ticket:
+      attributes:
+        solicit_number:
+          active: true

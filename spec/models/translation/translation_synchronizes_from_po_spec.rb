@@ -179,11 +179,20 @@ RSpec.describe Translation do
         expect(described_class.find_source('de-de', 'yes')).to have_attributes(source: 'yes', target_initial: 'ja', target: 'ja', is_synchronized_from_codebase: true, synchronized_from_translation_file: 'i18n/zammad.de-de.po')
       end
     end
+
+    it 'clear cache after sync' do
+      allow(Cache).to receive(:delete)
+
+      described_class.sync_locale_from_po('de-de')
+
+      expect(Cache).to have_received(:delete).with('TranslationMapOnlyContent::de-de')
+    end
   end
 
-  context 'when synchronizing strings for all locales' do
+  context 'when synchronizing strings for CI locales' do
 
-    before do
+    # Tests are slow, so use before :all to save time.
+    before :all do # rubocop:disable RSpec/BeforeAfterAll
       # Simulate additional entries
       File.write(Rails.root.join('i18n/testaddon.de-de.po'), <<~CUSTOM_PO)
         msgid "custom-string-translated"
@@ -205,7 +214,7 @@ RSpec.describe Translation do
       described_class.sync
     end
 
-    after do
+    after :all do # rubocop:disable RSpec/BeforeAfterAll
       FileUtils.remove(Rails.root.join('i18n/testaddon.de-de.po'))
     end
 
@@ -239,6 +248,19 @@ RSpec.describe Translation do
 
     it 'ignores strings that are too long' do
       expect(described_class.find_source('de-de', 'custom-string-too-long')).to be_nil
+    end
+  end
+
+  # Make sure that translation imports work really for all locales.
+  context 'when synchronizing strings for all locales' do
+    before do
+      # Only 'en-us' and 'de-de' are returned in test env - override.
+      allow(Locale).to receive(:to_sync).and_return(Locale.where(active: true))
+      described_class.sync
+    end
+
+    it 'imports without error and finds Chinese entries' do
+      expect(described_class.where(locale: 'zh-cn').count).to be > 500
     end
   end
 

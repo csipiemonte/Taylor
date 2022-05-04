@@ -7,9 +7,7 @@
     "http"
   ],
   "tiers": [
-    "Gold",
-    "Silver",
-    "Bronze"
+    "Gold"
   ],
   "maxTps": null,
   "visibility": "PUBLIC",
@@ -25,20 +23,24 @@
     "production_endpoints": {
       "url": "http://apibe-nextcrm.nivolapiemonte.it/api/nextcrm/v1/",
       "config": null
+    },
+    "sandbox_endpoints": {
+      "url": "https://tu-nextcrm-bo.nivolapiemonte.it/api/nextcrm/v1/",
+      "config": null
     }
   },
   "endpointSecurity": {
-    "username": "",
-    "password": "",
+    "username": "apiman-nextcrm@csi.it",
+    "password": "cfr_wiki_progetto",
     "type": "basic"
   },
-  "gatewayEnvironments": "Production Gateway",
+  "gatewayEnvironments": "Production Gateway,Sandbox Gateway",
   "sequences": [],
   "subscriptionAvailability": null,
   "subscriptionAvailableTenants": [],
   "businessInformation": {
-    "businessOwner": "Stefano Moro",
-    "businessOwnerEmail": "stefano.moro@csi.it",
+    "businessOwner": "Andrea Muraca",
+    "businessOwnerEmail": "andrea.muraca@csi.it",
     "technicalOwner": "Riccardo Franco",
     "technicalOwnerEmail": "riccardo.franco@csi.it"
   },

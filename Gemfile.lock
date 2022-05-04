@@ -24,8 +24,8 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    PoParser (3.2.5)
-      simple_po_parser (~> 1.1.2)
+    PoParser (3.2.6)
+      simple_po_parser (~> 1.1.6)
     aasm (5.2.0)
       concurrent-ruby (~> 1.0)
     actioncable (6.0.4.7)
@@ -173,6 +173,9 @@ GEM
       eco-source
       execjs
     eco-source (1.1.0.rc.1)
+    elastic-apm (4.5.0)
+      concurrent-ruby (~> 1.0)
+      http (>= 3.0)
     em-websocket (0.5.3)
       eventmachine (>= 0.12.9)
       http_parser.rb (~> 0)
@@ -180,7 +183,7 @@ GEM
     erubi (1.10.0)
     eventmachine (1.2.7)
     execjs (2.8.1)
-    factory_bot (6.2.0)
+    factory_bot (6.2.1)
       activesupport (>= 5.0.0)
     factory_bot_rails (6.2.0)
       factory_bot (~> 6.2.0)
@@ -314,7 +317,7 @@ GEM
     netrc (0.11.0)
     newrelic_rpm (8.5.0)
     nio4r (2.5.8)
-    nokogiri (1.13.3)
+    nokogiri (1.13.4)
       mini_portile2 (~> 2.8.0)
       racc (~> 1.4)
     nori (2.6.0)
@@ -393,7 +396,7 @@ GEM
       binding_of_caller (~> 1.0)
       pry (~> 0.13)
     public_suffix (4.0.6)
-    puma (4.3.11)
+    puma (4.3.12)
       nio4r (~> 2.0)
     pundit (2.2.0)
       activesupport (>= 3.0.0)
@@ -401,6 +404,8 @@ GEM
       rspec-rails (>= 3.0.0)
     racc (1.6.0)
     rack (2.2.3)
+    rack-attack (6.6.0)
+      rack (>= 1.0, < 3)
     rack-livereload (0.3.17)
       rack
     rack-test (1.1.0)
@@ -520,7 +525,7 @@ GEM
     shoulda-matchers (5.1.0)
       activesupport (>= 5.2.0)
     simple_oauth (0.3.1)
-    simple_po_parser (1.1.5)
+    simple_po_parser (1.1.6)
     slack-notifier (2.4.0)
     slack-ruby-client (1.0.0)
       faraday (>= 1.0)
@@ -633,6 +638,7 @@ DEPENDENCIES
   doorkeeper
   dotenv
   eco
+  elastic-apm
   em-websocket
   eventmachine
   execjs
@@ -680,6 +686,7 @@ DEPENDENCIES
   puma (~> 4)
   pundit
   pundit-matchers
+  rack-attack
   rack-livereload
   rails (~> 6.0.0)
   rails-controller-testing

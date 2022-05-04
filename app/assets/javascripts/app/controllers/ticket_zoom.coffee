@@ -583,10 +583,21 @@ class App.TicketZoom extends App.Controller
           if userIgnored is false
             ticket_auto_assignment_selector = @Config.get('ticket_auto_assignment_selector')
             if App.Ticket.selector(@ticket, ticket_auto_assignment_selector['condition'])
+              
+              # CSI custom - aggiunta conferma per assegnazione automatica
               assign = =>
                 @ticket.owner_id = App.Session.get('id')
                 @ticket.save()
-              @delay(assign, 800, "ticket-auto-assign-#{@ticket.id}")
+              
+              openConfirmModal = =>
+                new App.ControllerConfirm(
+                  message: __("Il ticket ##{@ticket.number} non è ancora assegnato a nessuno.\nVuoi prenderlo in carico?")
+                  buttonClass: 'btn--positive'
+                  head: __('Conferma assegnazione')
+                  callback: assign
+                )
+              # using base delay impl to not be bound to the controller instance
+              App.Delay.set(openConfirmModal, 10000, 'ticket-auto-assign', null, false)
 
     # render init content
     if elLocal
@@ -937,11 +948,6 @@ class App.TicketZoom extends App.Controller
         @submitEnable(e)
         @autosaveStart()
         return
-
-      if article.internal && !confirm('La nota che stai per inserire è interna e non sarà visibile al cittadino, vuoi proseguire?')
-        @submitEnable(e)
-        @autosaveStart()
-        return
         
       ticket.article = article
 
@@ -955,7 +961,11 @@ class App.TicketZoom extends App.Controller
 
     # verify if time accounting is enabled
     if @Config.get('time_accounting') isnt true
-      @submitPost(e, ticket, macro)
+      # CSI custom - modale per nota interna, caso con articolo ma non time unit
+      if article.internal
+        @confirmInternalNote( => @submitPost(e, ticket, macro) )
+      else
+        @submitPost(e, ticket, macro)
       return
 
     # verify if time accounting is active for ticket
@@ -970,7 +980,11 @@ class App.TicketZoom extends App.Controller
 
     time_accounting_selector = @Config.get('time_accounting_selector')
     if !App.Ticket.selector(selector, time_accounting_selector['condition'])
-      @submitPost(e, ticket, macro)
+      # CSI custom - modale per nota interna, caso con articolo e time unit, ma ticket non selezionato
+      if article.internal
+        @confirmInternalNote( => @submitPost(e, ticket, macro) )
+      else
+        @submitPost(e, ticket, macro)
       return
 
     # time tracking
@@ -986,9 +1000,24 @@ class App.TicketZoom extends App.Controller
       submitCallback: (params) =>
         if params.time_unit
           ticket.article.time_unit = params.time_unit
-        @submitPost(e, ticket, macro)
+        # CSI custom - modale per nota interna
+        if ticket.article?.internal
+          @confirmInternalNote( => @submitPost(e, ticket, macro) )
+        else
+          @submitPost(e, ticket, macro)
     )
 
+  # CSI custom - modale per nota interna
+  confirmInternalNote: (callback) =>
+    new App.ControllerConfirm(
+      message: __("La nota che stai per inserire è interna e non sarà visibile all'utente, vuoi proseguire?")
+      buttonClass: 'btn--positive'
+      head: __('Conferma pubblicazione')
+      callback: callback
+      onCancel: =>
+        @submitEnable(e)
+      )
+  
   saveDraft: (e) =>
     e.stopPropagation()
     e.preventDefault()

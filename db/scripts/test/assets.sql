@@ -74,4 +74,5 @@ VALUES (31, 'sw', 'Il mio medico - Scelta e revoca rivolta al cittadino', NOW(),
 (89, 'sw', 'COVID SOL CITTADINO NON AUTENTICATO', NOW(), NOW()),
 (90, 'sw', 'Deleghe Cittadini Minori', NOW(), NOW()),
 (91, 'sw', 'FSE - Documenti inseriti da te per cittadino', NOW(), NOW()),
-(92, 'sw', 'AURA - Archivio Unico Regionale Assistiti', NOW(), NOW())
+(92, 'sw', 'AURA - Archivio Unico Regionale Assistiti', NOW(), NOW()),
+(93, 'sw', 'ADESIONE VACCINAZIONI COVID-19', NOW(), NOW())

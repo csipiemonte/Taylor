@@ -26,10 +26,10 @@ default_env: &default_env
       enabled: true
     ticket_split:
       name: ticket_split
-      enabled: true
+      enabled: false
     ticket_merge:
       name: ticket_merge
-      enabled: true
+      enabled: false
 
 production:
   <<: *default_env

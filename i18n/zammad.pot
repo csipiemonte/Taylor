@@ -2096,7 +2096,7 @@ msgstr ""
 msgid "Could not read raw logo!"
 msgstr ""
 
-#: app/assets/javascripts/app/views/knowledge_base/new_modal.coffee
+#: app/assets/javascripts/app/views/knowledge_base/new_controller.coffee
 msgid "Couldn't create Knowledge Base"
 msgstr ""
 
@@ -2145,7 +2145,7 @@ msgstr ""
 msgid "Create Channels"
 msgstr ""
 
-#: app/assets/javascripts/app/views/knowledge_base/new_modal.coffee
+#: app/assets/javascripts/app/views/knowledge_base/new_controller.coffee
 msgid "Create Knowledge Base"
 msgstr ""
 
@@ -5176,6 +5176,10 @@ msgstr ""
 msgid "Invalid password, it must be at least %s characters long!"
 msgstr ""
 
+#: lib/password_policy/max_length.rb
+msgid "Invalid password, it must be shorter than %s characters!"
+msgstr ""
+
 #: lib/password_policy/digit.rb
 msgid "Invalid password, it must contain at least 1 digit!"
 msgstr ""
@@ -6580,7 +6584,6 @@ msgid "Not configured"
 msgstr ""
 
 #: app/assets/javascripts/app/controllers/_ui_element/ticket_perform_action.coffee
-#: app/assets/javascripts/app/models/calendar.coffee
 #: app/assets/javascripts/app/models/chat.coffee
 #: app/assets/javascripts/app/models/email_address.coffee
 #: app/assets/javascripts/app/models/group.coffee
@@ -7614,10 +7617,6 @@ msgstr ""
 
 #: app/assets/javascripts/app/views/widget/http_log_show.jst.eco
 msgid "Response"
-msgstr ""
-
-#: app/assets/javascripts/app/views/sla/index.jst.eco
-msgid "Response Time"
 msgstr ""
 
 #: app/assets/javascripts/app/views/monitoring.jst.eco
@@ -9075,10 +9074,6 @@ msgstr ""
 
 #: app/assets/javascripts/app/views/ticket_shared_draft_modal.coffee
 msgid "There is existing content. Do you want to overwrite it?"
-msgstr ""
-
-#: app/assets/javascripts/app/controllers/_manage/knowledge_base.coffee
-msgid "There is no Knowledge Base yet. Please create one."
 msgstr ""
 
 #: app/assets/javascripts/app/views/channel/chat.jst.eco
@@ -10777,6 +10772,7 @@ msgid "before (relative)"
 msgstr ""
 
 #: app/assets/javascripts/app/views/generic/sla_times.jst.eco
+#: app/assets/javascripts/app/views/sla/index.jst.eco
 msgid "between agent updates"
 msgstr ""
 
@@ -10979,6 +10975,7 @@ msgid "fill in empty"
 msgstr ""
 
 #: app/assets/javascripts/app/views/generic/sla_times.jst.eco
+#: app/assets/javascripts/app/views/sla/index.jst.eco
 msgid "for an agent to respond"
 msgstr ""
 
@@ -11205,6 +11202,10 @@ msgstr ""
 #: app/assets/javascripts/app/controllers/ticket_zoom/article_action/note.coffee
 #: db/seeds/ticket_article_types.rb
 msgid "note"
+msgstr ""
+
+#: app/assets/javascripts/app/controllers/knowledge_base/content_can_be_published_form.coffee
+msgid "now"
 msgstr ""
 
 #: db/seeds/ticket_state_types.rb

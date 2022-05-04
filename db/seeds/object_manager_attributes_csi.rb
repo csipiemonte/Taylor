@@ -313,6 +313,40 @@ ObjectManager::Attribute.add(
 ObjectManager::Attribute.add(
   force:       true,
   object:      'Ticket',
+  name:        'asset_name',
+  display:     'Nome Applicativo',
+  data_type:   'input',
+  data_option: {
+    type:       'text',
+    maxlength:  120,
+    null:       true,
+  },
+  editable:    false,
+  active:      true,
+  screens: {
+    'create_middle' => {
+      'ticket.agent'    => {
+        'shown' => false,
+        'required' => false,
+        'item_class' => 'column'
+      }
+    },
+    'edit' => {
+      'ticket.agent' => {
+        'shown' => false,
+        'required' => false
+      }
+    }
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    1633,
+)
+
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'Ticket',
   name:        'ticket_type_id',
   display:     'Type',
   data_type:   'select',
@@ -380,7 +414,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Ticket',
   name:        'notification_email',
-  display:     'Notification email address',
+  display:     'Email per notifica aggiuntiva',
   data_type:   'input',
   data_option: {
     type:       'text',
@@ -388,17 +422,17 @@ ObjectManager::Attribute.add(
     null:       true,
     # item_class: 'formGroup--halfSize'
   },
-  editable:    false,
+  editable:    true,
   active:      true,
   screens:     {
     'create_middle' => {
       'ticket.customer' => {
-        'shown' => false,
+        'shown' => true,
         'required' => false,
         'item_class' => 'column'
       },
       'ticket.agent'    => {
-        'shown' => false,
+        'shown' => true,
         'required' => false,
         'item_class' => 'column'
       }
@@ -424,7 +458,7 @@ ObjectManager::Attribute.add(
   force:       true,
   object:      'Ticket',
   name:        'recall_phone',
-  display:     'Contact telephone number',
+  display:     'Numero telefonico di contatto secondario',
   data_type:   'input',
   data_option: {
     type:       'text',
@@ -432,17 +466,17 @@ ObjectManager::Attribute.add(
     null:       true,
     # item_class: 'formGroup--halfSize'
   },
-  editable:    false,
+  editable:    true,
   active:      true,
   screens:     {
     'create_middle' => {
       'ticket.customer' => {
-        'shown' => false,
+        'shown' => true,
         'required' => false,
         'item_class' => 'column'
       },
       'ticket.agent'    => {
-        'shown' => false,
+        'shown' => true,
         'required' => false,
         'item_class' => 'column'
       }
@@ -777,6 +811,50 @@ ObjectManager::Attribute.add(
   to_migrate:  false,
   to_delete:   false,
   position:    5000,
+)
+
+ObjectManager::Attribute.add(
+  force:       true,
+  object:      'Ticket',
+  name:        'solicit_number',
+  display:     'Numero Sollecito',
+  data_type:   'integer',
+  data_option: {
+    null:       true,
+    default:    0,
+    min:        0,
+    max:        99
+  },
+  editable:    true,
+  active:      true,
+  screens:     {
+    'create_middle' => {
+      'ticket.customer' => {
+        'shown' => false,
+        'required' => false,
+        'item_class' => 'column'
+      },
+      'ticket.agent'    => {
+        'shown' => false,
+        'required' => false,
+        'item_class' => 'column'
+      }
+    },
+    'edit' => {
+      'ticket.customer' => {
+        'shown' => false,
+        'required' => false
+      },
+      'ticket.agent' => {
+        'shown' => true,
+        'required' => false
+      }
+    }
+  },
+  to_create:   false,
+  to_migrate:  false,
+  to_delete:   false,
+  position:    3500,
 )
 
 ######################

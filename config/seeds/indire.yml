@@ -19,6 +19,10 @@ development:
       forwarded_for:
       request_id:
       token:
+    ticket:
+      attributes:
+        solicit_number:
+          active: false
 
 dev:
   seeds:
@@ -41,6 +45,10 @@ dev:
       forwarded_for:
       request_id:
       token:
+    ticket:
+      attributes:
+        solicit_number:
+          active: false
 
 test:
   seeds:
@@ -63,6 +71,10 @@ test:
       forwarded_for:
       request_id:
       token:
+    ticket:
+      attributes:
+        solicit_number:
+          active: false
 
 qa:
   seeds:
@@ -85,6 +97,10 @@ qa:
       forwarded_for:
       request_id:
       token:
+    ticket:
+      attributes:
+        solicit_number:
+          active: false
 
 tu:
   seeds:
@@ -107,6 +123,10 @@ tu:
       forwarded_for:
       request_id:
       token:
+    ticket:
+      attributes:
+        solicit_number:
+          active: false
 
 production:
   seeds:
@@ -129,3 +149,7 @@ production:
       forwarded_for:
       request_id:
       token:
+    ticket:
+      attributes:
+        solicit_number:
+          active: false

@@ -1,0 +1,78 @@
+# This repository adheres to the publiccode.yml standard by including this 
+# metadata file that makes public software easily discoverable.
+# More info at https://github.com/italia/publiccode.yml
+
+publiccodeYmlVersion: '0.2'
+categories:
+  - call-center-management
+  - service-desk
+  - customer-service-and-support
+description:
+  it:
+    features:
+      - CRM
+      - Ticketing system
+      - AI
+    genericName: 'Taylor, CRM'
+    longDescription: |2
+       
+
+      _\*Taylor\*_ è una soluzione destinata alla PA per la gestione della
+      relazione con il cittadino e delle sue richieste.
+
+      Una piattaforma con un efficace backoffice per la gestione dei ticket e
+      con vari canali di comunicazione, che vanno dalle API alla mail, dalla
+      chat al portale di supporto al cittadino. Un sistema di intelligenza
+      artificiale permette di fornire risposte automatiche al cittadino che
+      adopera la chat come mezzo di contatto, spostando così ad un livello
+      successivo l'interazione diretta fra operatore e cittadino. 
+
+
+      Taylor si basa sul prodotto opensource
+      [Zammad](++https://github.com/zammad/zammad/++), distribuito con la
+      versione 3 della licenza GNU AFFERO General Public License (GNU AGPLv3).
+
+
+      ​
+    shortDescription: |-
+      Taylor è una soluzione destinata alla PA per la gestione della relazione
+      con il cittadino e delle sue richieste.
+developmentStatus: stable
+isBasedOn:
+  - 'https://github.com/zammad/zammad'
+it:
+  conforme:
+    gdpr: false
+    lineeGuidaDesign: false
+    misureMinimeSicurezza: false
+    modelloInteroperabilita: false
+  countryExtensionVersion: '0.2'
+  piattaforme:
+    anpr: false
+    cie: false
+    pagopa: false
+    spid: true
+  riuso:
+    codiceIPA: csi_piem
+legal:
+  license: AGPL-3.0-or-later
+localisation:
+  availableLanguages:
+    - en
+    - it
+  localisationReady: true
+maintenance:
+  contacts:
+    - email: riccardo.franco@csi.it
+      name: Riccardo Franco
+  type: internal
+name: Taylor
+platforms:
+  - linux
+releaseDate: '2022-04-29'
+softwareType: standalone/web
+softwareVersion: 1.0.0
+url: 'https://github.com/csipiemonte/Taylor'
+usedBy:
+  - Regione Piemonte Assessorato alla Sanità
+  - Iride

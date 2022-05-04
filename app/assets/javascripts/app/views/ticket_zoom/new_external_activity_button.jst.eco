@@ -1,13 +1,15 @@
-<h3><%= @system.name %></h3>
+<h2><%= @system.name %></h2>
 <br>
-<div class="dispatch-box"></div>
-<div class="external-activities"><label><%- @T('External activity')%></label>
-<ul class="list list--sidebar">
-
-</ul>
-<div class="text-muted js-newExternalActivityLabel u-clickable">+ <%- @T('New external activity on')%> <%= @system.name %></div>
-<form class="ui-front">
-  <input type="text" name="new_external_activity" class="hide js-newTagInput ui-autocomplete-input" autocomplete="off">
-<ul class="ui-autocomplete ui-front ui-menu ui-widget ui-widget-content" id="ui-id-1" tabindex="0" style="display: none;"></ul></form>
+<div class="external-activity-select" style="display: none;">
+  <div class="text-muted"><%- @T('Select external activity')%></div>
+  <div class="js-external-activity-select"></div>
+  <hr>
 </div>
-<div id="external_activity_reload" style="display: none;"><div>
+
+<div>
+  <button class="btn btn--fullWidth js-newExternalActivityBtn" name="new_external_activity">
+    <%- @T('New external activity on')%> <%= @system.name %>
+  </button>
+  <hr>
+</div>
+<div class="dispatch-box"></div>
