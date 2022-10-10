@@ -64,8 +64,8 @@ localisation:
 logo: taylor.png
 maintenance:
   contacts:
-    - email: riccardo.franco@csi.it
-      name: Riccardo Franco
+    - email: andrea.muraca@csi.it
+      name: Andrea Muraca
   type: internal
 name: Taylor
 platforms:

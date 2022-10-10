@@ -107,7 +107,7 @@ User.create_if_not_exists(
   firstname: 'Aligner',
   lastname:  'Agent',
   email:     'aligner.agent@csi.it',
-  password:  'AliP21_ext!',
+  password:  '**********',
   active:    true,
   roles:     [ Role.find_by(name: 'Virtual Agent (Aligner)') ]
 )
